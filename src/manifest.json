@@ -9,7 +9,8 @@
 			"16": "assets/logo-16.png",
 			"48": "assets/logo-48.png",
 			"128": "assets/logo-128.png"
-		}
+		},
+		"default_popup": "popup.html"
 	},
 	"icons": {
 		"16": "assets/logo-16.png",
@@ -40,12 +41,12 @@
 	],
 	"web_accessible_resources": [
 		{
-			"resources":  ["content.html", "newtab.html", "assets/*", "popup.css", "popup.js"],
+			"resources":  ["content.html", "newtab.html", "assets/*", "popup.css", "popup.js", "setting.html", "setting.js", "popup.html", "popup.js"],
 			"matches": ["<all_urls>"]
 		}
 	],
 	"permissions": [
-		"tabs", "activeTab", "bookmarks", "browsingData", "history", "scripting", "search"
+		"tabs", "activeTab", "bookmarks", "browsingData", "history", "scripting", "search", "commands"
 	],
 	"host_permissions": [
 		"https://www.googleapis.com/*", "https://gstatic.com/*", "*://*/*"

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Omni Extension Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            width: 300px;
+        }
+        h1 {
+            color: #333;
+            font-size: 18px;
+        }
+        #shortcut {
+            margin-top: 20px;
+        }
+        button {
+            margin-top: 10px;
+        }
+        #shortcutInput {
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Omni Extension Settings</h1>
+    <div id="shortcut">
+        <label for="shortcutInput">Current Shortcut:</label>
+        <input type="text" id="shortcutInput" disabled>
+        <button id="saveShortcut">Change Shortcut</button>
+    </div>
+    <div id="message"></div>
+    <script src="popup.js"></script>
+</body>
+</html>
