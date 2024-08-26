@@ -20,8 +20,8 @@
 	"commands": {
 		"open-omni": {
 			"suggested_key": {
-				"default": "Ctrl+Shift+K",
-				"mac": "Command+Shift+K"
+				"default": "Ctrl+T",
+				"mac": "Command+T"
 			},
 			"description": "Open command menu"
 		}
@@ -31,9 +31,7 @@
 	},
 	"content_scripts": [
 		{
-			"matches": [
-				"<all_urls>"
-			],
+			"matches": ["<all_urls>"],
 			"run_at": "document_end",
 			"js": ["focus.js", "jquery.js", "content.js", "virtualized-list.min.js"],
 			"css": ["content.css"]
@@ -41,14 +39,34 @@
 	],
 	"web_accessible_resources": [
 		{
-			"resources":  ["content.html", "newtab.html", "assets/*", "popup.css", "popup.js", "setting.html", "setting.js", "popup.html", "popup.js"],
+			"resources": [
+				"content.html",
+				"newtab.html",
+				"assets/*",
+				"popup.css",
+				"popup.js",
+				"setting.html",
+				"setting.js",
+				"popup.html",
+				"popup.js"
+			],
 			"matches": ["<all_urls>"]
 		}
 	],
 	"permissions": [
-		"tabs", "activeTab", "bookmarks", "browsingData", "history", "scripting", "search", "commands"
+		"tabs",
+		"activeTab",
+		"bookmarks",
+		"browsingData",
+		"history",
+		"scripting",
+		"search",
+		"commands"
 	],
 	"host_permissions": [
-		"https://www.googleapis.com/*", "https://gstatic.com/*", "*://*/*"
+		"https://www.googleapis.com/*",
+		"https://gstatic.com/*",
+		"*://*/*"
 	]
 }
+

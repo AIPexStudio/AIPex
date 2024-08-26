@@ -1,44 +1,38 @@
-# Omni
+# Empower
 
 ![Preview](preview.gif)
 <br>
 <br>
 The most powerful interface for your browser 🔥
 
-With Omni you can use your browser like a pro. Manage tabs, bookmarks, your browser history, perform all sorts of actions and more with a simple command interface.
+With Empower you can use your browser like a pro. Manage tabs, bookmarks, your browser history, perform all sorts of actions and more with a simple command interface.
 
-👉 Get it now [for Chrome](https://chrome.google.com/webstore/detail/omni/mapjgeachilmcbbokkgcbgpbakaaeehi?hl=en&authuser=0) and [for Firefox](https://addons.mozilla.org/en-GB/firefox/addon/omnisearch/)
-
-<a href="https://www.producthunt.com/posts/omni-3?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-omni-3" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=326242&theme=light&period=daily" alt="Omni - The all-in-one tool to supercharge your productivity | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-> You can support this project (and many others) through [GitHub Sponsors](https://github.com/sponsors/alyssaxuu)! ❤️
-
-Made by [Alyssa X](https://twitter.com/alyssaxuu)
+Empower is based on Omni which is made by [Alyssa X](https://twitter.com/alyssaxuu)
 
 ## Table of contents
 
-- [Features](#features)
-- [Controlling the interface](#controlling-the-interface)
-	- [Opening Omni](#opening-omni)
-	- [Closing Omni](#closing-omni)
-	- [Switching between dark and light mode](#switching-between-dark-and-light-mode)
-- [List of commands](#list-of-commands)
-- [Self-hosting Omni](#self-hosting-omni)
-	- [Installing on Chrome](#installing-on-chrome)
-	- [Installing on Firefox](#installing-on-firefox) 
-- [Libraries used](#libraries-used)
+- [Empower](#empower)
+  - [Table of contents](#table-of-contents)
+  - [Features](#features)
+  - [Controlling the interface](#controlling-the-interface)
+    - [Opening Omni](#opening-omni)
+    - [Closing Omni](#closing-omni)
+    - [Switching between dark and light mode](#switching-between-dark-and-light-mode)
+  - [List of commands](#list-of-commands)
+  - [Self-hosting Omni](#self-hosting-omni)
+    - [Installing on Chrome](#installing-on-chrome)
+    - [Installing on Firefox](#installing-on-firefox)
+  - [Libraries used](#libraries-used)
 
 ## Features
 
-🗄 Switch, open, close, and search your tabs<br> 📚 Browse and manage your bookmarks<br> 🔍 Search your browsing history<br> ⚡️ 50+ actions to improve your productivity<br> 🔮 Special commands to filter and perform more actions<br> 🧩 Integrations with Notion, Figma, Docs, Asana...<br> ⌨️ Shortcuts for actions such as muting, pinning, bookmarking...<br> ⚙️ Advanced settings to help troubleshoot browsing issues<br> 🌙 Dark mode<br> ...and much more - all for free & no sign in needed!
+🗄 Switch, open, close, and search your tabs<br> 📚 Browse and manage your bookmarks<br> 🔍 Search your browsing history<br> ⚡️ 50+ actions to improve your productivity<br> 🔮 Special commands to filter and perform more actions<br> 🧩 Integrations with Notion, Figma, Docs, Asana...<br> ⌨️ Shortcuts for actions such as muting, pinning, bookmarking...<br> ⚙️ Advanced settings to help troubleshoot browsing issues<br> 🌙 Dark mode<br> AI Command<br> Operate like Arc
 
 ## Controlling the interface
 
 ### Opening Omni
 
-To open Omni, simply press `⌘+Shift+K` on Mac or `Ctrl+Shift+K` on Windows. You can change the shortcut by going to chrome://extensions/shortcuts in Chrome, or by following [these steps](https://support.mozilla.org/en-US/kb/manage-extension-shortcuts-firefox) in Firefox
-
-Alternatively you can click on the extension icon in the toolbar to toggle it.
+To open Omni, simply press `⌘+T` . You can change the shortcut when clicking the extension.
 
 ### Closing Omni
 
@@ -63,10 +57,12 @@ You can use a variety of commands with Omni to perform actions or filter your re
 - **/history**: Search your browser history
 - **/actions**: Search all available actions
 - **/remove**: Remove a bookmark or close a tab
+- **/ai**: Talk with AI assistant
 
 Feel free to suggest new commands for Omni by [making an issue](https://github.com/alyssaxuu/omni/issues/new).
 
 ## Self-hosting Omni
+
 You can run Omni locally without having to install it from the Chrome Store or from Firefox Add-ons.
 
 ### Installing on Chrome
@@ -88,6 +84,3 @@ You can run Omni locally without having to install it from the Chrome Store or f
 - [jQuery](https://jquery.com/) - for better event handling and DOM manipulation
 - [dom-focus-lock](https://github.com/theKashey/dom-focus-lock) - to keep focus on the input field
 
-#
-
-Feel free to reach out to me through email at hi@alyssax.com or [on Twitter](https://twitter.com/alyssaxuu) if you have any questions or feedback! Hope you find this useful 💜
