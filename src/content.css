@@ -377,3 +377,9 @@
 	opacity: 1 !important;
 	visibility: visible !important;
 }
+
+.omni-item-url {
+	font-size: 0.8em;
+	color: #888;
+	word-break: break-all;
+}
