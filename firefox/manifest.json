@@ -18,8 +18,8 @@
 	"commands": {
 		"open-omni": {
 			"suggested_key": {
-				"default": "Ctrl+T",
-				"mac": "Command+T"
+				"default": "Ctrl+Shift+T",
+				"mac": "Command+Shift+T"
 			},
 			"description": "Open command menu"
 		}
