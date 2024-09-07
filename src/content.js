@@ -214,6 +214,7 @@ $(document).ready(() => {
 		chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 			isOpen = true;
 			actions = response.actions;
+			console.log(actions);
 			$("#omni-extension input").val("");
 			populateOmni();
 			$("html, body").stop();
@@ -340,6 +341,7 @@ $(document).ready(() => {
 			chrome.runtime.sendMessage(
 				{ request: "search-history", query: query },
 				(response) => {
+					console.log(response);
 					populateOmniFilter(response.history);
 				}
 			);
@@ -549,6 +551,7 @@ $(document).ready(() => {
 		} else if (
 			$(".omni-extension input").val().toLowerCase().startsWith("/history")
 		) {
+			console.log(e);
 			if (e.ctrlKey || e.metaKey) {
 				window.open($(".omni-item-active").attr("data-url"));
 			} else {
@@ -563,6 +566,8 @@ $(document).ready(() => {
 				window.open($(".omni-item-active").attr("data-url"), "_self");
 			}
 		} else {
+			console.log("this part");
+			console.log(action.action);
 			chrome.runtime.sendMessage({
 				request: action.action,
 				tab: action,
@@ -616,6 +621,10 @@ $(document).ready(() => {
 					break;
 				case "print":
 					window.print();
+					break;
+				case "open-history-url":
+					console.log("history is right");
+					window.open($(".omni-item-active .omni-item-url").text());
 					break;
 				case "remove-all":
 				case "remove-history":
@@ -710,6 +719,8 @@ $(document).ready(() => {
 
 	// Recieve messages from background
 	chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+		console.log("receiving message");
+		console.log(message.request);
 		if (message.request == "open-omni") {
 			if (isOpen) {
 				closeOmni();
