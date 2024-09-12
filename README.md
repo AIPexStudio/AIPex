@@ -55,7 +55,6 @@ You can use a variety of commands with Omni to perform actions or filter your re
 - **/tabs**: Search your tabs
 - **/bookmarks**: Search your bookmarks
 - **/history**: Search your browser history
-- **/actions**: Search all available actions
 - **/remove**: Remove a bookmark or close a tab
 - **/ai**: Talk with AI assistant
 

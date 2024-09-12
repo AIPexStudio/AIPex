@@ -6,6 +6,18 @@ document.onkeyup = (e) => {
 	}
 };
 
+document.addEventListener(
+	"keydown",
+	(event) => {
+		if (event.metaKey && event.key === "t") {
+			event.preventDefault();
+			openOmni();
+			// 可以在这里触发您自定义的行为
+		}
+	},
+	true
+);
+
 $(document).ready(() => {
 	var actions = [];
 	var isFiltered = false;
@@ -269,14 +281,15 @@ $(document).ready(() => {
 				el.val("/history ");
 			} else if (value == "/r") {
 				el.val("/remove ");
-			} else if (value == "/a") {
-				el.val("/actions ");
 			}
+			// else if (value == "/a") {
+			// 	el.val("/actions ");
+			// }
 		} else {
 			if (
 				value == "/tabs" ||
 				value == "/bookmarks" ||
-				value == "/actions" ||
+				// value == "/actions" ||
 				value == "/remove" ||
 				value == "/history"
 			) {
@@ -436,36 +449,6 @@ $(document).ready(() => {
 									.indexOf(tempvalue) > -1) &&
 								($(this).attr("data-type") == "bookmark" ||
 									$(this).attr("data-type") == "tab")
-						);
-					}
-				} else if (value.startsWith("/actions")) {
-					$(
-						".omni-item[data-index='" +
-							actions.findIndex((x) => x.action == "search") +
-							"']"
-					).hide();
-					$(
-						".omni-item[data-index='" +
-							actions.findIndex((x) => x.action == "goto") +
-							"']"
-					).hide();
-					var tempvalue = value.replace("/actions ", "");
-					if (tempvalue == "/actions") {
-						$(this).toggle($(this).attr("data-type") == "action");
-					} else {
-						tempvalue = value.replace("/actions ", "");
-						$(this).toggle(
-							($(this)
-								.find(".omni-item-name")
-								.text()
-								.toLowerCase()
-								.indexOf(tempvalue) > -1 ||
-								$(this)
-									.find(".omni-item-desc")
-									.text()
-									.toLowerCase()
-									.indexOf(tempvalue) > -1) &&
-								$(this).attr("data-type") == "action"
 						);
 					}
 				} else {
