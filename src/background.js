@@ -71,6 +71,15 @@ const clearActions = () => {
 				keycheck: true,
 				keys: ["⌘", "D"],
 			},
+			{
+				title: "AI Chat",
+				desc: "Start an AI conversation",
+				type: "action",
+				action: "ai-chat",
+				emoji: true,
+				emojiChar: "🤖",
+				keycheck: false,
+			},
 			pinaction,
 			{
 				title: "Fullscreen",

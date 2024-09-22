@@ -281,15 +281,14 @@ $(document).ready(() => {
 				el.val("/history ");
 			} else if (value == "/r") {
 				el.val("/remove ");
+			} else if (value == "/a") {
+				el.val("/ai ");
 			}
-			// else if (value == "/a") {
-			// 	el.val("/actions ");
-			// }
 		} else {
 			if (
 				value == "/tabs" ||
 				value == "/bookmarks" ||
-				// value == "/actions" ||
+				value == "/ai" ||
 				value == "/remove" ||
 				value == "/history"
 			) {
@@ -318,6 +317,66 @@ $(document).ready(() => {
 			"i"
 		); // fragment locator
 		return !!pattern.test(str);
+	}
+
+	function openAIChatDrawer(query) {
+		// Create the drawer if it doesn't exist
+		if (!$("#ai-chat-drawer").length) {
+			$("body").append(`
+			<div id="ai-chat-drawer">
+			  <div id="ai-chat-header">
+				<h2>AI Chat</h2>
+				<button id="close-ai-chat">X</button>
+			  </div>
+			  <div id="ai-chat-content"></div>
+			  <div id="ai-chat-input">
+				<input type="text" id="ai-chat-message" placeholder="Type your message...">
+				<button id="ai-chat-send">Send</button>
+			  </div>
+			</div>
+		  `);
+
+			// Add event listeners
+			$("#close-ai-chat").on("click", closeAIChatDrawer);
+			$("#ai-chat-send").on("click", sendAIChatMessage);
+			$("#ai-chat-message").on("keypress", function (e) {
+				if (e.which == 13) sendAIChatMessage();
+			});
+		}
+
+		// Open the drawer
+		$("#ai-chat-drawer").addClass("open");
+
+		// Add the initial query to the chat
+		$("#ai-chat-content").append(`<p><strong>You:</strong> ${query}</p>`);
+
+		// TODO: Send the query to your AI service and display the response
+		// For now, we'll just simulate a response
+		setTimeout(() => {
+			$("#ai-chat-content").append(
+				`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your question: "${query}"</p>`
+			);
+		}, 1000);
+	}
+
+	function closeAIChatDrawer() {
+		$("#ai-chat-drawer").removeClass("open");
+	}
+
+	function sendAIChatMessage() {
+		const message = $("#ai-chat-message").val();
+		if (message.trim() === "") return;
+
+		$("#ai-chat-content").append(`<p><strong>You:</strong> ${message}</p>`);
+		$("#ai-chat-message").val("");
+
+		// TODO: Send the message to your AI service and display the response
+		// For now, we'll just simulate a response
+		setTimeout(() => {
+			$("#ai-chat-content").append(
+				`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your message: "${message}"</p>`
+			);
+		}, 1000);
 	}
 
 	// Search for an action in the omni
@@ -358,6 +417,28 @@ $(document).ready(() => {
 					populateOmniFilter(response.history);
 				}
 			);
+		} // Inside the search function in content.js, add this condition
+		else if (value.startsWith("/ai")) {
+			$(
+				".omni-item[data-index='" +
+					actions.findIndex((x) => x.action == "search") +
+					"']"
+			).hide();
+			$(
+				".omni-item[data-index='" +
+					actions.findIndex((x) => x.action == "goto") +
+					"']"
+			).hide();
+			$(
+				".omni-item[data-index='" +
+					actions.findIndex((x) => x.action == "ai-chat") +
+					"']"
+			).show();
+			$(
+				".omni-item[data-index='" +
+					actions.findIndex((x) => x.action == "ai-chat") +
+					"'] .omni-item-desc"
+			).text(value.replace("/ai ", ""));
 		} else if (value.startsWith("/bookmarks")) {
 			$(
 				".omni-item[data-index='" +
@@ -608,6 +689,10 @@ $(document).ready(() => {
 				case "open-history-url":
 					console.log("history is right");
 					window.open($(".omni-item-active .omni-item-url").text());
+					break;
+				case "ai-chat":
+					const query = $(".omni-extension input").val().replace("/ai ", "");
+					openAIChatDrawer(query);
 					break;
 				case "remove-all":
 				case "remove-history":
