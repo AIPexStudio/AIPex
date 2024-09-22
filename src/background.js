@@ -982,8 +982,45 @@ const removeBookmark = (bookmark) => {
 	chrome.bookmarks.remove(bookmark.id);
 };
 
+async function chatCompletion(host, key, content, model) {
+	const url = `${host}`;
+
+	const response = await fetch(url, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${key}`,
+		},
+		body: JSON.stringify({
+			model: model,
+			messages: [{ role: "user", content: content }],
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`);
+	}
+
+	const data = await response.json();
+	return data;
+}
+
 // Receive messages from any tab
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message.action === "callOpenAI") {
+		chatCompletion(message.host, message.key, message.content, message.model)
+			.then((data) =>
+				sendResponse({
+					success: true,
+					data: data["choices"][0]["message"]["content"],
+				})
+			)
+			.catch((error) => {
+				console.log(error);
+				sendResponse({ success: false, error: error.message });
+			});
+		return true; // 保持消息通道开放状态以进行异步响应
+	}
 	switch (message.request) {
 		case "get-actions":
 			resetOmni();

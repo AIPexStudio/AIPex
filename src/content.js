@@ -1,5 +1,9 @@
 // Workaround to capture Esc key on certain sites
 var isOpen = false;
+var aiHost = "https://api.openai.com/v1/chat/completions";
+var aiToken = "";
+var aiModel = "";
+
 document.onkeyup = (e) => {
 	if (e.key == "Escape" && isOpen) {
 		chrome.runtime.sendMessage({ request: "close-omni" });
@@ -48,6 +52,13 @@ $(document).ready(() => {
 				$("#omni-extension input").focus();
 			}, 100);
 		}
+	});
+
+	chrome.storage.sync.get(["aiHost", "aiToken", "aiModel"], function (result) {
+		aiHost = result.aiHost ?? "https://api.openai.com/v1/chat/completions";
+		aiToken = result.aiToken;
+		aiModel = result.aiModel ?? "gpt-3.5-turbo";
+		console.log(aiHost + aiToken + aiModel);
 	});
 
 	function renderAction(action, index, keys, img) {
@@ -346,17 +357,34 @@ $(document).ready(() => {
 
 		// Open the drawer
 		$("#ai-chat-drawer").addClass("open");
+		if (!query || query.length == 0) {
+			return;
+		}
 
 		// Add the initial query to the chat
 		$("#ai-chat-content").append(`<p><strong>You:</strong> ${query}</p>`);
 
 		// TODO: Send the query to your AI service and display the response
 		// For now, we'll just simulate a response
-		setTimeout(() => {
-			$("#ai-chat-content").append(
-				`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your question: "${query}"</p>`
-			);
-		}, 1000);
+
+		$("#ai-chat-content").append(`<strong>AI:</strong>`);
+		chrome.runtime.sendMessage(
+			{
+				action: "callOpenAI",
+				content: query,
+				model: aiModel,
+				key: aiToken,
+				host: aiHost,
+			},
+			(response) => {
+				if (response.success) {
+					console.log(response.data);
+					$("#ai-chat-content").append(response.data);
+				} else {
+					console.error(response.error);
+				}
+			}
+		);
 	}
 
 	function closeAIChatDrawer() {
@@ -372,11 +400,32 @@ $(document).ready(() => {
 
 		// TODO: Send the message to your AI service and display the response
 		// For now, we'll just simulate a response
-		setTimeout(() => {
-			$("#ai-chat-content").append(
-				`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your message: "${message}"</p>`
-			);
-		}, 1000);
+		$("#ai-chat-content").append(`<p><strong>AI:</strong>`);
+
+		chrome.runtime.sendMessage(
+			{
+				action: "callOpenAI",
+				content: message,
+				model: aiModel,
+				key: aiToken,
+				host: aiHost,
+			},
+			(response) => {
+				if (response.success) {
+					console.log(response.data);
+					$("#ai-chat-content").append(response.data);
+				} else {
+					console.error(response.error);
+				}
+			}
+		);
+
+		// setTimeout(() => {
+
+		// 	$("#ai-chat-content").append(
+		// 		`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your message: "${message}"</p>`
+		// 	);
+		// }, 1000);
 	}
 
 	// Search for an action in the omni
@@ -419,26 +468,26 @@ $(document).ready(() => {
 			);
 		} // Inside the search function in content.js, add this condition
 		else if (value.startsWith("/ai")) {
-			$(
-				".omni-item[data-index='" +
-					actions.findIndex((x) => x.action == "search") +
-					"']"
-			).hide();
-			$(
-				".omni-item[data-index='" +
-					actions.findIndex((x) => x.action == "goto") +
-					"']"
-			).hide();
+			$(".omni-item").hide();
 			$(
 				".omni-item[data-index='" +
 					actions.findIndex((x) => x.action == "ai-chat") +
 					"']"
 			).show();
+
+			// Update the description of the AI chat item
 			$(
 				".omni-item[data-index='" +
 					actions.findIndex((x) => x.action == "ai-chat") +
 					"'] .omni-item-desc"
 			).text(value.replace("/ai ", ""));
+
+			// Update the results count
+			$(".omni-extension #omni-results").html("1 result");
+
+			// Ensure the AI chat item is active
+			$(".omni-item-active").removeClass("omni-item-active");
+			$(".omni-item:visible").first().addClass("omni-item-active");
 		} else if (value.startsWith("/bookmarks")) {
 			$(
 				".omni-item[data-index='" +
@@ -692,6 +741,7 @@ $(document).ready(() => {
 					break;
 				case "ai-chat":
 					const query = $(".omni-extension input").val().replace("/ai ", "");
+					console.log(query);
 					openAIChatDrawer(query);
 					break;
 				case "remove-all":

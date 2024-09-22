@@ -61,7 +61,8 @@
 		"history",
 		"scripting",
 		"search",
-		"commands"
+		"commands",
+		"storage"
 	],
 	"host_permissions": [
 		"https://www.googleapis.com/*",
