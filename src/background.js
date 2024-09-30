@@ -848,35 +848,37 @@ const getBookmarks = () => {
 
 const getHistory = () => {
 	chrome.history.search({ text: "", maxResults: 10000 }, (historyItems) => {
-		const uniqueHosts = new Set();
+		const uniqueMap = new Map();
+		// const uniqueHosts = new Set();
 		const hostActions = [];
 
 		historyItems.forEach((item) => {
 			try {
 				const url = new URL(item.url);
 				const host = url.hostname;
-
-				if (!uniqueHosts.has(host) && hostActions.length < 100) {
-					uniqueHosts.add(host);
-					hostActions.push({
-						title: host,
-						desc: "History host",
-						id: item.id,
-						url: `https://${host}`,
-						type: "history",
-						action: "open-history-url",
-						emoji: true,
-						emojiChar: "🏛",
-						keycheck: false,
-						lastVisitTime: item.lastVisitTime,
-					});
-				}
+				uniqueMap.set(host, item);
 			} catch (e) {
+				console.log(e);
 				// 忽略无效的 URL
 				console.warn("Invalid URL:", item.url);
 			}
 		});
+		console.log(uniqueMap);
 
+		for (const [key, value] of uniqueMap) {
+			hostActions.push({
+				title: key,
+				desc: "History host",
+				id: value.id,
+				url: `https://${key}`,
+				type: "history",
+				action: "open-history-url",
+				emoji: true,
+				emojiChar: "🏛",
+				keycheck: false,
+				lastVisitTime: value.lastVisitTime,
+			});
+		}
 		// 将获取到的唯一主机历史添加到 actions 数组
 		actions = actions.concat(hostActions);
 	});
