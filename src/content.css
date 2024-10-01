@@ -384,49 +384,127 @@
 	word-break: break-all;
 }
 
-#ai-chat-drawer {
+.chat-container {
 	position: fixed;
 	top: 0;
-	right: -400px;
-	width: 400px;
-	height: 100%;
+	right: -350px; /* 初始状态隐藏在右侧 */
+	width: 350px;
+	height: 100vh;
 	background-color: white;
-	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-	transition: right 0.3s ease;
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+	transition: right 0.3s ease-in-out;
+	z-index: 1000;
 	display: flex;
 	flex-direction: column;
-	z-index: 10000;
 }
 
-#ai-chat-drawer.open {
-	right: 0;
+.chat-container.open {
+	right: 0; /* 显示状态 */
 }
 
-#ai-chat-header {
-	padding: 10px;
+.chat-header {
+	padding: 15px;
 	background-color: #f0f0f0;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 }
 
-#ai-chat-content {
-	flex-grow: 1;
-	overflow-y: auto;
-	padding: 10px;
-}
-
-#ai-chat-input {
-	display: flex;
-	padding: 10px;
-}
-
-#ai-chat-message {
-	flex-grow: 1;
-	margin-right: 10px;
-}
-
-#close-ai-chat,
-#ai-chat-send {
+#close-ai-chat {
+	background: none;
+	border: none;
+	font-size: 20px;
 	cursor: pointer;
 }
+
+.chat-messages {
+	flex-grow: 1;
+	overflow-y: auto;
+	padding: 15px;
+}
+
+.user-input {
+	display: flex;
+	padding: 15px;
+	border-top: 1px solid #eee;
+}
+
+.user-input input {
+	flex-grow: 1;
+	margin-right: 10px;
+	padding: 10px;
+	border: 1px solid #ddd;
+	border-radius: 20px;
+}
+
+.send-button {
+	background-color: #7c5cff;
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	font-size: 18px;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.tools {
+	display: flex;
+	justify-content: space-between;
+	padding: 10px 15px;
+	border-top: 1px solid #eee;
+}
+
+.tool-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 20px;
+	color: #666;
+}
+
+.message {
+	margin-bottom: 15px;
+	padding: 10px;
+	border-radius: 5px;
+	max-width: 80%;
+}
+
+.ai-message {
+	background-color: #e1e1e1;
+}
+
+.user-message {
+	background-color: #d1e7ff;
+	margin-left: auto;
+}
+.message code {
+	background-color: #f0f0f0;
+	padding: 2px 4px;
+	border-radius: 3px;
+	font-family: monospace;
+}
+
+.message pre {
+	background-color: #f0f0f0;
+	padding: 10px;
+	border-radius: 5px;
+	overflow-x: auto;
+}
+
+.message pre code {
+	background-color: transparent;
+	padding: 0;
+}
+
+.message strong {
+	font-weight: bold;
+}
+
+.message em {
+	font-style: italic;
+}
+

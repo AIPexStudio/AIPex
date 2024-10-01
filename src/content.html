@@ -1,23 +1,52 @@
 <html>
-	<head>
-	</head>
+	<head> </head>
 	<body>
 		<div id="omni-extension" class="omni-closing omni-extension">
 			<div id="omni-wrap">
 				<div id="omni">
 					<div id="omni-search">
-						<input placeholder="Type a command or search">
+						<input placeholder="Type a command or search" />
 					</div>
-					<div id="omni-list">
-					</div>
+					<div id="omni-list"></div>
 					<div id="omni-footer">
 						<div id="omni-results">153 results</div>
-						<div id="omni-arrows">Use arrow keys <span class="omni-shortcut">↑</span><span class="omni-shortcut">↓</span> to navigate</div>
+						<div id="omni-arrows">
+							Use arrow keys <span class="omni-shortcut">↑</span
+							><span class="omni-shortcut">↓</span> to navigate
+						</div>
 					</div>
 				</div>
 			</div>
 			<div id="omni-overlay"></div>
 		</div>
-		<div id="omni-extension-toast"><img src=''><span>The action has been successful</span></div>
+		<div id="omni-extension-toast">
+			<img src="" /><span>The action has been successful</span>
+		</div>
+		<div id="ai-chat-drawer" class="chat-container">
+			<div class="chat-header">
+				AI Chatbot
+				<button id="close-ai-chat">×</button>
+			</div>
+			<div id="ai-chat-content" class="chat-messages">
+				<!-- <div class="message ai-message">How can I assist you today?</div> -->
+			</div>
+			<div class="user-input">
+				<input
+					id="ai-chat-message"
+					type="text"
+					placeholder="Type a message..."
+				/>
+				<button id="ai-chat-send" class="send-button">➤</button>
+			</div>
+			<div class="tools">
+				<button class="tool-button">⚡</button>
+				<button class="tool-button">✂️</button>
+				<button class="tool-button">🔗</button>
+				<button class="tool-button">📚</button>
+				<button class="tool-button">🕒</button>
+				<button class="tool-button">➕</button>
+			</div>
+		</div>
 	</body>
 </html>
+

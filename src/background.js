@@ -736,11 +736,8 @@ chrome.commands.onCommand.addListener((command) => {
 				!response.url.includes("chrome://") &&
 				!response.url.includes("chrome.google.com")
 			) {
-				console.log("receiving shortcut, open the omni");
 				chrome.tabs.sendMessage(response.id, { request: "open-omni" });
 			} else {
-				console.log("receiving shortcut, open the omni");
-
 				chrome.tabs
 					.create({
 						url: "./newtab.html",
@@ -861,12 +858,10 @@ const getHistory = () => {
 					const host = url.hostname;
 					uniqueMap.set(host, item);
 				} catch (e) {
-					console.log(e);
 					// 忽略无效的 URL
 					console.warn("Invalid URL:", item.url);
 				}
 			});
-			console.log(uniqueMap);
 
 			for (const [key, value] of uniqueMap) {
 				hostActions.push({
@@ -1000,37 +995,111 @@ async function chatCompletion(host, key, content, model) {
 		body: JSON.stringify({
 			model: model,
 			messages: [{ role: "user", content: content }],
+			stream: true,
 		}),
 	});
 
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
-
-	const data = await response.json();
-	return data;
+	return response.body;
+	// const data = await response.json();
+	// return data;
 }
 
 // Receive messages from any tab
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	if (message.action === "callOpenAI") {
 		chatCompletion(message.host, message.key, message.content, message.model)
-			.then((data) =>
-				sendResponse({
-					success: true,
-					data: data["choices"][0]["message"]["content"],
-				})
-			)
+			.then((stream) => {
+				const reader = stream.getReader();
+				const decoder = new TextDecoder();
+				let buffer = "";
+				let isFirstChunk = true;
+
+				function readStream() {
+					reader
+						.read()
+						.then(({ done, value }) => {
+							if (done) {
+								console.log("Stream complete");
+								chrome.tabs.sendMessage(sender.tab.id, { action: "streamEnd" });
+								return;
+							}
+
+							// decode and then add to buffer
+							buffer += decoder.decode(value, { stream: true });
+
+							let eventEnd = buffer.indexOf("\n\n");
+							while (eventEnd !== -1) {
+								const eventData = buffer.substring(0, eventEnd);
+								buffer = buffer.substring(eventEnd + 2);
+
+								// handle event
+								processEvent(eventData);
+
+								eventEnd = buffer.indexOf("\n\n");
+							}
+
+							// continue read stream
+							readStream();
+						})
+						.catch((error) => {
+							console.info("Stream error:", error);
+							chrome.tabs.sendMessage(sender.tab.id, {
+								action: "streamError",
+								error: error.message,
+							});
+						});
+				}
+
+				function processEvent(eventData) {
+					const lines = eventData.split("\n");
+					let jsonData = "";
+
+					for (const line of lines) {
+						if (line.startsWith("data:")) {
+							jsonData += line.substring(5).trim();
+						}
+					}
+
+					if (jsonData) {
+						try {
+							const jsonChunk = JSON.parse(jsonData);
+
+							const content = jsonChunk.choices[0].delta.content;
+							if (content) {
+								chrome.tabs.sendMessage(sender.tab.id, {
+									action: "streamChunk",
+									chunk: content,
+									isFirstChunk: isFirstChunk,
+								});
+								isFirstChunk = false;
+							}
+						} catch (error) {
+							console.error(
+								"Error parsing JSON:",
+								error,
+								"Raw data:",
+								jsonData
+							);
+						}
+					}
+				}
+
+				readStream();
+			})
 			.catch((error) => {
-				console.log(error);
-				sendResponse({ success: false, error: error.message });
+				chrome.tabs.sendMessage(sender.tab.id, {
+					action: "streamError",
+					error: error.message,
+				});
 			});
-		return true; // 保持消息通道开放状态以进行异步响应
+		return true;
 	}
 	switch (message.request) {
 		case "get-actions":
 			resetOmni();
-			console.log(actions);
 			sendResponse({ actions: actions });
 			break;
 		case "switch-tab":

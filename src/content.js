@@ -331,101 +331,159 @@ $(document).ready(() => {
 	}
 
 	function openAIChatDrawer(query) {
-		// Create the drawer if it doesn't exist
-		if (!$("#ai-chat-drawer").length) {
-			$("body").append(`
-			<div id="ai-chat-drawer">
-			  <div id="ai-chat-header">
-				<h2>AI Chat</h2>
-				<button id="close-ai-chat">X</button>
-			  </div>
-			  <div id="ai-chat-content"></div>
-			  <div id="ai-chat-input">
-				<input type="text" id="ai-chat-message" placeholder="Type your message...">
-				<button id="ai-chat-send">Send</button>
-			  </div>
-			</div>
-		  `);
-
-			// Add event listeners
-			$("#close-ai-chat").on("click", closeAIChatDrawer);
-			$("#ai-chat-send").on("click", sendAIChatMessage);
-			$("#ai-chat-message").on("keypress", function (e) {
-				if (e.which == 13) sendAIChatMessage();
-			});
-		}
-
-		// Open the drawer
-		$("#ai-chat-drawer").addClass("open");
-		if (!query || query.length == 0) {
+		const drawer = document.getElementById("ai-chat-drawer");
+		if (!drawer) {
+			console.error("AI Chat drawer not found in the DOM");
 			return;
 		}
 
-		// Add the initial query to the chat
-		$("#ai-chat-content").append(`<p><strong>You:</strong> ${query}</p>`);
+		// Initialize the drawer if it hasn't been initialized
+		if (!drawer.classList.contains("initialized")) {
+			initializeDrawer();
+		}
 
-		// TODO: Send the query to your AI service and display the response
-		// For now, we'll just simulate a response
+		// Open the drawer
+		drawer.classList.add("open");
 
-		$("#ai-chat-content").append(`<strong>AI:</strong>`);
-		chrome.runtime.sendMessage(
-			{
-				action: "callOpenAI",
-				content: query,
-				model: aiModel,
-				key: aiToken,
-				host: aiHost,
-			},
-			(response) => {
-				if (response.success) {
-					console.log(response.data);
-					$("#ai-chat-content").append(response.data);
-				} else {
-					console.error(response.error);
-				}
-			}
-		);
+		if (query && query.trim().length > 0) {
+			addUserMessage(query);
+			sendToAI(query);
+		}
+	}
+
+	function initializeDrawer() {
+		const drawer = document.getElementById("ai-chat-drawer");
+		const sendButton = document.getElementById("ai-chat-send");
+		const closeButton = document.getElementById("close-ai-chat");
+		const messageInput = document.getElementById("ai-chat-message");
+
+		sendButton.addEventListener("click", sendAIChatMessage);
+		closeButton.addEventListener("click", closeAIChatDrawer);
+		messageInput.addEventListener("keypress", function (e) {
+			if (e.key === "Enter") sendAIChatMessage();
+		});
+
+		drawer.classList.add("initialized");
 	}
 
 	function closeAIChatDrawer() {
-		$("#ai-chat-drawer").removeClass("open");
+		document.getElementById("ai-chat-drawer").classList.remove("open");
 	}
 
 	function sendAIChatMessage() {
-		const message = $("#ai-chat-message").val();
-		if (message.trim() === "") return;
+		const messageInput = document.getElementById("ai-chat-message");
+		const message = messageInput.value.trim();
+		if (message === "") return;
 
-		$("#ai-chat-content").append(`<p><strong>You:</strong> ${message}</p>`);
-		$("#ai-chat-message").val("");
+		addUserMessage(message);
+		messageInput.value = "";
+		sendToAI(message);
+	}
 
-		// TODO: Send the message to your AI service and display the response
-		// For now, we'll just simulate a response
-		$("#ai-chat-content").append(`<p><strong>AI:</strong>`);
+	function addUserMessage(message) {
+		addMessage("You", message, "user-message");
+	}
 
-		chrome.runtime.sendMessage(
-			{
-				action: "callOpenAI",
-				content: message,
-				model: aiModel,
-				key: aiToken,
-				host: aiHost,
-			},
-			(response) => {
-				if (response.success) {
-					console.log(response.data);
-					$("#ai-chat-content").append(response.data);
-				} else {
-					console.error(response.error);
-				}
-			}
+	function addAIMessage(message) {
+		console.log(message);
+		const messageEle = addFormattedMessage("AI", message, "ai-message");
+		return messageEle;
+	}
+
+	function addMessage(sender, message, className) {
+		const chatContent = document.getElementById("ai-chat-content");
+		const messageElement = document.createElement("div");
+		messageElement.classList.add("message", className);
+		messageElement.innerHTML = `<strong>${sender}:</strong> ${escapeHTML(
+			message
+		)}`;
+		chatContent.appendChild(messageElement);
+		chatContent.scrollTop = chatContent.scrollHeight;
+	}
+
+	function addFormattedMessage(sender, message, className) {
+		const chatContent = document.getElementById("ai-chat-content");
+		const messageElement = document.createElement("div");
+		messageElement.classList.add("message", className);
+
+		const senderElement = document.createElement("strong");
+		senderElement.textContent = `${sender}:`;
+		messageElement.appendChild(senderElement);
+
+		const formattedContent = formatMessage(message);
+		messageElement.appendChild(formattedContent);
+
+		chatContent.appendChild(messageElement);
+		chatContent.scrollTop = chatContent.scrollHeight;
+		return messageElement;
+	}
+
+	function formatMessage(message) {
+		const container = document.createElement("div");
+
+		// 使用正则表达式匹配Markdown样式的格式
+		message = message.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); // 粗体
+		message = message.replace(/\*(.*?)\*/g, "<em>$1</em>"); // 斜体
+		message = message.replace(/`([^`]+)`/g, "<code>$1</code>"); // 内联代码
+
+		// 处理代码块
+		message = message.replace(/```([\s\S]*?)```/g, function (match, p1) {
+			return `<pre><code>${escapeHTML(p1.trim())}</code></pre>`;
+		});
+
+		// 处理换行
+		message = message.replace(/\n/g, "<br>");
+
+		container.innerHTML = message;
+		return container;
+	}
+
+	function escapeHTML(str) {
+		return str.replace(
+			/[&<>'"]/g,
+			(tag) =>
+				({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					"'": "&#39;",
+					'"': "&quot;",
+				}[tag] || tag)
 		);
+	}
 
-		// setTimeout(() => {
+	function sendToAI(message) {
+		const aiMessage = addAIMessage("Thinking...");
 
-		// 	$("#ai-chat-content").append(
-		// 		`<p><strong>AI:</strong> I'm sorry, but I'm just a simulated response. In a real implementation, this is where you would see the AI's answer to your message: "${message}"</p>`
-		// 	);
-		// }, 1000);
+		chrome.runtime.sendMessage({
+			action: "callOpenAI",
+			content: message,
+			model: aiModel,
+			key: aiToken,
+			host: aiHost,
+		});
+
+		// Set up a listener for incoming stream chunks
+		chrome.runtime.onMessage.addListener(function messageListener(
+			request,
+			sender,
+			sendResponse
+		) {
+			if (request.action === "streamChunk") {
+				if (!request.isFirstChunk) {
+					aiMessage.textContent = aiMessage.textContent + request.chunk;
+				} else {
+					aiMessage.textContent = request.chunk;
+				}
+			} else if (request.action === "streamEnd") {
+				chrome.runtime.onMessage.removeListener(messageListener);
+			} else if (request.action === "streamError") {
+				aiMessage.textContent =
+					"Sorry, I encountered an error. Please try again later.";
+				console.error(request.error);
+				chrome.runtime.onMessage.removeListener(messageListener);
+			}
+		});
 	}
 
 	// Search for an action in the omni
@@ -837,8 +895,6 @@ $(document).ready(() => {
 
 	// Recieve messages from background
 	chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-		console.log("receiving message");
-		console.log(message.request);
 		if (message.request == "open-omni") {
 			if (isOpen) {
 				closeOmni();
