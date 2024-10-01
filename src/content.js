@@ -452,6 +452,52 @@ $(document).ready(() => {
 		);
 	}
 
+	function renderMarkdownToHtml(text) {
+		// 处理代码块
+		text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+			code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+			return `<pre><code class="language-${
+				lang || ""
+			}">${code.trim()}</code></pre>`;
+		});
+
+		// 处理行内代码
+		text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+
+		// 处理标题
+		text = text.replace(/^# (.*$)/gm, "<h1>$1</h1>");
+		text = text.replace(/^## (.*$)/gm, "<h2>$1</h2>");
+		text = text.replace(/^### (.*$)/gm, "<h3>$1</h3>");
+
+		// 处理粗体
+		text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+		// 处理斜体
+		text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+		// 处理链接
+		text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+
+		// 处理无序列表
+		text = text.replace(/^\s*[\-\*] (.*$)/gm, "<li>$1</li>");
+		text = text.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+
+		// 处理段落和保持缩进
+		const lines = text.split("\n");
+		text = lines
+			.map((line) => {
+				if (line.trim() === "") return "";
+				if (!/^<\/?(\w+).*>/.test(line)) {
+					const indent = line.match(/^\s*/)[0];
+					return `${indent}<p>${line.trim()}</p>`;
+				}
+				return line;
+			})
+			.join("\n");
+
+		return text;
+	}
+
 	function sendToAI(message) {
 		const aiMessage = addAIMessage("Thinking...");
 
@@ -471,14 +517,16 @@ $(document).ready(() => {
 		) {
 			if (request.action === "streamChunk") {
 				if (!request.isFirstChunk) {
-					aiMessage.textContent = aiMessage.textContent + request.chunk;
+					aiMessage.innerHTML = renderMarkdownToHtml(
+						aiMessage.textContent + request.chunk
+					);
 				} else {
-					aiMessage.textContent = request.chunk;
+					aiMessage.innerHTML = renderMarkdownToHtml(request.chunk);
 				}
 			} else if (request.action === "streamEnd") {
 				chrome.runtime.onMessage.removeListener(messageListener);
 			} else if (request.action === "streamError") {
-				aiMessage.textContent =
+				aiMessage.innerHTML =
 					"Sorry, I encountered an error. Please try again later.";
 				console.error(request.error);
 				chrome.runtime.onMessage.removeListener(messageListener);
