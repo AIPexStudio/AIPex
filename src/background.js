@@ -847,41 +847,45 @@ const getBookmarks = () => {
 };
 
 const getHistory = () => {
-	chrome.history.search({ text: "", maxResults: 10000 }, (historyItems) => {
-		const uniqueMap = new Map();
-		// const uniqueHosts = new Set();
-		const hostActions = [];
+	const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+	chrome.history.search(
+		{ text: "", maxResults: 100000, startTime: oneMonthAgo },
+		(historyItems) => {
+			const uniqueMap = new Map();
+			// const uniqueHosts = new Set();
+			const hostActions = [];
 
-		historyItems.forEach((item) => {
-			try {
-				const url = new URL(item.url);
-				const host = url.hostname;
-				uniqueMap.set(host, item);
-			} catch (e) {
-				console.log(e);
-				// 忽略无效的 URL
-				console.warn("Invalid URL:", item.url);
-			}
-		});
-		console.log(uniqueMap);
-
-		for (const [key, value] of uniqueMap) {
-			hostActions.push({
-				title: key,
-				desc: "History host",
-				id: value.id,
-				url: `https://${key}`,
-				type: "history",
-				action: "open-history-url",
-				emoji: true,
-				emojiChar: "🏛",
-				keycheck: false,
-				lastVisitTime: value.lastVisitTime,
+			historyItems.forEach((item) => {
+				try {
+					const url = new URL(item.url);
+					const host = url.hostname;
+					uniqueMap.set(host, item);
+				} catch (e) {
+					console.log(e);
+					// 忽略无效的 URL
+					console.warn("Invalid URL:", item.url);
+				}
 			});
+			console.log(uniqueMap);
+
+			for (const [key, value] of uniqueMap) {
+				hostActions.push({
+					title: value.title,
+					desc: "History host",
+					id: value.id,
+					url: `https://${key}`,
+					type: "history",
+					action: "open-history-url",
+					emoji: true,
+					emojiChar: "🏛",
+					keycheck: false,
+					lastVisitTime: value.lastVisitTime,
+				});
+			}
+			// 将获取到的唯一主机历史添加到 actions 数组
+			actions = actions.concat(hostActions);
 		}
-		// 将获取到的唯一主机历史添加到 actions 数组
-		actions = actions.concat(hostActions);
-	});
+	);
 };
 
 // Lots of different actions
