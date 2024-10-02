@@ -3,6 +3,7 @@ var isOpen = false;
 var aiHost = "https://api.openai.com/v1/chat/completions";
 var aiToken = "";
 var aiModel = "";
+const conversations = [];
 
 document.onkeyup = (e) => {
 	if (e.key == "Escape" && isOpen) {
@@ -23,6 +24,17 @@ document.addEventListener(
 );
 
 $(document).ready(() => {
+	//initialize markdown
+	marked.setOptions({
+		highlight: function (code, lang) {
+			if (lang && hljs.getLanguage(lang)) {
+				return hljs.highlight(code, { language: lang }).value;
+			} else {
+				return hljs.highlightAuto(code).value;
+			}
+		},
+	});
+
 	var actions = [];
 	var isFiltered = false;
 
@@ -344,7 +356,6 @@ $(document).ready(() => {
 
 		// Open the drawer
 		drawer.classList.add("open");
-
 		if (query && query.trim().length > 0) {
 			addUserMessage(query);
 			sendToAI(query);
@@ -368,6 +379,8 @@ $(document).ready(() => {
 
 	function closeAIChatDrawer() {
 		document.getElementById("ai-chat-drawer").classList.remove("open");
+		var chatContent = document.getElementById("ai-chat-content");
+		chatContent.innerHTML = "";
 	}
 
 	function sendAIChatMessage() {
@@ -381,6 +394,7 @@ $(document).ready(() => {
 	}
 
 	function addUserMessage(message) {
+		conversations.push("[Question]: " + message);
 		addMessage("You", message, "user-message");
 	}
 
@@ -453,49 +467,82 @@ $(document).ready(() => {
 	}
 
 	function renderMarkdownToHtml(text) {
+		// console.log(text);
+		const htmlContent = marked.parse(text);
+		console.log(htmlContent);
+		return htmlContent;
 		// 处理代码块
-		text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-			code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-			return `<pre><code class="language-${
-				lang || ""
-			}">${code.trim()}</code></pre>`;
+		// text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+		// 	code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+		// 	return `<pre><code class="language-${
+		// 		lang || ""
+		// 	}">${code.trim()}</code></pre>`;
+		// });
+
+		// // 处理行内代码
+		// text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+
+		// // 处理标题
+		// text = text.replace(/^# (.*$)/gm, "<h1>$1</h1>");
+		// text = text.replace(/^## (.*$)/gm, "<h2>$1</h2>");
+		// text = text.replace(/^### (.*$)/gm, "<h3>$1</h3>");
+
+		// // 处理粗体
+		// text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+		// // 处理斜体
+		// text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+		// // 处理链接
+		// text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+
+		// // 处理无序列表
+		// text = text.replace(/^\s*[\-\*] (.*$)/gm, "<li>$1</li>");
+		// text = text.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+
+		// // 处理段落和保持缩进
+		// const lines = text.split("\n");
+		// text = lines
+		// 	.map((line) => {
+		// 		if (line.trim() === "") return "";
+		// 		if (!/^<\/?(\w+).*>/.test(line)) {
+		// 			const indent = line.match(/^\s*/)[0];
+		// 			return `${indent}<p>${line.trim()}</p>`;
+		// 		}
+		// 		return line;
+		// 	})
+		// 	.join("\n");
+
+		// return text;
+	}
+
+	function renderCode() {
+		// 高亮代码块
+		document.querySelectorAll("pre code").forEach((block) => {
+			hljs.highlightBlock(block);
+
+			// 添加复制按钮
+			const button = document.createElement("button");
+			button.className = "copy-button";
+			button.textContent = "Copy";
+			block.parentNode.insertBefore(button, block);
+
+			// 添加复制功能
+			button.addEventListener("click", () => {
+				const code = block.textContent;
+				navigator.clipboard
+					.writeText(code)
+					.then(() => {
+						button.textContent = "Copied!";
+						setTimeout(() => {
+							button.textContent = "Copy";
+						}, 2000);
+					})
+					.catch((error) => {
+						console.error("Copy failed:", error);
+					});
+			});
 		});
-
-		// 处理行内代码
-		text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-
-		// 处理标题
-		text = text.replace(/^# (.*$)/gm, "<h1>$1</h1>");
-		text = text.replace(/^## (.*$)/gm, "<h2>$1</h2>");
-		text = text.replace(/^### (.*$)/gm, "<h3>$1</h3>");
-
-		// 处理粗体
-		text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-		// 处理斜体
-		text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
-
-		// 处理链接
-		text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
-
-		// 处理无序列表
-		text = text.replace(/^\s*[\-\*] (.*$)/gm, "<li>$1</li>");
-		text = text.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
-
-		// 处理段落和保持缩进
-		const lines = text.split("\n");
-		text = lines
-			.map((line) => {
-				if (line.trim() === "") return "";
-				if (!/^<\/?(\w+).*>/.test(line)) {
-					const indent = line.match(/^\s*/)[0];
-					return `${indent}<p>${line.trim()}</p>`;
-				}
-				return line;
-			})
-			.join("\n");
-
-		return text;
 	}
 
 	function sendToAI(message) {
@@ -507,7 +554,9 @@ $(document).ready(() => {
 			model: aiModel,
 			key: aiToken,
 			host: aiHost,
+			context: conversations,
 		});
+		let res = "";
 
 		// Set up a listener for incoming stream chunks
 		chrome.runtime.onMessage.addListener(function messageListener(
@@ -516,14 +565,17 @@ $(document).ready(() => {
 			sendResponse
 		) {
 			if (request.action === "streamChunk") {
+				res = res + request.chunk;
 				if (!request.isFirstChunk) {
-					aiMessage.innerHTML = renderMarkdownToHtml(
-						aiMessage.textContent + request.chunk
-					);
+					aiMessage.innerHTML = renderMarkdownToHtml(res);
+					renderCode();
 				} else {
-					aiMessage.innerHTML = renderMarkdownToHtml(request.chunk);
+					aiMessage.innerHTML = renderMarkdownToHtml(res);
+					renderCode();
 				}
 			} else if (request.action === "streamEnd") {
+				console.log(res);
+				conversations.push("[Answer]: " + aiMessage.textContent);
 				chrome.runtime.onMessage.removeListener(messageListener);
 			} else if (request.action === "streamError") {
 				aiMessage.innerHTML =

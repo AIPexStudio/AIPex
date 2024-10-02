@@ -33,8 +33,15 @@
 		{
 			"matches": ["<all_urls>"],
 			"run_at": "document_end",
-			"js": ["focus.js", "jquery.js", "content.js", "virtualized-list.min.js"],
-			"css": ["content.css"]
+			"js": [
+				"focus.js",
+				"jquery.js",
+				"content.js",
+				"virtualized-list.min.js",
+				"mark.js",
+				"highlight.js"
+			],
+			"css": ["content.css", "highlight.css"]
 		}
 	],
 	"web_accessible_resources": [

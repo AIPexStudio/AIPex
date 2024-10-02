@@ -983,7 +983,7 @@ const removeBookmark = (bookmark) => {
 	chrome.bookmarks.remove(bookmark.id);
 };
 
-async function chatCompletion(host, key, content, model) {
+async function chatCompletion(host, key, content, model, context) {
 	const url = `${host}`;
 
 	const response = await fetch(url, {
@@ -994,7 +994,10 @@ async function chatCompletion(host, key, content, model) {
 		},
 		body: JSON.stringify({
 			model: model,
-			messages: [{ role: "user", content: content }],
+			messages: [
+				{ role: "system", content: context.join("\n") },
+				{ role: "user", content: content },
+			],
 			stream: true,
 		}),
 	});
@@ -1010,7 +1013,13 @@ async function chatCompletion(host, key, content, model) {
 // Receive messages from any tab
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	if (message.action === "callOpenAI") {
-		chatCompletion(message.host, message.key, message.content, message.model)
+		chatCompletion(
+			message.host,
+			message.key,
+			message.content,
+			message.model,
+			message.context
+		)
 			.then((stream) => {
 				const reader = stream.getReader();
 				const decoder = new TextDecoder();
