@@ -383,9 +383,13 @@ $(document).ready(() => {
 		chatContent.innerHTML = "";
 	}
 
-	function sendAIChatMessage() {
+	function sendAIChatMessage(text) {
 		const messageInput = document.getElementById("ai-chat-message");
-		const message = messageInput.value.trim();
+		let message = messageInput.value.trim();
+		if (text && text.length > 0) {
+			message = text;
+		}
+
 		if (message === "") return;
 
 		addUserMessage(message);
@@ -469,7 +473,6 @@ $(document).ready(() => {
 	function renderMarkdownToHtml(text) {
 		// console.log(text);
 		const htmlContent = marked.parse(text);
-		console.log(htmlContent);
 		return htmlContent;
 		// 处理代码块
 		// text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
@@ -584,6 +587,111 @@ $(document).ready(() => {
 				chrome.runtime.onMessage.removeListener(messageListener);
 			}
 		});
+	}
+
+	let toolbar = null;
+	let toolbarTimer = null;
+
+	document.addEventListener("mouseup", function (event) {
+		const selection = window.getSelection().toString().trim();
+		if (selection) {
+			// Clear any existing timer
+			if (toolbarTimer) {
+				clearTimeout(toolbarTimer);
+			}
+
+			// Set a new timer to show the toolbar after 0.5 seconds
+			toolbarTimer = setTimeout(() => {
+				showToolbar(event.pageX, event.pageY, selection);
+			}, 500);
+		} else {
+			// If there's no selection, clear the timer and remove the toolbar
+			clearTimeout(toolbarTimer);
+			removeToolbar();
+		}
+	});
+
+	document.addEventListener("mousedown", function (event) {
+		// Clear the timer when the user starts a new selection
+		clearTimeout(toolbarTimer);
+
+		if (toolbar && !toolbar.contains(event.target)) {
+			removeToolbar();
+		}
+	});
+
+	function showToolbar(x, y, text) {
+		removeToolbar();
+
+		toolbar = document.createElement("div");
+		toolbar.id = "selection-toolbar";
+		toolbar.style.position = "absolute";
+		toolbar.style.left = `${x}px`;
+		toolbar.style.top = `${y}px`;
+		toolbar.style.backgroundColor = "white";
+		toolbar.style.border = "1px solid #ccc";
+		toolbar.style.padding = "5px";
+		toolbar.style.display = "flex";
+		toolbar.style.gap = "5px";
+		toolbar.style.zIndex = "1000";
+
+		const answerButton = createIconButton(
+			"Answer with AI",
+			chrome.runtime.getURL("/assets/ai-icon.svg"),
+			(event) => {
+				event.stopPropagation();
+				removeToolbar();
+				answerWithAI(text);
+			}
+		);
+
+		const translateButton = createIconButton(
+			"Translate",
+			chrome.runtime.getURL("/assets/translate-icon.svg"),
+			(event) => {
+				event.stopPropagation();
+				removeToolbar();
+				translate(text);
+			}
+		);
+
+		toolbar.appendChild(answerButton);
+		toolbar.appendChild(translateButton);
+		document.body.appendChild(toolbar);
+	}
+
+	function removeToolbar() {
+		if (toolbar) {
+			toolbar.remove();
+			toolbar = null;
+		}
+	}
+
+	function createIconButton(title, iconUrl, onClick) {
+		const button = document.createElement("button");
+		button.style.border = "none";
+		button.style.backgroundColor = "transparent";
+		button.style.cursor = "pointer";
+		button.title = title;
+
+		const icon = document.createElement("img");
+		icon.src = iconUrl;
+		icon.style.width = "24px";
+		icon.style.height = "24px";
+
+		button.appendChild(icon);
+		button.onclick = onClick;
+
+		return button;
+	}
+
+	function answerWithAI(text) {
+		openAIChatDrawer(text);
+	}
+
+	function translate(text) {
+		// Implement translation logic here
+		alert(`Translated text: ${text}`);
 	}
 
 	// Search for an action in the omni

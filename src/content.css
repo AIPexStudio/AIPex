@@ -529,3 +529,24 @@ pre {
 	padding-top: 30px;
 }
 
+#selection-toolbar {
+	position: absolute;
+	background: white;
+	border: 1px solid #ccc;
+	padding: 5px;
+	display: flex;
+	gap: 5px;
+	z-index: 1000;
+}
+
+#selection-toolbar button {
+	border: none;
+	background-color: transparent;
+	cursor: pointer;
+}
+
+#selection-toolbar img {
+	width: 24px;
+	height: 24px;
+}
+

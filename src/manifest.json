@@ -1,5 +1,5 @@
 {
-	"name": "Omni - Bookmark, History, & Tab Manager",
+	"name": "Empower —— Tab & History Manager, AI Companion",
 	"description": "Supercharge Chrome with commands, shortcuts, and more",
 	"offline_enabled": true,
 	"version": "1.4.7",
@@ -69,7 +69,9 @@
 		"scripting",
 		"search",
 		"commands",
-		"storage"
+		"storage",
+		"contextMenus",
+		"scripting"
 	],
 	"host_permissions": [
 		"https://www.googleapis.com/*",

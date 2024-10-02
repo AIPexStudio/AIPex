@@ -669,6 +669,18 @@ const clearActions = () => {
 
 // Open on install
 chrome.runtime.onInstalled.addListener((object) => {
+	chrome.contextMenus.create({
+		id: "answerWithAI",
+		title: "Answer with AI",
+		contexts: ["selection"],
+	});
+
+	chrome.contextMenus.create({
+		id: "translate",
+		title: "Translate",
+		contexts: ["selection"],
+	});
+
 	// Inject Omni on install
 	const manifest = chrome.runtime.getManifest();
 
