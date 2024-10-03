@@ -17,7 +17,6 @@ document.addEventListener(
 		if (event.metaKey && event.key === "t") {
 			event.preventDefault();
 			openOmni();
-			// 可以在这里触发您自定义的行为
 		}
 	},
 	true
@@ -356,6 +355,12 @@ $(document).ready(() => {
 
 		// Open the drawer
 		drawer.classList.add("open");
+
+		const inputField = document.getElementById("ai-chat-message");
+		if (inputField) {
+			inputField.focus();
+		}
+
 		if (query && query.trim().length > 0) {
 			addUserMessage(query);
 			sendToAI(query);
@@ -377,6 +382,11 @@ $(document).ready(() => {
 		drawer.classList.add("initialized");
 	}
 
+	function scrollToBottom() {
+		const chatContent = document.getElementById("ai-chat-content");
+		chatContent.scrollTop = chatContent.scrollHeight;
+	}
+
 	function closeAIChatDrawer() {
 		document.getElementById("ai-chat-drawer").classList.remove("open");
 		var chatContent = document.getElementById("ai-chat-content");
@@ -385,12 +395,20 @@ $(document).ready(() => {
 
 	function sendAIChatMessage(text) {
 		const messageInput = document.getElementById("ai-chat-message");
+		const sendButton = document.getElementById("ai-chat-send");
 		let message = messageInput.value.trim();
+
 		if (text && text.length > 0) {
 			message = text;
 		}
 
 		if (message === "") return;
+
+		// 禁用输入和发送按钮
+		messageInput.disabled = true;
+		sendButton.disabled = true;
+		sendButton.classList.add("loading");
+		sendButton.textContent = ""; // 清空文本以显示loading图标
 
 		addUserMessage(message);
 		messageInput.value = "";
@@ -399,12 +417,14 @@ $(document).ready(() => {
 
 	function addUserMessage(message) {
 		conversations.push("[Question]: " + message);
+		scrollToBottom();
 		addMessage("You", message, "user-message");
 	}
 
 	function addAIMessage(message) {
 		console.log(message);
 		const messageEle = addFormattedMessage("AI", message, "ai-message");
+		scrollToBottom();
 		return messageEle;
 	}
 
@@ -520,36 +540,38 @@ $(document).ready(() => {
 	}
 
 	function renderCode() {
-		// 高亮代码块
-		document.querySelectorAll("pre code").forEach((block) => {
-			hljs.highlightBlock(block);
+		document
+			.getElementById("ai-chat-drawer")
+			.querySelectorAll("pre code")
+			.forEach((block) => {
+				hljs.highlightBlock(block);
 
-			// 添加复制按钮
-			const button = document.createElement("button");
-			button.className = "copy-button";
-			button.textContent = "Copy";
-			block.parentNode.insertBefore(button, block);
+				const button = document.createElement("button");
+				button.className = "copy-button";
+				button.textContent = "Copy";
+				block.parentNode.insertBefore(button, block);
 
-			// 添加复制功能
-			button.addEventListener("click", () => {
-				const code = block.textContent;
-				navigator.clipboard
-					.writeText(code)
-					.then(() => {
-						button.textContent = "Copied!";
-						setTimeout(() => {
-							button.textContent = "Copy";
-						}, 2000);
-					})
-					.catch((error) => {
-						console.error("Copy failed:", error);
-					});
+				button.addEventListener("click", () => {
+					const code = block.textContent;
+					navigator.clipboard
+						.writeText(code)
+						.then(() => {
+							button.textContent = "Copied!";
+							setTimeout(() => {
+								button.textContent = "Copy";
+							}, 2000);
+						})
+						.catch((error) => {
+							console.error("Copy failed:", error);
+						});
+				});
 			});
-		});
 	}
 
 	function sendToAI(message) {
 		const aiMessage = addAIMessage("Thinking...");
+		const messageInput = document.getElementById("ai-chat-message");
+		const sendButton = document.getElementById("ai-chat-send");
 
 		chrome.runtime.sendMessage({
 			action: "callOpenAI",
@@ -559,9 +581,9 @@ $(document).ready(() => {
 			host: aiHost,
 			context: conversations,
 		});
+
 		let res = "";
 
-		// Set up a listener for incoming stream chunks
 		chrome.runtime.onMessage.addListener(function messageListener(
 			request,
 			sender,
@@ -572,18 +594,36 @@ $(document).ready(() => {
 				if (!request.isFirstChunk) {
 					aiMessage.innerHTML = renderMarkdownToHtml(res);
 					renderCode();
+					scrollToBottom();
 				} else {
 					aiMessage.innerHTML = renderMarkdownToHtml(res);
 					renderCode();
+					scrollToBottom();
 				}
 			} else if (request.action === "streamEnd") {
-				console.log(res);
+				scrollToBottom();
 				conversations.push("[Answer]: " + aiMessage.textContent);
+
+				// 恢复输入和发送按钮状态
+				messageInput.disabled = false;
+				sendButton.disabled = false;
+				sendButton.classList.remove("loading");
+				sendButton.textContent = "➤";
+				messageInput.focus();
+
 				chrome.runtime.onMessage.removeListener(messageListener);
 			} else if (request.action === "streamError") {
 				aiMessage.innerHTML =
 					"Sorry, I encountered an error. Please try again later.";
 				console.error(request.error);
+
+				// 恢复输入和发送按钮状态
+				messageInput.disabled = false;
+				sendButton.disabled = false;
+				sendButton.classList.remove("loading");
+				sendButton.textContent = "➤";
+				messageInput.focus();
+
 				chrome.runtime.onMessage.removeListener(messageListener);
 			}
 		});

@@ -3,52 +3,143 @@
 	<head>
 		<title>Omni Extension Settings</title>
 		<style>
+			:root {
+				--primary: #6b46c1;
+				--primary-light: #9f7aea;
+				--background: #f9fafb;
+				--text: #2d3748;
+				--border: #e2e8f0;
+			}
+
 			body {
-				font-family: Arial, sans-serif;
-				padding: 20px;
-				width: 300px;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+					sans-serif;
+				padding: 24px;
+				width: 320px;
+				background: var(--background);
+				margin: 0;
+				color: var(--text);
 			}
+
 			h1 {
-				color: #333;
-				font-size: 18px;
+				color: var(--primary);
+				font-size: 20px;
+				margin: 0 0 24px 0;
+				font-weight: 600;
 			}
-			#shortcut,
-			#ai-settings {
-				margin-top: 20px;
+
+			.section {
+				background: white;
+				padding: 16px;
+				border-radius: 12px;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+				margin-bottom: 16px;
 			}
-			button {
-				margin-top: 10px;
+
+			label {
+				display: block;
+				font-size: 14px;
+				font-weight: 500;
+				margin-bottom: 8px;
+				color: var(--text);
 			}
+
 			input[type="text"] {
 				width: 100%;
-				margin-bottom: 10px;
+				padding: 8px 12px;
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				font-size: 14px;
+				margin-bottom: 12px;
+				box-sizing: border-box;
+				transition: all 0.2s;
+			}
+
+			input[type="text"]:focus {
+				outline: none;
+				border-color: var(--primary-light);
+				box-shadow: 0 0 0 3px rgba(159, 122, 234, 0.2);
+			}
+
+			input[type="text"]:disabled {
+				background: var(--background);
+				cursor: not-allowed;
+			}
+
+			button {
+				background: var(--primary);
+				color: white;
+				border: none;
+				padding: 8px 16px;
+				border-radius: 6px;
+				font-size: 14px;
+				font-weight: 500;
+				cursor: pointer;
+				transition: all 0.2s;
+				width: 100%;
+			}
+
+			button:hover {
+				background: var(--primary-light);
+			}
+
+			.model-suggestions {
+				display: flex;
+				gap: 8px;
+				flex-wrap: wrap;
+				margin-bottom: 12px;
+			}
+
+			.model-chip {
+				background: var(--background);
+				border: 1px solid var(--border);
+				padding: 4px 12px;
+				border-radius: 16px;
+				font-size: 13px;
+				cursor: pointer;
+				transition: all 0.2s;
+			}
+
+			.model-chip:hover {
+				background: var(--primary-light);
+				border-color: var(--primary-light);
+				color: white;
+			}
+
+			#message {
+				font-size: 14px;
+				margin-top: 12px;
+				text-align: center;
+				color: var(--primary);
 			}
 		</style>
 	</head>
 	<body>
-		<h1>Omni Extension Settings</h1>
-		<div id="shortcut">
-			<label for="shortcutInput">Current Shortcut:</label>
+		<h1>Omni Settings</h1>
+
+		<div class="section" id="shortcut">
+			<label for="shortcutInput">Current Shortcut</label>
 			<input type="text" id="shortcutInput" disabled />
 			<button id="saveShortcut">Change Shortcut</button>
 		</div>
-		<div id="ai-settings">
-			<label
-				for="ai_host"
-				aria-placeholder="https://api.openai.com/v1/chat/completions"
-				>AI Host</label
-			>
+
+		<div class="section" id="ai-settings">
+			<label for="ai_host">AI Host</label>
 			<input
 				type="text"
 				id="ai_host"
 				placeholder="https://api.openai.com/v1/chat/completions"
 			/>
+
 			<label for="ai_token">AI Token</label>
 			<input type="text" id="ai_token" />
-			<label for="ai_model" aria-placeholder="gpt-3.5-turbo"> AI MODEL </label>
-			<input type="text" id="ai_model" placeholder="gpt-3.5-turbo" />
-			<button id="saveAISetting">Save Chatbot Setting</button>
+
+			<label for="ai_model">AI Model</label>
+			<input type="text" id="ai_model" placeholder="Enter model name" />
+
+			<button id="saveAISetting">Save Settings</button>
 		</div>
+
 		<div id="message"></div>
 		<script src="popup.js"></script>
 	</body>

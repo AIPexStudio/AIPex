@@ -393,8 +393,8 @@ html {
 .chat-container {
 	position: fixed;
 	top: 0;
-	right: -380px;
-	width: 380px;
+	right: -480px;
+	width: 480px;
 	height: 100vh;
 	background-color: #ffffff;
 	box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
@@ -548,5 +548,37 @@ pre {
 #selection-toolbar img {
 	width: 24px;
 	height: 24px;
+}
+
+.send-button {
+	background: none;
+	border: none;
+	color: #666;
+	font-size: 20px;
+	cursor: pointer;
+	padding: 5px 10px;
+	transition: all 0.3s ease;
+}
+
+.send-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.send-button.loading {
+	animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.send-button.loading::after {
+	content: "↻";
 }
 
