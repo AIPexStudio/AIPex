@@ -668,16 +668,18 @@ $(document).ready(() => {
 		toolbar.style.position = "absolute";
 		toolbar.style.left = `${x}px`;
 		toolbar.style.top = `${y}px`;
-		toolbar.style.backgroundColor = "white";
-		toolbar.style.border = "1px solid #ccc";
-		toolbar.style.padding = "5px";
+		toolbar.style.backgroundColor = "#f9f9f9";
+		toolbar.style.border = "1px solid #e0e0e0";
+		toolbar.style.borderRadius = "8px"; // 圆角
+		toolbar.style.padding = "10px";
 		toolbar.style.display = "flex";
-		toolbar.style.gap = "5px";
+		toolbar.style.gap = "10px";
 		toolbar.style.zIndex = "1000";
+		toolbar.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)"; // 阴影
 
 		const answerButton = createIconButton(
-			"Answer with AI",
-			chrome.runtime.getURL("/assets/ai-icon.svg"),
+			"Ask AI",
+			chrome.runtime.getURL("/assets/empower.svg"),
 			(event) => {
 				event.stopPropagation();
 				removeToolbar();
@@ -698,6 +700,53 @@ $(document).ready(() => {
 		toolbar.appendChild(answerButton);
 		toolbar.appendChild(translateButton);
 		document.body.appendChild(toolbar);
+	}
+
+	function createIconButton(label, iconUrl, onClick) {
+		const button = document.createElement("button");
+		button.style.display = "flex";
+		button.style.alignItems = "center";
+		button.style.gap = "5px";
+		button.style.backgroundColor = "#ffffff";
+		button.style.border = "1px solid #e0e0e0";
+		button.style.borderRadius = "6px"; // 圆角
+		button.style.padding = "8px 12px";
+		button.style.cursor = "pointer";
+		button.style.transition =
+			"background-color 0.2s, transform 0.2s, filter 0.2s";
+		button.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.05)"; // 阴影
+
+		button.addEventListener("mouseover", () => {
+			button.style.backgroundColor = "#f0f0f0";
+			icon.style.filter = "grayscale(0%)"; // 使图标变亮
+		});
+
+		button.addEventListener("mouseout", () => {
+			button.style.backgroundColor = "#ffffff";
+			icon.style.filter = "grayscale(100%)"; // 使图标变灰
+		});
+
+		button.addEventListener("mousedown", () => {
+			button.style.transform = "scale(0.98)";
+		});
+
+		button.addEventListener("mouseup", () => {
+			button.style.transform = "scale(1)";
+		});
+
+		const icon = document.createElement("img");
+		icon.src = iconUrl;
+		icon.style.width = "16px";
+		icon.style.height = "16px";
+		icon.style.filter = "grayscale(100%)"; // 使图标变灰
+
+		const textNode = document.createTextNode(label);
+
+		button.appendChild(icon);
+		button.appendChild(textNode);
+		button.addEventListener("click", onClick);
+
+		return button;
 	}
 
 	function removeToolbar() {

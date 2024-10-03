@@ -1,21 +1,21 @@
 {
 	"name": "Empower —— Tab & History Manager, AI Companion",
-	"description": "Supercharge Chrome with commands, shortcuts, and more",
+	"description": "Supercharge Chrome with commands, shortcuts, and AI",
 	"offline_enabled": true,
 	"version": "1.4.7",
 	"manifest_version": 3,
 	"action": {
 		"icons": {
-			"16": "assets/logo-16.png",
-			"48": "assets/logo-48.png",
-			"128": "assets/logo-128.png"
+			"16": "assets/empower.jpeg",
+			"48": "assets/empower.jpeg",
+			"128": "assets/empower.jpeg"
 		},
 		"default_popup": "popup.html"
 	},
 	"icons": {
-		"16": "assets/logo-16.png",
-		"48": "assets/logo-48.png",
-		"128": "assets/logo-128.png"
+		"16": "assets/empower.jpeg",
+		"48": "assets/empower.jpeg",
+		"128": "assets/empower.jpeg"
 	},
 	"commands": {
 		"open-omni": {
