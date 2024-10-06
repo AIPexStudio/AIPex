@@ -1,21 +1,21 @@
 {
-	"name": "Empower —— Tab & History Manager, AI Companion",
+	"name": "AIpex —— Tab & History Manager, AI Companion",
 	"description": "Supercharge Chrome with commands, shortcuts, and AI",
 	"offline_enabled": true,
 	"version": "1.4.7",
 	"manifest_version": 3,
 	"action": {
 		"icons": {
-			"16": "assets/empower.jpeg",
-			"48": "assets/empower.jpeg",
-			"128": "assets/empower.jpeg"
+			"16": "assets/ai-icon-16.png",
+			"48": "assets/ai-icon-48.png",
+			"128": "assets/ai-icon-128.png"
 		},
 		"default_popup": "popup.html"
 	},
 	"icons": {
-		"16": "assets/empower.jpeg",
-		"48": "assets/empower.jpeg",
-		"128": "assets/empower.jpeg"
+		"16": "assets/ai-icon-16.png",
+		"48": "assets/ai-icon-48.png",
+		"128": "assets/ai-icon-128.png"
 	},
 	"commands": {
 		"open-omni": {

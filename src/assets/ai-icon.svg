@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- 背景圆 -->
-  <circle cx="50" cy="50" r="40" fill="#3498db"/>
-  
-  <!-- 抽象AI面孔 -->
-  <path d="M30 45 L45 60 L55 60 L70 45" stroke="white" stroke-width="3" fill="none"/>
-  
-  <!-- 眼睛 -->
-  <circle cx="40" cy="40" r="5" fill="white"/>
-  <circle cx="60" cy="40" r="5" fill="white"/>
-  
-  <!-- 抽象电路图案 -->
-  <path d="M25 70 Q50 80 75 70" stroke="white" stroke-width="2" fill="none"/>
-  <path d="M35 75 L35 65 M50 78 L50 68 M65 75 L65 65" stroke="white" stroke-width="2"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 15 15"><path fill="currentColor" fill-rule="evenodd" d="M.877 7.5a6.623 6.623 0 1 1 13.246 0a6.623 6.623 0 0 1-13.246 0M7.5 1.827a5.673 5.673 0 1 0 0 11.346a5.673 5.673 0 0 0 0-11.346m.75 8.673a.75.75 0 1 1-1.5 0a.75.75 0 0 1 1.5 0m-2.2-4.25c0-.678.585-1.325 1.45-1.325s1.45.647 1.45 1.325c0 .491-.27.742-.736 1.025l-.176.104a5 5 0 0 0-.564.36c-.242.188-.524.493-.524.961a.55.55 0 0 0 1.1.004a.4.4 0 0 1 .1-.098c.102-.079.215-.144.366-.232q.116-.067.27-.159c.534-.325 1.264-.861 1.264-1.965c0-1.322-1.115-2.425-2.55-2.425S4.95 4.928 4.95 6.25a.55.55 0 0 0 1.1 0" clip-rule="evenodd"/></svg>

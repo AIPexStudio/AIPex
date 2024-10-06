@@ -248,7 +248,6 @@ $(document).ready(() => {
 		chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 			isOpen = true;
 			actions = response.actions;
-			console.log(actions);
 			$("#omni-extension input").val("");
 			populateOmni();
 			$("html, body").stop();
@@ -671,20 +670,21 @@ $(document).ready(() => {
 		toolbar.style.backgroundColor = "#f9f9f9";
 		toolbar.style.border = "1px solid #e0e0e0";
 		toolbar.style.borderRadius = "8px"; // 圆角
-		toolbar.style.padding = "10px";
+		toolbar.style.padding = "3px";
 		toolbar.style.display = "flex";
-		toolbar.style.gap = "10px";
+		// toolbar.style.gap = "10px";
 		toolbar.style.zIndex = "1000";
 		toolbar.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)"; // 阴影
 
 		const answerButton = createIconButton(
 			"Ask AI",
-			chrome.runtime.getURL("/assets/empower.svg"),
+			chrome.runtime.getURL("/assets/ai-icon.svg"),
 			(event) => {
 				event.stopPropagation();
 				removeToolbar();
 				answerWithAI(text);
-			}
+			},
+			"Ask AI"
 		);
 
 		const translateButton = createIconButton(
@@ -694,7 +694,8 @@ $(document).ready(() => {
 				event.stopPropagation();
 				removeToolbar();
 				translate(text);
-			}
+			},
+			"Translate"
 		);
 
 		toolbar.appendChild(answerButton);
@@ -702,28 +703,28 @@ $(document).ready(() => {
 		document.body.appendChild(toolbar);
 	}
 
-	function createIconButton(label, iconUrl, onClick) {
+	function createIconButton(label, iconUrl, onClick, text) {
 		const button = document.createElement("button");
 		button.style.display = "flex";
 		button.style.alignItems = "center";
-		button.style.gap = "5px";
+		button.style.gap = "1px";
 		button.style.backgroundColor = "#ffffff";
 		button.style.border = "1px solid #e0e0e0";
-		button.style.borderRadius = "6px"; // 圆角
-		button.style.padding = "8px 12px";
+		button.style.borderRadius = "6px";
+		button.style.padding = "1px 22px";
 		button.style.cursor = "pointer";
 		button.style.transition =
 			"background-color 0.2s, transform 0.2s, filter 0.2s";
-		button.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.05)"; // 阴影
+		button.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.05)";
 
 		button.addEventListener("mouseover", () => {
 			button.style.backgroundColor = "#f0f0f0";
-			icon.style.filter = "grayscale(0%)"; // 使图标变亮
+			icon.style.filter = "grayscale(0%)";
 		});
 
 		button.addEventListener("mouseout", () => {
 			button.style.backgroundColor = "#ffffff";
-			icon.style.filter = "grayscale(100%)"; // 使图标变灰
+			icon.style.filter = "grayscale(100%)";
 		});
 
 		button.addEventListener("mousedown", () => {
@@ -734,18 +735,22 @@ $(document).ready(() => {
 			button.style.transform = "scale(1)";
 		});
 
+		// 创建一个包含文字的 span 元素
+		const textSpan = document.createElement("span");
+		textSpan.textContent = text || label; // 如果没有提供text，就使用label
+
+		// 创建图标元素
 		const icon = document.createElement("img");
 		icon.src = iconUrl;
 		icon.style.width = "16px";
 		icon.style.height = "16px";
-		icon.style.filter = "grayscale(100%)"; // 使图标变灰
+		icon.style.filter = "grayscale(100%)";
 
-		const textNode = document.createTextNode(label);
-
+		// 先添加文字，再添加图标
+		button.appendChild(textSpan);
 		button.appendChild(icon);
-		button.appendChild(textNode);
-		button.addEventListener("click", onClick);
 
+		button.addEventListener("click", onClick);
 		return button;
 	}
 
@@ -754,24 +759,6 @@ $(document).ready(() => {
 			toolbar.remove();
 			toolbar = null;
 		}
-	}
-
-	function createIconButton(title, iconUrl, onClick) {
-		const button = document.createElement("button");
-		button.style.border = "none";
-		button.style.backgroundColor = "transparent";
-		button.style.cursor = "pointer";
-		button.title = title;
-
-		const icon = document.createElement("img");
-		icon.src = iconUrl;
-		icon.style.width = "24px";
-		icon.style.height = "24px";
-
-		button.appendChild(icon);
-		button.onclick = onClick;
-
-		return button;
 	}
 
 	function answerWithAI(text) {
