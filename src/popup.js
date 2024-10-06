@@ -9,11 +9,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 	// Load current shortcut
 	chrome.commands.getAll(function (commands) {
-		const openOmniCommand = commands.find(
-			(command) => command.name === "open-omni"
+		const openaipexCommand = commands.find(
+			(command) => command.name === "open-aipex"
 		);
-		if (openOmniCommand) {
-			shortcutInput.value = openOmniCommand.shortcut || "Not set";
+		if (openaipexCommand) {
+			shortcutInput.value = openaipexCommand.shortcut || "Not set";
 		}
 	});
 
@@ -46,12 +46,12 @@ document.addEventListener("DOMContentLoaded", function () {
 	// Listen for changes in the command shortcut
 	chrome.commands.onCommand.addListener(() => {
 		chrome.commands.getAll((commands) => {
-			const openOmniCommand = commands.find(
-				(command) => command.name === "open-omni"
+			const openaipexCommand = commands.find(
+				(command) => command.name === "open-aipex"
 			);
-			if (openOmniCommand) {
-				shortcutInput.value = openOmniCommand.shortcut || "Not set";
-				chrome.storage.sync.set({ omniShortcut: openOmniCommand.shortcut });
+			if (openaipexCommand) {
+				shortcutInput.value = openaipexCommand.shortcut || "Not set";
+				chrome.storage.sync.set({ aipexShortcut: openaipexCommand.shortcut });
 			}
 		});
 	});

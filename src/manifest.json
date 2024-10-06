@@ -18,7 +18,7 @@
 		"128": "assets/ai-icon-128.png"
 	},
 	"commands": {
-		"open-omni": {
+		"open-aipex": {
 			"suggested_key": {
 				"default": "Ctrl+M",
 				"mac": "Command+M"

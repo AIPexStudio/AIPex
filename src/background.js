@@ -104,10 +104,10 @@ const clearActions = () => {
 			},
 			{
 				title: "Help",
-				desc: "Get help with Omni on GitHub",
+				desc: "Get help with aipex on GitHub",
 				type: "action",
 				action: "url",
-				url: "https://github.com/alyssaxuu/omni",
+				url: "https://github.com/alyssaxuu/aipex",
 				emoji: true,
 				emojiChar: "🤔",
 				keycheck: false,
@@ -681,7 +681,7 @@ chrome.runtime.onInstalled.addListener((object) => {
 		contexts: ["selection"],
 	});
 
-	// Inject Omni on install
+	// Inject aipex on install
 	const manifest = chrome.runtime.getManifest();
 
 	const injectIntoTab = (tab) => {
@@ -731,24 +731,24 @@ chrome.runtime.onInstalled.addListener((object) => {
 	);
 
 	if (object.reason === "install") {
-		chrome.tabs.create({ url: "https://alyssax.com/omni/" });
+		chrome.tabs.create({ url: "https://alyssax.com/aipex/" });
 	}
 });
 
 // Check when the extension button is clicked
 chrome.action.onClicked.addListener((tab) => {
-	chrome.tabs.sendMessage(tab.id, { request: "open-omni" });
+	chrome.tabs.sendMessage(tab.id, { request: "open-aipex" });
 });
 
-// Listen for the open omni shortcut
+// Listen for the open aipex shortcut
 chrome.commands.onCommand.addListener((command) => {
-	if (command === "open-omni") {
+	if (command === "open-aipex") {
 		getCurrentTab().then((response) => {
 			if (
 				!response.url.includes("chrome://") &&
 				!response.url.includes("chrome.google.com")
 			) {
-				chrome.tabs.sendMessage(response.id, { request: "open-omni" });
+				chrome.tabs.sendMessage(response.id, { request: "open-aipex" });
 			} else {
 				chrome.tabs
 					.create({
@@ -770,7 +770,7 @@ const getCurrentTab = async () => {
 	return tab;
 };
 
-// Restore the new tab page (workaround to show Omni in new tab page)
+// Restore the new tab page (workaround to show aipex in new tab page)
 function restoreNewTab() {
 	getCurrentTab().then((response) => {
 		chrome.tabs
@@ -783,7 +783,7 @@ function restoreNewTab() {
 	});
 }
 
-const resetOmni = () => {
+const resetaipex = () => {
 	clearActions();
 	getTabs();
 	getBookmarks();
@@ -812,9 +812,9 @@ const resetOmni = () => {
 };
 
 // Check if tabs have changed and actions need to be fetched again
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => resetOmni());
-chrome.tabs.onCreated.addListener((tab) => resetOmni());
-chrome.tabs.onRemoved.addListener((tabId, changeInfo) => resetOmni());
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => resetaipex());
+chrome.tabs.onCreated.addListener((tab) => resetaipex());
+chrome.tabs.onRemoved.addListener((tabId, changeInfo) => resetaipex());
 
 // Get tabs to populate in the actions
 const getTabs = () => {
@@ -1120,7 +1120,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	}
 	switch (message.request) {
 		case "get-actions":
-			resetOmni();
+			resetaipex();
 			sendResponse({ actions: actions });
 			break;
 		case "switch-tab":
@@ -1244,14 +1244,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 		case "restore-new-tab":
 			restoreNewTab();
 			break;
-		case "close-omni":
+		case "close-aipex":
 			getCurrentTab().then((response) => {
-				chrome.tabs.sendMessage(response.id, { request: "close-omni" });
+				chrome.tabs.sendMessage(response.id, { request: "close-aipex" });
 			});
 			break;
 	}
 });
 
 // Get actions
-resetOmni();
+resetaipex();
 

@@ -7,7 +7,7 @@ const conversations = [];
 
 document.onkeyup = (e) => {
 	if (e.key == "Escape" && isOpen) {
-		chrome.runtime.sendMessage({ request: "close-omni" });
+		chrome.runtime.sendMessage({ request: "close-aipex" });
 	}
 };
 
@@ -16,7 +16,7 @@ document.addEventListener(
 	(event) => {
 		if (event.metaKey && event.key === "t") {
 			event.preventDefault();
-			openOmni();
+			openaipex();
 		}
 	},
 	true
@@ -37,12 +37,12 @@ $(document).ready(() => {
 	var actions = [];
 	var isFiltered = false;
 
-	// Append the omni into the current page
+	// Append the aipex into the current page
 	$.get(chrome.runtime.getURL("/content.html"), (data) => {
 		$(data).appendTo("body");
 
 		// Get checkmark image for toast
-		$("#omni-extension-toast img").attr(
+		$("#aipex-extension-toast img").attr(
 			"src",
 			chrome.runtime.getURL("assets/check.svg")
 		);
@@ -58,9 +58,9 @@ $(document).ready(() => {
 			"chrome-extension://mpanekjjajcabgnlbabmopeenljeoggm/newtab.html"
 		) {
 			isOpen = true;
-			$("#omni-extension").removeClass("omni-closing");
+			$("#aipex-extension").removeClass("aipex-closing");
 			window.setTimeout(() => {
-				$("#omni-extension input").focus();
+				$("#aipex-extension input").focus();
 			}, 100);
 		}
 	});
@@ -82,12 +82,12 @@ $(document).ready(() => {
 		var description = action.desc;
 		if (action.url) {
 			description +=
-				'<br><span class="omni-item-url">' + action.url + "</span>";
+				'<br><span class="aipex-item-url">' + action.url + "</span>";
 		}
 
 		if (index != 0) {
-			$("#omni-extension #omni-list").append(
-				"<div class='omni-item' " +
+			$("#aipex-extension #aipex-list").append(
+				"<div class='aipex-item' " +
 					skip +
 					" data-index='" +
 					index +
@@ -95,17 +95,17 @@ $(document).ready(() => {
 					action.type +
 					"'>" +
 					img +
-					"<div class='omni-item-details'><div class='omni-item-name'>" +
+					"<div class='aipex-item-details'><div class='aipex-item-name'>" +
 					action.title +
-					"</div><div class='omni-item-desc'>" +
+					"</div><div class='aipex-item-desc'>" +
 					description +
 					"</div></div>" +
 					keys +
-					"<div class='omni-select'>Select <span class='omni-shortcut'>⏎</span></div></div>"
+					"<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
 			);
 		} else {
-			$("#omni-extension #omni-list").append(
-				"<div class='omni-item omni-item-active' " +
+			$("#aipex-extension #aipex-list").append(
+				"<div class='aipex-item aipex-item-active' " +
 					skip +
 					" data-index='" +
 					index +
@@ -113,13 +113,13 @@ $(document).ready(() => {
 					action.type +
 					"'>" +
 					img +
-					"<div class='omni-item-details'><div class='omni-item-name'>" +
+					"<div class='aipex-item-details'><div class='aipex-item-name'>" +
 					action.title +
-					"</div><div class='omni-item-desc'>" +
+					"</div><div class='aipex-item-desc'>" +
 					description +
 					"</div></div>" +
 					keys +
-					"<div class='omni-select'>Select <span class='omni-shortcut'>⏎</span></div></div>"
+					"<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
 			);
 		}
 		if (!action.emoji) {
@@ -128,7 +128,7 @@ $(document).ready(() => {
 
 			// Favicon doesn't load, use a fallback
 			loadimg.onerror = () => {
-				$(".omni-item[data-index='" + index + "'] img").attr(
+				$(".aipex-item[data-index='" + index + "'] img").attr(
 					"src",
 					chrome.runtime.getURL("/assets/globe.svg")
 				);
@@ -136,15 +136,15 @@ $(document).ready(() => {
 		}
 	}
 
-	// Add actions to the omni
-	function populateOmni() {
-		$("#omni-extension #omni-list").html("");
+	// Add actions to the aipex
+	function populateaipex() {
+		$("#aipex-extension #aipex-list").html("");
 		actions.forEach((action, index) => {
 			var keys = "";
 			if (action.keycheck) {
-				keys = "<div class='omni-keys'>";
+				keys = "<div class='aipex-keys'>";
 				action.keys.forEach(function (key) {
-					keys += "<span class='omni-shortcut'>" + key + "</span>";
+					keys += "<span class='aipex-shortcut'>" + key + "</span>";
 				});
 				keys += "</div>";
 			}
@@ -160,28 +160,28 @@ $(document).ready(() => {
 					onload +
 					"' onerror='this.src=&quot;" +
 					chrome.runtime.getURL("/assets/globe.svg") +
-					"&quot;' class='omni-icon'>";
+					"&quot;' class='aipex-icon'>";
 				renderAction(action, index, keys, img);
 			} else {
 				var img =
-					"<span class='omni-emoji-action'>" + action.emojiChar + "</span>";
+					"<span class='aipex-emoji-action'>" + action.emojiChar + "</span>";
 				renderAction(action, index, keys, img);
 			}
 		});
-		$(".omni-extension #omni-results").html(actions.length + " results");
+		$(".aipex-extension #aipex-results").html(actions.length + " results");
 	}
 
-	// Add filtered actions to the omni
-	function populateOmniFilter(actions) {
+	// Add filtered actions to the aipex
+	function populateaipexFilter(actions) {
 		isFiltered = true;
-		$("#omni-extension #omni-list").html("");
+		$("#aipex-extension #aipex-list").html("");
 		const renderRow = (index) => {
 			const action = actions[index];
 			var keys = "";
 			if (action.keycheck) {
-				keys = "<div class='omni-keys'>";
+				keys = "<div class='aipex-keys'>";
 				action.keys.forEach(function (key) {
-					keys += "<span class='omni-shortcut'>" + key + "</span>";
+					keys += "<span class='aipex-shortcut'>" + key + "</span>";
 				});
 				keys += "</div>";
 			}
@@ -190,13 +190,14 @@ $(document).ready(() => {
 				action.favIconUrl +
 				"' alt='favicon' onerror='this.src=&quot;" +
 				chrome.runtime.getURL("/assets/globe.svg") +
-				"&quot;' class='omni-icon'>";
+				"&quot;' class='aipex-icon'>";
 			if (action.emoji) {
-				img = "<span class='omni-emoji-action'>" + action.emojiChar + "</span>";
+				img =
+					"<span class='aipex-emoji-action'>" + action.emojiChar + "</span>";
 			}
 			if (index != 0) {
 				return $(
-					"<div class='omni-item' data-index='" +
+					"<div class='aipex-item' data-index='" +
 						index +
 						"' data-type='" +
 						action.type +
@@ -204,17 +205,17 @@ $(document).ready(() => {
 						action.url +
 						"'>" +
 						img +
-						"<div class='omni-item-details'><div class='omni-item-name'>" +
+						"<div class='aipex-item-details'><div class='aipex-item-name'>" +
 						action.title +
-						"</div><div class='omni-item-desc'>" +
+						"</div><div class='aipex-item-desc'>" +
 						action.url +
 						"</div></div>" +
 						keys +
-						"<div class='omni-select'>Select <span class='omni-shortcut'>⏎</span></div></div>"
+						"<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
 				)[0];
 			} else {
 				return $(
-					"<div class='omni-item omni-item-active' data-index='" +
+					"<div class='aipex-item aipex-item-active' data-index='" +
 						index +
 						"' data-type='" +
 						action.type +
@@ -222,46 +223,48 @@ $(document).ready(() => {
 						action.url +
 						"'>" +
 						img +
-						"<div class='omni-item-details'><div class='omni-item-name'>" +
+						"<div class='aipex-item-details'><div class='aipex-item-name'>" +
 						action.title +
-						"</div><div class='omni-item-desc'>" +
+						"</div><div class='aipex-item-desc'>" +
 						action.url +
 						"</div></div>" +
 						keys +
-						"<div class='omni-select'>Select <span class='omni-shortcut'>⏎</span></div></div>"
+						"<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
 				)[0];
 			}
 		};
 		actions.length &&
-			new VirtualizedList.default($("#omni-extension #omni-list")[0], {
+			new VirtualizedList.default($("#aipex-extension #aipex-list")[0], {
 				height: 400,
 				rowHeight: 60,
 				rowCount: actions.length,
 				renderRow,
 				onMount: () =>
-					$(".omni-extension #omni-results").html(actions.length + " results"),
+					$(".aipex-extension #aipex-results").html(
+						actions.length + " results"
+					),
 			});
 	}
 
-	// Open the omni
-	function openOmni() {
+	// Open the aipex
+	function openaipex() {
 		chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 			isOpen = true;
 			actions = response.actions;
-			$("#omni-extension input").val("");
-			populateOmni();
+			$("#aipex-extension input").val("");
+			populateaipex();
 			$("html, body").stop();
-			$("#omni-extension").removeClass("omni-closing");
+			$("#aipex-extension").removeClass("aipex-closing");
 			window.setTimeout(() => {
-				$("#omni-extension input").focus();
-				focusLock.on($("#omni-extension input").get(0));
-				$("#omni-extension input").focus();
+				$("#aipex-extension input").focus();
+				focusLock.on($("#aipex-extension input").get(0));
+				$("#aipex-extension input").focus();
 			}, 100);
 		});
 	}
 
-	// Close the omni
-	function closeOmni() {
+	// Close the aipex
+	function closeaipex() {
 		if (
 			window.location.href ==
 			"chrome-extension://mpanekjjajcabgnlbabmopeenljeoggm/newtab.html"
@@ -269,30 +272,30 @@ $(document).ready(() => {
 			chrome.runtime.sendMessage({ request: "restore-new-tab" });
 		} else {
 			isOpen = false;
-			$("#omni-extension").addClass("omni-closing");
+			$("#aipex-extension").addClass("aipex-closing");
 		}
 	}
 
-	// Hover over an action in the omni
+	// Hover over an action in the aipex
 	function hoverItem() {
-		$(".omni-item-active").removeClass("omni-item-active");
-		$(this).addClass("omni-item-active");
+		$(".aipex-item-active").removeClass("aipex-item-active");
+		$(this).addClass("aipex-item-active");
 	}
 
 	// Show a toast when an action has been performed
 	function showToast(action) {
-		$("#omni-extension-toast span").html(
+		$("#aipex-extension-toast span").html(
 			'"' + action.title + '" has been successfully performed'
 		);
-		$("#omni-extension-toast").addClass("omni-show-toast");
+		$("#aipex-extension-toast").addClass("aipex-show-toast");
 		setTimeout(() => {
-			$(".omni-show-toast").removeClass("omni-show-toast");
+			$(".aipex-show-toast").removeClass("aipex-show-toast");
 		}, 3000);
 	}
 
 	// Autocomplete commands. Since they all start with different letters, it can be the default behavior
 	function checkShortHand(e, value) {
-		var el = $(".omni-extension input");
+		var el = $(".aipex-extension input");
 		if (e.keyCode != 8) {
 			if (value == "/t") {
 				el.val("/tabs ");
@@ -770,7 +773,7 @@ $(document).ready(() => {
 		alert(`Translated text: ${text}`);
 	}
 
-	// Search for an action in the omni
+	// Search for an action in the aipex
 	function search(e) {
 		if (
 			e.keyCode == 37 ||
@@ -787,12 +790,12 @@ $(document).ready(() => {
 		value = $(this).val().toLowerCase();
 		if (value.startsWith("/history")) {
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "search") +
 					"']"
 			).hide();
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "goto") +
 					"']"
 			).hide();
@@ -805,39 +808,39 @@ $(document).ready(() => {
 				{ request: "search-history", query: query },
 				(response) => {
 					console.log(response);
-					populateOmniFilter(response.history);
+					populateaipexFilter(response.history);
 				}
 			);
 		} // Inside the search function in content.js, add this condition
 		else if (value.startsWith("/ai")) {
-			$(".omni-item").hide();
+			$(".aipex-item").hide();
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "ai-chat") +
 					"']"
 			).show();
 
 			// Update the description of the AI chat item
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "ai-chat") +
-					"'] .omni-item-desc"
+					"'] .aipex-item-desc"
 			).text(value.replace("/ai ", ""));
 
 			// Update the results count
-			$(".omni-extension #omni-results").html("1 result");
+			$(".aipex-extension #aipex-results").html("1 result");
 
 			// Ensure the AI chat item is active
-			$(".omni-item-active").removeClass("omni-item-active");
-			$(".omni-item:visible").first().addClass("omni-item-active");
+			$(".aipex-item-active").removeClass("aipex-item-active");
+			$(".aipex-item:visible").first().addClass("aipex-item-active");
 		} else if (value.startsWith("/bookmarks")) {
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "search") +
 					"']"
 			).hide();
 			$(
-				".omni-item[data-index='" +
+				".aipex-item[data-index='" +
 					actions.findIndex((x) => x.action == "goto") +
 					"']"
 			).hide();
@@ -847,26 +850,26 @@ $(document).ready(() => {
 				chrome.runtime.sendMessage(
 					{ request: "search-bookmarks", query: query },
 					(response) => {
-						populateOmniFilter(response.bookmarks);
+						populateaipexFilter(response.bookmarks);
 					}
 				);
 			} else {
-				populateOmniFilter(actions.filter((x) => x.type == "bookmark"));
+				populateaipexFilter(actions.filter((x) => x.type == "bookmark"));
 			}
 		} else {
 			if (isFiltered) {
-				populateOmni();
+				populateaipex();
 				isFiltered = false;
 			}
-			$(".omni-extension #omni-list .omni-item").filter(function () {
+			$(".aipex-extension #aipex-list .aipex-item").filter(function () {
 				if (value.startsWith("/tabs")) {
 					$(
-						".omni-item[data-index='" +
+						".aipex-item[data-index='" +
 							actions.findIndex((x) => x.action == "search") +
 							"']"
 					).hide();
 					$(
-						".omni-item[data-index='" +
+						".aipex-item[data-index='" +
 							actions.findIndex((x) => x.action == "goto") +
 							"']"
 					).hide();
@@ -877,12 +880,12 @@ $(document).ready(() => {
 						tempvalue = value.replace("/tabs ", "");
 						$(this).toggle(
 							($(this)
-								.find(".omni-item-name")
+								.find(".aipex-item-name")
 								.text()
 								.toLowerCase()
 								.indexOf(tempvalue) > -1 ||
 								$(this)
-									.find(".omni-item-desc")
+									.find(".aipex-item-desc")
 									.text()
 									.toLowerCase()
 									.indexOf(tempvalue) > -1) &&
@@ -891,12 +894,12 @@ $(document).ready(() => {
 					}
 				} else if (value.startsWith("/remove")) {
 					$(
-						".omni-item[data-index='" +
+						".aipex-item[data-index='" +
 							actions.findIndex((x) => x.action == "search") +
 							"']"
 					).hide();
 					$(
-						".omni-item[data-index='" +
+						".aipex-item[data-index='" +
 							actions.findIndex((x) => x.action == "goto") +
 							"']"
 					).hide();
@@ -910,12 +913,12 @@ $(document).ready(() => {
 						tempvalue = value.replace("/remove ", "");
 						$(this).toggle(
 							($(this)
-								.find(".omni-item-name")
+								.find(".aipex-item-name")
 								.text()
 								.toLowerCase()
 								.indexOf(tempvalue) > -1 ||
 								$(this)
-									.find(".omni-item-desc")
+									.find(".aipex-item-desc")
 									.text()
 									.toLowerCase()
 									.indexOf(tempvalue) > -1) &&
@@ -926,99 +929,99 @@ $(document).ready(() => {
 				} else {
 					$(this).toggle(
 						$(this)
-							.find(".omni-item-name")
+							.find(".aipex-item-name")
 							.text()
 							.toLowerCase()
 							.indexOf(value) > -1 ||
 							$(this)
-								.find(".omni-item-desc")
+								.find(".aipex-item-desc")
 								.text()
 								.toLowerCase()
 								.indexOf(value) > -1
 					);
 					if (value == "") {
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "search") +
 								"']"
 						).hide();
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "goto") +
 								"']"
 						).hide();
 					} else if (!validURL(value)) {
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "search") +
 								"']"
 						).show();
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "goto") +
 								"']"
 						).hide();
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "search") +
-								"'] .omni-item-name"
+								"'] .aipex-item-name"
 						).html('"' + value + '"');
 					} else {
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "search") +
 								"']"
 						).hide();
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "goto") +
 								"']"
 						).show();
 						$(
-							".omni-item[data-index='" +
+							".aipex-item[data-index='" +
 								actions.findIndex((x) => x.action == "goto") +
-								"'] .omni-item-name"
+								"'] .aipex-item-name"
 						).html(value);
 					}
 				}
 			});
 		}
 
-		$(".omni-extension #omni-results").html(
-			$("#omni-extension #omni-list .omni-item:visible").length + " results"
+		$(".aipex-extension #aipex-results").html(
+			$("#aipex-extension #aipex-list .aipex-item:visible").length + " results"
 		);
-		$(".omni-item-active").removeClass("omni-item-active");
-		$(".omni-extension #omni-list .omni-item:visible")
+		$(".aipex-item-active").removeClass("aipex-item-active");
+		$(".aipex-extension #aipex-list .aipex-item:visible")
 			.first()
-			.addClass("omni-item-active");
+			.addClass("aipex-item-active");
 	}
 
-	// Handle actions from the omni
+	// Handle actions from the aipex
 	function handleAction(e) {
-		var action = actions[$(".omni-item-active").attr("data-index")];
-		closeOmni();
-		if ($(".omni-extension input").val().toLowerCase().startsWith("/remove")) {
+		var action = actions[$(".aipex-item-active").attr("data-index")];
+		closeaipex();
+		if ($(".aipex-extension input").val().toLowerCase().startsWith("/remove")) {
 			chrome.runtime.sendMessage({
 				request: "remove",
 				type: action.type,
 				action: action,
 			});
 		} else if (
-			$(".omni-extension input").val().toLowerCase().startsWith("/history")
+			$(".aipex-extension input").val().toLowerCase().startsWith("/history")
 		) {
 			console.log(e);
 			if (e.ctrlKey || e.metaKey) {
-				window.open($(".omni-item-active").attr("data-url"));
+				window.open($(".aipex-item-active").attr("data-url"));
 			} else {
-				window.open($(".omni-item-active").attr("data-url"), "_self");
+				window.open($(".aipex-item-active").attr("data-url"), "_self");
 			}
 		} else if (
-			$(".omni-extension input").val().toLowerCase().startsWith("/bookmarks")
+			$(".aipex-extension input").val().toLowerCase().startsWith("/bookmarks")
 		) {
 			if (e.ctrlKey || e.metaKey) {
-				window.open($(".omni-item-active").attr("data-url"));
+				window.open($(".aipex-item-active").attr("data-url"));
 			} else {
-				window.open($(".omni-item-active").attr("data-url"), "_self");
+				window.open($(".aipex-item-active").attr("data-url"), "_self");
 			}
 		} else {
 			console.log("this part");
@@ -1026,7 +1029,7 @@ $(document).ready(() => {
 			chrome.runtime.sendMessage({
 				request: action.action,
 				tab: action,
-				query: $(".omni-extension input").val(),
+				query: $(".aipex-extension input").val(),
 			});
 			switch (action.action) {
 				case "bookmark":
@@ -1069,9 +1072,9 @@ $(document).ready(() => {
 					break;
 				case "goto":
 					// if (e.ctrlKey || e.metaKey) {
-					// 	window.open(addhttp($(".omni-extension input").val()));
+					// 	window.open(addhttp($(".aipex-extension input").val()));
 					// } else {
-					window.open(addhttp($(".omni-extension input").val()));
+					window.open(addhttp($(".aipex-extension input").val()));
 					// }
 					break;
 				case "print":
@@ -1079,10 +1082,10 @@ $(document).ready(() => {
 					break;
 				case "open-history-url":
 					console.log("history is right");
-					window.open($(".omni-item-active .omni-item-url").text());
+					window.open($(".aipex-item-active .aipex-item-url").text());
 					break;
 				case "ai-chat":
-					const query = $(".omni-extension input").val().replace("/ai ", "");
+					const query = $(".aipex-extension input").val().replace("/ai ", "");
 					console.log(query);
 					openAIChatDrawer(query);
 					break;
@@ -1100,11 +1103,11 @@ $(document).ready(() => {
 		// Fetch actions again
 		chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 			actions = response.actions;
-			populateOmni();
+			populateaipex();
 		});
 	}
 
-	// Customize the shortcut to open the Omni box
+	// Customize the shortcut to open the aipex box
 	function openShortcuts() {
 		chrome.runtime.sendMessage({ request: "extensions/shortcuts" });
 	}
@@ -1118,32 +1121,32 @@ $(document).ready(() => {
 			if (down[38]) {
 				// Up key
 				if (
-					$(".omni-item-active").prevAll("div").not(":hidden").first().length
+					$(".aipex-item-active").prevAll("div").not(":hidden").first().length
 				) {
-					var previous = $(".omni-item-active")
+					var previous = $(".aipex-item-active")
 						.prevAll("div")
 						.not(":hidden")
 						.first();
-					$(".omni-item-active").removeClass("omni-item-active");
-					previous.addClass("omni-item-active");
+					$(".aipex-item-active").removeClass("aipex-item-active");
+					previous.addClass("aipex-item-active");
 					previous[0].scrollIntoView({ block: "nearest", inline: "nearest" });
 				}
 			} else if (down[40]) {
 				// Down key
 				if (
-					$(".omni-item-active").nextAll("div").not(":hidden").first().length
+					$(".aipex-item-active").nextAll("div").not(":hidden").first().length
 				) {
-					var next = $(".omni-item-active")
+					var next = $(".aipex-item-active")
 						.nextAll("div")
 						.not(":hidden")
 						.first();
-					$(".omni-item-active").removeClass("omni-item-active");
-					next.addClass("omni-item-active");
+					$(".aipex-item-active").removeClass("aipex-item-active");
+					next.addClass("aipex-item-active");
 					next[0].scrollIntoView({ block: "nearest", inline: "nearest" });
 				}
 			} else if (down[27] && isOpen) {
 				// Esc key
-				closeOmni();
+				closeaipex();
 			} else if (down[13] && isOpen) {
 				// Enter key
 				handleAction(e);
@@ -1158,7 +1161,7 @@ $(document).ready(() => {
 				}
 				chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 					actions = response.actions;
-					populateOmni();
+					populateaipex();
 				});
 			} else if (down[18] && down[16] && down[77]) {
 				if (actions.find((x) => x.action == "mute") != undefined) {
@@ -1168,7 +1171,7 @@ $(document).ready(() => {
 				}
 				chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
 					actions = response.actions;
-					populateOmni();
+					populateaipex();
 				});
 			} else if (down[18] && down[16] && down[67]) {
 				window.open("mailto:");
@@ -1179,25 +1182,25 @@ $(document).ready(() => {
 
 	// Recieve messages from background
 	chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-		if (message.request == "open-omni") {
+		if (message.request == "open-aipex") {
 			if (isOpen) {
-				closeOmni();
+				closeaipex();
 			} else {
-				openOmni();
+				openaipex();
 			}
-		} else if (message.request == "close-omni") {
-			closeOmni();
+		} else if (message.request == "close-aipex") {
+			closeaipex();
 		}
 	});
 
-	$(document).on("click", "#open-page-omni-extension-thing", openShortcuts);
+	$(document).on("click", "#open-page-aipex-extension-thing", openShortcuts);
 	$(document).on(
 		"mouseover",
-		".omni-extension .omni-item:not(.omni-item-active)",
+		".aipex-extension .aipex-item:not(.aipex-item-active)",
 		hoverItem
 	);
-	$(document).on("keyup", ".omni-extension input", search);
-	$(document).on("click", ".omni-item-active", handleAction);
-	$(document).on("click", ".omni-extension #omni-overlay", closeOmni);
+	$(document).on("keyup", ".aipex-extension input", search);
+	$(document).on("click", ".aipex-item-active", handleAction);
+	$(document).on("click", ".aipex-extension #aipex-overlay", closeaipex);
 });
 
