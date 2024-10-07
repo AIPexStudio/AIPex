@@ -568,15 +568,15 @@ $(document).ready(() => {
             });
         });
       });
-    document
-      .getElementById("ai-chat-drawer")
-      .querySelectorAll("a")
-      .forEach((a_block) => {
-        a_block.onclick = (e) => {
-          e.preventDefault();
-          window.open(a_block.href, "_blank", "noopener,noreferrer");
-        };
-      });
+    // document
+    //   .getElementById("ai-chat-drawer")
+    //   .querySelectorAll("a")
+    //   .forEach((a_block) => {
+    //     a_block.onclick = (e) => {
+    //       e.preventDefault();
+    //       window.open(a_block.href, "_blank", "noopener,noreferrer");
+    //     };
+    //   });
   }
 
   function sendToAI(message) {
