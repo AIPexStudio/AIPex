@@ -580,4 +580,64 @@ html {
 .ai-chat-drawer .send-button.loading::after {
 	content: "↻";
 }
+.user-input-container {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 10px;
+	background: #fff;
+	border-top: 1px solid #e0e0e0;
+  }
 
+  .input-area {
+	display: flex;
+	gap: 8px;
+  }
+  
+  .markdown-textarea {
+	flex-grow: 1;
+	min-height: 60px;
+	max-height: 200px;
+	padding: 12px;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	font-family: inherit;
+	font-size: 14px;
+	line-height: 1.5;
+	resize: vertical;
+	overflow-y: auto;
+  }
+  
+  .markdown-textarea:focus {
+	outline: none;
+	border-color: #2196f3;
+	box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+  }
+
+  .markdown-preview {
+	display: none;
+	padding: 8px 12px;
+	background: #f5f5f5;
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 1.5;
+  }
+  
+  .markdown-preview.show {
+	display: block;
+  }
+  
+  .markdown-preview pre {
+	background: #f0f0f0;
+	padding: 8px;
+	border-radius: 4px;
+	overflow-x: auto;
+  }
+  
+  .markdown-preview code {
+	font-family: monospace;
+	background: #f0f0f0;
+	padding: 2px 4px;
+	border-radius: 4px;
+  }

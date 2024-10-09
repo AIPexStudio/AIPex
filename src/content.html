@@ -34,14 +34,17 @@
 			<div id="ai-chat-content" class="chat-messages">
 				<div class="message ai-message">How can I assist you today?</div>
 			</div>
-			<div class="user-input">
-				<input
-					id="ai-chat-message"
-					type="text"
-					placeholder="Type a message..."
-				/>
-				<button id="ai-chat-send" class="send-button">➤</button>
-			</div>
+			<div class="user-input-container">
+				<div class="markdown-preview"></div>
+				<div class="input-area">
+				  <textarea 
+					id="ai-chat-message" 
+					class="markdown-textarea"
+					placeholder="Type a message... (Supports Markdown formatting)"
+				  ></textarea>
+				  <button id="ai-chat-send" class="send-button">➤</button>
+				</div>
+			  </div>
 			<!-- <div class="tools">
 				<button class="tool-button">⚡</button>
 				<button class="tool-button">✂️</button>

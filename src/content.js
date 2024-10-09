@@ -375,11 +375,43 @@ $(document).ready(() => {
     const closeButton = document.getElementById("close-ai-chat");
     const messageInput = document.getElementById("ai-chat-message");
 
+    // const textarea = document.getElementById('ai-chat-message');
+    const preview = document.querySelector(".markdown-preview");
+    let previewTimeout;
+
+    // Handle textarea input
+    messageInput.addEventListener("input", function () {
+      clearTimeout(previewTimeout);
+      previewTimeout = setTimeout(() => {
+        const text = this.value.trim();
+        if (text) {
+          preview.innerHTML = marked.parse(text);
+          preview.classList.add("show");
+        } else {
+          preview.classList.remove("show");
+        }
+      }, 300);
+    });
+
+    // Handle textarea height
+    messageInput.addEventListener("input", function () {
+      this.style.height = "auto";
+      this.style.height = this.scrollHeight + "px";
+    });
+
+    // Handle Enter key (Shift+Enter for new line)
+    messageInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendButton.click();
+      }
+    });
+
     sendButton.addEventListener("click", sendAIChatMessage);
     closeButton.addEventListener("click", closeAIChatDrawer);
-    messageInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") sendAIChatMessage();
-    });
+    // messageInput.addEventListener("keypress", function (e) {
+    //   if (e.key === "Enter") sendAIChatMessage();
+    // });
 
     drawer.classList.add("initialized");
   }
@@ -399,7 +431,9 @@ $(document).ready(() => {
     const messageInput = document.getElementById("ai-chat-message");
     const sendButton = document.getElementById("ai-chat-send");
     let message = messageInput.value.trim();
-
+    messageInput.style.height = "auto";
+    const preview = document.querySelector(".markdown-preview");
+    preview.classList.remove("show");
     if (text && text.length > 0) {
       message = text;
     }
@@ -493,52 +527,8 @@ $(document).ready(() => {
   }
 
   function renderMarkdownToHtml(text) {
-    // console.log(text);
     const htmlContent = marked.parse(text);
     return htmlContent;
-    // 处理代码块
-    // text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-    // 	code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    // 	return `<pre><code class="language-${
-    // 		lang || ""
-    // 	}">${code.trim()}</code></pre>`;
-    // });
-
-    // // 处理行内代码
-    // text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-
-    // // 处理标题
-    // text = text.replace(/^# (.*$)/gm, "<h1>$1</h1>");
-    // text = text.replace(/^## (.*$)/gm, "<h2>$1</h2>");
-    // text = text.replace(/^### (.*$)/gm, "<h3>$1</h3>");
-
-    // // 处理粗体
-    // text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-    // // 处理斜体
-    // text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
-
-    // // 处理链接
-    // text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
-
-    // // 处理无序列表
-    // text = text.replace(/^\s*[\-\*] (.*$)/gm, "<li>$1</li>");
-    // text = text.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
-
-    // // 处理段落和保持缩进
-    // const lines = text.split("\n");
-    // text = lines
-    // 	.map((line) => {
-    // 		if (line.trim() === "") return "";
-    // 		if (!/^<\/?(\w+).*>/.test(line)) {
-    // 			const indent = line.match(/^\s*/)[0];
-    // 			return `${indent}<p>${line.trim()}</p>`;
-    // 		}
-    // 		return line;
-    // 	})
-    // 	.join("\n");
-
-    // return text;
   }
 
   function renderCode() {
