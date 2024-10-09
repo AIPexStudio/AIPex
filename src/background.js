@@ -858,7 +858,7 @@ const getBookmarks = () => {
 const getHistory = () => {
 	const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
 	chrome.history.search(
-		{ text: "", maxResults: 100000, startTime: oneMonthAgo },
+		{ text: "", maxResults: 10000, startTime: oneMonthAgo },
 		(historyItems) => {
 			const uniqueMap = new Map();
 			// const uniqueHosts = new Set();
@@ -866,8 +866,11 @@ const getHistory = () => {
 
 			historyItems.forEach((item) => {
 				try {
-					uniqueMap.set(item.url, item);
+					const url = new URL(item.url);
+					const host = url.hostname;
+					uniqueMap.set(host, item);
 				} catch (e) {
+					// 忽略无效的 URL
 					console.warn("Invalid URL:", item.url);
 				}
 			});
