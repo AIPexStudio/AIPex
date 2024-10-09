@@ -870,7 +870,6 @@ const getHistory = () => {
 					const host = url.hostname;
 					uniqueMap.set(host, item);
 				} catch (e) {
-					// 忽略无效的 URL
 					console.warn("Invalid URL:", item.url);
 				}
 			});
@@ -889,7 +888,6 @@ const getHistory = () => {
 					lastVisitTime: value.lastVisitTime,
 				});
 			}
-			// 将获取到的唯一主机历史添加到 actions 数组
 			actions = actions.concat(hostActions);
 		}
 	);

@@ -390,7 +390,7 @@ html {
 	padding: 0;
 	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 } */
-.chat-container {
+.aipex-chat-container {
 	position: fixed;
 	top: 0;
 	right: -480px;
@@ -404,10 +404,10 @@ html {
 	flex-direction: column;
 	border-radius: 10px 0 0 10px;
 }
-.chat-container.open {
+.aipex-chat-container.open {
 	right: 0;
 }
-.chat-header {
+.ai-chat-drawer .chat-header {
 	padding: 20px;
 	background-color: #7c5cff;
 	color: white;
@@ -416,7 +416,7 @@ html {
 	align-items: center;
 	border-radius: 10px 0 0 0;
 }
-#close-ai-chat {
+.ai-chat-drawer #close-ai-chat {
 	background: none;
 	border: none;
 	color: white;
@@ -424,10 +424,10 @@ html {
 	cursor: pointer;
 	transition: transform 0.2s;
 }
-#close-ai-chat:hover {
+.ai-chat-drawer #close-ai-chat:hover {
 	transform: scale(1.1);
 }
-.chat-messages {
+.ai-chat-drawer .chat-messages {
 	flex-grow: 1;
 	overflow-y: auto;
 	padding: 20px;
@@ -435,30 +435,30 @@ html {
 	flex-direction: column;
 	gap: 15px;
 }
-.message {
+.ai-chat-drawer .message {
 	max-width: 80%;
 	padding: 12px 16px;
 	border-radius: 18px;
 	line-height: 1.4;
 	font-size: 14px;
 }
-.ai-message {
+.ai-chat-drawer .ai-message {
 	align-self: flex-start;
 	background-color: #f0f0f0;
 	color: #333;
 }
-.user-message {
+.ai-chat-drawer .user-message {
 	align-self: flex-end;
 	background-color: #7c5cff;
 	color: white;
 }
-.user-input {
+.ai-chat-drawer .user-input {
 	display: flex;
 	padding: 15px;
 	background-color: #f9f9f9;
 	border-top: 1px solid #eee;
 }
-#ai-chat-message {
+.ai-chat-drawer #ai-chat-message {
 	flex-grow: 1;
 	margin-right: 10px;
 	padding: 12px 20px;
@@ -467,11 +467,11 @@ html {
 	font-size: 14px;
 	transition: border-color 0.3s;
 }
-#ai-chat-message:focus {
+.ai-chat-drawer #ai-chat-message:focus {
 	outline: none;
 	border-color: #7c5cff;
 }
-.send-button {
+.ai-chat-drawer .send-button {
 	background-color: #7c5cff;
 	color: white;
 	border: none;
@@ -485,18 +485,18 @@ html {
 	align-items: center;
 	transition: background-color 0.3s, transform 0.2s;
 }
-.send-button:hover {
+.ai-chat-drawer .send-button:hover {
 	background-color: #6a4aef;
 	transform: scale(1.05);
 }
-.tools {
+.ai-chat-drawer .tools {
 	display: flex;
 	justify-content: space-around;
 	padding: 15px;
 	background-color: #f9f9f9;
 	border-top: 1px solid #eee;
 }
-.tool-button {
+.ai-chat-drawer .tool-button {
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -504,11 +504,11 @@ html {
 	color: #666;
 	transition: color 0.3s, transform 0.2s;
 }
-.tool-button:hover {
+.ai-chat-drawer .tool-button:hover {
 	color: #7c5cff;
 	transform: scale(1.1);
 }
-.copy-button {
+.ai-chat-drawer .copy-button {
 	position: absolute;
 	top: 5px;
 	right: 5px;
@@ -519,17 +519,16 @@ html {
 	cursor: pointer;
 	border-radius: 3px;
 }
-
-.copy-button:hover {
+.ai-chat-drawer .copy-button:hover {
 	background-color: #45a049;
 }
 
-pre {
+.ai-chat-drawer pre {
 	position: relative;
 	padding-top: 30px;
 }
 
-#selection-toolbar {
+.ai-chat-drawer #selection-toolbar {
 	position: absolute;
 	background: white;
 	border: 1px solid #ccc;
@@ -539,18 +538,18 @@ pre {
 	z-index: 1000;
 }
 
-#selection-toolbar button {
+.ai-chat-drawer #selection-toolbar button {
 	border: none;
 	background-color: transparent;
 	cursor: pointer;
 }
 
-#selection-toolbar img {
+.ai-chat-drawer #selection-toolbar img {
 	width: 24px;
 	height: 24px;
 }
 
-.send-button {
+.ai-chat-drawer .send-button {
 	background: none;
 	border: none;
 	color: #666;
@@ -560,12 +559,12 @@ pre {
 	transition: all 0.3s ease;
 }
 
-.send-button:disabled {
+.ai-chat-drawer .send-button:disabled {
 	cursor: not-allowed;
 	opacity: 0.5;
 }
 
-.send-button.loading {
+.ai-chat-drawer .send-button.loading {
 	animation: rotate 1s linear infinite;
 }
 
@@ -578,7 +577,7 @@ pre {
 	}
 }
 
-.send-button.loading::after {
+.ai-chat-drawer .send-button.loading::after {
 	content: "↻";
 }
 
