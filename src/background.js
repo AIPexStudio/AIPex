@@ -866,11 +866,8 @@ const getHistory = () => {
 
 			historyItems.forEach((item) => {
 				try {
-					const url = new URL(item.url);
-					const host = url.hostname;
-					uniqueMap.set(host, item);
+					uniqueMap.set(item.url, item);
 				} catch (e) {
-					// 忽略无效的 URL
 					console.warn("Invalid URL:", item.url);
 				}
 			});
