@@ -1,12 +1,17 @@
 # AIpex
 
-⭐ _Tab & BookMark & History Manager_
+⭐ _Organize Tabs
 
-![Tab Manager](preview.gif)
+![Smart Organize Tabs](organize-tabs.gif)
 
 ⭐ _Chatgpt sidebar_
 
+
 ![Chatgpt sidebar](AI.gif)
+
+⭐ _Tab & BookMark & History Manager_
+
+![Tab Manager](preview.gif)
 
 AIPex is the most useful toolkit in browser
 
@@ -81,9 +86,9 @@ You can run AIPex locally without having to install it from the Chrome Store or 
 
 ## Work in Progress
 
-- [ ] Tab Manager
+- [x] Tab Manager
   - [x] Switch between tabs
-  - [ ] Use AI to organize tabs
+  - [x] Use AI to organize tabs
 - [x] History Manager
 - [x] BookMark Manager
 - [ ] Chatgpt sidebar
