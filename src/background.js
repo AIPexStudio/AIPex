@@ -787,7 +787,7 @@ const resetaipex = () => {
 	clearActions();
 	getTabs();
 	getBookmarks();
-	getHistory();
+	// getHistory();
 	var search = [
 		{
 			title: "Search",
@@ -853,44 +853,6 @@ const getBookmarks = () => {
 	};
 
 	chrome.bookmarks.getRecent(100, process_bookmark);
-};
-
-const getHistory = () => {
-	const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
-	chrome.history.search(
-		{ text: "", maxResults: 10000, startTime: oneMonthAgo },
-		(historyItems) => {
-			const uniqueMap = new Map();
-			// const uniqueHosts = new Set();
-			const hostActions = [];
-
-			historyItems.forEach((item) => {
-				try {
-					const url = new URL(item.url);
-					const host = url.hostname;
-					uniqueMap.set(host, item);
-				} catch (e) {
-					console.warn("Invalid URL:", item.url);
-				}
-			});
-
-			for (const [key, value] of uniqueMap) {
-				hostActions.push({
-					title: value.title,
-					desc: "History host",
-					id: value.id,
-					url: `https://${key}`,
-					type: "history",
-					action: "open-history-url",
-					emoji: true,
-					emojiChar: "🏛",
-					keycheck: false,
-					lastVisitTime: value.lastVisitTime,
-				});
-			}
-			actions = actions.concat(hostActions);
-		}
-	);
 };
 
 // Lots of different actions
