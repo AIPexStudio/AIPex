@@ -62,6 +62,24 @@ const clearActions = () => {
 				keys: ["⌘", "T"],
 			},
 			{
+				title: "Organize Tabs",
+				desc: "Group tabs using AI",
+				type: "action",
+				action: "organize-tabs",
+				emoji: true,
+				emojiChar: "📑",
+				keycheck: false,
+			},
+			{
+				title: "Remove Tab Groups",
+				desc: "Remove the groups of tabs",
+				type: "action",
+				action: "remove-groups",
+				emoji: true,
+				emojiChar: "❌",
+				keycheck: false,
+			},
+			{
 				title: "Bookmark",
 				desc: "Create a bookmark",
 				type: "action",
@@ -809,6 +827,31 @@ const resetaipex = () => {
 		},
 	];
 	actions = search.concat(actions);
+	clearActions();
+	getTabs();
+	getBookmarks();
+	getHistory();
+	var search = [
+		{
+			title: "Search",
+			desc: "Search for a query",
+			type: "action",
+			action: "search",
+			emoji: true,
+			emojiChar: "🔍",
+			keycheck: false,
+		},
+		{
+			title: "Search",
+			desc: "Go to website",
+			type: "action",
+			action: "goto",
+			emoji: true,
+			emojiChar: "🔍",
+			keycheck: false,
+		},
+	];
+	actions = search.concat(actions);
 };
 
 // Check if tabs have changed and actions need to be fetched again
@@ -853,6 +896,44 @@ const getBookmarks = () => {
 	};
 
 	chrome.bookmarks.getRecent(100, process_bookmark);
+};
+
+const getHistory = () => {
+	const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+	chrome.history.search(
+		{ text: "", maxResults: 10000, startTime: oneMonthAgo },
+		(historyItems) => {
+			const uniqueMap = new Map();
+			// const uniqueHosts = new Set();
+			const hostActions = [];
+
+			historyItems.forEach((item) => {
+				try {
+					const url = new URL(item.url);
+					const host = url.hostname;
+					uniqueMap.set(host, item);
+				} catch (e) {
+					console.warn("Invalid URL:", item.url);
+				}
+			});
+
+			for (const [key, value] of uniqueMap) {
+				hostActions.push({
+					title: value.title,
+					desc: "History host",
+					id: value.id,
+					url: `https://${key}`,
+					type: "history",
+					action: "open-history-url",
+					emoji: true,
+					emojiChar: "🏛",
+					keycheck: false,
+					lastVisitTime: value.lastVisitTime,
+				});
+			}
+			actions = actions.concat(hostActions);
+		}
+	);
 };
 
 // Lots of different actions
@@ -955,7 +1036,9 @@ const removeBookmark = (bookmark) => {
 	chrome.bookmarks.remove(bookmark.id);
 };
 
-async function chatCompletion(host, key, content, model, context) {
+async function chatCompletion(host, key, content, model, context, stream) {
+	console.log(context.join("\n"));
+	console.log(content);
 	const url = `${host}`;
 
 	const response = await fetch(url, {
@@ -970,16 +1053,153 @@ async function chatCompletion(host, key, content, model, context) {
 				{ role: "system", content: context.join("\n") },
 				{ role: "user", content: content },
 			],
-			stream: true,
+			stream: stream,
 		}),
 	});
 
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
-	return response.body;
-	// const data = await response.json();
-	// return data;
+	if (stream) {
+		console.log(response.body);
+		return response.body;
+	} else {
+		const data = await response.json();
+		console.log(data);
+		return data;
+	}
+}
+
+async function groupTabsByHostname(host, key, model) {
+	console.log(new Date().toISOString());
+	try {
+		const tabs = await chrome.tabs.query({ currentWindow: true });
+
+		const activeTab = await chrome.tabs.query({
+			active: true,
+			currentWindow: true,
+		});
+		const activeHostname = new URL(activeTab[0].url).hostname;
+
+		// Prepare tab data for AI
+		const tabData = tabs.map((tab) => ({
+			id: tab.id,
+			url: tab.url,
+			title: tab.title,
+			group: null, // This will be filled by the AI
+		}));
+
+		// Prepare context and content for AI
+		const context = [
+			"You are an AI assistant tasked with grouping browser tabs.",
+			"You will receive a list of tab data including IDs, URLs, and titles.",
+			"Group these tabs based on their content and purpose, not just by hostname.",
+			"For each tab, add a 'group' field with a descriptive and concise group name.",
+			"Return the modified JSON array of tab data, without any additional text or code block markers.",
+		];
+		let content = JSON.stringify(tabData);
+
+		let groupedTabs;
+		let attempts = 0;
+		const maxAttempts = 5;
+
+		function extractJSON(text) {
+			const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+			return jsonMatch ? jsonMatch[1].trim() : text.trim();
+		}
+
+		while (attempts < maxAttempts) {
+			console.log(attempts + " trys");
+			attempts++;
+
+			// Get AI grouping suggestion
+			const aiResponse = await chatCompletion(
+				host,
+				key,
+				content,
+				model,
+				context,
+				false
+			);
+			console.log("get response");
+
+			let aiContent = extractJSON(aiResponse.choices[0].message.content);
+
+			try {
+				groupedTabs = JSON.parse(aiContent);
+				if (
+					Array.isArray(groupedTabs) &&
+					groupedTabs.every((tab) => tab.group !== null)
+				) {
+					break; // Valid JSON array with groups, exit the loop
+				} else {
+					throw new Error("Parsed JSON is not a valid array of grouped tabs");
+				}
+			} catch (parseError) {
+				console.warn(
+					`Attempt ${attempts}: Failed to parse AI response as JSON`
+				);
+				console.log("Raw AI response:", aiContent);
+
+				if (attempts < maxAttempts) {
+					console.log("Attempting to repair JSON with AI assistance...");
+
+					const repairContext = [
+						"You are an AI assistant tasked with repairing invalid JSON.",
+						"You will receive a string that should be a valid JSON array of tab data.",
+						"Your task is to fix any syntax errors and ensure each tab object has a 'group' field.",
+						"Return only the corrected JSON array, without any additional text or code block markers.",
+					];
+
+					const repairResponse = await chatCompletion(
+						host,
+						key,
+						aiContent,
+						model,
+						repairContext,
+						false
+					);
+
+					content = extractJSON(repairResponse.choices[0].message.content);
+					continue; // Try again with the repaired JSON
+				}
+			}
+
+			if (attempts === maxAttempts) {
+				throw new Error("Failed to obtain valid JSON after maximum attempts");
+			}
+		}
+
+		console.log(groupedTabs);
+		console.log(new Date().toISOString());
+
+		// Create tab groups based on AI suggestion
+		const groupMap = new Map();
+		for (const tab of groupedTabs) {
+			if (!groupMap.has(tab.group)) {
+				groupMap.set(tab.group, []);
+			}
+			groupMap.get(tab.group).push(tab.id);
+		}
+
+		for (const [groupName, tabIds] of groupMap.entries()) {
+			if (tabIds.length === 0) {
+				console.warn(`Skipping empty group "${groupName}"`);
+				continue;
+			}
+
+			const group = await chrome.tabs.group({ tabIds });
+			await chrome.tabGroups.update(group, { title: groupName });
+
+			// Collapse group if it doesn't contain the active tab
+			const containsActiveTab = tabIds.includes(activeTab[0].id);
+			await chrome.tabGroups.update(group, { collapsed: !containsActiveTab });
+		}
+
+		console.log("Tabs have been grouped successfully based on AI suggestion.");
+	} catch (error) {
+		console.error("Error grouping tabs:", error);
+	}
 }
 
 // Receive messages from any tab
@@ -990,7 +1210,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 			message.key,
 			message.content,
 			message.model,
-			message.context
+			message.context,
+			true
 		)
 			.then((stream) => {
 				const reader = stream.getReader();
@@ -1136,6 +1357,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 		case "settings":
 		case "extensions/shortcuts":
 			openChromeUrl(message.request);
+			break;
+		case "organize-tabs":
+			console.log("organize tabs");
+			groupTabsByHostname(message.host, message.key, message.model);
+			break;
+		case "remove-groups":
+			console.log("remove groups");
+			chrome.tabGroups.query({}, (groups) => {
+				groups.forEach((group) => {
+					chrome.tabs.query({ groupId: group.id }, (tabs) => {
+						tabs.forEach((tab) => {
+							chrome.tabs.ungroup(tab.id);
+						});
+					});
+				});
+			});
 			break;
 		case "manage-data":
 			openChromeUrl("settings/clearBrowserData");

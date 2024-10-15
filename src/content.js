@@ -1083,6 +1083,20 @@ $(document).ready(() => {
 					console.log("history is right");
 					window.open($(".aipex-item-active .aipex-item-url").text());
 					break;
+				case "organize-tabs":
+					console.log("organize tabs");
+					chrome.runtime.sendMessage({
+						request: "organize-tabs",
+						model: aiModel,
+						host: aiHost,
+						key: aiToken,
+					});
+					break;
+				case "remove-groups":
+					chrome.runtime.sendMessage({
+						request: "remove-groups",
+					});
+					break;
 				case "ai-chat":
 					const query = $(".aipex-extension input").val().replace("/ai ", "");
 					console.log(query);
