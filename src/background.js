@@ -1012,8 +1012,6 @@ const removeBookmark = (bookmark) => {
 };
 
 async function chatCompletion(host, key, content, model, context, stream) {
-  console.log(context.join("\n"));
-  console.log(content);
   const url = `${host}`;
 
   const response = await fetch(url, {
@@ -1045,137 +1043,113 @@ async function chatCompletion(host, key, content, model, context, stream) {
   }
 }
 
-async function groupTabsByHostname(host, key, model) {
-  console.log(new Date().toISOString());
-  try {
-    const tabs = await chrome.tabs.query({ currentWindow: true });
+let existingGroups = new Map();
 
+// 分类并分组单个标签页的函数
+async function classifyAndGroupTab(tab, host, key, model) {
+  try {
     const activeTab = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
-    const activeHostname = new URL(activeTab[0].url).hostname;
 
-    // Prepare tab data for AI
-    const tabData = tabs.map((tab) => ({
-      id: tab.id,
-      url: tab.url,
-      title: tab.title,
-      group: null, // This will be filled by the AI
-    }));
+    const context = ["You are a browser tab group classificator"];
+    const content = `Classify the tab group base on the provided URL (${tab.url}) and title (${tab.title}) into one of the categories: Social, Entertainment, Read Material, Education, Productivity, Utilities. Response with the category only, without any comments.`;
 
-    // Prepare context and content for AI
-    const context = [
-      "You are an AI assistant tasked with grouping browser tabs.",
-      "You will receive a list of tab data including IDs, URLs, and titles.",
-      "Group these tabs based on their content and purpose, not just by hostname.",
-      "For each tab, add a 'group' field with a descriptive and concise group name.",
-      "Return the modified JSON array of tab data, without any additional text or code block markers.",
-    ];
-    let content = JSON.stringify(tabData);
+    // Get classification for the tab
+    const aiResponse = await chatCompletion(
+      host,
+      key,
+      content,
+      model,
+      context,
+      false
+    );
+    console.log(aiResponse);
 
-    let groupedTabs;
-    let attempts = 0;
-    const maxAttempts = 5;
+    const category = aiResponse.choices[0].message.content.trim();
 
-    function extractJSON(text) {
-      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      return jsonMatch ? jsonMatch[1].trim() : text.trim();
-    }
+    try {
+      // If we already have a group for this category
+      if (existingGroups.has(category)) {
+        // Add tab to existing group
+        await chrome.tabs.group({
+          tabIds: tab.id,
+          groupId: existingGroups.get(category),
+        });
+      } else {
+        // Create new group for this category
+        const group = await chrome.tabs.group({
+          tabIds: [tab.id],
+        });
+        await chrome.tabGroups.update(group, { title: category });
 
-    while (attempts < maxAttempts) {
-      console.log(attempts + " trys");
-      attempts++;
+        // Store the new group id
+        existingGroups.set(category, group);
 
-      // Get AI grouping suggestion
-      const aiResponse = await chatCompletion(
-        host,
-        key,
-        content,
-        model,
-        context,
-        false
+        // Set collapse state based on whether it contains the active tab
+        const collapsed = tab.id !== activeTab[0].id;
+        await chrome.tabGroups.update(group, { collapsed });
+      }
+
+      console.log(`Tab "${tab.title}" grouped into "${category}"`);
+    } catch (groupError) {
+      console.error(
+        `Error grouping tab ${tab.id} into ${category}:`,
+        groupError
       );
-      console.log("get response");
-
-      let aiContent = extractJSON(aiResponse.choices[0].message.content);
-
-      try {
-        groupedTabs = JSON.parse(aiContent);
-        if (
-          Array.isArray(groupedTabs) &&
-          groupedTabs.every((tab) => tab.group !== null)
-        ) {
-          break; // Valid JSON array with groups, exit the loop
-        } else {
-          throw new Error("Parsed JSON is not a valid array of grouped tabs");
-        }
-      } catch (parseError) {
-        console.warn(
-          `Attempt ${attempts}: Failed to parse AI response as JSON`
-        );
-        console.log("Raw AI response:", aiContent);
-
-        if (attempts < maxAttempts) {
-          console.log("Attempting to repair JSON with AI assistance...");
-
-          const repairContext = [
-            "You are an AI assistant tasked with repairing invalid JSON.",
-            "You will receive a string that should be a valid JSON array of tab data.",
-            "Your task is to fix any syntax errors and ensure each tab object has a 'group' field.",
-            "Return only the corrected JSON array, without any additional text or code block markers.",
-          ];
-
-          const repairResponse = await chatCompletion(
-            host,
-            key,
-            aiContent,
-            model,
-            repairContext,
-            false
-          );
-
-          content = extractJSON(repairResponse.choices[0].message.content);
-          continue; // Try again with the repaired JSON
-        }
-      }
-
-      if (attempts === maxAttempts) {
-        throw new Error("Failed to obtain valid JSON after maximum attempts");
-      }
     }
-
-    console.log(groupedTabs);
-    console.log(new Date().toISOString());
-
-    // Create tab groups based on AI suggestion
-    const groupMap = new Map();
-    for (const tab of groupedTabs) {
-      if (!groupMap.has(tab.group)) {
-        groupMap.set(tab.group, []);
-      }
-      groupMap.get(tab.group).push(tab.id);
-    }
-
-    for (const [groupName, tabIds] of groupMap.entries()) {
-      if (tabIds.length === 0) {
-        console.warn(`Skipping empty group "${groupName}"`);
-        continue;
-      }
-
-      const group = await chrome.tabs.group({ tabIds });
-      await chrome.tabGroups.update(group, { title: groupName });
-
-      // Collapse group if it doesn't contain the active tab
-      const containsActiveTab = tabIds.includes(activeTab[0].id);
-      await chrome.tabGroups.update(group, { collapsed: !containsActiveTab });
-    }
-
-    console.log("Tabs have been grouped successfully based on AI suggestion.");
   } catch (error) {
-    console.error("Error grouping tabs:", error);
+    console.error(`Error processing tab ${tab.id}:`, error);
   }
 }
+
+// 处理所有现有标签页的函数
+async function groupTabsByHostname(host, key, model) {
+  console.log(new Date().toISOString());
+  try {
+    // 重置现有分组 Map
+    existingGroups = new Map();
+
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+
+    // Process each tab individually
+    for (const tab of tabs) {
+      await classifyAndGroupTab(tab, host, key, model);
+    }
+
+    console.log("All tabs have been processed.");
+  } catch (error) {
+    console.error("Error in grouping process:", error);
+  }
+}
+
+chrome.tabs.onCreated.addListener(async (tab) => {
+  // 等待一小段时间让标签页加载完成（因为创建时可能还没有 title）
+  setTimeout(async () => {
+    // 重新获取标签页信息以确保有完整的 URL 和 title
+    const updatedTab = await chrome.tabs.get(tab.id);
+    if (updatedTab.url && updatedTab.url !== "chrome://newtab/") {
+      await classifyAndGroupTab(updatedTab, host, key, model);
+    }
+  }, 1000); // 等待 1 秒让标签页加载
+});
+
+// 监听标签页更新事件的函数（处理从 chrome://newtab/ 导航到实际 URL 的情况）
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // 当标签页完成加载且不是空白页时进行分类
+  if (
+    changeInfo.status === "complete" &&
+    tab.url &&
+    tab.url !== "chrome://newtab/"
+  ) {
+    const existingGroupId = await chrome.tabs.get(tabId).then((t) => t.groupId);
+    // 只处理还没有被分组的标签页
+    if (existingGroupId === -1) {
+      await classifyAndGroupTab(tab, host, key, model);
+    }
+  }
+});
 
 // Receive messages from any tab
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
