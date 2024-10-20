@@ -22,6 +22,8 @@ It could be
 - The best tabs extension for google chrome
 - AI Chatbot, Open-source version of Sider and Monica
 
+[chrome extension](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+
 ## Features
 
 🗄 Switch, open, close, and search your tabs
@@ -51,6 +53,12 @@ It could be
 ### Opening AIpex
 
 To open AIPex, simply press `⌘+M` . You can change the shortcut when clicking the extension.
+
+### Configure AIpex
+
+To use AI features in AIpex, you can click the AIpex in chrome toobar, and then you can customize shorcut or set AI parameters
+
+![AIPex configure](src/screenshots/settings.png)
 
 ### Closing AIpex
 
@@ -103,4 +111,5 @@ You can run AIPex locally without having to install it from the Chrome Store or 
     - [x] Chat
     - [ ] Image
     - [ ] Search
+
 

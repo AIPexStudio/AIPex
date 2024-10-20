@@ -528,7 +528,7 @@ html {
 	padding-top: 30px;
 }
 
-.ai-chat-drawer #selection-toolbar {
+#aipex-selection-toolbar {
 	position: absolute;
 	background: white;
 	border: 1px solid #ccc;
@@ -536,15 +536,18 @@ html {
 	display: flex;
 	gap: 5px;
 	z-index: 1000;
+	font-size: 12px;
+	color: #000;
+	line-height: 16px;
 }
 
-.ai-chat-drawer #selection-toolbar button {
+#aipex-selection-toolbar button {
 	border: none;
 	background-color: transparent;
 	cursor: pointer;
 }
 
-.ai-chat-drawer #selection-toolbar img {
+ #aipex-selection-toolbar img {
 	width: 24px;
 	height: 24px;
 }
@@ -641,3 +644,26 @@ html {
 	padding: 2px 4px;
 	border-radius: 4px;
   }
+
+  .aipex-drag-icon {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    cursor: move;
+    z-index: 99999; /* 提高z-index确保在最上层 */
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none; /* 防止文本选择 */
+    touch-action: none; /* 防止触摸设备的默认行为 */
+}
+
+.aipex-drag-icon img {
+	width: 25px;
+	height: 25px;
+}
