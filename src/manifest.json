@@ -2,7 +2,7 @@
 	"name": "AIpex —— Tab & History Manager, AI Companion",
 	"description": "Supercharge Chrome with commands, shortcuts, and AI",
 	"offline_enabled": true,
-	"version": "1.4.7",
+	"version": "1.4.9",
 	"manifest_version": 3,
 	"action": {
 		"icons": {
@@ -72,7 +72,8 @@
 		"commands",
 		"storage",
 		"contextMenus",
-		"scripting"
+		"scripting",
+		"sessions"
 	],
 	"host_permissions": [
 		"https://www.googleapis.com/*",

@@ -584,6 +584,16 @@ const clearActions = () => {
         keys: ["⌥", "⇧", "D"],
       },
       {
+        title: "Restore tab",
+        desc: "Restore the last closed tab",
+        type: "action",
+        action: "restore-tab",
+        emoji: true,
+        emojiChar: "🗑",
+        keycheck: true,
+        keys: ["⌘", "⇧", "T"],
+      },
+      {
         title: "Close tab",
         desc: "Close the current tab",
         type: "action",
@@ -929,6 +939,31 @@ const duplicateTab = (tab) => {
     chrome.tabs.duplicate(response.id);
   });
 };
+const restoreTab = (tab) => {
+  // 使用sessions.getRecentlyClosed获取最近关闭的标签和窗口
+  chrome.sessions.getRecentlyClosed({ maxResults: 1 }, (sessions) => {
+    if (sessions.length) {
+      const lastSession = sessions[0];
+      // 如果是标签页
+      if (lastSession.tab) {
+        // 在新标签页打开URL
+        chrome.tabs.create({
+          url: lastSession.tab.url,
+          active: true,
+        });
+      }
+      // 如果是窗口
+      else if (lastSession.window) {
+        // 获取窗口中的第一个标签页URL
+        const url = lastSession.window.tabs[0].url;
+        chrome.tabs.create({
+          url: url,
+          active: true,
+        });
+      }
+    }
+  });
+};
 const createBookmark = (tab) => {
   getCurrentTab().then((response) => {
     chrome.bookmarks.create({
@@ -1255,6 +1290,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "duplicate-tab":
       duplicateTab(message.tab);
       break;
+    case "restore-tab":
+      restoreTab(message.tab);
+      break;
     case "create-bookmark":
       createBookmark(message.tab);
       break;
@@ -1300,6 +1338,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "organize-tabs":
       console.log("organize tabs");
       groupTabsByHostname(message.host, message.key, message.model);
+      break;
+    case "new-incognito-tab":
+      chrome.windows.create({
+        url: "https://google.com",
+        incognito: true,
+      });
       break;
     case "remove-groups":
       console.log("remove groups");

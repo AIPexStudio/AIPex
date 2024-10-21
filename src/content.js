@@ -1068,6 +1068,11 @@ $(document).ready(() => {
         case "new-tab":
           window.open("");
           break;
+        case "new-incognito-tab":
+          chrome.runtime.sendMessage({
+            request: "new-incognito-tab",
+          });
+          break;
         case "email":
           window.open("mailto:");
           break;
