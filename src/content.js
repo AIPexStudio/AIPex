@@ -93,8 +93,7 @@ $(document).ready(() => {
     // Add URL to the description if it exists
     var description = action.desc;
     if (action.url) {
-      description +=
-        '<br><span class="aipex-item-url">' + action.url + "</span>";
+      description = action.url;
     }
 
     if (index != 0) {
