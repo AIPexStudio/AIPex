@@ -1076,66 +1076,62 @@ let existingGroups = new Map();
 // 分类并分组单个标签页的函数
 async function classifyAndGroupTab(tab) {
   try {
+    // 获取当前窗口的活动标签页
     const activeTab = await chrome.tabs.query({
       active: true,
       currentWindow: true,
+      windowId: tab.windowId,
     });
 
     const context = ["You are a browser tab group classificator"];
     const content = `Classify the tab group base on the provided URL (${tab.url}) and title (${tab.title}) into one of the categories: Social, Entertainment, Read Material, Education, Productivity, Utilities. Response with the category only, without any comments.`;
 
-    // Get classification for the tab
     const aiResponse = await chatCompletion(content, context, false);
-    console.log(aiResponse);
-
     const category = aiResponse.choices[0].message.content.trim();
 
     try {
-      // Get all existing groups first
-      const groups = await chrome.tabGroups.query({});
+      // 只获取当前窗口的分组
+      const groups = await chrome.tabGroups.query({
+        windowId: tab.windowId,
+      });
 
-      // Try to find an existing group with the same title
+      // 在当前窗口查找已存在的同名分组
       const existingGroup = groups.find((group) => group.title === category);
 
       if (existingGroup) {
-        // Use existing group with same title
         await chrome.tabs.group({
           tabIds: tab.id,
           groupId: existingGroup.id,
         });
-      } else if (existingGroups.has(category)) {
-        // Use group from our existing groups map
-        await chrome.tabs.group({
-          tabIds: tab.id,
-          groupId: existingGroups.get(category),
-        });
       } else {
-        // Create new group since no matching group exists
+        // 在当前窗口创建新分组
         const group = await chrome.tabs.group({
           tabIds: [tab.id],
+          windowId: tab.windowId,
         });
         await chrome.tabGroups.update(group, { title: category });
 
-        // Store the new group id
-        existingGroups.set(category, group);
-
-        // Set collapse state based on whether it contains the active tab
+        // 根据是否为活动标签页来设置折叠状态
         const collapsed = tab.id !== activeTab[0].id;
         await chrome.tabGroups.update(group, { collapsed });
       }
 
-      console.log(`Tab "${tab.title}" grouped into "${category}"`);
+      console.log(
+        `Tab "${tab.title}" grouped into "${category}" in window ${tab.windowId}`
+      );
     } catch (groupError) {
       console.error(
-        `Error grouping tab ${tab.id} into ${category}:`,
+        `Error grouping tab ${tab.id} into ${category} in window ${tab.windowId}:`,
         groupError
       );
     }
   } catch (error) {
-    console.error(`Error processing tab ${tab.id}:`, error);
+    console.error(
+      `Error processing tab ${tab.id} in window ${tab.windowId}:`,
+      error
+    );
   }
 }
-
 // 处理所有现有标签页的函数
 async function groupTabsByHostname() {
   console.log(new Date().toISOString());
@@ -1157,26 +1153,21 @@ async function groupTabsByHostname() {
 }
 
 chrome.tabs.onCreated.addListener(async (tab) => {
-  // 等待一小段时间让标签页加载完成（因为创建时可能还没有 title）
   setTimeout(async () => {
-    // 重新获取标签页信息以确保有完整的 URL 和 title
     const updatedTab = await chrome.tabs.get(tab.id);
     if (updatedTab.url && updatedTab.url !== "chrome://newtab/") {
       await classifyAndGroupTab(updatedTab);
     }
-  }, 1000); // 等待 1 秒让标签页加载
+  }, 1000);
 });
 
-// 监听标签页更新事件的函数（处理从 chrome://newtab/ 导航到实际 URL 的情况）
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // 当标签页完成加载且不是空白页时进行分类
   if (
     changeInfo.status === "complete" &&
     tab.url &&
     tab.url !== "chrome://newtab/"
   ) {
     const existingGroupId = await chrome.tabs.get(tabId).then((t) => t.groupId);
-    // 只处理还没有被分组的标签页
     if (existingGroupId === -1) {
       await classifyAndGroupTab(tab);
     }
