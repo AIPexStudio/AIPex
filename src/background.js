@@ -1074,13 +1074,13 @@ async function chatCompletion(content, context, stream) {
 let existingGroups = new Map();
 
 // 分类并分组单个标签页的函数
+
 async function classifyAndGroupTab(tab) {
   try {
     // 获取当前窗口的活动标签页
     const activeTab = await chrome.tabs.query({
       active: true,
       currentWindow: true,
-      windowId: tab.windowId,
     });
 
     const context = ["You are a browser tab group classificator"];
@@ -1090,7 +1090,7 @@ async function classifyAndGroupTab(tab) {
     const category = aiResponse.choices[0].message.content.trim();
 
     try {
-      // 只获取当前窗口的分组
+      // 获取当前标签页所在窗口的所有分组
       const groups = await chrome.tabGroups.query({
         windowId: tab.windowId,
       });
@@ -1099,21 +1099,27 @@ async function classifyAndGroupTab(tab) {
       const existingGroup = groups.find((group) => group.title === category);
 
       if (existingGroup) {
+        // 使用已存在的分组
         await chrome.tabs.group({
           tabIds: tab.id,
           groupId: existingGroup.id,
         });
       } else {
-        // 在当前窗口创建新分组
-        const group = await chrome.tabs.group({
+        // 创建新分组 - 只需要提供 tabIds，Chrome 会自动在正确的窗口中创建分组
+        const groupId = await chrome.tabs.group({
           tabIds: [tab.id],
-          windowId: tab.windowId,
         });
-        await chrome.tabGroups.update(group, { title: category });
+
+        // 设置分组标题
+        await chrome.tabGroups.update(groupId, {
+          title: category,
+        });
 
         // 根据是否为活动标签页来设置折叠状态
-        const collapsed = tab.id !== activeTab[0].id;
-        await chrome.tabGroups.update(group, { collapsed });
+        const collapsed = tab.id !== activeTab[0]?.id;
+        await chrome.tabGroups.update(groupId, {
+          collapsed,
+        });
       }
 
       console.log(
@@ -1132,6 +1138,7 @@ async function classifyAndGroupTab(tab) {
     );
   }
 }
+
 // 处理所有现有标签页的函数
 async function groupTabsByHostname() {
   console.log(new Date().toISOString());
