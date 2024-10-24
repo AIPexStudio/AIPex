@@ -547,7 +547,7 @@ html {
 	cursor: pointer;
 }
 
- #aipex-selection-toolbar img {
+#aipex-selection-toolbar img {
 	width: 24px;
 	height: 24px;
 }
@@ -591,14 +591,14 @@ html {
 	padding: 10px;
 	background: #fff;
 	border-top: 1px solid #e0e0e0;
-  }
+}
 
-  .input-area {
+.input-area {
 	display: flex;
 	gap: 8px;
-  }
-  
-  .markdown-textarea {
+}
+
+.markdown-textarea {
 	flex-grow: 1;
 	min-height: 60px;
 	max-height: 200px;
@@ -610,57 +610,57 @@ html {
 	line-height: 1.5;
 	resize: vertical;
 	overflow-y: auto;
-  }
-  
-  .markdown-textarea:focus {
+}
+
+.markdown-textarea:focus {
 	outline: none;
 	border-color: #2196f3;
 	box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-  }
+}
 
-  .markdown-preview {
+.markdown-preview {
 	display: none;
 	padding: 8px 12px;
 	background: #f5f5f5;
 	border-radius: 8px;
 	font-size: 14px;
 	line-height: 1.5;
-  }
-  
-  .markdown-preview.show {
+}
+
+.markdown-preview.show {
 	display: block;
-  }
-  
-  .markdown-preview pre {
+}
+
+.markdown-preview pre {
 	background: #f0f0f0;
 	padding: 8px;
 	border-radius: 4px;
 	overflow-x: auto;
-  }
-  
-  .markdown-preview code {
+}
+
+.markdown-preview code {
 	font-family: monospace;
 	background: #f0f0f0;
 	padding: 2px 4px;
 	border-radius: 4px;
-  }
+}
 
-  .aipex-drag-icon {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    cursor: move;
-    z-index: 99999; /* 提高z-index确保在最上层 */
-    background-color: #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none; /* 防止文本选择 */
-    touch-action: none; /* 防止触摸设备的默认行为 */
+.aipex-drag-icon {
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	width: 50px;
+	height: 50px;
+	/* cursor: move; */
+	z-index: 99999; /* 提高z-index确保在最上层 */
+	background-color: #fff;
+	border-radius: 50%;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none; /* 防止文本选择 */
+	touch-action: none; /* 防止触摸设备的默认行为 */
 }
 
 .aipex-drag-icon img {
