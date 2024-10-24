@@ -646,12 +646,12 @@ html {
 }
 
 .aipex-drag-icon {
-	position: absolute;
+	position: fixed;
 	bottom: 20px;
 	right: 20px;
 	width: 50px;
 	height: 50px;
-	/* cursor: move; */
+	cursor: pointer;
 	z-index: 99999; /* 提高z-index确保在最上层 */
 	background-color: #fff;
 	border-radius: 50%;
