@@ -6,16 +6,16 @@
 	"manifest_version": 3,
 	"action": {
 		"icons": {
-			"16": "assets/ai-icon-16.png",
-			"48": "assets/ai-icon-48.png",
-			"128": "assets/ai-icon-128.png"
+			"16": "assets/ai-icon.png",
+			"48": "assets/ai-icon.png",
+			"128": "assets/ai-icon.png"
 		},
 		"default_popup": "popup.html"
 	},
 	"icons": {
-		"16": "assets/ai-icon-16.png",
-		"48": "assets/ai-icon-48.png",
-		"128": "assets/ai-icon-128.png"
+		"16": "assets/ai-icon.png",
+		"48": "assets/ai-icon.png",
+		"128": "assets/ai-icon.png"
 	},
 	"commands": {
 		"open-aipex": {

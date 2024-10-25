@@ -1261,6 +1261,20 @@ $(document).ready(() => {
       );
     });
 
+    $("#aipex-icon").on("mouseover", function (e) {
+      $(this).attr(
+        "src",
+        "https://miro.medium.com/v2/resize:fit:720/format:webp/1*dovpu-gbULPxot3OmL2eEQ.png"
+      );
+    });
+
+    $("#aipex-icon").on("mouseout", function (e) {
+      $(this).attr(
+        "src",
+        "https://miro.medium.com/v2/resize:fit:720/format:webp/1*gHH5bC3nCpzRVXu7UdT0ZQ.png"
+      );
+    });
+
     $(document).on("mousemove", { capture: true }, function (e) {
       if (!isDragging) return;
       console.log("mouse move");

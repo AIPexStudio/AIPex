@@ -673,16 +673,6 @@ const clearActions = () => {
         keycheck: false,
         keys: ["⌘", "D"],
       },
-      {
-        title: "Clear passwords",
-        desc: "Clear all saved passwords",
-        type: "action",
-        action: "remove-passwords",
-        emoji: true,
-        emojiChar: "🔑",
-        keycheck: false,
-        keys: ["⌘", "D"],
-      },
     ];
 
     if (!isMac) {
