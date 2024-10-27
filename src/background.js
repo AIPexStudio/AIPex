@@ -4,6 +4,18 @@ let aiHost = "";
 let aiKey = "";
 let aiModel = "";
 
+let autoGroupTabs = true;
+
+chrome.storage.sync.get(["autoGroupTabs"], function (result) {
+  autoGroupTabs = result.autoGroupTabs !== false;
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "sync" && changes.autoGroupTabs) {
+    autoGroupTabs = changes.autoGroupTabs.newValue;
+  }
+});
+
 chrome.storage.sync.get(["aiHost", "aiToken", "aiModel"], function (result) {
   aiHost = result.aiHost || "";
   aiKey = result.aiToken || "";
@@ -32,6 +44,32 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       aiModel = result.aiModel;
       console.log("Updated AI settings:", { aiHost, aiKey, aiModel });
     });
+  }
+});
+
+let tabGroupCategories = [
+  "Social",
+  "Entertainment",
+  "Read Material",
+  "Education",
+  "Productivity",
+  "Utilities",
+];
+
+chrome.storage.sync.get(["tabGroupCategories"], function (result) {
+  if (result.tabGroupCategories) {
+    tabGroupCategories = result.tabGroupCategories
+      .split(",")
+      .map((cat) => cat.trim());
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "sync" && changes.tabGroupCategories) {
+    tabGroupCategories = changes.tabGroupCategories.newValue
+      .split(",")
+      .map((cat) => cat.trim());
+    console.log(tabGroupCategories);
   }
 });
 
@@ -1072,9 +1110,17 @@ async function classifyAndGroupTab(tab) {
       active: true,
       currentWindow: true,
     });
+    console.log(tabGroupCategories);
 
     const context = ["You are a browser tab group classificator"];
-    const content = `Classify the tab group base on the provided URL (${tab.url}) and title (${tab.title}) into one of the categories: Social, Entertainment, Read Material, Education, Productivity, Utilities. Response with the category only, without any comments.`;
+
+    const content = `Classify the tab group based on the provided URL (${
+      tab.url
+    }) and title (${
+      tab.title
+    }) into one of the categories: ${tabGroupCategories.join(
+      ", "
+    )}. Response with the category only, without any comments.`;
 
     const aiResponse = await chatCompletion(content, context, false);
     const category = aiResponse.choices[0].message.content.trim();
@@ -1150,6 +1196,7 @@ async function groupTabsByHostname() {
 }
 
 chrome.tabs.onCreated.addListener(async (tab) => {
+  if (!autoGroupTabs) return;
   setTimeout(async () => {
     const updatedTab = await chrome.tabs.get(tab.id);
     if (updatedTab.url && updatedTab.url !== "chrome://newtab/") {
@@ -1159,6 +1206,7 @@ chrome.tabs.onCreated.addListener(async (tab) => {
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (!autoGroupTabs) return;
   if (
     changeInfo.status === "complete" &&
     tab.url &&

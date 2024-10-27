@@ -115,33 +115,39 @@
 		</style>
 	</head>
 	<body>
-		<h1><strong> Settings</strong></h1>
+		<h1><strong>Settings</strong></h1>
 
-		<div class="section" id="shortcut">
-			<label for="shortcutInput">Current Shortcut</label>
-			<input type="text" id="shortcutInput" disabled />
-			<button id="saveShortcut">Change Shortcut</button>
-		</div>
+    <div class="section" id="shortcut">
+      <label for="shortcutInput">Current Shortcut</label>
+      <input type="text" id="shortcutInput" disabled />
+      <button id="saveShortcut">Change Shortcut</button>
+    </div>
 
-		<div class="section" id="ai-settings">
-			<label for="ai_host">AI Host</label>
-			<input
-				type="text"
-				id="ai_host"
-				placeholder="https://api.openai.com/v1/chat/completions"
-			/>
+    <div class="section" id="tab-group-settings">
+      <label for="tab_group_categories">Tab Group Categories</label>
+      <input type="text" id="tab_group_categories" placeholder="Social, Entertainment, Read Material, Education, Productivity, Utilities" />
+    </div>
 
-			<label for="ai_token">AI Token</label>
-			<input type="text" id="ai_token" />
+    <div class="section" id="auto-group-settings">
+      <label for="auto_group_tabs">Auto Group Tabs</label>
+      <input type="checkbox" id="auto_group_tabs" />
+    </div>
 
-			<label for="ai_model">AI Model</label>
-			<input type="text" id="ai_model" placeholder="Enter model name" />
+    <div class="section" id="ai-settings">
+      <label for="ai_host">AI Host</label>
+      <input type="text" id="ai_host" placeholder="https://api.openai.com/v1/chat/completions" />
 
-			<button id="saveAISetting">Save Settings</button>
-		</div>
+      <label for="ai_token">AI Token</label>
+      <input type="text" id="ai_token" />
 
-		<div id="message"></div>
-		<script src="popup.js"></script>
+      <label for="ai_model">AI Model</label>
+      <input type="text" id="ai_model" placeholder="Enter model name" />
+    </div>
+
+    <button id="saveAllSettings">Save All Settings</button>
+
+    <div id="message"></div>
+    <script src="popup.js"></script>
 	</body>
 </html>
 
