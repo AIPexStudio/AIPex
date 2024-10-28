@@ -112,6 +112,17 @@
 				text-align: center;
 				color: var(--primary);
 			}
+
+			.setting-description {
+				font-size: 12px;
+				color: var(--text-3);
+				margin-top: 4px;
+			}
+
+			input[type="checkbox"] {
+				margin-left: 8px;
+				cursor: pointer;
+			}
 		</style>
 	</head>
 	<body>
@@ -144,10 +155,15 @@
       <input type="text" id="ai_model" placeholder="Enter model name" />
     </div>
 
+    <div class="section" id="selection-toolbar-settings">
+      <label for="show_selection_toolbar">Show Selection Toolbar</label>
+      <input type="checkbox" id="show_selection_toolbar" />
+      <div class="setting-description">Show toolbar with AI and translate options when text is selected</div>
+    </div>
+
     <button id="saveAllSettings">Save All Settings</button>
 
     <div id="message"></div>
     <script src="popup.js"></script>
 	</body>
 </html>
-

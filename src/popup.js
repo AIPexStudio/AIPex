@@ -22,7 +22,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load existing settings
   chrome.storage.sync.get(
-    ["tabGroupCategories", "autoGroupTabs", "aiHost", "aiToken", "aiModel"],
+    [
+      "tabGroupCategories",
+      "autoGroupTabs",
+      "aiHost",
+      "aiToken",
+      "aiModel",
+      "showSelectionToolbar",
+    ],
     function (result) {
       tabGroupCategoriesInput.value =
         result.tabGroupCategories ||
@@ -32,6 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
         result.aiHost || "https://api.openai.com/v1/chat/completions";
       aiTokenInput.value = result.aiToken || "";
       aiModelInput.value = result.aiModel || "gpt-3.5-turbo";
+      document.getElementById("show_selection_toolbar").checked =
+        result.showSelectionToolbar ?? false;
     }
   );
 
@@ -44,6 +53,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const aiHost = aiHostInput.value;
     const aiToken = aiTokenInput.value;
     const aiModel = aiModelInput.value;
+    const showSelectionToolbar = document.getElementById(
+      "show_selection_toolbar"
+    ).checked;
 
     chrome.storage.sync.set(
       {
@@ -52,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
         aiHost: aiHost,
         aiToken: aiToken,
         aiModel: aiModel,
+        showSelectionToolbar: showSelectionToolbar,
       },
       function () {
         messageDiv.textContent = "All settings saved successfully.";

@@ -5,6 +5,18 @@ var aiToken = "";
 var aiModel = "";
 const conversations = [];
 
+let showSelectionToolbar = false;
+
+chrome.storage.sync.get(["showSelectionToolbar"], function (result) {
+  showSelectionToolbar = result.showSelectionToolbar ?? false;
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "sync" && changes.showSelectionToolbar) {
+    showSelectionToolbar = changes.showSelectionToolbar.newValue;
+  }
+});
+
 document.onkeyup = (e) => {
   if (e.key == "Escape" && isOpen) {
     chrome.runtime.sendMessage({ request: "close-aipex" });
@@ -671,6 +683,9 @@ $(document).ready(() => {
 
   function showToolbar(x, y, text) {
     removeToolbar();
+    if (!showSelectionToolbar) {
+      return;
+    }
 
     toolbar = document.createElement("div");
     toolbar.id = "aipex-selection-toolbar";
@@ -1309,6 +1324,64 @@ $(document).ready(() => {
       }
 
       isMove = false;
+    }
+  });
+
+  document.addEventListener("selectionchange", function () {
+    if (!showSelectionToolbar) return;
+
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+
+    if (selectedText) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+
+      let toolbar = document.getElementById("aipex-selection-toolbar");
+      if (!toolbar) {
+        toolbar = document.createElement("div");
+        toolbar.id = "aipex-selection-toolbar";
+        document.body.appendChild(toolbar);
+      }
+
+      toolbar.innerHTML = `
+        <button id="aipex-ask-ai">
+          <img src="${chrome.runtime.getURL(
+            "assets/ai-icon.png"
+          )}" alt="Ask AI" />
+        </button>
+        <button id="aipex-translate">
+          <img src="${chrome.runtime.getURL(
+            "assets/translate.png"
+          )}" alt="Translate" />
+        </button>
+      `;
+
+      toolbar.style.top = `${rect.top + window.scrollY - 45}px`;
+      toolbar.style.left = `${rect.left + window.scrollX}px`;
+      toolbar.style.display = "flex";
+
+      toolbar.querySelector("#aipex-ask-ai").onclick = () => {
+        openAIChatDrawer(selectedText);
+      };
+
+      toolbar.querySelector("#aipex-translate").onclick = () => {
+        openAIChatDrawer(`Translate the following text: ${selectedText}`);
+      };
+    } else {
+      const toolbar = document.getElementById("aipex-selection-toolbar");
+      if (toolbar) {
+        toolbar.style.display = "none";
+      }
+    }
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("#aipex-selection-toolbar")) {
+      const toolbar = document.getElementById("aipex-selection-toolbar");
+      if (toolbar) {
+        toolbar.style.display = "none";
+      }
     }
   });
 });
