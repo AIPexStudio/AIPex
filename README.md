@@ -1,52 +1,51 @@
-# AIpex
+# AIpex: The Ultimate Chrome Extension for Efficient Browsing and AI-Powered Productivity
 
-⭐ _Organize Tabs
+## Organize Tabs with Ease
+
+⭐ Organize Tabs
 
 ![Smart Organize Tabs](organize-tabs.gif)
 
-⭐ _Chatgpt sidebar_
+AIpex provides powerful tab management features to help you stay organized. Easily switch between open tabs, restore closed tabs, and utilize AI-powered tab organization to keep your workspace tidy.
+
+## Harness the Power of AI with the Chatbot Sidebar
+
+⭐ Chatgpt sidebar
 
 
 ![Chatgpt sidebar](AI.gif)
 
-⭐ _Tab & BookMark & History Manager_
+Elevate your browsing experience with the integrated AI chatbot sidebar. Engage in continuous conversations, ask the chatbot to translate text, summarize web pages or videos, and even perform web searches - all without leaving your browser.
+
+## Comprehensive Tab, Bookmark, and History Management
+
+⭐ Tab & BookMark & History Manager
 
 ![Tab Manager](preview.gif)
 
-AIPex is the most useful toolkit in browser
-
-With AIpex, you can use your chrome more efficiently. Manage tabs, histories, bookmarks, a lot of convenient actions and an embed AI chatbot.
-
-It could be
-
-- The best tabs extension for google chrome
-- AI Chatbot, Open-source version of Sider and Monica
-
 [chrome extension](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 
-## Features
+## Key Features
 
-🗄 Switch, open, close, and search your tabs
+🗄 Tab Management: Switch, open, close, and search your tabs with ease
 
-📚 Browse and manage your bookmarks
+📚 Bookmark Management: Browse and manage your bookmarks
 
-🔍 Search your browsing history
+🔍 Browsing History: Search your browsing history
 
-⚡️ 50+ actions to improve your productivity
+⚡️ 50+ Productivity Actions: Enhance your workflow with a variety of time-saving actions
 
-🔮 Special commands to filter and perform more actions
+🔮 Special Commands: Use commands to filter and perform advanced actions
 
-🧩 Integrations with Notion, Figma, Docs, Asana...
+🧩 Integrations: Seamlessly connect with popular tools like Notion, Figma, and Docs
 
-⌨️ Shortcuts for actions such as muting, pinning, bookmarking...
+⌨️ Keyboard Shortcuts: Streamline your browsing with customizable keyboard shortcuts
 
-⚙️ Advanced settings to help troubleshoot browsing issues
+⚙️ Troubleshooting Tools: Advanced settings to help troubleshoot browsing issues
 
-🌙 Dark mode
+🌙 Dark Mode: Enjoy a distraction-free dark mode
 
-🤖 Chatgpt sidebar
-
-⭐ Operate like Arc
+🤖 AI Chatbot Sidebar: Leverage the power of AI to boost your productivity
 
 ## Controlling the interface
 
