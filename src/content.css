@@ -1,36 +1,36 @@
 /* Scrollbar size */
-.aipex-namespace .aipex-extension ::-webkit-scrollbar {
+ .aipex-extension ::-webkit-scrollbar {
 	width: 10px;
 	height: 10px;
 }
 
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-thumb {
+ .aipex-extension ::-webkit-scrollbar-thumb {
 	background-color: rgba(127, 127, 127, 0.6);
 	background-clip: padding-box;
 	border: 2px solid transparent;
 	border-radius: 5px;
 }
 
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-thumb:vertical:hover,
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-thumb:horizontal:hover {
+ .aipex-extension ::-webkit-scrollbar-thumb:vertical:hover,
+ .aipex-extension ::-webkit-scrollbar-thumb:horizontal:hover {
 	background-color: rgb(110, 110, 110);
 }
 
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-track {
+ .aipex-extension ::-webkit-scrollbar-track {
 	background-color: transparent;
 }
 
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-thumb:vertical:active,
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-thumb:horizontal:active {
+ .aipex-extension ::-webkit-scrollbar-thumb:vertical:active,
+ .aipex-extension ::-webkit-scrollbar-thumb:horizontal:active {
 	background: rgba(95, 91, 91, 1);
 }
 
-.aipex-namespace .aipex-extension ::-webkit-scrollbar-corner {
+ .aipex-extension ::-webkit-scrollbar-corner {
 	background: none;
 }
 
 @media (prefers-color-scheme: dark) {
-	.aipex-namespace .aipex-extension {
+	 .aipex-extension {
 		--background: #1e2128;
 		--border: #35373e;
 		--text: #f1f1f1;
@@ -45,7 +45,7 @@
 	}
 }
 @media (prefers-color-scheme: light) {
-	.aipex-namespace .aipex-extension {
+	 .aipex-extension {
 		--background: #fafcff;
 		--border: #f2f3fb;
 		--text: #2b2d41;
@@ -84,11 +84,11 @@
 	font-weight: 700;
 	src: url("chrome-extension://__MSG_@@extension_id__/assets/Inter-Bold.ttf");
 }
-.aipex-namespace {
+ {
   all: revert; /* 重置所有继承的样式 */
 }
 
-.aipex-namespace .aipex-extension * {
+ .aipex-extension * {
 	display: block;
 	width: unset;
 	box-shadow: unset;
@@ -97,14 +97,14 @@
 	background-color: unset;
 	border-radius: unset;
 }
-.aipex-namespace.aipex-extension .aipex-item-details * {
+.aipex-extension .aipex-item-details * {
 	line-height: normal;
 }
-.aipex-namespace .aipex-extension {
+ .aipex-extension {
 	font-family: Inter !important;
 	z-index: 99999999999;
 }
-.aipex-namespace .aipex-extension #aipex-wrap {
+ .aipex-extension #aipex-wrap {
 	position: fixed;
 	width: 700px;
 	border: 1px solid transparent;
@@ -119,7 +119,7 @@
 	transition: all 0.2s cubic-bezier(0.05, 0.03, 0.35, 1);
 	pointer-events: all;
 }
-.aipex-namespace .aipex-extension #aipex {
+ .aipex-extension #aipex {
 	position: absolute;
 	width: 100%;
 	background: var(--background);
@@ -132,15 +132,15 @@
 	transition: all 0.2s cubic-bezier(0.05, 0.03, 0.35, 1);
 	display: block;
 }
-.aipex-namespace .aipex-closing #aipex {
+ .aipex-closing #aipex {
 	transform: scale(0.9);
 	opacity: 0;
 }
-.aipex-namespace .aipex-closing {
+ .aipex-closing {
 	pointer-events: none;
 	display: none !important;
 }
-.aipex-namespace .aipex-extension #aipex-overlay {
+ .aipex-extension #aipex-overlay {
 	height: 100%;
 	width: 100%;
 	position: fixed;
@@ -151,10 +151,10 @@
 	opacity: 0.6;
 	transition: all 0.1s cubic-bezier(0.05, 0.03, 0.35, 1);
 }
-.aipex-namespace .aipex-closing #aipex-overlay {
+ .aipex-closing #aipex-overlay {
 	opacity: 0 !important;
 }
-.aipex-namespace .aipex-extension #aipex-head {
+ .aipex-extension #aipex-head {
 	height: 50px;
 	line-height: 50px;
 	width: 95%;
@@ -162,22 +162,22 @@
 	margin-right: auto;
 	border-bottom: 1px solid var(--border);
 }
-.aipex-namespace .aipex-extension #aipex-name {
+ .aipex-extension #aipex-name {
 	color: var(--text);
 	font-size: 12px;
 	font-weight: 600;
 	float: left;
 }
-.aipex-namespace .aipex-extension #aipex-close {
+ .aipex-extension #aipex-close {
 	color: var(--text-3);
 	float: right;
 	font-size: 12px;
 	font-weight: 500;
 }
-.aipex-namespace .aipex-extension #aipex-close span {
+ .aipex-extension #aipex-close span {
 	margin-left: 3px;
 }
-.aipex-namespace .aipex-extension .aipex-shortcut {
+ .aipex-extension .aipex-shortcut {
 	display: inline-block !important;
 	font-size: 13px;
 	border-radius: 5px;
@@ -190,7 +190,7 @@
 	padding-left: 3px;
 	padding-right: 3px;
 }
-.aipex-namespace .aipex-extension input {
+ .aipex-extension input {
 	background: transparent;
 	border: 0px;
 	outline: none;
@@ -211,17 +211,17 @@
 	border: 0px;
 	box-shadow: none;
 }
-.aipex-namespace .aipex-extension ::placeholder {
+ .aipex-extension ::placeholder {
 	color: var(--placeholder);
 	opacity: 1;
 }
-.aipex-namespace .aipex-extension :-ms-input-placeholder {
+ .aipex-extension :-ms-input-placeholder {
 	color: var(--placeholder);
 }
-.aipex-namespace .aipex-extension ::-ms-input-placeholder {
+ .aipex-extension ::-ms-input-placeholder {
 	color: var(--placeholder);
 }
-.aipex-namespace .aipex-extension #aipex-list {
+ .aipex-extension #aipex-list {
 	width: 100%;
 	overflow: overlay;
 	height: 100%;
@@ -229,18 +229,18 @@
 	border-top: 1px solid var(--border);
 	position: relative;
 }
-.aipex-namespace .aipex-extension .aipex-item {
+ .aipex-extension .aipex-item {
 	height: 60px;
 	width: 100%;
 }
-.aipex-namespace .aipex-extension .aipex-item:hover {
+ .aipex-extension .aipex-item:hover {
 	cursor: pointer;
 }
-.aipex-namespace .aipex-extension .aipex-item-active {
+ .aipex-extension .aipex-item-active {
 	background-color: var(--select);
 	position: relative;
 }
-.aipex-namespace .aipex-extension .aipex-item-active:before {
+ .aipex-extension .aipex-item-active:before {
 	height: 100%;
 	position: absolute;
 	display: block;
@@ -248,7 +248,7 @@
 	width: 2px;
 	background-color: var(--accent);
 }
-.aipex-namespace .aipex-extension .aipex-select {
+ .aipex-extension .aipex-select {
 	float: right;
 	vertical-align: middle;
 	color: var(--text-3);
@@ -258,13 +258,13 @@
 	margin-top: 20px;
 	margin-right: 5%;
 }
-.aipex-namespace .aipex-extension .aipex-select span {
+ .aipex-extension .aipex-select span {
 	margin-left: 3px;
 }
-.aipex-namespace .aipex-extension .aipex-item-active .aipex-select {
+ .aipex-extension .aipex-item-active .aipex-select {
 	display: block !important;
 }
-.aipex-namespace .aipex-extension .aipex-icon {
+ .aipex-extension .aipex-icon {
 	width: 20px;
 	height: 20px;
 	margin-left: 5%;
@@ -272,7 +272,7 @@
 	vertical-align: middle;
 	margin-top: -12px;
 }
-.aipex-namespace .aipex-extension .aipex-emoji-action {
+ .aipex-extension .aipex-emoji-action {
 	display: inline-block;
 	vertical-align: middle;
 	margin-top: -12px;
@@ -282,13 +282,13 @@
 	margin-left: 5%;
 	font-size: 18px;
 }
-.aipex-namespace .aipex-extension .aipex-item-details {
+ .aipex-extension .aipex-item-details {
 	display: inline-block !important;
 	margin-left: 10px;
 	vertical-align: middle;
 	margin-top: 10px;
 }
-.aipex-namespace .aipex-extension .aipex-item-name {
+ .aipex-extension .aipex-item-name {
 	color: var(--text-2);
 	font-size: 14px;
 	font-weight: 500;
@@ -297,10 +297,10 @@
 	text-overflow: ellipsis;
 	width: 460px;
 }
-.aipex-namespace .aipex-extension .aipex-item-active .aipex-item-name {
+ .aipex-extension .aipex-item-active .aipex-item-name {
 	color: var(--text) !important;
 }
-.aipex-namespace .aipex-extension .aipex-item-desc {
+ .aipex-extension .aipex-item-desc {
 	color: var(--text-3);
 	margin-top: 5px;
 	font-size: 14px;
@@ -309,7 +309,7 @@
 	text-overflow: ellipsis;
 	width: 460px;
 }
-.aipex-namespace .aipex-extension #aipex-footer {
+ .aipex-extension #aipex-footer {
 	height: 45px;
 	line-height: 45px;
 	border-top: 1px solid var(--border);
@@ -317,36 +317,36 @@
 	margin-left: auto;
 	margin-right: auto;
 }
-.aipex-namespace .aipex-extension #aipex-results {
+ .aipex-extension #aipex-results {
 	color: var(--text-3);
 	font-size: 12px;
 	font-weight: 500;
 	float: left;
 }
-.aipex-namespace .aipex-extension #aipex-arrows {
+ .aipex-extension #aipex-arrows {
 	color: var(--text-3);
 	font-size: 12px;
 	font-weight: 500;
 	float: right;
 }
-.aipex-namespace .aipex-extension #aipex-arrows span {
+ .aipex-extension #aipex-arrows span {
 	margin-left: 3px;
 	margin-right: 3px;
 }
-.aipex-namespace .aipex-extension .aipex-keys {
+ .aipex-extension .aipex-keys {
 	float: right;
 	vertical-align: middle;
 	font-weight: 500;
 	margin-top: 20px;
 	margin-right: 5%;
 }
-.aipex-namespace .aipex-extension .aipex-item-active .aipex-keys {
+ .aipex-extension .aipex-item-active .aipex-keys {
 	display: none !important;
 }
-.aipex-namespace .aipex-extension .aipex-keys span {
+ .aipex-extension .aipex-keys span {
 	margin-left: 3px;
 }
-.aipex-namespace #aipex-extension-toast {
+ #aipex-extension-toast {
 	text-align: center;
 	font-family: Inter;
 	font-weight: 500;
@@ -370,19 +370,19 @@
 	transition: all 0.2s cubic-bezier(0.05, 0.03, 0.35, 1);
 	z-index: 99999999;
 }
-.aipex-namespace #aipex-extension-toast img {
+ #aipex-extension-toast img {
 	display: inline-block;
 	margin-right: 5px;
 	vertical-align: middle;
 	margin-bottom: 2px;
 }
-.aipex-namespace .aipex-show-toast {
+ .aipex-show-toast {
 	bottom: 20px !important;
 	opacity: 1 !important;
 	visibility: visible !important;
 }
 
-.aipex-namespace .aipex-item-url {
+ .aipex-item-url {
 	font-size: 0.8em;
 	color: #888;
 	word-break: break-all;
@@ -394,7 +394,7 @@ html {
 	padding: 0;
 	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 } */
-.aipex-namespace .aipex-chat-container {
+ .aipex-chat-container {
 	position: fixed;
 	top: 0;
 	right: -480px;
@@ -411,10 +411,10 @@ html {
 	min-width: 320px;
 	max-width: 800px;
 }
-.aipex-namespace .aipex-chat-container.open {
+ .aipex-chat-container.open {
 	right: 0;
 }
-.aipex-namespace .ai-chat-drawer .chat-header {
+ .ai-chat-drawer .chat-header {
 	padding: 20px;
 	background-color: #7c5cff;
 	color: white;
@@ -423,7 +423,7 @@ html {
 	align-items: center;
 	border-radius: 10px 0 0 0;
 }
-.aipex-namespace .ai-chat-drawer #close-ai-chat {
+ .ai-chat-drawer #close-ai-chat {
 	background: none;
 	border: none;
 	color: white;
@@ -431,10 +431,10 @@ html {
 	cursor: pointer;
 	transition: transform 0.2s;
 }
-.aipex-namespace .ai-chat-drawer #close-ai-chat:hover {
+ .ai-chat-drawer #close-ai-chat:hover {
 	transform: scale(1.1);
 }
-.aipex-namespace .ai-chat-drawer .chat-messages {
+ .ai-chat-drawer .chat-messages {
 	flex-grow: 1;
 	overflow-y: auto;
 	padding: 20px;
@@ -442,30 +442,30 @@ html {
 	flex-direction: column;
 	gap: 15px;
 }
-.aipex-namespace .ai-chat-drawer .message {
+ .ai-chat-drawer .message {
 	max-width: 80%;
 	padding: 12px 16px;
 	border-radius: 18px;
 	line-height: 1.4;
 	font-size: 14px;
 }
-.aipex-namespace .ai-chat-drawer .ai-message {
+ .ai-chat-drawer .ai-message {
 	align-self: flex-start;
 	background-color: #f0f0f0;
 	color: #333;
 }
-.aipex-namespace .ai-chat-drawer .user-message {
+ .ai-chat-drawer .user-message {
 	align-self: flex-end;
 	background-color: #7c5cff;
 	color: white;
 }
-.aipex-namespace .ai-chat-drawer .user-input {
+ .ai-chat-drawer .user-input {
 	display: flex;
 	padding: 15px;
 	background-color: #f9f9f9;
 	border-top: 1px solid #eee;
 }
-.aipex-namespace .ai-chat-drawer #ai-chat-message {
+ .ai-chat-drawer #ai-chat-message {
 	flex-grow: 1;
 	margin-right: 10px;
 	padding: 12px 20px;
@@ -474,11 +474,11 @@ html {
 	font-size: 14px;
 	transition: border-color 0.3s;
 }
-.aipex-namespace .ai-chat-drawer #ai-chat-message:focus {
+ .ai-chat-drawer #ai-chat-message:focus {
 	outline: none;
 	border-color: #7c5cff;
 }
-.aipex-namespace .ai-chat-drawer .send-button {
+ .ai-chat-drawer .send-button {
 	background-color: #7c5cff;
 	color: white;
 	border: none;
@@ -492,18 +492,18 @@ html {
 	align-items: center;
 	transition: background-color 0.3s, transform 0.2s;
 }
-.aipex-namespace .ai-chat-drawer .send-button:hover {
+ .ai-chat-drawer .send-button:hover {
 	background-color: #6a4aef;
 	transform: scale(1.05);
 }
-.aipex-namespace .ai-chat-drawer .tools {
+ .ai-chat-drawer .tools {
 	display: flex;
 	justify-content: space-around;
 	padding: 15px;
 	background-color: #f9f9f9;
 	border-top: 1px solid #eee;
 }
-.aipex-namespace .ai-chat-drawer .tool-button {
+ .ai-chat-drawer .tool-button {
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -511,11 +511,11 @@ html {
 	color: #666;
 	transition: color 0.3s, transform 0.2s;
 }
-.aipex-namespace .ai-chat-drawer .tool-button:hover {
+ .ai-chat-drawer .tool-button:hover {
 	color: #7c5cff;
 	transform: scale(1.1);
 }
-.aipex-namespace .ai-chat-drawer .copy-button {
+ .ai-chat-drawer .copy-button {
 	position: absolute;
 	top: 5px;
 	right: 5px;
@@ -526,16 +526,16 @@ html {
 	cursor: pointer;
 	border-radius: 3px;
 }
-.aipex-namespace .ai-chat-drawer .copy-button:hover {
+ .ai-chat-drawer .copy-button:hover {
 	background-color: #45a049;
 }
 
-.aipex-namespace .ai-chat-drawer pre {
+ .ai-chat-drawer pre {
 	position: relative;
 	padding-top: 30px;
 }
 
-.aipex-namespace #aipex-selection-toolbar {
+ #aipex-selection-toolbar {
 	position: absolute;
 	background: white;
 	border: 1px solid #ccc;
@@ -548,18 +548,18 @@ html {
 	line-height: 16px;
 }
 
-.aipex-namespace #aipex-selection-toolbar button {
+ #aipex-selection-toolbar button {
 	border: none;
 	background-color: transparent;
 	cursor: pointer;
 }
 
-.aipex-namespace #aipex-selection-toolbar img {
+ #aipex-selection-toolbar img {
 	width: 24px;
 	height: 24px;
 }
 
-.aipex-namespace .ai-chat-drawer .send-button {
+ .ai-chat-drawer .send-button {
 	background: none;
 	border: none;
 	color: #666;
@@ -569,12 +569,12 @@ html {
 	transition: all 0.3s ease;
 }
 
-.aipex-namespace .ai-chat-drawer .send-button:disabled {
+ .ai-chat-drawer .send-button:disabled {
 	cursor: not-allowed;
 	opacity: 0.5;
 }
 
-.aipex-namespace .ai-chat-drawer .send-button.loading {
+ .ai-chat-drawer .send-button.loading {
 	animation: rotate 1s linear infinite;
 }
 
@@ -587,10 +587,10 @@ html {
 	}
 }
 
-.aipex-namespace .ai-chat-drawer .send-button.loading::after {
+ .ai-chat-drawer .send-button.loading::after {
 	content: "↻";
 }
-.aipex-namespace .user-input-container {
+ .user-input-container {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -600,12 +600,12 @@ html {
 	border-top: 1px solid #e0e0e0;
 }
 
-.aipex-namespace .input-area {
+ .input-area {
 	display: flex;
 	gap: 8px;
 }
 
-.aipex-namespace .markdown-textarea {
+ .markdown-textarea {
 	flex-grow: 1;
 	min-height: 60px;
 	max-height: 200px;
@@ -619,13 +619,13 @@ html {
 	overflow-y: auto;
 }
 
-.aipex-namespace .markdown-textarea:focus {
+ .markdown-textarea:focus {
 	outline: none;
 	border-color: #2196f3;
 	box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
-.aipex-namespace .markdown-preview {
+ .markdown-preview {
 	display: none;
 	padding: 8px 12px;
 	background: #f5f5f5;
@@ -634,25 +634,25 @@ html {
 	line-height: 1.5;
 }
 
-.aipex-namespace .markdown-preview.show {
+ .markdown-preview.show {
 	display: block;
 }
 
-.aipex-namespace .markdown-preview pre {
+ .markdown-preview pre {
 	background: #f0f0f0;
 	padding: 8px;
 	border-radius: 4px;
 	overflow-x: auto;
 }
 
-.aipex-namespace .markdown-preview code {
+ .markdown-preview code {
 	font-family: monospace;
 	background: #f0f0f0;
 	padding: 2px 4px;
 	border-radius: 4px;
 }
 
-.aipex-namespace .aipex-drag-icon {
+ .aipex-drag-icon {
 	position: fixed;
 	bottom: 20px;
 	right: 20px;
@@ -670,12 +670,12 @@ html {
 	touch-action: none; /* 防止触摸设备的默认行为 */
 }
 
-.aipex-namespace .aipex-drag-icon img {
+ .aipex-drag-icon img {
 	width: 25px;
 	height: 25px;
 }
 
-.aipex-namespace .resize-handle {
+ .resize-handle {
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -686,11 +686,11 @@ html {
 	transition: background-color 0.2s;
 }
 
-.aipex-namespace .resize-handle:hover {
+ .resize-handle:hover {
 	background-color: rgba(124, 92, 255, 0.2);
 }
 
-.aipex-namespace .drawer-header {
+ .drawer-header {
 	padding: 15px 20px;
 	background-color: #7c5cff;
 	color: white;
@@ -700,12 +700,12 @@ html {
 	border-radius: 10px 0 0 0;
 }
 
-.aipex-namespace .tab-container {
+ .tab-container {
 	display: flex;
 	gap: 10px;
 }
 
-.aipex-namespace .tab-button {
+ .tab-button {
 	background: none;
 	border: none;
 	color: rgba(255, 255, 255, 0.7);
@@ -715,18 +715,18 @@ html {
 	transition: all 0.3s ease;
 }
 
-.aipex-namespace .tab-button.active {
+ .tab-button.active {
 	background-color: rgba(255, 255, 255, 0.2);
 	color: white;
 }
 
-.aipex-namespace .tab-content {
+ .tab-content {
 	display: none;
 	flex: 1;
 	overflow: hidden;
 }
 
-.aipex-namespace .tab-content.active {
+ .tab-content.active {
 	display: flex;
 	flex-direction: column;
 }
@@ -739,4 +739,89 @@ html {
 	--background: #ffffff;
 	--text: #333333;
 	--border: #e0e0e0;
+}
+
+.aipex-ai-search-results {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  padding: 20px;
+  width: 350px;
+  position: absolute;
+  margin-left: 650px;
+  top: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.aipex-ai-search-results.has-rhs {
+  margin-top: 0;
+}
+
+.kp-wholepage .aipex-ai-search-results {
+  margin-top: 0;
+}
+
+.aipex-ai-search-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a73e8;
+  margin-bottom: 12px;
+}
+
+.aipex-ai-search-header img {
+  width: 20px;
+  height: 20px;
+}
+
+.aipex-ai-search-content {
+  font-size: 14px;
+  line-height: 1.58;
+  color: #202124;
+}
+
+.aipex-loading {
+  color: #5f6368;
+  font-style: italic;
+}
+
+/* Add styles for the main search results to make room for AI results */
+#center_col {
+  margin-right: 0 !important;
+}
+
+.aipex-ai-search-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.aipex-action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a73e8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aipex-action-button:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
+}
+
+.aipex-action-button img {
+  width: 16px;
+  height: 16px;
 }

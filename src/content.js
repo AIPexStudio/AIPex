@@ -597,66 +597,208 @@ $(document).ready(() => {
       });
   }
 
-  function sendToAI(message) {
-    const aiMessage = addAIMessage("Thinking...");
-    const messageInput = document.getElementById("ai-chat-message");
-    const sendButton = document.getElementById("ai-chat-send");
+  function sendToAI(message, callback = null) {
+    if (callback) {
+      console.log(message);
+      // For search results, we want a direct response without chat UI
+      chrome.runtime.sendMessage(
+        {
+          action: "callOpenAI",
+          content: message,
+          model: aiModel,
+          key: aiToken,
+          host: aiHost,
+          context: [],
+          stream: false,
+        },
+        (response) => {
+          if (response && response.choices && response.choices[0]) {
+            callback(response.choices[0].message.content);
+          }
+        }
+      );
+    } else {
+      const aiMessage = addAIMessage("Thinking...");
+      const messageInput = document.getElementById("ai-chat-message");
+      const sendButton = document.getElementById("ai-chat-send");
 
+      chrome.runtime.sendMessage({
+        action: "callOpenAI",
+        content: message,
+        model: aiModel,
+        key: aiToken,
+        host: aiHost,
+        context: conversations,
+      });
+
+      let res = "";
+
+      chrome.runtime.onMessage.addListener(function messageListener(
+        request,
+        sender,
+        sendResponse
+      ) {
+        if (request.action === "streamChunk") {
+          res = res + request.chunk;
+          if (!request.isFirstChunk) {
+            aiMessage.innerHTML = renderMarkdownToHtml(res);
+            renderCode();
+            scrollToBottom();
+          } else {
+            aiMessage.innerHTML = renderMarkdownToHtml(res);
+            renderCode();
+            // scrollToBottom();
+          }
+        } else if (request.action === "streamEnd") {
+          // scrollToBottom();
+          conversations.push("[Answer]: " + aiMessage.textContent);
+
+          // 恢复输入和发送按钮状态
+          messageInput.disabled = false;
+          sendButton.disabled = false;
+          sendButton.classList.remove("loading");
+          sendButton.textContent = "➤";
+          messageInput.focus();
+
+          chrome.runtime.onMessage.removeListener(messageListener);
+        } else if (request.action === "streamError") {
+          aiMessage.innerHTML =
+            "Sorry, I encountered an error. Please try again later.";
+          console.error(request.error);
+
+          // 恢复输入和发送按钮状态
+          messageInput.disabled = false;
+          sendButton.disabled = false;
+          sendButton.classList.remove("loading");
+          sendButton.textContent = "➤";
+          messageInput.focus();
+
+          chrome.runtime.onMessage.removeListener(messageListener);
+        }
+      });
+    }
+  }
+
+  function isGoogleSearch() {
+    return (
+      window.location.hostname === "www.google.com" &&
+      window.location.pathname === "/search"
+    );
+  }
+
+  function getGoogleSearchQuery() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("q");
+  }
+
+  function injectAISearchResults() {
+    if (!isGoogleSearch()) return;
+
+    const searchQuery = getGoogleSearchQuery();
+    if (!searchQuery) return;
+
+    // Find the main search results container
+    const searchResults = document.getElementById("search");
+    if (!searchResults) return;
+
+    // Create AI results container
+    const aiResultsContainer = document.createElement("div");
+    aiResultsContainer.className = "aipex-ai-search-results";
+
+    const rhsPanel = document.getElementById("rhs");
+    const knowledgePanel = document.querySelector(".kp-wholepage");
+
+    if (rhsPanel) {
+      aiResultsContainer.classList.add("has-rhs");
+    }
+
+    // Add loading state
+    aiResultsContainer.innerHTML = `
+  <div class="aipex-ai-search-header">
+    <img src="${chrome.runtime.getURL("assets/ai-icon.png")}" alt="AI" />
+    AI-Generated Results
+  </div>
+  <div class="aipex-ai-search-content">
+    <div class="aipex-loading">Generating AI response...</div>
+  </div>
+  <div class="aipex-ai-search-actions">
+    <button class="aipex-action-button continue-chat">
+      <img src="${chrome.runtime.getURL(
+        "assets/ai-icon.png"
+      )}" alt="Continue" />
+      Continue Chat in AIPex
+    </button>
+    <button class="aipex-action-button open-sidebar">
+      <img src="${chrome.runtime.getURL("assets/ai-icon.png")}" alt="Sidebar" />
+      Open AI Sidebar
+    </button>
+  </div>
+`;
+
+    const continueButton = aiResultsContainer.querySelector(".continue-chat");
+    const sidebarButton = aiResultsContainer.querySelector(".open-sidebar");
+
+    continueButton.addEventListener("click", () => {
+      openAIChatDrawer(searchQuery);
+    });
+
+    sidebarButton.addEventListener("click", () => {
+      const drawer = document.getElementById("ai-chat-drawer");
+      drawer.classList.add("open");
+    });
+
+    // Insert before the main search results
+    searchResults.parentNode.insertBefore(aiResultsContainer, searchResults);
+
+    // Get AI response
+    const prompt = `Please provide a concise summary of "${searchQuery}" in about 2-3 sentences. Then list 3 key points about this topic.`;
+
+    const content = aiResultsContainer.querySelector(
+      ".aipex-ai-search-content"
+    );
+    let response = "";
+
+    // Use the streaming approach like the sidebar
     chrome.runtime.sendMessage({
       action: "callOpenAI",
-      content: message,
+      content: prompt,
       model: aiModel,
       key: aiToken,
       host: aiHost,
-      context: conversations,
+      context: [],
     });
 
-    let res = "";
-
-    chrome.runtime.onMessage.addListener(function messageListener(
-      request,
-      sender,
-      sendResponse
-    ) {
+    // Listen for streaming chunks
+    chrome.runtime.onMessage.addListener(function messageListener(request) {
       if (request.action === "streamChunk") {
-        res = res + request.chunk;
-        if (!request.isFirstChunk) {
-          aiMessage.innerHTML = renderMarkdownToHtml(res);
-          renderCode();
-          scrollToBottom();
-        } else {
-          aiMessage.innerHTML = renderMarkdownToHtml(res);
-          renderCode();
-          // scrollToBottom();
-        }
+        response += request.chunk;
+        content.innerHTML = marked.parse(response);
+        renderCode();
       } else if (request.action === "streamEnd") {
-        // scrollToBottom();
-        conversations.push("[Answer]: " + aiMessage.textContent);
-
-        // 恢复输入和发送按钮状态
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        sendButton.classList.remove("loading");
-        sendButton.textContent = "➤";
-        messageInput.focus();
-
         chrome.runtime.onMessage.removeListener(messageListener);
       } else if (request.action === "streamError") {
-        aiMessage.innerHTML =
+        content.innerHTML =
           "Sorry, I encountered an error. Please try again later.";
         console.error(request.error);
-
-        // 恢复输入和发送按钮状态
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        sendButton.classList.remove("loading");
-        sendButton.textContent = "➤";
-        messageInput.focus();
-
         chrome.runtime.onMessage.removeListener(messageListener);
       }
     });
   }
+
+  // Add observer to handle Google's dynamic loading
+  const observer = new MutationObserver(() => {
+    if (
+      document.getElementById("search") &&
+      !document.querySelector(".aipex-ai-search-results")
+    ) {
+      injectAISearchResults();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 
   let toolbar = null;
   let toolbarTimer = null;
