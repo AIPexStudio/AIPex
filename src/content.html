@@ -4,8 +4,9 @@
 		<link rel="stylesheet" href="./highlight.css" />
 		<script src="./highlight.js"></script> -->
 	</head>
-	<body>
-		<div id="aipex-drag-icon" class="aipex-drag-icon">
+	<body class="aipex-namespace">
+
+    <div id="aipex-drag-icon" class="aipex-drag-icon">
 			<img src="https://miro.medium.com/v2/resize:fit:720/format:webp/1*gHH5bC3nCpzRVXu7UdT0ZQ.png" alt="AIpex" id="aipex-icon"/>
 		</div>
 		<div id="aipex-extension" class="aipex-closing aipex-extension">
@@ -30,24 +31,48 @@
 			<img src="" /><span>The action has been successful</span>
 		</div>
 		<div id="ai-chat-drawer" class="aipex-chat-container ai-chat-drawer">
-			<div class="chat-header">
-				AI Chat
+			<div class="resize-handle"></div>
+			<div class="drawer-header">
+				<div class="tab-container">
+					<button class="tab-button active" data-tab="chat">Chat</button>
+					<button class="tab-button" data-tab="draw">Draw</button>
+					<button class="tab-button" data-tab="search">Search</button>
+				</div>
 				<button id="close-ai-chat">×</button>
 			</div>
-			<div id="ai-chat-content" class="chat-messages">
-				<div class="message ai-message">How can I assist you today?</div>
-			</div>
-			<div class="user-input-container">
-				<div class="markdown-preview"></div>
-				<div class="input-area">
-				  <textarea 
-					id="ai-chat-message" 
-					class="markdown-textarea"
-					placeholder="Type a message... (Supports Markdown formatting)"
-				  ></textarea>
-				  <button id="ai-chat-send" class="send-button">➤</button>
+			
+			<div class="tab-content active" data-tab="chat">
+				<div id="ai-chat-content" class="chat-messages">
+					<div class="message ai-message">How can I assist you today?</div>
 				</div>
-			  </div>
+				<div class="user-input-container">
+					<div class="markdown-preview"></div>
+					<div class="input-area">
+						<textarea 
+							id="ai-chat-message" 
+							class="markdown-textarea"
+							placeholder="Type a message... (Supports Markdown formatting)"
+						></textarea>
+						<button id="ai-chat-send" class="send-button">➤</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="tab-content" data-tab="draw">
+				<div class="draw-container">
+					<canvas id="drawing-canvas"></canvas>
+					<div class="drawing-tools">
+						<!-- Drawing tools will go here -->
+					</div>
+				</div>
+			</div>
+
+			<div class="tab-content" data-tab="search">
+				<div class="search-container">
+					<input type="text" class="search-input" placeholder="Search...">
+					<div class="search-results"></div>
+				</div>
+			</div>
 		</div>
 	</body>
 </html>

@@ -108,43 +108,24 @@ $(document).ready(() => {
       description = action.url;
     }
 
-    if (index != 0) {
-      $("#aipex-extension #aipex-list").append(
-        "<div class='aipex-item' " +
-          skip +
-          " data-index='" +
-          index +
-          "' data-type='" +
-          action.type +
-          "'>" +
-          img +
-          "<div class='aipex-item-details'><div class='aipex-item-name'>" +
-          action.title +
-          "</div><div class='aipex-item-desc'>" +
-          description +
-          "</div></div>" +
-          keys +
-          "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
-      );
-    } else {
-      $("#aipex-extension #aipex-list").append(
-        "<div class='aipex-item aipex-item-active' " +
-          skip +
-          " data-index='" +
-          index +
-          "' data-type='" +
-          action.type +
-          "'>" +
-          img +
-          "<div class='aipex-item-details'><div class='aipex-item-name'>" +
-          action.title +
-          "</div><div class='aipex-item-desc'>" +
-          description +
-          "</div></div>" +
-          keys +
-          "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
-      );
-    }
+    // if (index != 0) {
+    $("#aipex-extension #aipex-list").append(
+      "<div class='aipex-item' " +
+        skip +
+        " data-index='" +
+        index +
+        "' data-type='" +
+        action.type +
+        "'>" +
+        img +
+        "<div class='aipex-item-details'><div class='aipex-item-name'>" +
+        action.title +
+        "</div><div class='aipex-item-desc'>" +
+        description +
+        "</div></div>" +
+        keys +
+        "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
+    );
     if (!action.emoji) {
       var loadimg = new Image();
       loadimg.src = action.favIconUrl;
@@ -218,43 +199,27 @@ $(document).ready(() => {
         img =
           "<span class='aipex-emoji-action'>" + action.emojiChar + "</span>";
       }
-      if (index != 0) {
-        return $(
-          "<div class='aipex-item' data-index='" +
-            index +
-            "' data-type='" +
-            action.type +
-            "' data-url='" +
-            action.url +
-            "'>" +
-            img +
-            "<div class='aipex-item-details'><div class='aipex-item-name'>" +
-            action.title +
-            "</div><div class='aipex-item-desc'>" +
-            action.url +
-            "</div></div>" +
-            keys +
-            "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
-        )[0];
-      } else {
-        return $(
-          "<div class='aipex-item aipex-item-active' data-index='" +
-            index +
-            "' data-type='" +
-            action.type +
-            "' data-url='" +
-            action.url +
-            "'>" +
-            img +
-            "<div class='aipex-item-details'><div class='aipex-item-name'>" +
-            action.title +
-            "</div><div class='aipex-item-desc'>" +
-            action.url +
-            "</div></div>" +
-            keys +
-            "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
-        )[0];
+      var description = action.desc;
+      if (action.url) {
+        description = action.url;
       }
+      return $(
+        "<div class='aipex-item' data-index='" +
+          index +
+          "' data-type='" +
+          action.type +
+          "' data-url='" +
+          action.url +
+          "'>" +
+          img +
+          "<div class='aipex-item-details'><div class='aipex-item-name'>" +
+          action.title +
+          "</div><div class='aipex-item-desc'>" +
+          description +
+          "</div></div>" +
+          keys +
+          "<div class='aipex-select'>Select <span class='aipex-shortcut'>⏎</span></div></div>"
+      )[0];
     };
     actions.length &&
       new VirtualizedList.default($("#aipex-extension #aipex-list")[0], {
@@ -385,7 +350,6 @@ $(document).ready(() => {
 
     if (query && query.trim().length > 0) {
       addUserMessage(query);
-      sendToAI(query);
     }
   }
 
@@ -394,6 +358,50 @@ $(document).ready(() => {
     const sendButton = document.getElementById("ai-chat-send");
     const closeButton = document.getElementById("close-ai-chat");
     const messageInput = document.getElementById("ai-chat-message");
+    const resizeHandle = drawer.querySelector(".resize-handle");
+    const tabButtons = drawer.querySelectorAll(".tab-button");
+    const tabContents = drawer.querySelectorAll(".tab-content");
+
+    // Resize functionality
+    let isResizing = false;
+    let startX, startWidth;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      startX = e.clientX;
+      startWidth = parseInt(getComputedStyle(drawer).width, 10);
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", () => {
+        isResizing = false;
+        document.removeEventListener("mousemove", handleMouseMove);
+      });
+    });
+
+    function handleMouseMove(e) {
+      if (!isResizing) return;
+
+      const width = startWidth - (e.clientX - startX);
+      if (width >= 320 && width <= 800) {
+        drawer.style.width = `${width}px`;
+      }
+    }
+
+    // Tab switching functionality
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const tab = button.dataset.tab;
+
+        // Update active states
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        tabContents.forEach((content) => content.classList.remove("active"));
+
+        button.classList.add("active");
+        drawer
+          .querySelector(`.tab-content[data-tab="${tab}"]`)
+          .classList.add("active");
+      });
+    });
     let isComposing = false;
 
     messageInput.addEventListener("compositionstart", function () {
@@ -690,8 +698,8 @@ $(document).ready(() => {
     toolbar = document.createElement("div");
     toolbar.id = "aipex-selection-toolbar";
     toolbar.style.position = "absolute";
-    toolbar.style.left = `${x}px`;
-    toolbar.style.top = `${y}px`;
+    toolbar.style.left = `${x + 5}px`;
+    toolbar.style.top = `${y + 5}px`;
     toolbar.style.backgroundColor = "#f9f9f9";
     toolbar.style.border = "1px solid #e0e0e0";
     toolbar.style.borderRadius = "8px"; // 圆角
@@ -841,13 +849,6 @@ $(document).ready(() => {
           actions.findIndex((x) => x.action == "ai-chat") +
           "']"
       ).show();
-
-      // Update the description of the AI chat item
-      $(
-        ".aipex-item[data-index='" +
-          actions.findIndex((x) => x.action == "ai-chat") +
-          "'] .aipex-item-desc"
-      ).text(value.replace("/ai ", ""));
 
       // Update the results count
       $(".aipex-extension #aipex-results").html("1 result");
@@ -1031,23 +1032,12 @@ $(document).ready(() => {
     } else if (
       $(".aipex-extension input").val().toLowerCase().startsWith("/history")
     ) {
-      console.log(e);
-      if (e.ctrlKey || e.metaKey) {
-        window.open($(".aipex-item-active").attr("data-url"));
-      } else {
-        window.open($(".aipex-item-active").attr("data-url"), "_self");
-      }
+      window.open($(".aipex-item-active").attr("data-url"));
     } else if (
       $(".aipex-extension input").val().toLowerCase().startsWith("/bookmarks")
     ) {
-      if (e.ctrlKey || e.metaKey) {
-        window.open($(".aipex-item-active").attr("data-url"));
-      } else {
-        window.open($(".aipex-item-active").attr("data-url"), "_self");
-      }
+      window.open($(".aipex-item-active").attr("data-url"));
     } else {
-      console.log("this part");
-      console.log(action.action);
       chrome.runtime.sendMessage({
         request: action.action,
         tab: action,
@@ -1127,7 +1117,6 @@ $(document).ready(() => {
           break;
         case "ai-chat":
           const query = $(".aipex-extension input").val().replace("/ai ", "");
-          console.log(query);
           openAIChatDrawer(query);
           break;
         case "remove-all":
@@ -1327,54 +1316,41 @@ $(document).ready(() => {
     }
   });
 
-  document.addEventListener("selectionchange", function () {
-    if (!showSelectionToolbar) return;
+  // document.addEventListener("selectionchange", function () {
+  //   if (!showSelectionToolbar) return;
 
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
+  //   const selection = window.getSelection();
+  //   const selectedText = selection.toString().trim();
 
-    if (selectedText) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
+  //   if (selectedText) {
+  //     const range = selection.getRangeAt(0);
+  //     const rect = range.getBoundingClientRect();
 
-      let toolbar = document.getElementById("aipex-selection-toolbar");
-      if (!toolbar) {
-        toolbar = document.createElement("div");
-        toolbar.id = "aipex-selection-toolbar";
-        document.body.appendChild(toolbar);
-      }
+  //     let toolbar = document.getElementById("aipex-selection-toolbar");
+  //     if (!toolbar) {
+  //       toolbar = document.createElement("div");
+  //       toolbar.id = "aipex-selection-toolbar";
+  //       document.body.appendChild(toolbar);
+  //     }
 
-      toolbar.innerHTML = `
-        <button id="aipex-ask-ai">
-          <img src="${chrome.runtime.getURL(
-            "assets/ai-icon.png"
-          )}" alt="Ask AI" />
-        </button>
-        <button id="aipex-translate">
-          <img src="${chrome.runtime.getURL(
-            "assets/translate.png"
-          )}" alt="Translate" />
-        </button>
-      `;
+  //     toolbar.style.top = `${rect.top + window.scrollY - 45}px`;
+  //     toolbar.style.left = `${rect.left + window.scrollX}px`;
+  //     toolbar.style.display = "flex";
 
-      toolbar.style.top = `${rect.top + window.scrollY - 45}px`;
-      toolbar.style.left = `${rect.left + window.scrollX}px`;
-      toolbar.style.display = "flex";
+  //     toolbar.querySelector("#aipex-ask-ai").onclick = () => {
+  //       openAIChatDrawer(selectedText);
+  //     };
 
-      toolbar.querySelector("#aipex-ask-ai").onclick = () => {
-        openAIChatDrawer(selectedText);
-      };
-
-      toolbar.querySelector("#aipex-translate").onclick = () => {
-        openAIChatDrawer(`Translate the following text: ${selectedText}`);
-      };
-    } else {
-      const toolbar = document.getElementById("aipex-selection-toolbar");
-      if (toolbar) {
-        toolbar.style.display = "none";
-      }
-    }
-  });
+  //     toolbar.querySelector("#aipex-translate").onclick = () => {
+  //       openAIChatDrawer(`Translate the following text: ${selectedText}`);
+  //     };
+  //   } else {
+  //     const toolbar = document.getElementById("aipex-selection-toolbar");
+  //     if (toolbar) {
+  //       toolbar.style.display = "none";
+  //     }
+  //   }
+  // });
 
   document.addEventListener("click", function (e) {
     if (!e.target.closest("#aipex-selection-toolbar")) {

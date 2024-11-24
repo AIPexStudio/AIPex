@@ -133,6 +133,15 @@ const clearActions = () => {
         keys: ["⌘", "T"],
       },
       {
+        title: "AI Chat",
+        desc: "Start an AI conversation",
+        type: "action",
+        action: "ai-chat",
+        emoji: true,
+        emojiChar: "🤖",
+        keycheck: false,
+      },
+      {
         title: "Organize Tabs",
         desc: "Group tabs using AI",
         type: "action",
@@ -159,15 +168,6 @@ const clearActions = () => {
         emojiChar: "📕",
         keycheck: true,
         keys: ["⌘", "D"],
-      },
-      {
-        title: "AI Chat",
-        desc: "Start an AI conversation",
-        type: "action",
-        action: "ai-chat",
-        emoji: true,
-        emojiChar: "🤖",
-        keycheck: false,
       },
       pinaction,
       {
