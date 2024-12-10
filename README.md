@@ -25,6 +25,10 @@ Elevate your browsing experience with the integrated AI chatbot sidebar. Engage 
 
 AIpex offers a comprehensive suite of browsing tools, including a tab manager, bookmark manager, and browsing history search. Quickly access, organize, and search your tabs, bookmarks, and browsing history to boost your productivity.
 
+⭐ Google Search Enhancement
+
+![Google Search Enhancement](google.gif)
+
 [chrome extension](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 
 ## Key Features
