@@ -87,6 +87,44 @@ $(document).ready(() => {
         $("#aipex-extension input").focus();
       }, 100);
     }
+
+    const style = document.createElement("style");
+    style.textContent = `
+      .aipex-ai-search-results {
+        background: white;
+        border: 1px solid #dfe1e5;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      #rhs .aipex-ai-search-results {
+        max-width: 100%;
+      }
+
+      .aipex-ai-search-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #202124;
+      }
+
+      .aipex-ai-search-header img {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+      }
+
+      .aipex-ai-search-content {
+        font-size: 14px;
+        line-height: 1.58;
+        color: #4d5156;
+      }
+    `;
+    document.head.appendChild(style);
   });
 
   chrome.storage.sync.get(["aiHost", "aiToken", "aiModel"], function (result) {
@@ -465,6 +503,7 @@ $(document).ready(() => {
   }
 
   function sendAIChatMessage(text) {
+    document.getElementById("ai-chat-drawer").classList.add("open");
     const messageInput = document.getElementById("ai-chat-message");
     const sendButton = document.getElementById("ai-chat-send");
     let message = messageInput.value.trim();
@@ -684,6 +723,7 @@ $(document).ready(() => {
       window.location.hostname === "www.google.com" &&
       window.location.pathname === "/search"
     );
+    // return false;
   }
 
   function getGoogleSearchQuery() {
@@ -697,58 +737,43 @@ $(document).ready(() => {
     const searchQuery = getGoogleSearchQuery();
     if (!searchQuery) return;
 
-    // Find the main search results container
-    const searchResults = document.getElementById("search");
-    if (!searchResults) return;
+    // Find the right-hand side panel
+    const rhsPanel = document.getElementById("rhs");
+    if (!rhsPanel) return;
 
     // Create AI results container
     const aiResultsContainer = document.createElement("div");
     aiResultsContainer.className = "aipex-ai-search-results";
-
-    const rhsPanel = document.getElementById("rhs");
-    const knowledgePanel = document.querySelector(".kp-wholepage");
-
-    if (rhsPanel) {
-      aiResultsContainer.classList.add("has-rhs");
-    }
+    aiResultsContainer.style.marginBottom = "16px"; // Add some spacing
 
     // Add loading state
     aiResultsContainer.innerHTML = `
-  <div class="aipex-ai-search-header">
-    <img src="${chrome.runtime.getURL("assets/ai-icon.png")}" alt="AI" />
-    AI-Generated Results
-  </div>
-  <div class="aipex-ai-search-content">
-    <div class="aipex-loading">Generating AI response...</div>
-  </div>
-  <div class="aipex-ai-search-actions">
-    <button class="aipex-action-button continue-chat">
-      <img src="${chrome.runtime.getURL(
-        "assets/ai-icon.png"
-      )}" alt="Continue" />
-      Continue Chat in AIPex
-    </button>
-    <button class="aipex-action-button open-sidebar">
-      <img src="${chrome.runtime.getURL("assets/ai-icon.png")}" alt="Sidebar" />
-      Open AI Sidebar
-    </button>
-  </div>
-`;
+      <div class="aipex-ai-search-header">
+        <img src="${chrome.runtime.getURL("assets/ai-icon.png")}" alt="AI" />
+        AI-Generated Results
+      </div>
+      <div class="aipex-ai-search-content">
+        <div class="aipex-loading">Generating AI response...</div>
+      </div>
+      <div class="aipex-ai-search-actions">
+        <button class="aipex-action-button continue-chat">
+          <img src="${chrome.runtime.getURL(
+            "assets/ai-icon.png"
+          )}" alt="Continue" />
+          Continue Chat in AIPex
+        </button>
+      </div>
+    `;
+
+    // Insert at the beginning of the rhs panel
+    rhsPanel.prepend(aiResultsContainer);
+    // rhsPanel.insertBefore(aiResultsContainer, rhsPanel.firstChild);
 
     const continueButton = aiResultsContainer.querySelector(".continue-chat");
-    const sidebarButton = aiResultsContainer.querySelector(".open-sidebar");
 
     continueButton.addEventListener("click", () => {
-      openAIChatDrawer(searchQuery);
+      sendAIChatMessage(searchQuery);
     });
-
-    sidebarButton.addEventListener("click", () => {
-      const drawer = document.getElementById("ai-chat-drawer");
-      drawer.classList.add("open");
-    });
-
-    // Insert before the main search results
-    searchResults.parentNode.insertBefore(aiResultsContainer, searchResults);
 
     // Get AI response
     const prompt = `Please provide a concise summary of "${searchQuery}" in about 2-3 sentences. Then list 3 key points about this topic.`;
@@ -857,7 +882,7 @@ $(document).ready(() => {
       (event) => {
         event.stopPropagation();
         removeToolbar();
-        answerWithAI(text);
+        sendAIChatMessage(text);
       },
       "Ask AI"
     );
@@ -934,10 +959,6 @@ $(document).ready(() => {
       toolbar.remove();
       toolbar = null;
     }
-  }
-
-  function answerWithAI(text) {
-    openAIChatDrawer(text);
   }
 
   function translate(text) {
@@ -1423,7 +1444,6 @@ $(document).ready(() => {
 
     $(document).on("mousemove", { capture: true }, function (e) {
       if (!isDragging) return;
-      console.log("mouse move");
       isMove = true;
 
       const deltaX = e.clientX - startX;
@@ -1431,8 +1451,6 @@ $(document).ready(() => {
 
       const newLeft = initialLeft + deltaX;
       const newTop = initialTop + deltaY;
-
-      console.log(`${newLeft} - ${newTop}`);
 
       $dragIcon.css({
         left: `${newLeft}px`,
