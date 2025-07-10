@@ -1,9 +1,340 @@
 // Workaround to capture Esc key on certain sites
 var isOpen = false;
-var aiHost = "https://api.openai.com/v1/chat/completions";
-var aiToken = "";
-var aiModel = "";
 const conversations = [];
+function escapeHTML(str) {
+  return str.replace(
+    /[&<>'"]/g,
+    (tag) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+      }[tag] || tag)
+  );
+}
+
+function closeAIChatDrawer() {
+  document.getElementById("ai-chat-drawer").classList.remove("open");
+  var chatContent = document.getElementById("ai-chat-content");
+  chatContent.innerHTML = "";
+}
+
+// ai functions
+
+function initializeDrawer() {
+  const drawer = document.getElementById("ai-chat-drawer");
+  const sendButton = document.getElementById("ai-chat-send");
+  const closeButton = document.getElementById("close-ai-chat");
+  const messageInput = document.getElementById("ai-chat-message");
+  const resizeHandle = drawer.querySelector(".resize-handle");
+  const tabButtons = drawer.querySelectorAll(".tab-button");
+  const tabContents = drawer.querySelectorAll(".tab-content");
+
+  sendButton.addEventListener("click", sendAIChatMessage);
+  closeButton.addEventListener("click", closeAIChatDrawer);
+  // Resize functionality
+  let isResizing = false;
+  let startX, startWidth;
+
+  resizeHandle.addEventListener("mousedown", (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = parseInt(getComputedStyle(drawer).width, 10);
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", () => {
+      isResizing = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+    });
+  });
+
+  function handleMouseMove(e) {
+    if (!isResizing) return;
+
+    const width = startWidth - (e.clientX - startX);
+    if (width >= 320 && width <= 800) {
+      drawer.style.width = `${width}px`;
+    }
+  }
+
+  // Tab switching functionality
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.tab;
+
+      // Update active states
+      tabButtons.forEach((btn) => btn.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"));
+
+      button.classList.add("active");
+      drawer
+        .querySelector(`.tab-content[data-tab="${tab}"]`)
+        .classList.add("active");
+    });
+  });
+  let isComposing = false;
+
+  messageInput.addEventListener("compositionstart", function () {
+    isComposing = true;
+  });
+
+  messageInput.addEventListener("compositionend", function () {
+    isComposing = false;
+  });
+
+  // const textarea = document.getElementById('ai-chat-message');
+  const preview = document.querySelector(".markdown-preview");
+  let previewTimeout;
+
+  // Handle textarea input
+  messageInput.addEventListener("input", function () {
+    clearTimeout(previewTimeout);
+    previewTimeout = setTimeout(() => {
+      const text = this.value.trim();
+      if (text) {
+        preview.innerHTML = marked.parse(text);
+        preview.classList.add("show");
+      } else {
+        preview.classList.remove("show");
+      }
+    }, 300);
+  });
+
+  // Handle textarea height
+  messageInput.addEventListener("input", function () {
+    this.style.height = "auto";
+    this.style.height = this.scrollHeight + "px";
+  });
+
+  // Handle Enter key (Shift+Enter for new line)
+  messageInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+      e.preventDefault();
+      sendButton.click();
+    }
+  });
+  // messageInput.addEventListener("keypress", function (e) {
+  //   if (e.key === "Enter") sendAIChatMessage();
+  // });
+
+  drawer.classList.add("initialized");
+}
+
+function scrollToBottom() {
+  const chatContent = document.getElementById("ai-chat-content");
+  chatContent.scrollTop = chatContent.scrollHeight;
+}
+
+function renderMarkdownToHtml(text) {
+  const htmlContent = marked.parse(text);
+  return htmlContent;
+}
+function renderCode() {
+  document
+    .getElementById("ai-chat-drawer")
+    .querySelectorAll("pre code")
+    .forEach((block) => {
+      hljs.highlightBlock(block);
+
+      const button = document.createElement("button");
+      button.className = "copy-button";
+      button.textContent = "Copy";
+      block.parentNode.insertBefore(button, block);
+
+      button.addEventListener("click", () => {
+        const code = block.textContent;
+        navigator.clipboard
+          .writeText(code)
+          .then(() => {
+            button.textContent = "Copied!";
+            setTimeout(() => {
+              button.textContent = "Copy";
+            }, 2000);
+          })
+          .catch((error) => {
+            console.error("Copy failed:", error);
+          });
+      });
+    });
+}
+
+function isGoogleSearch() {
+  return (
+    window.location.hostname === "www.google.com" &&
+    window.location.pathname === "/search"
+  );
+  // return false;
+}
+
+function getGoogleSearchQuery() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("q");
+}
+
+function sendToAI(message, callback = null) {
+  if (callback) {
+    // For search results, we want a direct response without chat UI
+    chrome.runtime.sendMessage(
+      {
+        action: "callOpenAI",
+        content: message,
+        context: [],
+        stream: false,
+      },
+      (response) => {
+        if (response && response.choices && response.choices[0]) {
+          callback(response.choices[0].message.content);
+        }
+      }
+    );
+  } else {
+    const aiMessage = addAIMessage("Thinking...");
+    const messageInput = document.getElementById("ai-chat-message");
+    const sendButton = document.getElementById("ai-chat-send");
+
+    chrome.runtime.sendMessage({
+      action: "callOpenAI",
+      content: message,
+      context: conversations,
+    });
+
+    let res = "";
+
+    chrome.runtime.onMessage.addListener(function messageListener(
+      request,
+      sender,
+      sendResponse
+    ) {
+      if (request.action === "streamChunk") {
+        res = res + request.chunk;
+        if (!request.isFirstChunk) {
+          aiMessage.innerHTML = renderMarkdownToHtml(res);
+          renderCode();
+          scrollToBottom();
+        } else {
+          aiMessage.innerHTML = renderMarkdownToHtml(res);
+          renderCode();
+          // scrollToBottom();
+        }
+      } else if (request.action === "streamEnd") {
+        // scrollToBottom();
+        conversations.push("[Answer]: " + aiMessage.textContent);
+
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.classList.remove("loading");
+        sendButton.textContent = "➤";
+        messageInput.focus();
+
+        chrome.runtime.onMessage.removeListener(messageListener);
+      } else if (request.action === "streamError") {
+        aiMessage.innerHTML =
+          "Sorry, I encountered an error. Please try again later.";
+        console.error(request.error);
+
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.classList.remove("loading");
+        sendButton.textContent = "➤";
+        messageInput.focus();
+
+        chrome.runtime.onMessage.removeListener(messageListener);
+      }
+    });
+  }
+}
+
+
+function sendAIChatMessage(text) {
+  document.getElementById("ai-chat-drawer").classList.add("open");
+  const messageInput = document.getElementById("ai-chat-message");
+  const sendButton = document.getElementById("ai-chat-send");
+  let message = messageInput.value.trim();
+  messageInput.style.height = "auto";
+  const preview = document.querySelector(".markdown-preview");
+  preview.classList.remove("show");
+  if (text && text.length > 0) {
+    message = text;
+  }
+
+  if (message === "") return;
+
+  // 禁用输入和发送按钮
+  messageInput.disabled = true;
+  sendButton.disabled = true;
+  sendButton.classList.add("loading");
+  sendButton.textContent = "";
+
+  addUserMessage(message);
+  messageInput.value = "";
+  sendToAI(message);
+}
+
+function addUserMessage(message) {
+  conversations.push("[Question]: " + message);
+  // scrollToBottom();
+  addMessage("You", message, "user-message");
+}
+
+function addAIMessage(message) {
+  const messageEle = addFormattedMessage("AI", message, "ai-message");
+  // scrollToBottom();
+  return messageEle;
+}
+
+function addMessage(sender, message, className) {
+  const chatContent = document.getElementById("ai-chat-content");
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message", className);
+  messageElement.innerHTML = `<strong>${sender}:</strong> ${escapeHTML(
+    message
+  )}`;
+  chatContent.appendChild(messageElement);
+  chatContent.scrollTop = chatContent.scrollHeight;
+}
+
+function addFormattedMessage(sender, message, className) {
+  const chatContent = document.getElementById("ai-chat-content");
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message", className);
+
+  const senderElement = document.createElement("strong");
+  senderElement.textContent = `${sender}:`;
+  messageElement.appendChild(senderElement);
+
+  const formattedContent = formatMessage(message);
+  messageElement.appendChild(formattedContent);
+
+  chatContent.appendChild(messageElement);
+  chatContent.scrollTop = chatContent.scrollHeight;
+  return messageElement;
+}
+
+function formatMessage(message) {
+  const container = document.createElement("div");
+
+  // 使用正则表达式匹配Markdown样式的格式
+  message = message.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); // 粗体
+  message = message.replace(/\*(.*?)\*/g, "<em>$1</em>"); // 斜体
+  message = message.replace(/`([^`]+)`/g, "<code>$1</code>"); // 内联代码
+
+  // 处理代码块
+  message = message.replace(/```([\s\S]*?)```/g, function (match, p1) {
+    return `<pre><code>${escapeHTML(p1.trim())}</code></pre>`;
+  });
+
+  // 处理换行
+  message = message.replace(/\n/g, "<br>");
+
+  container.innerHTML = message;
+  return container;
+}
+
+
+
+
 
 let showSelectionToolbar = false;
 
@@ -50,6 +381,7 @@ function waitForElement(selector, callback) {
 }
 
 $(document).ready(() => {
+  
   //initialize markdown
   marked.setOptions({
     highlight: function (code, lang) {
@@ -125,13 +457,6 @@ $(document).ready(() => {
       }
     `;
     document.head.appendChild(style);
-  });
-
-  chrome.storage.sync.get(["aiHost", "aiToken", "aiModel"], function (result) {
-    aiHost = result.aiHost ?? "https://api.openai.com/v1/chat/completions";
-    aiToken = result.aiToken;
-    aiModel = result.aiModel ?? "gpt-3.5-turbo";
-    console.log(aiHost + aiToken + aiModel);
   });
 
   function renderAction(action, index, keys, img) {
@@ -387,355 +712,12 @@ $(document).ready(() => {
     }
 
     if (query && query.trim().length > 0) {
-      addUserMessage(query);
+      sendAIChatMessage(query);
     }
   }
 
-  function initializeDrawer() {
-    const drawer = document.getElementById("ai-chat-drawer");
-    const sendButton = document.getElementById("ai-chat-send");
-    const closeButton = document.getElementById("close-ai-chat");
-    const messageInput = document.getElementById("ai-chat-message");
-    const resizeHandle = drawer.querySelector(".resize-handle");
-    const tabButtons = drawer.querySelectorAll(".tab-button");
-    const tabContents = drawer.querySelectorAll(".tab-content");
 
-    // Resize functionality
-    let isResizing = false;
-    let startX, startWidth;
-
-    resizeHandle.addEventListener("mousedown", (e) => {
-      isResizing = true;
-      startX = e.clientX;
-      startWidth = parseInt(getComputedStyle(drawer).width, 10);
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", () => {
-        isResizing = false;
-        document.removeEventListener("mousemove", handleMouseMove);
-      });
-    });
-
-    function handleMouseMove(e) {
-      if (!isResizing) return;
-
-      const width = startWidth - (e.clientX - startX);
-      if (width >= 320 && width <= 800) {
-        drawer.style.width = `${width}px`;
-      }
-    }
-
-    // Tab switching functionality
-    tabButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const tab = button.dataset.tab;
-
-        // Update active states
-        tabButtons.forEach((btn) => btn.classList.remove("active"));
-        tabContents.forEach((content) => content.classList.remove("active"));
-
-        button.classList.add("active");
-        drawer
-          .querySelector(`.tab-content[data-tab="${tab}"]`)
-          .classList.add("active");
-      });
-    });
-    let isComposing = false;
-
-    messageInput.addEventListener("compositionstart", function () {
-      isComposing = true;
-    });
-
-    messageInput.addEventListener("compositionend", function () {
-      isComposing = false;
-    });
-
-    // const textarea = document.getElementById('ai-chat-message');
-    const preview = document.querySelector(".markdown-preview");
-    let previewTimeout;
-
-    // Handle textarea input
-    messageInput.addEventListener("input", function () {
-      clearTimeout(previewTimeout);
-      previewTimeout = setTimeout(() => {
-        const text = this.value.trim();
-        if (text) {
-          preview.innerHTML = marked.parse(text);
-          preview.classList.add("show");
-        } else {
-          preview.classList.remove("show");
-        }
-      }, 300);
-    });
-
-    // Handle textarea height
-    messageInput.addEventListener("input", function () {
-      this.style.height = "auto";
-      this.style.height = this.scrollHeight + "px";
-    });
-
-    // Handle Enter key (Shift+Enter for new line)
-    messageInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey && !isComposing) {
-        e.preventDefault();
-        sendButton.click();
-      }
-    });
-
-    sendButton.addEventListener("click", sendAIChatMessage);
-    closeButton.addEventListener("click", closeAIChatDrawer);
-    // messageInput.addEventListener("keypress", function (e) {
-    //   if (e.key === "Enter") sendAIChatMessage();
-    // });
-
-    drawer.classList.add("initialized");
-  }
-
-  function scrollToBottom() {
-    const chatContent = document.getElementById("ai-chat-content");
-    chatContent.scrollTop = chatContent.scrollHeight;
-  }
-
-  function closeAIChatDrawer() {
-    document.getElementById("ai-chat-drawer").classList.remove("open");
-    var chatContent = document.getElementById("ai-chat-content");
-    chatContent.innerHTML = "";
-  }
-
-  function sendAIChatMessage(text) {
-    document.getElementById("ai-chat-drawer").classList.add("open");
-    const messageInput = document.getElementById("ai-chat-message");
-    const sendButton = document.getElementById("ai-chat-send");
-    let message = messageInput.value.trim();
-    messageInput.style.height = "auto";
-    const preview = document.querySelector(".markdown-preview");
-    preview.classList.remove("show");
-    if (text && text.length > 0) {
-      message = text;
-    }
-
-    if (message === "") return;
-
-    // 禁用输入和发送按钮
-    messageInput.disabled = true;
-    sendButton.disabled = true;
-    sendButton.classList.add("loading");
-    sendButton.textContent = "";
-
-    addUserMessage(message);
-    messageInput.value = "";
-    sendToAI(message);
-  }
-
-  function addUserMessage(message) {
-    conversations.push("[Question]: " + message);
-    // scrollToBottom();
-    addMessage("You", message, "user-message");
-  }
-
-  function addAIMessage(message) {
-    console.log(message);
-    const messageEle = addFormattedMessage("AI", message, "ai-message");
-    // scrollToBottom();
-    return messageEle;
-  }
-
-  function addMessage(sender, message, className) {
-    const chatContent = document.getElementById("ai-chat-content");
-    const messageElement = document.createElement("div");
-    messageElement.classList.add("message", className);
-    messageElement.innerHTML = `<strong>${sender}:</strong> ${escapeHTML(
-      message
-    )}`;
-    chatContent.appendChild(messageElement);
-    chatContent.scrollTop = chatContent.scrollHeight;
-  }
-
-  function addFormattedMessage(sender, message, className) {
-    const chatContent = document.getElementById("ai-chat-content");
-    const messageElement = document.createElement("div");
-    messageElement.classList.add("message", className);
-
-    const senderElement = document.createElement("strong");
-    senderElement.textContent = `${sender}:`;
-    messageElement.appendChild(senderElement);
-
-    const formattedContent = formatMessage(message);
-    messageElement.appendChild(formattedContent);
-
-    chatContent.appendChild(messageElement);
-    chatContent.scrollTop = chatContent.scrollHeight;
-    return messageElement;
-  }
-
-  function formatMessage(message) {
-    const container = document.createElement("div");
-
-    // 使用正则表达式匹配Markdown样式的格式
-    message = message.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); // 粗体
-    message = message.replace(/\*(.*?)\*/g, "<em>$1</em>"); // 斜体
-    message = message.replace(/`([^`]+)`/g, "<code>$1</code>"); // 内联代码
-
-    // 处理代码块
-    message = message.replace(/```([\s\S]*?)```/g, function (match, p1) {
-      return `<pre><code>${escapeHTML(p1.trim())}</code></pre>`;
-    });
-
-    // 处理换行
-    message = message.replace(/\n/g, "<br>");
-
-    container.innerHTML = message;
-    return container;
-  }
-
-  function escapeHTML(str) {
-    return str.replace(
-      /[&<>'"]/g,
-      (tag) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          "'": "&#39;",
-          '"': "&quot;",
-        }[tag] || tag)
-    );
-  }
-
-  function renderMarkdownToHtml(text) {
-    const htmlContent = marked.parse(text);
-    return htmlContent;
-  }
-
-  function renderCode() {
-    document
-      .getElementById("ai-chat-drawer")
-      .querySelectorAll("pre code")
-      .forEach((block) => {
-        hljs.highlightBlock(block);
-
-        const button = document.createElement("button");
-        button.className = "copy-button";
-        button.textContent = "Copy";
-        block.parentNode.insertBefore(button, block);
-
-        button.addEventListener("click", () => {
-          const code = block.textContent;
-          navigator.clipboard
-            .writeText(code)
-            .then(() => {
-              button.textContent = "Copied!";
-              setTimeout(() => {
-                button.textContent = "Copy";
-              }, 2000);
-            })
-            .catch((error) => {
-              console.error("Copy failed:", error);
-            });
-        });
-      });
-  }
-
-  function sendToAI(message, callback = null) {
-    if (callback) {
-      console.log(message);
-      // For search results, we want a direct response without chat UI
-      chrome.runtime.sendMessage(
-        {
-          action: "callOpenAI",
-          content: message,
-          model: aiModel,
-          key: aiToken,
-          host: aiHost,
-          context: [],
-          stream: false,
-        },
-        (response) => {
-          if (response && response.choices && response.choices[0]) {
-            callback(response.choices[0].message.content);
-          }
-        }
-      );
-    } else {
-      const aiMessage = addAIMessage("Thinking...");
-      const messageInput = document.getElementById("ai-chat-message");
-      const sendButton = document.getElementById("ai-chat-send");
-
-      chrome.runtime.sendMessage({
-        action: "callOpenAI",
-        content: message,
-        model: aiModel,
-        key: aiToken,
-        host: aiHost,
-        context: conversations,
-      });
-
-      let res = "";
-
-      chrome.runtime.onMessage.addListener(function messageListener(
-        request,
-        sender,
-        sendResponse
-      ) {
-        if (request.action === "streamChunk") {
-          res = res + request.chunk;
-          if (!request.isFirstChunk) {
-            aiMessage.innerHTML = renderMarkdownToHtml(res);
-            renderCode();
-            scrollToBottom();
-          } else {
-            aiMessage.innerHTML = renderMarkdownToHtml(res);
-            renderCode();
-            // scrollToBottom();
-          }
-        } else if (request.action === "streamEnd") {
-          // scrollToBottom();
-          conversations.push("[Answer]: " + aiMessage.textContent);
-
-          // 恢复输入和发送按钮状态
-          messageInput.disabled = false;
-          sendButton.disabled = false;
-          sendButton.classList.remove("loading");
-          sendButton.textContent = "➤";
-          messageInput.focus();
-
-          chrome.runtime.onMessage.removeListener(messageListener);
-        } else if (request.action === "streamError") {
-          aiMessage.innerHTML =
-            "Sorry, I encountered an error. Please try again later.";
-          console.error(request.error);
-
-          // 恢复输入和发送按钮状态
-          messageInput.disabled = false;
-          sendButton.disabled = false;
-          sendButton.classList.remove("loading");
-          sendButton.textContent = "➤";
-          messageInput.focus();
-
-          chrome.runtime.onMessage.removeListener(messageListener);
-        }
-      });
-    }
-  }
-
-  function isGoogleSearch() {
-    return (
-      window.location.hostname === "www.google.com" &&
-      window.location.pathname === "/search"
-    );
-    // return false;
-  }
-
-  function getGoogleSearchQuery() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("q");
-  }
-
-  function injectAISearchResults() {
-    if (!isGoogleSearch()) return;
-
-    const searchQuery = getGoogleSearchQuery();
-    if (!searchQuery) return;
+  function injectAISearchResults(searchQuery) {
 
     // Find the right-hand side panel
     const rhsPanel = document.getElementById("rhs");
@@ -787,9 +769,6 @@ $(document).ready(() => {
     chrome.runtime.sendMessage({
       action: "callOpenAI",
       content: prompt,
-      model: aiModel,
-      key: aiToken,
-      host: aiHost,
       context: [],
     });
 
@@ -1000,7 +979,6 @@ $(document).ready(() => {
       chrome.runtime.sendMessage(
         { request: "search-history", query: query },
         (response) => {
-          console.log(response);
           populateaipexFilter(response.history);
         }
       );
@@ -1261,16 +1239,11 @@ $(document).ready(() => {
           window.print();
           break;
         case "open-history-url":
-          console.log("history is right");
           window.open($(".aipex-item-active .aipex-item-url").text());
           break;
         case "organize-tabs":
-          console.log("organize tabs");
           chrome.runtime.sendMessage({
-            request: "organize-tabs",
-            model: aiModel,
-            host: aiHost,
-            key: aiToken,
+            request: "organize-tabs"
           });
           break;
         case "remove-groups":
@@ -1408,7 +1381,6 @@ $(document).ready(() => {
     });
 
     $dragIcon.on("mousedown", function (e) {
-      console.log("mouse down");
       e.preventDefault();
       isDragging = true;
 
@@ -1428,19 +1400,6 @@ $(document).ready(() => {
       );
     });
 
-    $("#aipex-icon").on("mouseover", function (e) {
-      $(this).attr(
-        "src",
-        "https://miro.medium.com/v2/resize:fit:720/format:webp/1*dovpu-gbULPxot3OmL2eEQ.png"
-      );
-    });
-
-    $("#aipex-icon").on("mouseout", function (e) {
-      $(this).attr(
-        "src",
-        "https://miro.medium.com/v2/resize:fit:720/format:webp/1*gHH5bC3nCpzRVXu7UdT0ZQ.png"
-      );
-    });
 
     $(document).on("mousemove", { capture: true }, function (e) {
       if (!isDragging) return;
@@ -1460,7 +1419,6 @@ $(document).ready(() => {
     });
 
     function handleMouseUp() {
-      console.log("mouse up");
       isDragging = false;
       $(document).off("mouseup", handleMouseUp);
 
@@ -1475,42 +1433,6 @@ $(document).ready(() => {
       isMove = false;
     }
   });
-
-  // document.addEventListener("selectionchange", function () {
-  //   if (!showSelectionToolbar) return;
-
-  //   const selection = window.getSelection();
-  //   const selectedText = selection.toString().trim();
-
-  //   if (selectedText) {
-  //     const range = selection.getRangeAt(0);
-  //     const rect = range.getBoundingClientRect();
-
-  //     let toolbar = document.getElementById("aipex-selection-toolbar");
-  //     if (!toolbar) {
-  //       toolbar = document.createElement("div");
-  //       toolbar.id = "aipex-selection-toolbar";
-  //       document.body.appendChild(toolbar);
-  //     }
-
-  //     toolbar.style.top = `${rect.top + window.scrollY - 45}px`;
-  //     toolbar.style.left = `${rect.left + window.scrollX}px`;
-  //     toolbar.style.display = "flex";
-
-  //     toolbar.querySelector("#aipex-ask-ai").onclick = () => {
-  //       openAIChatDrawer(selectedText);
-  //     };
-
-  //     toolbar.querySelector("#aipex-translate").onclick = () => {
-  //       openAIChatDrawer(`Translate the following text: ${selectedText}`);
-  //     };
-  //   } else {
-  //     const toolbar = document.getElementById("aipex-selection-toolbar");
-  //     if (toolbar) {
-  //       toolbar.style.display = "none";
-  //     }
-  //   }
-  // });
 
   document.addEventListener("click", function (e) {
     if (!e.target.closest("#aipex-selection-toolbar")) {
