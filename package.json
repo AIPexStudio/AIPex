@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@plasmohq/storage": "^1.15.0",
+    "bip39": "^3.1.0",
     "plasmo": "0.90.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -29,6 +30,15 @@
   "manifest": {
     "host_permissions": [
       "https://*/*"
-    ]
+    ],
+    "commands": {
+      "open-aipex": {
+        "suggested_key": {
+          "default": "Ctrl+M",
+          "mac": "Command+M"
+        },
+        "description": "Open command menu"
+      }
+    }
   }
 }
