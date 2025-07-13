@@ -23,23 +23,30 @@ import logoWip from "url:~/assets/logo-wip.png"
 import logoCalendar from "url:~/assets/logo-calendar.png"
 import logoKeep from "url:~/assets/logo-keep.png"
 import logoMeet from "url:~/assets/logo-meet.png"
-// background.ts 负责监听扩展级别的快捷键（如 Command/Ctrl+M），
-// 并通过 chrome.tabs.sendMessage 通知内容脚本（content.tsx）
+import { Storage } from "@plasmohq/storage"
+import globeSvg from "url:~/assets/globe.svg";
+
+// background.ts is responsible for listening to extension-level shortcuts (such as Command/Ctrl+M),
+// and notifies the content script (content.tsx) via chrome.tabs.sendMessage
 console.log(logoNotion)
 
 let actions: any[] = []
 let newtaburl = ""
 
-// 获取当前 tab
+// Get current tab
 const getCurrentTab = async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   return tab
 }
 
-// 清空并添加默认 actions
+// Clear and add default actions
 const clearActions = async () => {
   const response = await getCurrentTab()
   actions = []
+  // if (!response) {
+  //   // No active tab, return or initialize empty actions
+  //   return
+  // }
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
   let muteaction = {title:"Mute tab", desc:"Mute the current tab", type:"action", action:"mute", emoji:true, emojiChar:"🔇", keycheck:true, keys:['⌥','⇧', 'M']}
   let pinaction = {title:"Pin tab", desc:"Pin the current tab", type:"action", action:"pin", emoji:true, emojiChar:"📌", keycheck:true, keys:['⌥','⇧', 'P']}
@@ -171,19 +178,19 @@ const clearActions = async () => {
 
 // Open on install
 chrome.runtime.onInstalled.addListener((object) => {
-  // Plasmo/Manifest V3: 不能直接用 content_scripts 字段注入脚本，需用 scripting API
+  // Plasmo/Manifest V3: Cannot directly inject scripts using content_scripts field, need scripting API
   if (object.reason === "install") {
     chrome.tabs.create({ url: "https://alyssax.com/omni/" })
   }
 })
 
-// 扩展按钮点击
+// Extension button click
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id)
     chrome.tabs.sendMessage(tab.id, {request: "open-aipex"})
 })
 
-// 快捷键监听
+// Shortcut listener
 chrome.commands.onCommand.addListener((command) => {
   if (command === "open-aipex") {
     getCurrentTab().then((response) => {
@@ -201,7 +208,7 @@ chrome.commands.onCommand.addListener((command) => {
   }
 })
 
-// 恢复 new tab
+// Restore new tab
 const restoreNewTab = () => {
   getCurrentTab().then((response) => {
     chrome.tabs.create({ url: newtaburl }).then(() => {
@@ -210,7 +217,7 @@ const restoreNewTab = () => {
   })
 }
 
-// 重置 actions
+// Reset actions
 const resetOmni = async () => {
   await clearActions()
   await getTabs()
@@ -222,12 +229,12 @@ const resetOmni = async () => {
   actions = search.concat(actions)
 }
 
-// 监听 tab/bookmark 变化，重置 actions
+// Listen for tab/bookmark changes, reset actions
 chrome.tabs.onUpdated.addListener(() => { resetOmni() })
 chrome.tabs.onCreated.addListener(() => { resetOmni() })
 chrome.tabs.onRemoved.addListener(() => { resetOmni() })
 
-// 获取所有 tab
+// Get all tabs
 const getTabs = async () => {
   const tabs = await chrome.tabs.query({})
   console.log("getTabs", tabs)
@@ -240,7 +247,7 @@ const getTabs = async () => {
   actions = tabs.concat(actions)
 }
 
-// 获取所有 bookmarks
+// Get all bookmarks
 const getBookmarks = async () => {
   const process_bookmark = (bookmarks: any[]) => {
     for (const bookmark of bookmarks) {
@@ -256,7 +263,7 @@ const getBookmarks = async () => {
   process_bookmark(bookmarks)
 }
 
-// 各类 action 执行函数
+// Action execution functions
 const switchTab = (tab: any) => {
   chrome.tabs.highlight({ tabs: tab.index, windowId: tab.windowId })
   chrome.windows.update(tab.windowId, { focused: true })
@@ -329,7 +336,155 @@ const removeBookmark = (bookmark: any) => {
   chrome.bookmarks.remove(bookmark.id)
 }
 
-// background 消息监听
+// OpenAI chat completion helper
+async function chatCompletion(prompt, context = [], stream = false) {
+  const storage = new Storage()
+  const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
+  const aiToken = await storage.get("aiToken")
+  const aiModel = (await storage.get("aiModel")) || "gpt-3.5-turbo"
+  if (!aiToken) throw new Error("No OpenAI API token set")
+  const messages = [
+    ...context.map((c) => ({ role: "system", content: c })),
+    { role: "user", content: prompt }
+  ]
+  const res = await fetch(aiHost, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${aiToken}`
+    },
+    body: JSON.stringify({
+      model: aiModel,
+      messages,
+      stream
+    })
+  })
+  if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
+  return await res.json()
+}
+
+// Organize tabs by AI
+async function classifyAndGroupTab(tab, tabGroupCategories) {
+  try {
+    // Get tab latest status
+    let latestTab;
+    try {
+      latestTab = await chrome.tabs.get(tab.id);
+    } catch (err) {
+      console.warn(`Tab ${tab.id} may have been closed, skipping.`);
+      return;
+    }
+    const win = await chrome.windows.get(latestTab.windowId);
+    if (win.type !== "normal" || latestTab.pinned) {
+      console.warn(`Tab "${latestTab.title}" is not in a normal window or is pinned, skipping grouping.`);
+      return;
+    }
+    // Get current window's active tab (corrected: specify windowId)
+    const activeTab = await chrome.tabs.query({
+      active: true,
+      windowId: latestTab.windowId,
+    });
+
+    const context = ["You are a browser tab group classificator"];
+    const content = `Classify the tab group based on the provided URL (${latestTab.url}) and title (${latestTab.title}) into one of the categories: ${tabGroupCategories.join(", ")}. Response with the category only, without any comments.`;
+
+    const aiResponse = await chatCompletion(content, context, false);
+    let category = aiResponse.choices[0].message.content.trim();
+    // Correct: If AI returns a category not in predefined categories, assign to Other
+    if (!tabGroupCategories.includes(category)) {
+      category = "Other";
+    }
+
+    try {
+      // Get all groups in the current window
+      const groups = await chrome.tabGroups.query({
+        windowId: latestTab.windowId,
+      });
+
+      console.log(groups)
+
+      // Find existing group with the same name
+      const existingGroup = groups.find((group) => group.title === category);
+
+      console.log(existingGroup)
+
+      if (existingGroup) {
+        // Use existing group
+        await chrome.tabs.group({
+          tabIds: [latestTab.id],
+          groupId: existingGroup.id,
+        });
+      } else {
+        // Create new group
+        console.log({
+          tabIds: [latestTab.id],
+        })
+        const groupId = await chrome.tabs.group({
+          tabIds: [latestTab.id],
+        });
+        console.log("groupId", groupId)
+
+
+        // Set group title
+        await chrome.tabGroups.update(groupId, {
+          title: category,
+        });
+
+        console.log(groupId)
+        console.log(category)
+
+        // Set collapsed state based on whether it's the active tab
+        const collapsed = latestTab.id !== activeTab[0]?.id;
+        await chrome.tabGroups.update(groupId, {
+          collapsed,
+        });
+      }
+
+      console.log(
+        `Tab "${latestTab.title}" grouped into "${category}" in window ${latestTab.windowId}`
+      );
+    } catch (groupError) {
+      console.error(
+        `Error grouping tab ${latestTab.id} into ${category} in window ${latestTab.windowId}:`,
+        groupError
+      );
+    }
+  } catch (error) {
+    console.error(
+      `Error processing tab ${tab.id} in window ${tab.windowId}:`,
+      error
+    );
+  }
+}
+
+async function groupTabsByAI() {
+  const storage = new Storage();
+  let tabGroupCategoriesRaw = (await storage.get("tabGroupCategories")) || "Social, Entertainment, Read Material, Education, Productivity, Utilities";
+  let tabGroupCategories;
+  if (typeof tabGroupCategoriesRaw === "string") {
+    tabGroupCategories = tabGroupCategoriesRaw.split(",").map(c => c.trim());
+  } else if (Array.isArray(tabGroupCategoriesRaw)) {
+    tabGroupCategories = tabGroupCategoriesRaw;
+  } else {
+    tabGroupCategories = ["Other"];
+  }
+
+  const tabs = await chrome.tabs.query({ currentWindow: true });
+  for (const tab of tabs) {
+    if (
+      !tab.url ||
+      tab.url.startsWith("chrome://") ||
+      tab.url.startsWith("chrome-extension://") ||
+      tab.url.startsWith("chrome-devtools://") ||
+      tab.pinned // Skip pinned tab
+    ) continue;
+    // Only process normal window (remove duplicate check, handled in classifyAndGroupTab)
+    await classifyAndGroupTab(tab, tabGroupCategories);
+  }
+  console.log("All tabs have been processed.");
+}
+
+// background message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.request) {
     case "get-actions":
@@ -438,7 +593,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       break
     case "search":
-      // chrome.search.query({text:message.query}) // 需 search API 权限
+      // chrome.search.query({text:message.query}) // Need search API permission
       break
     case "restore-new-tab":
       restoreNewTab()
@@ -448,8 +603,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.sendMessage(response.id!, {request: "close-omni"})
       })
       break
+    case "organize-tabs":
+      groupTabsByAI()
+      break
+    case "open-sidepanel":
+      if (sender.tab && sender.tab.id) {
+        chrome.sidePanel.open({ tabId: sender.tab.id })
+      }
+      break
   }
 })
 
-// 初始化 actions
+// Initialize actions
 resetOmni()

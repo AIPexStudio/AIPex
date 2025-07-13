@@ -3,6 +3,8 @@ import type { PlasmoCSConfig } from "plasmo"
 import React, { useEffect } from "react"
 import ReactDOM from "react-dom"
 import "~style.css"
+import globeUrl from "url:~/assets/globe.svg"
+
 import "url:~/assets/logo-notion.png"
 import "url:~/assets/logo-sheets.png"
 import "url:~/assets/logo-docs.png"
@@ -56,7 +58,7 @@ const Omni = () => {
   const [toast, setToast] = React.useState<string | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
-  // 获取 actions
+  // Get actions
   const fetchActions = () => {
     chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
       console.log("response")
@@ -70,7 +72,7 @@ const Omni = () => {
     })
   }
 
-  // 弹窗打开时获取 actions
+  // Get actions when modal is opened
   React.useEffect(() => {
     if (isOpen) {
       console.log("fetchActions")
@@ -82,7 +84,7 @@ const Omni = () => {
     }
   }, [isOpen])
 
-  // 输入过滤
+  // Input filtering
   React.useEffect(() => {
     if (!input) {
       setFilteredActions(actions)
@@ -136,12 +138,12 @@ const Omni = () => {
     }
   }, [input, actions])
 
-  // 输入过滤时重置高亮项
+  // Reset highlighted item when filtered actions change
   React.useEffect(() => {
     setSelectedIndex(0)
   }, [filteredActions])
 
-  // 消息监听
+  // Message listener
   React.useEffect(() => {
     const onMessage = (message: any) => {
       if (message.request === "open-aipex") {
@@ -154,7 +156,7 @@ const Omni = () => {
     return () => chrome.runtime.onMessage.removeListener(onMessage)
   }, [])
 
-  // 全局快捷键监听（Esc 关闭）
+  // Global shortcut listener (Esc to close)
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -166,7 +168,7 @@ const Omni = () => {
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [isOpen])
 
-  // 键盘操作
+  // Keyboard operations
   React.useEffect(() => {
     if (!isOpen) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -200,7 +202,7 @@ const Omni = () => {
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [isOpen, filteredActions, selectedIndex])
 
-  // 辅助函数
+  // Helper functions
   function addhttp(url: string) {
     if (!/^(?:f|ht)tps?:\/\//.test(url)) {
       url = "http://" + url
@@ -236,11 +238,11 @@ const Omni = () => {
     }
   }
 
-  // 执行 action
+  // Execute action
   const handleAction = (action: any) => {
-    setToast(`Action: ${action.title} 已执行`)
+    setToast(`Action: ${action.title} executed`)
     setTimeout(() => setToast(null), 2000)
-    // 具体操作
+    // Specific operations
     switch (action.action) {
       case "bookmark":
       case "navigation":
@@ -268,13 +270,18 @@ const Omni = () => {
       case "print":
         window.print()
         break
+      case "ai-chat":
+        console.log("ai-chat")
+        chrome.runtime.sendMessage({ request: "open-sidepanel" })
+        setIsOpen(false)
+        break
       case "remove-all":
       case "remove-history":
       case "remove-cookies":
       case "remove-cache":
       case "remove-local-storage":
       case "remove-passwords":
-        // 仅弹出 toast
+        // Only show toast
         break
       default:
         chrome.runtime.sendMessage({ request: action.action, tab: action, query: input })
@@ -285,9 +292,9 @@ const Omni = () => {
   // Helper to get icon for action
   function getActionIcon(action: any) {
     if (action.favIconUrl) return action.favIconUrl
-    if (action.url?.startsWith("chrome-extension://")) return chrome.runtime.getURL("/assets/globe.svg")
-    if (action.url?.startsWith("chrome://")) return chrome.runtime.getURL("/assets/globe.svg")
-    return chrome.runtime.getURL("/assets/globe.svg")
+    if (action.url?.startsWith("chrome-extension://")) return globeUrl
+    if (action.url?.startsWith("chrome://")) return globeUrl
+    return globeUrl
   }
 
   // Diagnostic: log all favIconUrls when filteredActions change
@@ -333,7 +340,7 @@ const Omni = () => {
                   alt="favicon"
                   className="w-5 h-5 rounded"
                   onError={e => {
-                    e.currentTarget.src = chrome.runtime.getURL("/assets/globe.svg")
+                    e.currentTarget.src = globeUrl
                   }}
                   onLoad={() => {
                     console.log("[DIAG] Image loaded successfully:", getActionIcon(action))

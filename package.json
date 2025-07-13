@@ -10,7 +10,9 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.10.25",
     "@plasmohq/storage": "^1.15.0",
+    "assistant-ui": "^0.0.56",
     "bip39": "^3.1.0",
     "plasmo": "0.90.5",
     "react": "18.2.0",
@@ -30,8 +32,12 @@
   "manifest": {
     "web_accessible_resources": [
       {
-        "resources": ["*"],
-        "matches": ["<all_urls>"]
+        "resources": [
+          "*"
+        ],
+        "matches": [
+          "<all_urls>"
+        ]
       }
     ],
     "host_permissions": [
@@ -47,7 +53,21 @@
       }
     },
     "permissions": [
-      "tabs", "activeTab", "bookmarks", "browsingData", "history", "scripting", "search", "storage"
+      "tabs",
+      "windows",
+      "tabGroups",
+      "activeTab",
+      "bookmarks",
+      "browsingData",
+      "history",
+      "scripting",
+      "search",
+      "commands",
+      "storage",
+      "contextMenus",
+      "scripting",
+      "sessions",
+      "sidePanel"
     ]
   }
 }
