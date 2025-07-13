@@ -1,0 +1,28 @@
+{
+  "projectType": "browser-extension",
+  "framework": "react",
+  "language": "typescript",
+  "packageManager": "pnpm",
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "testCommand": "",
+  "entry": [
+    "src/popup.tsx",
+    "src/background.ts",
+    "src/content.tsx"
+  ],
+  "style": [
+    "src/style.css",
+    "tailwind.config.js",
+    "postcss.config.js"
+  ],
+  "plasmo": {
+    "manifest": "manifest.plasmo.json",
+    "assetsDir": "assets"
+  },
+  "notes": [
+    "This project is a Plasmo browser extension. Use 'pnpm dev' for development.",
+    "If you encounter icon-related errors, ensure 'icon.png' exists in the assets directory and check 'manifest.plasmo.json' configuration.",
+    "Main code entry points are in the 'src/' directory: 'popup.tsx' for the popup UI, 'background.ts' for background scripts, and 'content.tsx' for content scripts."
+  ]
+} 

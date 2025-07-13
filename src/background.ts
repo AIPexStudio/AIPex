@@ -1,5 +1,31 @@
+import logoNotion from "url:~/assets/logo-notion.png"
+import logoSheets from "url:~/assets/logo-sheets.png"
+import logoDocs from "url:~/assets/logo-docs.png"
+import logoSlides from "url:~/assets/logo-slides.png"
+import logoForms from "url:~/assets/logo-forms.png"
+import logoMedium from "url:~/assets/logo-medium.png"
+import logoGithub from "url:~/assets/logo-github.png"
+import logoCodepen from "url:~/assets/logo-codepen.png"
+import logoExcel from "url:~/assets/logo-excel.png"
+import logoPowerpoint from "url:~/assets/logo-powerpoint.png"
+import logoWord from "url:~/assets/logo-word.png"
+import logoFigma from "url:~/assets/logo-figma.png"
+import logoProducthunt from "url:~/assets/logo-producthunt.png"
+import logoTwitter from "url:~/assets/logo-twitter.png"
+import logoSpotify from "url:~/assets/logo-spotify.png"
+import logoCanva from "url:~/assets/logo-canva.png"
+import logoAnchor from "url:~/assets/logo-anchor.png"
+import logoPhotoshop from "url:~/assets/logo-photoshop.png"
+import logoQr from "url:~/assets/logo-qr.png"
+import logoAsana from "url:~/assets/logo-asana.png"
+import logoLinear from "url:~/assets/logo-linear.png"
+import logoWip from "url:~/assets/logo-wip.png"
+import logoCalendar from "url:~/assets/logo-calendar.png"
+import logoKeep from "url:~/assets/logo-keep.png"
+import logoMeet from "url:~/assets/logo-meet.png"
 // background.ts 负责监听扩展级别的快捷键（如 Command/Ctrl+M），
 // 并通过 chrome.tabs.sendMessage 通知内容脚本（content.tsx）
+console.log(logoNotion)
 
 let actions: any[] = []
 let newtaburl = ""
@@ -25,6 +51,24 @@ const clearActions = async () => {
   }
   actions = [
     {title:"New tab", desc:"Open a new tab", type:"action", action:"new-tab", emoji:true, emojiChar:"✨", keycheck:true, keys:['⌘','T']},
+    {
+      title: "AI Chat",
+      desc: "Start an AI conversation",
+      type: "action",
+      action: "ai-chat",
+      emoji: true,
+      emojiChar: "🤖",
+      keycheck: false,
+    },
+    {
+      title: "Organize Tabs",
+      desc: "Group tabs using AI",
+      type: "action",
+      action: "organize-tabs",
+      emoji: true,
+      emojiChar: "📑",
+      keycheck: false,
+    },
     {title:"Bookmark", desc:"Create a bookmark", type:"action", action:"create-bookmark", emoji:true, emojiChar:"📕", keycheck:true, keys:['⌘','D']},
     pinaction,
     {title:"Fullscreen", desc:"Make the page fullscreen", type:"action", action:"fullscreen", emoji:true, emojiChar:"🖥", keycheck:true, keys:['⌘', 'Ctrl', 'F']},
@@ -33,36 +77,36 @@ const clearActions = async () => {
     {title:"Help", desc:"Get help with Omni on GitHub", type:"action", action:"url", url:"https://github.com/alyssaxuu/omni", emoji:true, emojiChar:"🤔", keycheck:false},
     {title:"Compose email", desc:"Compose a new email", type:"action", action:"email", emoji:true, emojiChar:"✉️", keycheck:true, keys:['⌥','⇧', 'C']},
     {title:"Print page", desc:"Print the current page", type:"action", action:"print", emoji:true, emojiChar:"🖨️", keycheck:true, keys:['⌘', 'P']},
-    {title:"New Notion page", desc:"Create a new Notion page", type:"action", action:"url", url:"https://notion.new", emoji:false, favIconUrl:"/logo-notion.png", keycheck:false},
-    {title:"New Sheets spreadsheet", desc:"Create a new Google Sheets spreadsheet", type:"action", action:"url", url:"https://sheets.new", emoji:false, favIconUrl:"/logo-sheets.png", keycheck:false},
-    {title:"New Docs document", desc:"Create a new Google Docs document", type:"action", action:"url", emoji:false, url:"https://docs.new", favIconUrl:"/logo-docs.png", keycheck:false},
-    {title:"New Slides presentation", desc:"Create a new Google Slides presentation", type:"action", action:"url", url:"https://slides.new", emoji:false, favIconUrl:"/logo-slides.png", keycheck:false},
-    {title:"New form", desc:"Create a new Google Forms form", type:"action", action:"url", url:"https://forms.new", emoji:false, favIconUrl:"/logo-forms.png", keycheck:false},
-    {title:"New Medium story", desc:"Create a new Medium story", type:"action", action:"url", url:"https://story.new", emoji:false, favIconUrl:"/logo-medium.png", keycheck:false},
-    {title:"New GitHub repository", desc:"Create a new GitHub repository", type:"action", action:"url", url:"https://github.new", emoji:false, favIconUrl:"/logo-github.png", keycheck:false},
-    {title:"New GitHub gist", desc:"Create a new GitHub gist", type:"action", action:"url", url:"https://gist.new", emoji:false, favIconUrl:"/logo-github.png", keycheck:false},
-    {title:"New CodePen pen", desc:"Create a new CodePen pen", type:"action", action:"url", url:"https://pen.new", emoji:false, favIconUrl:"/logo-codepen.png", keycheck:false},
-    {title:"New Excel spreadsheet", desc:"Create a new Excel spreadsheet", type:"action", action:"url", url:"https://excel.new", emoji:false, favIconUrl:"/logo-excel.png", keycheck:false},
-    {title:"New PowerPoint presentation", desc:"Create a new PowerPoint presentation", type:"action", url:"https://powerpoint.new", action:"url", emoji:false, favIconUrl:"/logo-powerpoint.png", keycheck:false},
-    {title:"New Word document", desc:"Create a new Word document", type:"action", action:"url", url:"https://word.new", emoji:false, favIconUrl:"/logo-word.png", keycheck:false},
+    {title:"New Notion page", desc:"Create a new Notion page", type:"action", action:"url", url:"https://notion.new", emoji:false, favIconUrl:logoNotion, keycheck:false},
+    {title:"New Sheets spreadsheet", desc:"Create a new Google Sheets spreadsheet", type:"action", action:"url", url:"https://sheets.new", emoji:false, favIconUrl:logoSheets, keycheck:false},
+    {title:"New Docs document", desc:"Create a new Google Docs document", type:"action", action:"url", emoji:false, url:"https://docs.new", favIconUrl:logoDocs, keycheck:false},
+    {title:"New Slides presentation", desc:"Create a new Google Slides presentation", type:"action", action:"url", url:"https://slides.new", emoji:false, favIconUrl:logoSlides, keycheck:false},
+    {title:"New form", desc:"Create a new Google Forms form", type:"action", action:"url", url:"https://forms.new", emoji:false, favIconUrl:logoForms, keycheck:false},
+    {title:"New Medium story", desc:"Create a new Medium story", type:"action", action:"url", url:"https://story.new", emoji:false, favIconUrl:logoMedium, keycheck:false},
+    {title:"New GitHub repository", desc:"Create a new GitHub repository", type:"action", action:"url", url:"https://github.new", emoji:false, favIconUrl:logoGithub, keycheck:false},
+    {title:"New GitHub gist", desc:"Create a new GitHub gist", type:"action", action:"url", url:"https://gist.new", emoji:false, favIconUrl:logoGithub, keycheck:false},
+    {title:"New CodePen pen", desc:"Create a new CodePen pen", type:"action", action:"url", url:"https://pen.new", emoji:false, favIconUrl:logoCodepen, keycheck:false},
+    {title:"New Excel spreadsheet", desc:"Create a new Excel spreadsheet", type:"action", action:"url", url:"https://excel.new", emoji:false, favIconUrl:logoExcel, keycheck:false},
+    {title:"New PowerPoint presentation", desc:"Create a new PowerPoint presentation", type:"action", url:"https://powerpoint.new", action:"url", emoji:false, favIconUrl:logoPowerpoint, keycheck:false},
+    {title:"New Word document", desc:"Create a new Word document", type:"action", action:"url", url:"https://word.new", emoji:false, favIconUrl:logoWord, keycheck:false},
     {title:"Create a whiteboard", desc:"Create a collaborative whiteboard", type:"action", action:"url", url:"https://whiteboard.new", emoji:true, emojiChar:"🧑‍🏫", keycheck:false},
     {title:"Record a video", desc:"Record and edit a video", type:"action", action:"url", url:"https://recording.new", emoji:true, emojiChar:"📹", keycheck:false},
-    {title:"Create a Figma file", desc:"Create a new Figma file", type:"action", action:"url", url:"https://figma.new", emoji:false, favIconUrl:"/logo-figma.png", keycheck:false},
+    {title:"Create a Figma file", desc:"Create a new Figma file", type:"action", action:"url", url:"https://figma.new", emoji:false, favIconUrl:logoFigma, keycheck:false},
     {title:"Create a FigJam file", desc:"Create a new FigJam file", type:"action", action:"url", url:"https://figjam.new", emoji:true, emojiChar:"🖌", keycheck:false},
-    {title:"Hunt a product", desc:"Submit a product to Product Hunt", type:"action", action:"url", url:"https://www.producthunt.com/posts/new", emoji:false, favIconUrl:"/logo-producthunt.png", keycheck:false},
-    {title:"Make a tweet", desc:"Make a tweet on Twitter", type:"action", action:"url", url:"https://twitter.com/intent/tweet", emoji:false, favIconUrl:"/logo-twitter.png", keycheck:false},
-    {title:"Create a playlist", desc:"Create a Spotify playlist", type:"action", action:"url", url:"https://playlist.new", emoji:false, favIconUrl:"/logo-spotify.png", keycheck:false},
-    {title:"Create a Canva design", desc:"Create a new design with Canva", type:"action", action:"url", url:"https://design.new", emoji:false, favIconUrl:"/logo-canva.png", keycheck:false},
-    {title:"Create a new podcast episode", desc:"Create a new podcast episode with Anchor", type:"action", action:"url", url:"https://episode.new", emoji:false, favIconUrl:"/logo-anchor.png", keycheck:false},
-    {title:"Edit an image", desc:"Edit an image with Adobe Photoshop", type:"action", action:"url", url:"https://photo.new", emoji:false, favIconUrl:"/logo-photoshop.png", keycheck:false},
+    {title:"Hunt a product", desc:"Submit a product to Product Hunt", type:"action", action:"url", url:"https://www.producthunt.com/posts/new", emoji:false, favIconUrl:logoProducthunt, keycheck:false},
+    {title:"Make a tweet", desc:"Make a tweet on Twitter", type:"action", action:"url", url:"https://twitter.com/intent/tweet", emoji:false, favIconUrl:logoTwitter, keycheck:false},
+    {title:"Create a playlist", desc:"Create a Spotify playlist", type:"action", action:"url", url:"https://playlist.new", emoji:false, favIconUrl:logoSpotify, keycheck:false},
+    {title:"Create a Canva design", desc:"Create a new design with Canva", type:"action", action:"url", url:"https://design.new", emoji:false, favIconUrl:logoCanva, keycheck:false},
+    {title:"Create a new podcast episode", desc:"Create a new podcast episode with Anchor", type:"action", action:"url", url:"https://episode.new", emoji:false, favIconUrl:logoAnchor, keycheck:false},
+    {title:"Edit an image", desc:"Edit an image with Adobe Photoshop", type:"action", action:"url", url:"https://photo.new", emoji:false, favIconUrl:logoPhotoshop, keycheck:false},
     {title:"Convert to PDF", desc:"Convert a file to PDF", type:"action", action:"url", url:"https://pdf.new", emoji:true, emojiChar:"📄", keycheck:false},
-    {title:"Scan a QR code", desc:"Scan a QR code with your camera", type:"action", action:"url", url:"https://scan.new", emoji:false, favIconUrl:"/logo-qr.png", keycheck:false},
-    {title:"Add a task to Asana", desc:"Create a new task in Asana", type:"action", action:"url", url:"https://task.new", emoji:false, favIconUrl:"/logo-asana.png", keycheck:false},
-    {title:"Add an issue to Linear", desc:"Create a new issue in Linear", type:"action", action:"url", url:"https://linear.new", emoji:false, favIconUrl:"/logo-linear.png", keycheck:false},
-    {title:"Add a task to WIP", desc:"Create a new task in WIP", type:"action", action:"url", url:"https://todo.new", emoji:false, favIconUrl:"/logo-wip.png", keycheck:false},
-    {title:"Create an event", desc:"Add an event to Google Calendar", type:"action", action:"url", url:"https://cal.new", emoji:false, favIconUrl:"/logo-calendar.png", keycheck:false},
-    {title:"Add a note", desc:"Add a note to Google Keep", type:"action", action:"url", emoji:false, url:"https://note.new", favIconUrl:"/logo-keep.png", keycheck:false},
-    {title:"New meeting", desc:"Start a Google Meet meeting", type:"action", action:"url", emoji:false, url:"https://meet.new", favIconUrl:"/logo-meet.png", keycheck:false},
+    {title:"Scan a QR code", desc:"Scan a QR code with your camera", type:"action", action:"url", url:"https://scan.new", emoji:false, favIconUrl:logoQr, keycheck:false},
+    {title:"Add a task to Asana", desc:"Create a new task in Asana", type:"action", action:"url", url:"https://task.new", emoji:false, favIconUrl:logoAsana, keycheck:false},
+    {title:"Add an issue to Linear", desc:"Create a new issue in Linear", type:"action", action:"url", url:"https://linear.new", emoji:false, favIconUrl:logoLinear, keycheck:false},
+    {title:"Add a task to WIP", desc:"Create a new task in WIP", type:"action", action:"url", url:"https://todo.new", emoji:false, favIconUrl:logoWip, keycheck:false},
+    {title:"Create an event", desc:"Add an event to Google Calendar", type:"action", action:"url", url:"https://cal.new", emoji:false, favIconUrl:logoCalendar, keycheck:false},
+    {title:"Add a note", desc:"Add a note to Google Keep", type:"action", action:"url", emoji:false, url:"https://note.new", favIconUrl:logoKeep, keycheck:false},
+    {title:"New meeting", desc:"Start a Google Meet meeting", type:"action", action:"url", emoji:false, url:"https://meet.new", favIconUrl:logoMeet, keycheck:false},
     {title:"Browsing history", desc:"Browse through your browsing history", type:"action", action:"history", emoji:true, emojiChar:"🗂", keycheck:true, keys:['⌘','Y']},
     {title:"Incognito mode", desc:"Open an incognito window", type:"action", action:"incognito", emoji:true, emojiChar:"🕵️", keycheck:true, keys:['⌘','⇧', 'N']},
     {title:"Downloads", desc:"Browse through your downloads", type:"action", action:"downloads", emoji:true, emojiChar:"📦", keycheck:true, keys:['⌘','⇧', 'J']},
@@ -186,6 +230,7 @@ chrome.tabs.onRemoved.addListener(() => { resetOmni() })
 // 获取所有 tab
 const getTabs = async () => {
   const tabs = await chrome.tabs.query({})
+  console.log("getTabs", tabs)
   tabs.forEach((tab) => {
     (tab as any).desc = "Chrome tab"
     ;(tab as any).keycheck = false

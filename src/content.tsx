@@ -2,6 +2,32 @@ import cssText from "data-text:~style.css"
 import type { PlasmoCSConfig } from "plasmo"
 import React, { useEffect } from "react"
 import ReactDOM from "react-dom"
+import "~style.css"
+import "url:~/assets/logo-notion.png"
+import "url:~/assets/logo-sheets.png"
+import "url:~/assets/logo-docs.png"
+import "url:~/assets/logo-slides.png"
+import "url:~/assets/logo-forms.png"
+import "url:~/assets/logo-medium.png"
+import "url:~/assets/logo-github.png"
+import "url:~/assets/logo-codepen.png"
+import "url:~/assets/logo-excel.png"
+import "url:~/assets/logo-powerpoint.png"
+import "url:~/assets/logo-word.png"
+import "url:~/assets/logo-figma.png"
+import "url:~/assets/logo-producthunt.png"
+import "url:~/assets/logo-twitter.png"
+import "url:~/assets/logo-spotify.png"
+import "url:~/assets/logo-canva.png"
+import "url:~/assets/logo-anchor.png"
+import "url:~/assets/logo-photoshop.png"
+import "url:~/assets/logo-qr.png"
+import "url:~/assets/logo-asana.png"
+import "url:~/assets/logo-linear.png"
+import "url:~/assets/logo-wip.png"
+import "url:~/assets/logo-calendar.png"
+import "url:~/assets/logo-keep.png"
+import "url:~/assets/logo-meet.png"
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"]
@@ -20,24 +46,6 @@ export const getStyle = (): HTMLStyleElement => {
   return styleElement
 }
 
-const showNotification = () => {
-  const div = document.createElement("div")
-  div.textContent = "快捷键触发成功！"
-  div.style.position = "fixed"
-  div.style.top = "40px"
-  div.style.right = "40px"
-  div.style.zIndex = "99999"
-  div.style.background = "#222"
-  div.style.color = "#fff"
-  div.style.padding = "16px 32px"
-  div.style.borderRadius = "8px"
-  div.style.fontSize = "18px"
-  div.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)"
-  document.body.appendChild(div)
-  setTimeout(() => {
-    div.remove()
-  }, 1500)
-}
 
 const Omni = () => {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -82,14 +90,14 @@ const Omni = () => {
       const tempvalue = input.replace("/tabs ", "")
       setFilteredActions(
         actions.filter(a => a.type === "tab" && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue)
+          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
       )
     } else if (input.startsWith("/bookmarks")) {
       const tempvalue = input.replace("/bookmarks ", "")
       if (tempvalue && tempvalue !== "/bookmarks") {
         chrome.runtime.sendMessage({ request: "search-bookmarks", query: tempvalue }, (response) => {
-          setFilteredActions(response?.bookmarks || [])
+          setFilteredActions((response?.bookmarks || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)))
         })
       } else {
         setFilteredActions(actions.filter(a => a.type === "bookmark"))
@@ -98,7 +106,7 @@ const Omni = () => {
       const tempvalue = input.replace("/history ", "")
       if (tempvalue && tempvalue !== "/history") {
         chrome.runtime.sendMessage({ request: "search-history", query: tempvalue }, (response) => {
-          setFilteredActions(response?.history || [])
+          setFilteredActions((response?.history || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)))
         })
       } else {
         setFilteredActions(actions.filter(a => a.type === "history"))
@@ -107,21 +115,22 @@ const Omni = () => {
       const tempvalue = input.replace("/remove ", "")
       setFilteredActions(
         actions.filter(a => (a.type === "bookmark" || a.type === "tab") && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue)
+          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
       )
     } else if (input.startsWith("/actions")) {
       const tempvalue = input.replace("/actions ", "")
       setFilteredActions(
         actions.filter(a => a.type === "action" && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue)
+          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
       )
     } else {
       setFilteredActions(
         actions.filter((a) =>
           a.title?.toLowerCase().includes(input.toLowerCase()) ||
-          a.desc?.toLowerCase().includes(input.toLowerCase())
+          a.desc?.toLowerCase().includes(input.toLowerCase()) ||
+          a.url?.toLowerCase().includes(input.toLowerCase())
         )
       )
     }
@@ -273,13 +282,33 @@ const Omni = () => {
     }
   }
 
+  // Helper to get icon for action
+  function getActionIcon(action: any) {
+    if (action.favIconUrl) return action.favIconUrl
+    if (action.url?.startsWith("chrome-extension://")) return chrome.runtime.getURL("/assets/globe.svg")
+    if (action.url?.startsWith("chrome://")) return chrome.runtime.getURL("/assets/globe.svg")
+    return chrome.runtime.getURL("/assets/globe.svg")
+  }
+
+  // Diagnostic: log all favIconUrls when filteredActions change
+  React.useEffect(() => {
+    filteredActions.forEach(action => {
+      console.log("[DIAG] action.title:", action.title, "favIconUrl:", action.favIconUrl)
+    })
+  }, [filteredActions])
+
   if (!isOpen) return null
   return ReactDOM.createPortal(
-    <div id="omni-extension" style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999, background: 'rgba(0,0,0,0.1)'}}>
-      <div style={{margin: '100px auto', width: 400, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', padding: 24, position: 'relative'}}>
+    <div
+      id="omni-extension"
+      className="fixed inset-0 w-screen h-screen z-[99999] bg-black/60 flex items-start justify-center"
+    >
+      <div
+        className="mt-24 w-[800px] bg-neutral-900 rounded-2xl shadow-2xl p-6 relative border border-neutral-800"
+      >
         <input
           ref={inputRef}
-          style={{width: '100%', padding: 8, fontSize: 18, borderRadius: 4, border: '1px solid #eee'}}
+          className="w-full px-3 py-2 text-lg rounded-md border border-neutral-700 bg-neutral-800 text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
           placeholder="Type to search..."
           value={input}
           onChange={e => {
@@ -287,54 +316,46 @@ const Omni = () => {
             setInput(e.target.value)
           }}
         />
-        <div style={{marginTop: 16, maxHeight: 300, overflowY: 'auto'}}>
-          {filteredActions.length === 0 && <div style={{color: '#888'}}>No actions</div>}
+        <div className="mt-4 max-h-[300px] overflow-y-auto">
+          {filteredActions.length === 0 && <div className="text-neutral-500">No actions</div>}
           {filteredActions.map((action, idx) => (
             <div
               key={action.title + idx}
-              style={{
-                padding: '10px 12px',
-                background: idx === selectedIndex ? '#f0f6ff' : 'transparent',
-                borderRadius: 6,
-                marginBottom: 4,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                border: idx === selectedIndex ? '1px solid #2684ff' : '1px solid transparent'
-              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-1 cursor-pointer border transition ${idx === selectedIndex ? "bg-neutral-800 border-blue-500" : "bg-transparent border-transparent hover:bg-neutral-800/60"}`}
               onClick={() => handleAction(action)}
               onMouseEnter={() => setSelectedIndex(idx)}
             >
               {action.emoji ? (
                 <span style={{fontSize: 22}}>{action.emojiChar}</span>
               ) : (
-                <img src={action.favIconUrl} alt="favicon" style={{width: 20, height: 20, borderRadius: 4}} onError={e => (e.currentTarget.src = chrome.runtime.getURL("/assets/globe.svg"))} />
+                <img
+                  src={getActionIcon(action)}
+                  alt="favicon"
+                  className="w-5 h-5 rounded"
+                  onError={e => {
+                    e.currentTarget.src = chrome.runtime.getURL("/assets/globe.svg")
+                  }}
+                  onLoad={() => {
+                    console.log("[DIAG] Image loaded successfully:", getActionIcon(action))
+                  }}
+                />
               )}
-              <div style={{flex: 1}}>
-                <div style={{fontWeight: 500}}>{action.title}</div>
-                <div style={{fontSize: 13, color: '#888'}}>{action.desc}</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold text-white">{action.title}</div>
+                <div className="text-xs text-neutral-400">{action.desc}</div>
+                {action.url && (
+                  <div className="text-xs text-neutral-500 break-all mt-1">
+                    {action.url.length > 40
+                      ? action.url.slice(0, 40) + "..."
+                      : action.url}
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
         {toast && (
-          <div style={{
-            position: 'absolute',
-            top: -60,
-            left: 0,
-            right: 0,
-            margin: '0 auto',
-            background: '#222',
-            color: '#fff',
-            padding: '12px 24px',
-            borderRadius: 8,
-            fontSize: 16,
-            textAlign: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            width: 'fit-content',
-            minWidth: 180
-          }}>
+          <div className="absolute -top-16 left-0 right-0 mx-auto bg-neutral-800 text-white px-6 py-3 rounded-xl text-base text-center shadow-lg w-fit min-w-[180px]">
             {toast}
           </div>
         )}

@@ -28,6 +28,12 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "web_accessible_resources": [
+      {
+        "resources": ["*"],
+        "matches": ["<all_urls>"]
+      }
+    ],
     "host_permissions": [
       "https://*/*"
     ],
@@ -39,6 +45,9 @@
         },
         "description": "Open command menu"
       }
-    }
+    },
+    "permissions": [
+      "tabs", "activeTab", "bookmarks", "browsingData", "history", "scripting", "search", "storage"
+    ]
   }
 }
