@@ -57,7 +57,6 @@ const clearActions = async () => {
     pinaction = {title:"Unpin tab", desc:"Unpin the current tab", type:"action", action:"unpin", emoji:true, emojiChar:"📌", keycheck:true, keys:['⌥','⇧', 'P']}
   }
   actions = [
-    {title:"New tab", desc:"Open a new tab", type:"action", action:"new-tab", emoji:true, emojiChar:"✨", keycheck:true, keys:['⌘','T']},
     {
       title: "AI Chat",
       desc: "Start an AI conversation",
@@ -67,6 +66,7 @@ const clearActions = async () => {
       emojiChar: "🤖",
       keycheck: false,
     },
+    {title:"New tab", desc:"Open a new tab", type:"action", action:"new-tab", emoji:true, emojiChar:"✨", keycheck:true, keys:['⌘','T']},
     {
       title: "Organize Tabs",
       desc: "Group tabs using AI",
@@ -198,7 +198,8 @@ chrome.commands.onCommand.addListener((command) => {
         console.log("open-aipex")
         chrome.tabs.sendMessage(response.id!, {request: "open-aipex"})
       } else {
-        chrome.tabs.create({ url: "./newtab.html" }).then((tab) => {
+        // Open a new tab with our custom new tab page
+        chrome.tabs.create({ url: "chrome://newtab" }).then((tab) => {
           console.log("open-aipex-new-tab")
           newtaburl = response.url
           chrome.tabs.remove(response.id!)
@@ -222,11 +223,13 @@ const resetOmni = async () => {
   await clearActions()
   await getTabs()
 //   await getBookmarks()
-  const search = [
-    {title:"Search", desc:"Search for a query", type:"action", action:"search", emoji:true, emojiChar:"🔍", keycheck:false},
-    {title:"Search", desc:"Go to website", type:"action", action:"goto", emoji:true, emojiChar:"🔍", keycheck:false}
-  ]
-  actions = search.concat(actions)
+  
+  // Find AI Chat action and move it to the front
+  const aiChatIndex = actions.findIndex(action => action.action === 'ai-chat')
+  if (aiChatIndex > 0) {
+    const aiChatAction = actions.splice(aiChatIndex, 1)[0]
+    actions.unshift(aiChatAction)
+  }
 }
 
 // Listen for tab/bookmark changes, reset actions
@@ -337,7 +340,7 @@ const removeBookmark = (bookmark: any) => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(messages, stream = false) {
+async function chatCompletion(messages, stream = false, options = {}) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
@@ -354,17 +357,20 @@ async function chatCompletion(messages, stream = false) {
     throw new Error("Invalid messages format")
   }
   
+  const requestBody = {
+    model: aiModel,
+    messages: conversationMessages,
+    stream,
+    ...options
+  }
+  
   const res = await fetch(aiHost, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${aiToken}`
     },
-    body: JSON.stringify({
-      model: aiModel,
-      messages: conversationMessages,
-      stream
-    })
+    body: JSON.stringify(requestBody)
   })
   if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
   
@@ -468,30 +474,126 @@ async function classifyAndGroupTab(tab, tabGroupCategories) {
 
 async function groupTabsByAI() {
   const storage = new Storage();
-  let tabGroupCategoriesRaw = (await storage.get("tabGroupCategories")) || "Social, Entertainment, Read Material, Education, Productivity, Utilities";
-  let tabGroupCategories;
-  if (typeof tabGroupCategoriesRaw === "string") {
-    tabGroupCategories = tabGroupCategoriesRaw.split(",").map(c => c.trim());
-  } else if (Array.isArray(tabGroupCategoriesRaw)) {
-    tabGroupCategories = tabGroupCategoriesRaw;
-  } else {
-    tabGroupCategories = ["Other"];
-  }
-
+  
+  // Get tabs from current window
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  for (const tab of tabs) {
-    if (
-      !tab.url ||
-      tab.url.startsWith("chrome://") ||
-      tab.url.startsWith("chrome-extension://") ||
-      tab.url.startsWith("chrome-devtools://") ||
-      tab.pinned // Skip pinned tab
-    ) continue;
-    // Only process normal window (remove duplicate check, handled in classifyAndGroupTab)
-    await classifyAndGroupTab(tab, tabGroupCategories);
+  
+  // Skip tabs that shouldn't be grouped
+  const validTabs = tabs.filter(tab => 
+    tab.url && 
+    !tab.url.startsWith("chrome://") &&
+    !tab.url.startsWith("chrome-extension://") &&
+    !tab.url.startsWith("chrome-devtools://") &&
+    !tab.pinned
+  );
+  
+  if (validTabs.length === 0) {
+    console.log("No valid tabs to group");
+    return;
   }
-  console.log("All tabs have been processed.");
+  
+  try {
+    // Get current window's active tab
+    const [activeTab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true
+    });
+    
+    // Prepare tab data for AI classification
+    const tabData = validTabs.map(tab => ({
+      id: tab.id,
+      title: tab.title,
+      url: tab.url,
+      hostname: tab.url ? new URL(tab.url).hostname : ""
+    }));
+    
+    // Ask AI to classify tabs into groups
+    const context = ["You are a browser tab group classifier"];
+    const content = `Classify these browser tabs into 3-7 meaningful groups based on their content, purpose, or topic:
+${JSON.stringify(tabData, null, 2)}
+
+You must return a JSON object with a "groups" key containing an array where each item has:
+1. "groupName": A short, descriptive name (1-3 words)
+2. "tabIds": Array of tab IDs that belong to this group
+
+Example response format:
+{
+  "groups": [
+    {
+      "groupName": "News",
+      "tabIds": [123, 124, 125]
+    },
+    {
+      "groupName": "Shopping",
+      "tabIds": [126, 127]
+    }
+  ]
+}`;
+    
+    // Use response_format to ensure proper JSON output
+    const aiResponse = await chatCompletion(content, false, { response_format: { type: "json_object" } });
+    const responseData = JSON.parse(aiResponse.choices[0].message.content.trim());
+    const groupingResult = responseData.groups || [];
+    
+    // Process each group from AI response
+    for (const group of groupingResult) {
+      const { groupName, tabIds } = group;
+      
+      // Filter out any invalid tab IDs
+      const validTabIds = tabIds.filter((id: number) => 
+        validTabs.some(tab => tab.id === id)
+      );
+      
+      if (validTabIds.length === 0) continue;
+      
+      // Get all existing groups in the current window
+      const groups = await chrome.tabGroups.query({
+        windowId: validTabs[0].windowId,
+      });
+      
+      // Find existing group with the same name
+      const existingGroup = groups.find(g => g.title === groupName);
+      
+      let groupId;
+      if (existingGroup) {
+        // Add tabs to existing group
+        await chrome.tabs.group({
+          tabIds: validTabIds,
+          groupId: existingGroup.id,
+        });
+        groupId = existingGroup.id;
+      } else {
+        // Create new group
+        console.log({
+          tabIds: validTabIds,
+        })
+        groupId = await chrome.tabs.group({
+          tabIds: validTabIds,
+        });
+        
+        // Set group title
+        await chrome.tabGroups.update(groupId, {
+          title: groupName,
+        });
+      }
+      
+      // Set collapsed state based on whether it contains the active tab
+      const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
+      await chrome.tabGroups.update(groupId, {
+        collapsed: !containsActiveTab,
+      });
+      
+      console.log(`Created group "${groupName}" with ${validTabIds.length} tabs`);
+    }
+  } catch (error) {
+    console.error("Error in AI tab grouping:", error);
+  }
+  
+  console.log("All tabs have been processed and grouped by content.");
 }
+
+// Global variable to store selected text temporarily
+let selectedTextForSidepanel = "";
 
 // background message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -612,6 +714,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.sendMessage(response.id!, {request: "close-omni"})
       })
       break
+    case "open-sidepanel":
+      // If it's coming from a newtab page, don't open the sidepanel
+      // since the AI chat is already embedded in the page
+      if (sender.tab?.url !== "chrome://newtab/") {
+        chrome.sidePanel.open({ tabId: sender.tab?.id })
+      }
+      
+      // If there's selected text, store it temporarily
+      if (message.selectedText) {
+        selectedTextForSidepanel = message.selectedText
+      }
+      break
+    case "get-selected-text":
+      // Return and clear the temporary selected text
+      const text = selectedTextForSidepanel
+      selectedTextForSidepanel = ""
+      sendResponse({ selectedText: text })
+      return true
         case "ai-chat":
       sendResponse({ success: true, message: "AI chat started" })
       
@@ -711,10 +831,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       groupTabsByAI()
       break
     case "open-sidepanel":
-      if (sender.tab && sender.tab.id) {
-        chrome.sidePanel.open({ tabId: sender.tab.id })
+      console.log("Opening sidepanel with selected text:", message.selectedText);
+      
+      // Store selected text if provided
+      if (message.selectedText) {
+        selectedTextForSidepanel = message.selectedText;
       }
-      break
+      
+      // Open the sidepanel
+      try {
+        if (chrome.sidePanel) {
+          chrome.sidePanel.open({ windowId: sender.tab?.windowId });
+          sendResponse({success: true});
+        } else {
+          // Fallback for browsers/versions without sidePanel API
+          console.log("SidePanel API not available, using fallback method");
+          // Try to open the sidepanel using the action API
+          chrome.action.openPopup();
+          sendResponse({success: true});
+        }
+      } catch (error) {
+        console.error("Error opening sidepanel:", error);
+        sendResponse({success: false, error: String(error)});
+      }
+      return true;
+      
+    case "get-selected-text":
+      console.log("Retrieving selected text:", selectedTextForSidepanel);
+      sendResponse({selectedText: selectedTextForSidepanel});
+      // Clear the text after it's been retrieved
+      selectedTextForSidepanel = "";
+      return true
   }
 })
 
