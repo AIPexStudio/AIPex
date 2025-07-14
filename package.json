@@ -1,6 +1,6 @@
 {
   "name": "cool-aipex",
-  "displayName": "Cool aipex",
+  "displayName": "AIPex",
   "version": "0.0.1",
   "description": "best tab manager",
   "author": "Plasmo Corp. <foss@plasmo.com>",
@@ -10,13 +10,17 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@ant-design/x": "^1.4.0",
     "@assistant-ui/react": "^0.10.25",
     "@plasmohq/storage": "^1.15.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "assistant-ui": "^0.0.56",
     "bip39": "^3.1.0",
+    "markdown-to-jsx": "^7.7.10",
     "plasmo": "0.90.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-syntax-highlighter": "^15.6.1",
     "tailwindcss": "3.4.1"
   },
   "devDependencies": {
@@ -43,6 +47,9 @@
     "host_permissions": [
       "https://*/*"
     ],
+    "chrome_url_overrides": {
+      "newtab": "newtab.html"
+    },
     "commands": {
       "open-aipex": {
         "suggested_key": {

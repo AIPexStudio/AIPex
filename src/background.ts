@@ -32,6 +32,14 @@ console.log(logoNotion)
 
 let actions: any[] = []
 let newtaburl = ""
+let tabChangeCount = 0 // Track tab changes for smart grouping
+
+// Check if AI grouping is available
+async function isAIGroupingAvailable() {
+  const storage = new Storage()
+  const aiToken = await storage.get("aiToken")
+  return !!aiToken
+}
 
 // Get current tab
 const getCurrentTab = async () => {
@@ -57,7 +65,6 @@ const clearActions = async () => {
     pinaction = {title:"Unpin tab", desc:"Unpin the current tab", type:"action", action:"unpin", emoji:true, emojiChar:"📌", keycheck:true, keys:['⌥','⇧', 'P']}
   }
   actions = [
-    {title:"New tab", desc:"Open a new tab", type:"action", action:"new-tab", emoji:true, emojiChar:"✨", keycheck:true, keys:['⌘','T']},
     {
       title: "AI Chat",
       desc: "Start an AI conversation",
@@ -67,6 +74,7 @@ const clearActions = async () => {
       emojiChar: "🤖",
       keycheck: false,
     },
+    {title:"New tab", desc:"Open a new tab", type:"action", action:"new-tab", emoji:true, emojiChar:"✨", keycheck:true, keys:['⌘','T']},
     {
       title: "Organize Tabs",
       desc: "Group tabs using AI",
@@ -81,7 +89,7 @@ const clearActions = async () => {
     {title:"Fullscreen", desc:"Make the page fullscreen", type:"action", action:"fullscreen", emoji:true, emojiChar:"🖥", keycheck:true, keys:['⌘', 'Ctrl', 'F']},
     muteaction,
     {title:"Reload", desc:"Reload the page", type:"action", action:"reload", emoji:true, emojiChar:"♻️", keycheck:true, keys:['⌘','⇧', 'R']},
-    {title:"Help", desc:"Get help with Omni on GitHub", type:"action", action:"url", url:"https://github.com/alyssaxuu/omni", emoji:true, emojiChar:"🤔", keycheck:false},
+    {title:"Help", desc:"Get help with AIPex on GitHub", type:"action", action:"url", url:"https://github.com/buttercannfly/AIpex", emoji:true, emojiChar:"🤔", keycheck:false},
     {title:"Compose email", desc:"Compose a new email", type:"action", action:"email", emoji:true, emojiChar:"✉️", keycheck:true, keys:['⌥','⇧', 'C']},
     {title:"Print page", desc:"Print the current page", type:"action", action:"print", emoji:true, emojiChar:"🖨️", keycheck:true, keys:['⌘', 'P']},
     {title:"New Notion page", desc:"Create a new Notion page", type:"action", action:"url", url:"https://notion.new", emoji:false, favIconUrl:logoNotion, keycheck:false},
@@ -180,7 +188,7 @@ const clearActions = async () => {
 chrome.runtime.onInstalled.addListener((object) => {
   // Plasmo/Manifest V3: Cannot directly inject scripts using content_scripts field, need scripting API
   if (object.reason === "install") {
-    chrome.tabs.create({ url: "https://alyssax.com/omni/" })
+    chrome.tabs.create({ url: "https://aipex.quest" })
   }
 })
 
@@ -198,7 +206,8 @@ chrome.commands.onCommand.addListener((command) => {
         console.log("open-aipex")
         chrome.tabs.sendMessage(response.id!, {request: "open-aipex"})
       } else {
-        chrome.tabs.create({ url: "./newtab.html" }).then((tab) => {
+        // Open a new tab with our custom new tab page
+        chrome.tabs.create({ url: "chrome://newtab" }).then((tab) => {
           console.log("open-aipex-new-tab")
           newtaburl = response.url
           chrome.tabs.remove(response.id!)
@@ -222,17 +231,72 @@ const resetOmni = async () => {
   await clearActions()
   await getTabs()
 //   await getBookmarks()
-  const search = [
-    {title:"Search", desc:"Search for a query", type:"action", action:"search", emoji:true, emojiChar:"🔍", keycheck:false},
-    {title:"Search", desc:"Go to website", type:"action", action:"goto", emoji:true, emojiChar:"🔍", keycheck:false}
-  ]
-  actions = search.concat(actions)
+  
+  // Find AI Chat action and move it to the front
+  const aiChatIndex = actions.findIndex(action => action.action === 'ai-chat')
+  if (aiChatIndex > 0) {
+    const aiChatAction = actions.splice(aiChatIndex, 1)[0]
+    actions.unshift(aiChatAction)
+  }
 }
 
-// Listen for tab/bookmark changes, reset actions
-chrome.tabs.onUpdated.addListener(() => { resetOmni() })
-chrome.tabs.onCreated.addListener(() => { resetOmni() })
-chrome.tabs.onRemoved.addListener(() => { resetOmni() })
+// Smart tab grouping on tab changes
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  resetOmni()
+  
+  // Only process completed loads and URL changes
+  if (changeInfo.status === 'complete' || changeInfo.url) {
+    // Check if AI grouping is available
+    if (!(await isAIGroupingAvailable())) {
+      console.log('AI grouping not available, skipping auto-grouping')
+      return
+    }
+    
+    tabChangeCount++
+    console.log(`Tab change count: ${tabChangeCount}/10`)
+    
+    if (tabChangeCount <= 10) {
+      // For small changes, just classify and group the single tab
+      classifyAndGroupSingleTab(tab)
+    } else {
+      // For large changes, do a full regroup and reset counter
+      console.log('Performing full tab regroup after', tabChangeCount, 'changes')
+      groupTabsByAI()
+      tabChangeCount = 0
+    }
+  }
+})
+
+chrome.tabs.onCreated.addListener(async (tab) => {
+  resetOmni()
+  
+  // Check if AI grouping is available
+  if (!(await isAIGroupingAvailable())) {
+    console.log('AI grouping not available, skipping auto-grouping')
+    return
+  }
+  
+  tabChangeCount++
+  console.log(`Tab change count: ${tabChangeCount}/10`)
+  
+  if (tabChangeCount <= 10) {
+    // For small changes, just classify and group the single tab
+    // Wait a bit for the tab to load before grouping
+    setTimeout(() => {
+      classifyAndGroupSingleTab(tab)
+    }, 1000)
+  } else {
+    // For large changes, do a full regroup and reset counter
+    console.log('Performing full tab regroup after', tabChangeCount, 'changes')
+    groupTabsByAI()
+    tabChangeCount = 0
+  }
+})
+
+chrome.tabs.onRemoved.addListener(() => { 
+  resetOmni() 
+  // Don't count tab removals towards the regroup threshold
+})
 
 // Get all tabs
 const getTabs = async () => {
@@ -337,35 +401,53 @@ const removeBookmark = (bookmark: any) => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(prompt, context = [], stream = false) {
+async function chatCompletion(messages, stream = false, options = {}) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
   const aiModel = (await storage.get("aiModel")) || "gpt-3.5-turbo"
   if (!aiToken) throw new Error("No OpenAI API token set")
-  const messages = [
-    ...context.map((c) => ({ role: "system", content: c })),
-    { role: "user", content: prompt }
-  ]
+  
+  // If messages is a string (legacy support), convert to new format
+  let conversationMessages
+  if (typeof messages === 'string') {
+    conversationMessages = [{ role: "user", content: messages }]
+  } else if (Array.isArray(messages)) {
+    conversationMessages = messages
+  } else {
+    throw new Error("Invalid messages format")
+  }
+  
+  const requestBody = {
+    model: aiModel,
+    messages: conversationMessages,
+    stream,
+    ...options
+  }
+  
   const res = await fetch(aiHost, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${aiToken}`
     },
-    body: JSON.stringify({
-      model: aiModel,
-      messages,
-      stream
-    })
+    body: JSON.stringify(requestBody)
   })
   if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
-  return await res.json()
+  
+  // Return response object for streaming, parsed JSON for non-streaming
+  return stream ? res : await res.json()
 }
 
-// Organize tabs by AI
-async function classifyAndGroupTab(tab, tabGroupCategories) {
+// Classify and group a single tab by AI
+async function classifyAndGroupSingleTab(tab) {
   try {
+    // Check if AI grouping is available
+    if (!(await isAIGroupingAvailable())) {
+      console.log('AI grouping not available, skipping single tab grouping')
+      return
+    }
+    
     // Get tab latest status
     let latestTab;
     try {
@@ -374,115 +456,274 @@ async function classifyAndGroupTab(tab, tabGroupCategories) {
       console.warn(`Tab ${tab.id} may have been closed, skipping.`);
       return;
     }
-    const win = await chrome.windows.get(latestTab.windowId);
-    if (win.type !== "normal" || latestTab.pinned) {
-      console.warn(`Tab "${latestTab.title}" is not in a normal window or is pinned, skipping grouping.`);
+    
+    // Skip tabs without URL
+    if (!latestTab.url) {
+      console.warn(`Tab "${latestTab.title}" has no URL, skipping.`);
       return;
     }
-    // Get current window's active tab (corrected: specify windowId)
+    
+    const win = await chrome.windows.get(latestTab.windowId);
+    if (win.type !== "normal") {
+      console.warn(`Tab "${latestTab.title}" is not in a normal window, skipping grouping.`);
+      return;
+    }
+    
+    // Get current window's active tab
     const activeTab = await chrome.tabs.query({
       active: true,
       windowId: latestTab.windowId,
     });
 
-    const context = ["You are a browser tab group classificator"];
-    const content = `Classify the tab group based on the provided URL (${latestTab.url}) and title (${latestTab.title}) into one of the categories: ${tabGroupCategories.join(", ")}. Response with the category only, without any comments.`;
+    // Get existing groups to use as categories
+    const groups = await chrome.tabGroups.query({
+      windowId: latestTab.windowId,
+    });
+    
+    let category = "Other"; // Default category
+    
+    if (groups.length > 0) {
+      // If there are existing groups, try to classify into one of them
+      const existingCategories = groups.map(g => g.title).filter(Boolean);
+      
+      const context = ["You are a browser tab group classifier"];
+      const content = `Classify this tab based on URL (${latestTab.url}) and title (${latestTab.title}) into one of these existing categories: ${existingCategories.join(", ")}. If none fit well, respond with "Other". Response with the category only, without any comments.`;
 
-    const aiResponse = await chatCompletion(content, context, false);
-    let category = aiResponse.choices[0].message.content.trim();
-    // Correct: If AI returns a category not in predefined categories, assign to Other
-    if (!tabGroupCategories.includes(category)) {
-      category = "Other";
-    }
-
-    try {
-      // Get all groups in the current window
-      const groups = await chrome.tabGroups.query({
-        windowId: latestTab.windowId,
-      });
-
-      console.log(groups)
-
-      // Find existing group with the same name
-      const existingGroup = groups.find((group) => group.title === category);
-
-      console.log(existingGroup)
-
-      if (existingGroup) {
-        // Use existing group
-        await chrome.tabs.group({
-          tabIds: [latestTab.id],
-          groupId: existingGroup.id,
-        });
-      } else {
-        // Create new group
-        console.log({
-          tabIds: [latestTab.id],
-        })
-        const groupId = await chrome.tabs.group({
-          tabIds: [latestTab.id],
-        });
-        console.log("groupId", groupId)
-
-
-        // Set group title
-        await chrome.tabGroups.update(groupId, {
-          title: category,
-        });
-
-        console.log(groupId)
-        console.log(category)
-
-        // Set collapsed state based on whether it's the active tab
-        const collapsed = latestTab.id !== activeTab[0]?.id;
-        await chrome.tabGroups.update(groupId, {
-          collapsed,
-        });
+      try {
+        const aiResponse = await chatCompletion(content, false);
+        const suggestedCategory = aiResponse.choices[0].message.content.trim();
+        
+        // Use the suggested category if it exists, otherwise use "Other"
+        if (existingCategories.includes(suggestedCategory)) {
+          category = suggestedCategory;
+        }
+      } catch (aiError) {
+        console.warn("AI classification failed, using default category:", aiError);
       }
-
-      console.log(
-        `Tab "${latestTab.title}" grouped into "${category}" in window ${latestTab.windowId}`
-      );
-    } catch (groupError) {
-      console.error(
-        `Error grouping tab ${latestTab.id} into ${category} in window ${latestTab.windowId}:`,
-        groupError
-      );
     }
+
+    // Find existing group with the same name
+    const existingGroup = groups.find((group) => group.title === category);
+
+    if (existingGroup) {
+      // Add to existing group
+      chrome.tabs.group({
+        tabIds: [latestTab.id],
+        groupId: existingGroup.id,
+      }, (groupId) => {
+        if (chrome.runtime.lastError) {
+          console.error("添加到现有分组失败:", chrome.runtime.lastError);
+        } else {
+          console.log(`Tab "${latestTab.title}" added to existing group "${category}"`);
+        }
+      });
+    } else if (category !== "Other") {
+      // Create new group only if it's not the default "Other" category
+      chrome.tabs.group({
+        createProperties: { windowId: latestTab.windowId },
+        tabIds: [latestTab.id],
+      }, (groupId) => {
+        if (chrome.runtime.lastError) {
+          console.error("创建新分组失败:", chrome.runtime.lastError);
+        } else {
+          console.log("分组成功！组ID:", groupId);
+          
+          // Set group title and color
+          chrome.tabGroups.update(groupId, {
+            title: category,
+            color: "blue"
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("更新分组标题失败:", chrome.runtime.lastError);
+            } else {
+              console.log(`Group "${category}" title and color set successfully`);
+            }
+          });
+
+          // Set collapsed state based on whether it's the active tab
+          const collapsed = latestTab.id !== activeTab[0]?.id;
+          chrome.tabGroups.update(groupId, {
+            collapsed,
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("设置分组折叠状态失败:", chrome.runtime.lastError);
+            } else {
+              console.log(`Group "${category}" collapsed state set to ${collapsed}`);
+            }
+          });
+        }
+      });
+    }
+
+    console.log(`Tab "${latestTab.title}" processed for grouping into "${category}"`);
   } catch (error) {
-    console.error(
-      `Error processing tab ${tab.id} in window ${tab.windowId}:`,
-      error
-    );
+    console.error(`Error processing tab ${tab.id}:`, error);
   }
 }
 
 async function groupTabsByAI() {
   const storage = new Storage();
-  let tabGroupCategoriesRaw = (await storage.get("tabGroupCategories")) || "Social, Entertainment, Read Material, Education, Productivity, Utilities";
-  let tabGroupCategories;
-  if (typeof tabGroupCategoriesRaw === "string") {
-    tabGroupCategories = tabGroupCategoriesRaw.split(",").map(c => c.trim());
-  } else if (Array.isArray(tabGroupCategoriesRaw)) {
-    tabGroupCategories = tabGroupCategoriesRaw;
-  } else {
-    tabGroupCategories = ["Other"];
-  }
-
+  
+  // Get tabs from current window
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  for (const tab of tabs) {
-    if (
-      !tab.url ||
-      tab.url.startsWith("chrome://") ||
-      tab.url.startsWith("chrome-extension://") ||
-      tab.url.startsWith("chrome-devtools://") ||
-      tab.pinned // Skip pinned tab
-    ) continue;
-    // Only process normal window (remove duplicate check, handled in classifyAndGroupTab)
-    await classifyAndGroupTab(tab, tabGroupCategories);
+  
+  // Filter tabs that have a URL
+  const validTabs = tabs.filter(tab => tab.url);
+  
+  if (validTabs.length === 0) {
+    console.log("No valid tabs to group");
+    return;
   }
-  console.log("All tabs have been processed.");
+  
+  try {
+    // Get current window's active tab
+    const [activeTab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true
+    });
+    
+    // Prepare tab data for AI classification
+    const tabData = validTabs.map(tab => {
+      let hostname = "";
+      try {
+        hostname = tab.url ? new URL(tab.url).hostname : "";
+      } catch (e) {
+        // For special URLs like chrome:// or chrome-extension://, use the protocol as hostname
+        hostname = tab.url ? tab.url.split("://")[0] + "://" : "";
+      }
+      return {
+        id: tab.id,
+        title: tab.title,
+        url: tab.url,
+        hostname: hostname
+      };
+    });
+    
+    // Ask AI to classify tabs into groups
+    const context = ["You are a browser tab group classifier"];
+    const content = `Classify these browser tabs into 3-7 meaningful groups based on their content, purpose, or topic:
+${JSON.stringify(tabData, null, 2)}
+
+You must return a JSON object with a "groups" key containing an array where each item has:
+1. "groupName": A short, descriptive name (1-3 words)
+2. "tabIds": Array of tab IDs that belong to this group
+
+Example response format:
+{
+  "groups": [
+    {
+      "groupName": "News",
+      "tabIds": [123, 124, 125]
+    },
+    {
+      "groupName": "Shopping",
+      "tabIds": [126, 127]
+    }
+  ]
+}`;
+    
+    // Use response_format to ensure proper JSON output
+    const aiResponse = await chatCompletion(content, false, { response_format: { type: "json_object" } });
+    const responseData = JSON.parse(aiResponse.choices[0].message.content.trim());
+    const groupingResult = responseData.groups || [];
+    
+    // Process each group from AI response
+    for (const group of groupingResult) {
+      const { groupName, tabIds } = group;
+      
+      // Filter out any invalid tab IDs
+      const validTabIds = tabIds.filter((id: number) => 
+        validTabs.some(tab => tab.id === id)
+      );
+      
+      if (validTabIds.length === 0) continue;
+      
+      // Get all existing groups in the current window
+      const groups = await chrome.tabGroups.query({
+        windowId: validTabs[0].windowId,
+      });
+      
+      // Find existing group with the same name
+      const existingGroup = groups.find(g => g.title === groupName);
+      
+      if (existingGroup) {
+        // Add tabs to existing group
+        chrome.tabs.group({
+          tabIds: validTabIds,
+          groupId: existingGroup.id,
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error(`添加到现有分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+          } else {
+            console.log(`Tabs added to existing group "${groupName}"`);
+            
+            // Set collapsed state based on whether it contains the active tab
+            const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
+            chrome.tabGroups.update(groupId, {
+              collapsed: !containsActiveTab,
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
+              }
+            });
+          }
+        });
+      } else {
+        // Create new group
+        console.log({
+          tabIds: validTabIds,
+        })
+        chrome.tabs.group({
+          createProperties: { windowId: validTabs[0].windowId },
+          tabIds: validTabIds,
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error(`创建新分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+          } else {
+            console.log(`分组成功！组ID: ${groupId}, 分组名: ${groupName}`);
+            
+            // Set group title and color
+            chrome.tabGroups.update(groupId, {
+              title: groupName,
+              color: "green"
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`更新分组 "${groupName}" 标题失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" title and color set successfully`);
+              }
+            });
+            
+            // Set collapsed state based on whether it contains the active tab
+            const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
+            chrome.tabGroups.update(groupId, {
+              collapsed: !containsActiveTab,
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
+              }
+            });
+          }
+        });
+      }
+      
+      console.log(`Processing group "${groupName}" with ${validTabIds.length} tabs`);
+    }
+  } catch (error) {
+    console.error("Error in AI tab grouping:", error);
+  }
+  
+  console.log("All tabs have been processed and grouped by content.");
+  tabChangeCount = 0 // Reset counter after full regroup
+  console.log('Tab change counter reset to 0 after full regroup')
 }
+
+// Global variable to store selected text temporarily
+let selectedTextForSidepanel = "";
 
 // background message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -603,14 +844,131 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.sendMessage(response.id!, {request: "close-omni"})
       })
       break
-    case "organize-tabs":
-      groupTabsByAI()
-      break
     case "open-sidepanel":
-      if (sender.tab && sender.tab.id) {
-        chrome.sidePanel.open({ tabId: sender.tab.id })
+      // Open the sidepanel for all pages, including newtab
+      chrome.sidePanel.open({ tabId: sender.tab?.id })
+      
+      // If there's selected text, store it temporarily
+      if (message.selectedText) {
+        selectedTextForSidepanel = message.selectedText
       }
       break
+    case "get-selected-text":
+      // Return and clear the temporary selected text
+      const text = selectedTextForSidepanel
+      selectedTextForSidepanel = ""
+      sendResponse({ selectedText: text })
+      return true
+        case "ai-chat":
+      sendResponse({ success: true, message: "AI chat started" })
+      
+      try {
+        const { prompt, context, messageId } = message
+        
+        // Build conversation messages with context
+        let conversationMessages = []
+        
+        // Add conversation history if provided
+        if (context && Array.isArray(context) && context.length > 0) {
+          conversationMessages = [...context]
+        }
+        
+        // Add the current prompt as the latest user message
+        conversationMessages.push({ role: "user", content: prompt })
+        
+        chatCompletion(conversationMessages, true) // Pass full conversation and enable streaming
+          .then(async (response) => {
+            if (!response.body) {
+              throw new Error('No response body for streaming')
+            }
+            
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+            
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n')
+                buffer = lines.pop() || ''
+                
+                for (const line of lines) {
+                  if (line.trim() === '') continue
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6)
+                    if (data === '[DONE]') {
+                      // Send completion message
+                      chrome.runtime.sendMessage({
+                        request: "ai-chat-complete",
+                        messageId: messageId
+                      }).catch(err => {
+                        console.log('Failed to send completion message:', err)
+                      })
+                      return
+                    }
+                    
+                    try {
+                      const parsed = JSON.parse(data)
+                      const delta = parsed.choices?.[0]?.delta
+                      if (delta?.content) {
+                        // Send streaming chunk
+                        console.log('Sending streaming chunk:', delta.content)
+                        
+                        chrome.runtime.sendMessage({
+                          request: "ai-chat-stream",
+                          chunk: delta.content,
+                          messageId: messageId
+                        }).catch(err => {
+                          console.log('Failed to send streaming message:', err)
+                        })
+                      }
+                    } catch (e) {
+                      // Skip invalid JSON
+                    }
+                  }
+                }
+              }
+            } finally {
+              reader.releaseLock()
+            }
+          })
+          .catch((error) => {
+            chrome.runtime.sendMessage({
+              request: "ai-chat-error",
+              error: error.message,
+              messageId: messageId
+            }).catch(err => {
+              console.log('Failed to send error message:', err)
+            })
+          })
+      } catch (error) {
+        chrome.runtime.sendMessage({
+          request: "ai-chat-error",
+          error: error.message,
+          messageId: message.messageId
+        }).catch(err => {
+          console.log('Failed to send error message:', err)
+        })
+      }
+      return true // Keep the message channel open for async response
+    case "organize-tabs":
+      groupTabsByAI()
+      tabChangeCount = 0 // Reset counter after manual organization
+      console.log('Tab change counter reset to 0 after manual organization')
+      break
+
+    case "get-selected-text":
+      console.log("Retrieving selected text:", selectedTextForSidepanel);
+      sendResponse({selectedText: selectedTextForSidepanel});
+      // Clear the text after it's been retrieved
+      selectedTextForSidepanel = "";
+      return true
+    case "get-tab-change-count":
+      sendResponse({ count: tabChangeCount, threshold: 10 })
+      return true
   }
 })
 
