@@ -81,56 +81,79 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 
   // Input filtering
   React.useEffect(() => {
+    let newFiltered: any[] = []
     if (!input) {
-      setFilteredActions(actions)
+      newFiltered = actions
     } else if (input.startsWith("/tabs")) {
       const tempvalue = input.replace("/tabs ", "")
-      setFilteredActions(
+      newFiltered =
         actions.filter(a => a.type === "tab" && (
           !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
-      )
     } else if (input.startsWith("/bookmarks")) {
       const tempvalue = input.replace("/bookmarks ", "")
       if (tempvalue && tempvalue !== "/bookmarks") {
         chrome.runtime.sendMessage({ request: "search-bookmarks", query: tempvalue }, (response) => {
-          setFilteredActions((response?.bookmarks || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)))
+          setFilteredActions(((response?.bookmarks || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue))).concat([
+            {
+              title: "Ask AI",
+              desc: input,
+              action: "ai-chat-user-input",
+              type: "ai"
+            }
+          ]))
         })
+        return
       } else {
-        setFilteredActions(actions.filter(a => a.type === "bookmark"))
+        newFiltered = actions.filter(a => a.type === "bookmark")
       }
     } else if (input.startsWith("/history")) {
       const tempvalue = input.replace("/history ", "")
       if (tempvalue && tempvalue !== "/history") {
         chrome.runtime.sendMessage({ request: "search-history", query: tempvalue }, (response) => {
-          setFilteredActions((response?.history || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)))
+          setFilteredActions(((response?.history || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue))).concat([
+            {
+              title: "Ask AI",
+              desc: input,
+              action: "ai-chat-user-input",
+              type: "ai"
+            }
+          ]))
         })
+        return
       } else {
-        setFilteredActions(actions.filter(a => a.type === "history"))
+        newFiltered = actions.filter(a => a.type === "history")
       }
     } else if (input.startsWith("/remove")) {
       const tempvalue = input.replace("/remove ", "")
-      setFilteredActions(
+      newFiltered =
         actions.filter(a => (a.type === "bookmark" || a.type === "tab") && (
           !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
-      )
     } else if (input.startsWith("/actions")) {
       const tempvalue = input.replace("/actions ", "")
-      setFilteredActions(
+      newFiltered =
         actions.filter(a => a.type === "action" && (
           !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
-      )
     } else {
-      setFilteredActions(
+      newFiltered =
         actions.filter((a) =>
           a.title?.toLowerCase().includes(input.toLowerCase()) ||
           a.desc?.toLowerCase().includes(input.toLowerCase()) ||
           a.url?.toLowerCase().includes(input.toLowerCase())
         )
-      )
     }
+    // Always add Ask AI action
+    newFiltered = newFiltered.concat([
+      {
+        title: "Ask AI",
+        desc: input,
+        action: "ai-chat-user-input",
+        type: "ai"
+      }
+    ])
+    setFilteredActions(newFiltered)
   }, [input, actions])
 
   // Reset highlighted item when filtered actions change
@@ -238,6 +261,12 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     setToast(`Action: ${action.title} executed`)
     setTimeout(() => setToast(null), 2000)
     // Specific operations
+    if (action.action === "ai-chat-user-input") {
+      chrome.storage.local.set({ aipex_user_input: action.desc })
+      chrome.runtime.sendMessage({ request: "open-sidepanel" })
+      onClose()
+      return
+    }
     switch (action.action) {
       case "bookmark":
       case "navigation":
@@ -369,152 +398,115 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 }
 
 // FloatingBot component
-const FloatingBot = ({ onOpenAIChat, onClose }: { onOpenAIChat: () => void, onClose: () => void }) => {
-  const [position, setPosition] = React.useState({ x: 0, y: 0 })
+const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => void, onClose: () => void, resetY?: number }) => {
+  const iconWidth = 56 // px, w-14
+  const margin = 20 // px, 距离右边的间距
+  const [y, setY] = React.useState(0)
+  const [left, setLeft] = React.useState(window.innerWidth - iconWidth - margin)
   const [isDragging, setIsDragging] = React.useState(false)
-  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 })
+  const [dragOffsetY, setDragOffsetY] = React.useState(0)
   const [isHovered, setIsHovered] = React.useState(false)
   const [hasDragged, setHasDragged] = React.useState(false)
   const [isLongPressing, setIsLongPressing] = React.useState(false)
   const botRef = React.useRef<HTMLDivElement>(null)
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null)
-  const positionKey = 'aipex_bot_position'
+  const positionKey = 'aipex_bot_y_position'
 
-  // Load saved position or initialize at bottom right (within constraints)
+  // 计算 left 贴边
+  const updateLeft = React.useCallback(() => {
+    setLeft(window.innerWidth - iconWidth - margin)
+  }, [])
+
+  // Load saved y or initialize at bottom right
   React.useEffect(() => {
-    const loadPosition = () => {
+    const loadY = () => {
       try {
-        // Try to load position from localStorage
-        const savedPosition = localStorage.getItem(positionKey)
-        if (savedPosition) {
-          const parsedPosition = JSON.parse(savedPosition)
-          
-          // Validate position is within current screen bounds
-          const minX = window.innerWidth * 0.8
-          const maxX = window.innerWidth - 60
-          const maxY = window.innerHeight - 60
-          
-          // Apply position with bounds checking
-          setPosition({
-            x: Math.max(minX, Math.min(parsedPosition.x, maxX)),
-            y: Math.max(0, Math.min(parsedPosition.y, maxY))
-          })
-          return
-        }
+        const savedY = localStorage.getItem(positionKey)
+        let yVal = savedY ? parseInt(savedY, 10) : (window.innerHeight - 80)
+        const maxY = window.innerHeight - iconWidth - margin
+        yVal = Math.max(0, Math.min(yVal, maxY))
+        setY(yVal)
       } catch (e) {
-        console.error('Failed to load bot position:', e)
+        setY(window.innerHeight - 80)
       }
-      
-      // Default position (bottom right)
-      const minX = window.innerWidth * 0.8
-      const maxX = window.innerWidth - 60
-      const targetX = window.innerWidth - 80
-      
-      setPosition({
-        x: Math.max(minX, Math.min(targetX, maxX)),
-        y: window.innerHeight - 80
-      })
     }
-    
-    loadPosition()
-    
-    // Update position on window resize
+    loadY()
+    updateLeft()
+    // Update y and left on window resize
     const handleResize = () => {
-      const minX = window.innerWidth * 0.8
-      const maxX = window.innerWidth - 60
-      const maxY = window.innerHeight - 60
-      
-      setPosition(prevPosition => ({
-        x: Math.max(minX, Math.min(prevPosition.x, maxX)),
-        y: Math.max(0, Math.min(prevPosition.y, maxY))
-      }))
+      setY(prevY => {
+        const maxY = window.innerHeight - iconWidth - margin
+        return Math.max(0, Math.min(prevY, maxY))
+      })
+      updateLeft()
     }
-    
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, [updateLeft])
+  // 外部重置 y
+  React.useEffect(() => {
+    if (typeof resetY === 'number') {
+      setY(resetY)
+      updateLeft()
+    }
+  }, [resetY, updateLeft])
 
   // Long press detection for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
     setHasDragged(false)
     setIsLongPressing(true)
-    
-    // Start long press timer
     longPressTimer.current = setTimeout(() => {
       setIsDragging(true)
       setIsLongPressing(false)
       const rect = botRef.current?.getBoundingClientRect()
       if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        })
+        setDragOffsetY(e.clientY - rect.top)
       }
-    }, 300) // 300ms long press threshold
+    }, 300)
   }
 
-  // Handle mouse up
   const handleMouseUp = (e?: React.MouseEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
-    
-    // If we were dragging, prevent click from firing
     if (isDragging && e) {
       e.preventDefault()
       e.stopPropagation()
     }
-    
     setIsLongPressing(false)
     setIsDragging(false)
   }
 
-  // Save position to localStorage whenever it changes
+  // Save y to localStorage whenever it changes
   React.useEffect(() => {
     try {
-      localStorage.setItem(positionKey, JSON.stringify(position))
-    } catch (e) {
-      console.error('Failed to save bot position:', e)
-    }
-  }, [position, positionKey])
+      localStorage.setItem(positionKey, String(y))
+    } catch (e) {}
+  }, [y, positionKey])
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return
-      
       setHasDragged(true)
-      const newX = e.clientX - dragOffset.x
-      const newY = e.clientY - dragOffset.y
-      
-      // Restrict to right side of screen only (right 20% of screen width)
-      const minX = window.innerWidth * 0.8 // Left boundary at 80% of screen width
-      const maxX = window.innerWidth - 60 // Right boundary
-      const maxY = window.innerHeight - 60 // Bottom boundary
-      
-      setPosition({
-        x: Math.max(minX, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      })
+      const newY = e.clientY - dragOffsetY
+      const maxY = window.innerHeight - iconWidth - margin
+      setY(Math.max(0, Math.min(newY, maxY)))
     }
-
     const handleGlobalMouseUp = () => {
       handleMouseUp()
     }
-
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleGlobalMouseUp)
     }
-
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleGlobalMouseUp)
     }
-  }, [isDragging, dragOffset])
+  }, [isDragging, dragOffsetY])
 
-  // Cleanup timer on unmount
   React.useEffect(() => {
     return () => {
       if (longPressTimer.current) {
@@ -523,54 +515,48 @@ const FloatingBot = ({ onOpenAIChat, onClose }: { onOpenAIChat: () => void, onCl
     }
   }, [])
 
-  // Handle click to open AI chat
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    // Only open chat if not dragging and not long pressing
     if (!hasDragged && !isLongPressing && !isDragging) {
-      // Save current position before opening chat
       try {
-        localStorage.setItem(positionKey, JSON.stringify(position))
-      } catch (e) {
-        console.error('Failed to save bot position before opening chat:', e)
-      }
+        localStorage.setItem(positionKey, String(y))
+      } catch (e) {}
       onOpenAIChat()
     }
   }
 
-  // Handle close button click
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    // Don't close if in dragging or long pressing state
     if (!isDragging && !isLongPressing) {
       onClose()
     }
   }
 
+  // 保证每次渲染都贴边
+  // const left = window.innerWidth - iconWidth - margin
+
   return (
     <>
-      {/* Drag boundary indicator */}
       {isDragging && (
         <div
           className="fixed z-[99997] pointer-events-none"
           style={{
-            left: window.innerWidth * 0.8,
+            left: left,
             top: 0,
-            width: window.innerWidth * 0.2,
+            width: iconWidth,
             height: window.innerHeight,
             border: '2px dashed rgba(59, 130, 246, 0.5)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)'
           }}
         />
       )}
-      
       <div
         ref={botRef}
         className={`fixed z-[99998] transition-all duration-200 ${isDragging ? 'cursor-grabbing' : isLongPressing ? 'cursor-grab' : 'cursor-pointer'}`}
         style={{
-          left: position.x,
-          top: position.y,
+          left: left,
+          top: y,
           transform: isDragging ? 'scale(1.1)' : isLongPressing ? 'scale(1.05)' : isHovered ? 'scale(1.05)' : 'scale(1)',
           transition: isDragging ? 'none' : 'transform 0.2s ease-out'
         }}
@@ -579,7 +565,6 @@ const FloatingBot = ({ onOpenAIChat, onClose }: { onOpenAIChat: () => void, onCl
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => {
           setIsHovered(false)
-          // Cancel long press if mouse leaves while long pressing
           if (isLongPressing && longPressTimer.current) {
             clearTimeout(longPressTimer.current)
             longPressTimer.current = null
@@ -588,213 +573,208 @@ const FloatingBot = ({ onOpenAIChat, onClose }: { onOpenAIChat: () => void, onCl
         }}
         onClick={handleClick}
       >
-      {/* Main bot circle */}
-      <div className={`w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border hover:shadow-xl ${isDragging ? 'border-blue-500 border-2' : isLongPressing ? 'border-blue-400 border-2' : 'border-gray-200'}`}>
-        <img 
-          src={iconUrl} 
-          alt="AI Assistant" 
-          className="w-8 h-8 rounded"
-        />
-      </div>
-      
-      {/* Close button - only shown on hover */}
-      {isHovered && (
-        <button
-          onClick={handleClose}
-          onMouseDown={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-          }}
-          className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 hover:bg-gray-500 rounded-full shadow-md transition-all duration-200 flex items-center justify-center text-white text-sm font-bold"
-          style={{ fontSize: '12px' }}
-        >
-          ×
-        </button>
-      )}
-      
-            {/* Long press indicator */}
-      {isLongPressing && (
-        <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-          Long press to drag...
+        <div className={`w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border hover:shadow-xl ${isDragging ? 'border-blue-500 border-2' : isLongPressing ? 'border-blue-400 border-2' : 'border-gray-200'}`}>
+          <img 
+            src={iconUrl} 
+            alt="AI Assistant" 
+            className="w-8 h-8 rounded"
+          />
         </div>
-      )}
-      
-      {/* Dragging indicator */}
-      {isDragging && (
-        <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-500 bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-          Dragging (right area only)
-        </div>
-      )}
+        {isHovered && (
+          <button
+            onClick={handleClose}
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+            }}
+            className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 hover:bg-gray-500 rounded-full shadow-md transition-all duration-200 flex items-center justify-center text-white text-sm font-bold"
+            style={{ fontSize: '12px' }}
+          >
+            ×
+          </button>
+        )}
+        {isLongPressing && (
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+            Long press to drag...
+          </div>
+        )}
+        {isDragging && (
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-500 bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+            Dragging (vertical only)
+          </div>
+        )}
       </div>
     </>
   )
 }
 
 // SelectionPopup component
-const SelectionPopup = () => {
-  const [isVisible, setIsVisible] = React.useState(false)
-  const [position, setPosition] = React.useState({ x: 0, y: 0 })
-  const [isHovered, setIsHovered] = React.useState(false)
-  const [selectedText, setSelectedText] = React.useState("")
-  const popupRef = React.useRef<HTMLDivElement>(null)
-  const selectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+// const SelectionPopup = () => {
+//   const [isVisible, setIsVisible] = React.useState(false)
+//   const [position, setPosition] = React.useState({ x: 0, y: 0 })
+//   const [isHovered, setIsHovered] = React.useState(false)
+//   const [selectedText, setSelectedText] = React.useState("")
+//   const popupRef = React.useRef<HTMLDivElement>(null)
+//   const selectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
-  // Check if selection is valid
-  const checkSelection = React.useCallback(() => {
-    const selection = window.getSelection()
-    if (selection && selection.toString().trim().length > 0) {
-      const text = selection.toString().trim()
-      setSelectedText(text)
+//   // Check if selection is valid
+//   const checkSelection = React.useCallback(() => {
+//     const selection = window.getSelection()
+//     if (selection && selection.toString().trim().length > 0) {
+//       const text = selection.toString().trim()
+//       setSelectedText(text)
       
-      try {
-        const range = selection.getRangeAt(0)
-        const rect = range.getBoundingClientRect()
+//       try {
+//         const range = selection.getRangeAt(0)
+//         const rect = range.getBoundingClientRect()
         
-        if (rect.width > 0 && rect.height > 0) {
-          // Position the popup near the end of the selection
-          // Add a small offset to avoid overlapping with the selection
-          setPosition({
-            x: Math.min(rect.right + 10, window.innerWidth - 40), // Keep within viewport
-            y: Math.min(rect.top - 10, window.innerHeight - 40) // Position slightly above selection
-          })
-          setIsVisible(true)
-          return
-        }
-      } catch (error) {
-        console.error("Error getting selection rectangle:", error)
-      }
-    }
+//         if (rect.width > 0 && rect.height > 0) {
+//           // Position the popup near the end of the selection
+//           // Add a small offset to avoid overlapping with the selection
+//           setPosition({
+//             x: Math.min(rect.right + 10, window.innerWidth - 40), // Keep within viewport
+//             y: Math.min(rect.top - 10, window.innerHeight - 40) // Position slightly above selection
+//           })
+//           setIsVisible(true)
+//           return
+//         }
+//       } catch (error) {
+//         console.error("Error getting selection rectangle:", error)
+//       }
+//     }
     
-    // If we get here, hide the popup
-    setIsVisible(false)
-  }, [])
+//     // If we get here, hide the popup
+//     setIsVisible(false)
+//   }, [])
 
-  // Handle AI chat opening with selected text
-  const handleOpenAIChat = (e: React.MouseEvent) => {
-    // Prevent event from bubbling up to document click handlers
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
+//   // Handle AI chat opening with selected text
+//   const handleOpenAIChat = (e: React.MouseEvent) => {
+//     // Prevent event from bubbling up to document click handlers
+//     if (e) {
+//       e.preventDefault()
+//       e.stopPropagation()
+//     }
     
-    // Add a small delay to ensure the message is sent before any cleanup
-    setTimeout(() => {
-      chrome.runtime.sendMessage({ 
-        request: "open-sidepanel", 
-        selectedText: selectedText 
-      })
+//     // Add a small delay to ensure the message is sent before any cleanup
+//     setTimeout(() => {
+//       chrome.runtime.sendMessage({ 
+//         request: "open-sidepanel", 
+//         selectedText: selectedText 
+//       })
       
-      // Hide popup after sending message
-      setIsVisible(false)
-    }, 10)
-  }
+//       // Hide popup after sending message
+//       setIsVisible(false)
+//     }, 10)
+//   }
 
-  React.useEffect(() => {
-    // Small delay to check selection after mouseup
-    const handleMouseUp = (e: MouseEvent) => {
-      // Don't process if it's a click on our popup
-      if (popupRef.current && popupRef.current.contains(e.target as Node)) {
-        return
-      }
+//   React.useEffect(() => {
+//     // Small delay to check selection after mouseup
+//     const handleMouseUp = (e: MouseEvent) => {
+//       // Don't process if it's a click on our popup
+//       if (popupRef.current && popupRef.current.contains(e.target as Node)) {
+//         return
+//       }
       
-      // Clear any existing timeout
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current)
-      }
+//       // Clear any existing timeout
+//       if (selectionTimeoutRef.current) {
+//         clearTimeout(selectionTimeoutRef.current)
+//       }
       
-      // Set a new timeout to check selection
-      selectionTimeoutRef.current = setTimeout(() => {
-        checkSelection()
-      }, 100)
-    }
+//       // Set a new timeout to check selection
+//       selectionTimeoutRef.current = setTimeout(() => {
+//         checkSelection()
+//       }, 100)
+//     }
     
-    // Hide popup when clicking outside
-    const handleClickOutside = (e: MouseEvent) => {
-      // Skip if the click was on the popup itself
-      if (popupRef.current && popupRef.current.contains(e.target as Node)) {
-        return
-      }
-      setIsVisible(false)
-    }
+//     // Hide popup when clicking outside
+//     const handleClickOutside = (e: MouseEvent) => {
+//       // Skip if the click was on the popup itself
+//       if (popupRef.current && popupRef.current.contains(e.target as Node)) {
+//         return
+//       }
+//       setIsVisible(false)
+//     }
     
-    // Hide popup when selection changes or text is deselected
-    const handleSelectionChange = () => {
-      // Clear any existing timeout
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current)
-      }
+//     // Hide popup when selection changes or text is deselected
+//     const handleSelectionChange = () => {
+//       // Clear any existing timeout
+//       if (selectionTimeoutRef.current) {
+//         clearTimeout(selectionTimeoutRef.current)
+//       }
       
-      // Set a new timeout to check selection
-      selectionTimeoutRef.current = setTimeout(() => {
-        const selection = window.getSelection()
-        if (!selection || selection.toString().trim().length === 0) {
-          setIsVisible(false)
-        } else {
-          checkSelection()
-        }
-      }, 100)
-    }
+//       // Set a new timeout to check selection
+//       selectionTimeoutRef.current = setTimeout(() => {
+//         const selection = window.getSelection()
+//         if (!selection || selection.toString().trim().length === 0) {
+//           setIsVisible(false)
+//         } else {
+//           checkSelection()
+//         }
+//       }, 100)
+//     }
     
-    // Handle scroll events to reposition or hide popup
-    const handleScroll = () => {
-      if (isVisible) {
-        checkSelection()
-      }
-    }
+//     // Handle scroll events to reposition or hide popup
+//     const handleScroll = () => {
+//       if (isVisible) {
+//         checkSelection()
+//       }
+//     }
     
-    document.addEventListener('mouseup', handleMouseUp)
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('selectionchange', handleSelectionChange)
-    window.addEventListener('scroll', handleScroll, { passive: true })
+//     document.addEventListener('mouseup', handleMouseUp)
+//     document.addEventListener('mousedown', handleClickOutside)
+//     document.addEventListener('selectionchange', handleSelectionChange)
+//     window.addEventListener('scroll', handleScroll, { passive: true })
 
-    return () => {
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current)
-      }
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('selectionchange', handleSelectionChange)
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [isVisible, checkSelection])
+//     return () => {
+//       if (selectionTimeoutRef.current) {
+//         clearTimeout(selectionTimeoutRef.current)
+//       }
+//       document.removeEventListener('mouseup', handleMouseUp)
+//       document.removeEventListener('mousedown', handleClickOutside)
+//       document.removeEventListener('selectionchange', handleSelectionChange)
+//       window.removeEventListener('scroll', handleScroll)
+//     }
+//   }, [isVisible, checkSelection])
 
-  if (!isVisible) return null
+//   if (!isVisible) return null
 
-  return (
-    <div 
-      ref={popupRef}
-      className="fixed z-[99997] animate-fade-in"
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-    >
-      <div className="relative">
-        <button 
-          className="bg-white bg-opacity-80 rounded-md shadow-sm px-3 py-1 flex items-center justify-center cursor-pointer hover:bg-opacity-100 hover:shadow-md transition-all duration-200 border border-gray-200"
-          onClick={(e) => handleOpenAIChat(e)}
-          onMouseDown={(e) => {
-            // Also prevent mousedown from triggering document events
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          title="Ask AIpex"
-        >
-          <span className="text-sm font-medium text-gray-800">Ask AIpex</span>
-        </button>
-      </div>
-    </div>
-  )
-}
+//   return (
+//     <div 
+//       ref={popupRef}
+//       className="fixed z-[99997] animate-fade-in"
+//       style={{
+//         left: `${position.x}px`,
+//         top: `${position.y}px`,
+//       }}
+//       onClick={(e) => {
+//         e.stopPropagation()
+//       }}
+//     >
+//       <div className="relative">
+//         <button 
+//           className="bg-white bg-opacity-80 rounded-md shadow-sm px-3 py-1 flex items-center justify-center cursor-pointer hover:bg-opacity-100 hover:shadow-md transition-all duration-200 border border-gray-200"
+//           onClick={(e) => handleOpenAIChat(e)}
+//           onMouseDown={(e) => {
+//             // Also prevent mousedown from triggering document events
+//             e.preventDefault()
+//             e.stopPropagation()
+//           }}
+//           onMouseEnter={() => setIsHovered(true)}
+//           onMouseLeave={() => setIsHovered(false)}
+//           title="Ask AIpex"
+//         >
+//           <span className="text-sm font-medium text-gray-800">Ask AIpex</span>
+//         </button>
+//       </div>
+//     </div>
+//   )
+// }
 
 const PlasmoOverlay = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false)
   const [isBotVisible, setIsBotVisible] = React.useState(true)
+  // 用于强制重置 FloatingBot 的 y 坐标
+  const [resetBotY, setResetBotY] = React.useState(0)
 
   // Message listener for external triggers
   React.useEffect(() => {
@@ -819,6 +799,16 @@ const PlasmoOverlay = () => {
   }
 
   const handleCloseBotAndShowReopen = () => {
+    // 关闭时重置 y 坐标到底部
+    const iconWidth = 56
+    const margin = 20
+    const y = window.innerHeight - 80
+    const maxY = window.innerHeight - iconWidth - margin
+    const finalY = Math.max(0, Math.min(y, maxY))
+    try {
+      localStorage.setItem('aipex_bot_y_position', String(finalY))
+    } catch (e) {}
+    setResetBotY(finalY) // 触发 FloatingBot 重新渲染
     setIsBotVisible(false)
     
          // Show a toast notification for reopening
@@ -848,6 +838,16 @@ const PlasmoOverlay = () => {
         e.clientX > rightEdgeThreshold &&
         now - lastClickTime < 300 // Double click within 300ms
       ) {
+        // 恢复时也重置 y 坐标到底部
+        const iconWidth = 56
+        const margin = 20
+        const y = window.innerHeight - 80
+        const maxY = window.innerHeight - iconWidth - margin
+        const finalY = Math.max(0, Math.min(y, maxY))
+        try {
+          localStorage.setItem('aipex_bot_y_position', String(finalY))
+        } catch (e) {}
+        setResetBotY(finalY)
         setIsBotVisible(true)
       }
       lastClickTime = now
@@ -859,11 +859,12 @@ const PlasmoOverlay = () => {
 
   return (
     <>
-      <SelectionPopup />
+      {/* <SelectionPopup /> */}
       {isBotVisible && (
         <FloatingBot 
           onOpenAIChat={handleOpenAIChat}
           onClose={handleCloseBotAndShowReopen}
+          resetY={resetBotY}
         />
       )}
       {isOmniOpen && (

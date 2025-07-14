@@ -425,33 +425,54 @@ async function classifyAndGroupTab(tab, tabGroupCategories) {
 
       if (existingGroup) {
         // Use existing group
-        await chrome.tabs.group({
+        chrome.tabs.group({
           tabIds: [latestTab.id],
           groupId: existingGroup.id,
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error("添加到现有分组失败:", chrome.runtime.lastError);
+          } else {
+            console.log(`Tab "${latestTab.title}" added to existing group "${category}"`);
+          }
         });
       } else {
         // Create new group
         console.log({
           tabIds: [latestTab.id],
         })
-        const groupId = await chrome.tabs.group({
+        chrome.tabs.group({
+          createProperties: { windowId: latestTab.windowId },
           tabIds: [latestTab.id],
-        });
-        console.log("groupId", groupId)
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error("创建新分组失败:", chrome.runtime.lastError);
+          } else {
+            console.log("分组成功！组ID:", groupId);
+            
+            // Set group title and color
+            chrome.tabGroups.update(groupId, {
+              title: category,
+              color: "blue"
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error("更新分组标题失败:", chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${category}" title and color set successfully`);
+              }
+            });
 
-
-        // Set group title
-        await chrome.tabGroups.update(groupId, {
-          title: category,
-        });
-
-        console.log(groupId)
-        console.log(category)
-
-        // Set collapsed state based on whether it's the active tab
-        const collapsed = latestTab.id !== activeTab[0]?.id;
-        await chrome.tabGroups.update(groupId, {
-          collapsed,
+            // Set collapsed state based on whether it's the active tab
+            const collapsed = latestTab.id !== activeTab[0]?.id;
+            chrome.tabGroups.update(groupId, {
+              collapsed,
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error("设置分组折叠状态失败:", chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${category}" collapsed state set to ${collapsed}`);
+              }
+            });
+          }
         });
       }
 
@@ -554,36 +575,72 @@ Example response format:
       // Find existing group with the same name
       const existingGroup = groups.find(g => g.title === groupName);
       
-      let groupId;
       if (existingGroup) {
         // Add tabs to existing group
-        await chrome.tabs.group({
+        chrome.tabs.group({
           tabIds: validTabIds,
           groupId: existingGroup.id,
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error(`添加到现有分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+          } else {
+            console.log(`Tabs added to existing group "${groupName}"`);
+            
+            // Set collapsed state based on whether it contains the active tab
+            const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
+            chrome.tabGroups.update(groupId, {
+              collapsed: !containsActiveTab,
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
+              }
+            });
+          }
         });
-        groupId = existingGroup.id;
       } else {
         // Create new group
         console.log({
           tabIds: validTabIds,
         })
-        groupId = await chrome.tabs.group({
+        chrome.tabs.group({
+          createProperties: { windowId: validTabs[0].windowId },
           tabIds: validTabIds,
-        });
-        
-        // Set group title
-        await chrome.tabGroups.update(groupId, {
-          title: groupName,
+        }, (groupId) => {
+          if (chrome.runtime.lastError) {
+            console.error(`创建新分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+          } else {
+            console.log(`分组成功！组ID: ${groupId}, 分组名: ${groupName}`);
+            
+            // Set group title and color
+            chrome.tabGroups.update(groupId, {
+              title: groupName,
+              color: "green"
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`更新分组 "${groupName}" 标题失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" title and color set successfully`);
+              }
+            });
+            
+            // Set collapsed state based on whether it contains the active tab
+            const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
+            chrome.tabGroups.update(groupId, {
+              collapsed: !containsActiveTab,
+            }, () => {
+              if (chrome.runtime.lastError) {
+                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+              } else {
+                console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
+              }
+            });
+          }
         });
       }
       
-      // Set collapsed state based on whether it contains the active tab
-      const containsActiveTab = validTabIds.includes(activeTab?.id || -1);
-      await chrome.tabGroups.update(groupId, {
-        collapsed: !containsActiveTab,
-      });
-      
-      console.log(`Created group "${groupName}" with ${validTabIds.length} tabs`);
+      console.log(`Processing group "${groupName}" with ${validTabIds.length} tabs`);
     }
   } catch (error) {
     console.error("Error in AI tab grouping:", error);

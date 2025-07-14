@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Bubble, Sender } from "@ant-design/x"
 import Markdown from "markdown-to-jsx"
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import newChatIcon from "url:~/assets/add-action.png"
 import "~style.css"
 
@@ -11,6 +13,45 @@ interface Message {
   streaming?: boolean
 }
 
+// Code block component for syntax highlighting
+const CodeBlock = ({ children, className, ...props }: any) => {
+  const match = /language-(\w+)/.exec(className || '')
+  const language = match ? match[1] : 'text'
+  
+  return (
+    <SyntaxHighlighter
+      style={oneLight}
+      language={language}
+      PreTag="div"
+      className="rounded-lg mb-3 border border-gray-300 text-sm"
+      customStyle={{
+        margin: 0,
+        padding: '1rem',
+        backgroundColor: '#fafafa',
+        fontSize: '0.875rem',
+        lineHeight: '1.5'
+      }}
+      showLineNumbers={false}
+      wrapLines={false}
+      {...props}
+    >
+      {String(children).replace(/\n$/, '')}
+    </SyntaxHighlighter>
+  )
+}
+
+// Inline code component
+const InlineCode = ({ children, ...props }: any) => {
+  return (
+    <code 
+      className="bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded text-sm border border-gray-300 font-mono"
+      {...props}
+    >
+      {children}
+    </code>
+  )
+}
+
 // Custom markdown renderer component
 const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?: boolean }) => {
   return (
@@ -18,16 +59,30 @@ const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?:
       <Markdown
         options={{
           overrides: {
-            // Code block styling
-            code: {
-              props: {
-                className: "bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded text-sm border border-gray-300"
+            // Code block styling with syntax highlighting
+            code: ({ children, className, ...props }) => {
+              // Check if this is a code block (has language class) or inline code
+              const isCodeBlock = className && className.startsWith('language-')
+              
+              if (isCodeBlock) {
+                return <CodeBlock className={className} {...props}>{children}</CodeBlock>
+              } else {
+                return <InlineCode {...props}>{children}</InlineCode>
               }
             },
-            pre: {
-              props: {
-                className: "bg-gray-100 rounded-lg p-4 overflow-x-auto mb-3 border border-gray-300"
+            pre: ({ children, ...props }) => {
+              // Check if this is a code block by looking for code child
+              const firstChild = React.Children.toArray(children)[0]
+              if (React.isValidElement(firstChild) && firstChild.type === 'code') {
+                const codeProps = firstChild.props as any
+                if (codeProps.className && codeProps.className.startsWith('language-')) {
+                  // This is a code block, render with syntax highlighting
+                  return <CodeBlock className={codeProps.className}>{codeProps.children}</CodeBlock>
+                }
               }
+              
+              // Otherwise, render as a regular pre
+              return <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto mb-3 border border-gray-300 font-mono text-sm" {...props}>{children}</pre>
             },
             // Paragraph styling
             p: {
@@ -128,33 +183,36 @@ const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const [userScrolled, setUserScrolled] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<any>(null)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastScrollTopRef = useRef<number>(0)
 
   // Check for selected text when component mounts
   useEffect(() => {
     const checkForSelectedText = async () => {
       try {
-        console.log("Checking for selected text...");
         // Request the selected text from background script
         const response = await chrome.runtime.sendMessage({
           request: "get-selected-text"
         });
         
-        console.log("Response from get-selected-text:", response);
-        
         if (response && response.selectedText) {
-          console.log("Setting selected text as input:", response.selectedText);
           // Set the selected text as input value
           setInputValue(response.selectedText);
-          // Focus the input field
+          // Focus the input field only if there is selected text
           setTimeout(() => {
-            console.log("Focusing input field");
             inputRef.current?.focus();
           }, 100);
         }
+        // If no selected text, do nothing (do not focus or set input)
       } catch (error) {
+        // Optionally log error, but do not focus or set input
         console.error("Error getting selected text:", error);
       }
     };
@@ -162,28 +220,96 @@ const AIChatSidebar = () => {
     checkForSelectedText();
   }, []);
 
-  // Auto-scroll to bottom function
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
-
-  // Check if user is near the bottom of the scroll
-  const isNearBottom = useCallback(() => {
-    const container = messagesContainerRef.current
-    if (!container) return true
-    
-    const threshold = 100 // pixels from bottom
-    return container.scrollTop + container.clientHeight >= container.scrollHeight - threshold
-  }, [])
-
-  // Auto-scroll effect - scroll when messages change and user is near bottom
+  // IntersectionObserver to detect when bottom element is visible
   useEffect(() => {
-    if (messages.length > 0 && isNearBottom()) {
-      // Use a small delay to ensure DOM is updated
-      const timeoutId = setTimeout(scrollToBottom, 100)
-      return () => clearTimeout(timeoutId)
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isVisible = entry.isIntersecting
+        setIsAtBottom(isVisible)
+        setShowScrollButton(!isVisible && messages.length > 0)
+      },
+      { threshold: 0.1 }
+    )
+
+    if (messagesEndRef.current) {
+      observer.observe(messagesEndRef.current)
     }
-  }, [messages, scrollToBottom, isNearBottom])
+
+    return () => observer.disconnect()
+  }, [messages.length])
+
+  // Handle scroll events to detect user scrolling
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const currentScrollTop = container.scrollTop
+      const scrollDirection = currentScrollTop > lastScrollTopRef.current ? 'down' : 'up'
+      
+      // Calculate distance from bottom
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+      const isNearBottom = distanceFromBottom < 150 // 150px threshold
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+      
+      // Only consider it user scrolling away if they scroll up AND are far from bottom
+      if (scrollDirection === 'up' && !isNearBottom) {
+        setUserScrolled(true)
+        
+        // Reset user scrolled state after some time of inactivity
+        scrollTimeoutRef.current = setTimeout(() => {
+          setUserScrolled(false)
+        }, 2000) // Reduced to 2 seconds for better responsiveness
+      } else if (isNearBottom) {
+        // If user is near bottom, reset the scrolled state
+        setUserScrolled(false)
+      }
+      
+      lastScrollTopRef.current = currentScrollTop
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Auto-scroll function with smooth animation
+  const scrollToBottom = useCallback((force = false) => {
+    if (!messagesEndRef.current) return
+    
+    // Only scroll if user hasn't manually scrolled far away, or if forced
+    if (force || !userScrolled) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      })
+    }
+  }, [userScrolled])
+
+  // Manual scroll to bottom (for button click)
+  const handleScrollToBottom = useCallback(() => {
+    setUserScrolled(false)
+    scrollToBottom(true)
+  }, [scrollToBottom])
+
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      // For new messages, always try to scroll if user hasn't scrolled far away
+      if (!userScrolled) {
+        // Small delay to ensure DOM has updated
+        setTimeout(() => scrollToBottom(), 100)
+      }
+    }
+  }, [messages, scrollToBottom, userScrolled])
 
   // Listen for streaming responses from background script
   useEffect(() => {
@@ -314,11 +440,27 @@ const AIChatSidebar = () => {
     }
   }, [messages, loading, buildContext])
 
+  // Sidepanel挂载时自动读取chrome.storage.local['aipex_user_input']，如有则自动填充并发送
+  useEffect(() => {
+    chrome.storage?.local?.get(["aipex_user_input"], (result) => {
+      if (result && result.aipex_user_input) {
+        setInputValue(result.aipex_user_input)
+        setTimeout(() => {
+          handleSubmit(result.aipex_user_input)
+          chrome.storage.local.remove("aipex_user_input")
+        }, 0)
+      }
+    })
+  }, [handleSubmit])
+
   // Clear conversation function
   const handleClearConversation = useCallback(() => {
     setMessages([])
     setLoading(false)
     setInputValue('')
+    setUserScrolled(false)
+    setIsAtBottom(true)
+    setShowScrollButton(false)
   }, [])
 
   const items = useMemo(() => 
@@ -352,7 +494,7 @@ const AIChatSidebar = () => {
       {/* Messages area - takes up remaining space */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto min-h-0"
+        className="flex-1 overflow-y-auto min-h-0 relative"
       >
         {items.length > 0 && (
           <div className="p-4">
@@ -360,6 +502,19 @@ const AIChatSidebar = () => {
             {/* Invisible element to scroll to */}
             <div ref={messagesEndRef} />
           </div>
+        )}
+        
+        {/* Scroll to bottom button */}
+        {showScrollButton && (
+          <button
+            onClick={handleScrollToBottom}
+            className="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10"
+            title="Scroll to bottom"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
         )}
       </div>
       
