@@ -337,16 +337,23 @@ const removeBookmark = (bookmark: any) => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(prompt, context = [], stream = false) {
+async function chatCompletion(messages, stream = false) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
   const aiModel = (await storage.get("aiModel")) || "gpt-3.5-turbo"
   if (!aiToken) throw new Error("No OpenAI API token set")
-  const messages = [
-    ...context.map((c) => ({ role: "system", content: c })),
-    { role: "user", content: prompt }
-  ]
+  
+  // If messages is a string (legacy support), convert to new format
+  let conversationMessages
+  if (typeof messages === 'string') {
+    conversationMessages = [{ role: "user", content: messages }]
+  } else if (Array.isArray(messages)) {
+    conversationMessages = messages
+  } else {
+    throw new Error("Invalid messages format")
+  }
+  
   const res = await fetch(aiHost, {
     method: "POST",
     headers: {
@@ -355,12 +362,14 @@ async function chatCompletion(prompt, context = [], stream = false) {
     },
     body: JSON.stringify({
       model: aiModel,
-      messages,
+      messages: conversationMessages,
       stream
     })
   })
   if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
-  return await res.json()
+  
+  // Return response object for streaming, parsed JSON for non-streaming
+  return stream ? res : await res.json()
 }
 
 // Organize tabs by AI
@@ -388,7 +397,7 @@ async function classifyAndGroupTab(tab, tabGroupCategories) {
     const context = ["You are a browser tab group classificator"];
     const content = `Classify the tab group based on the provided URL (${latestTab.url}) and title (${latestTab.title}) into one of the categories: ${tabGroupCategories.join(", ")}. Response with the category only, without any comments.`;
 
-    const aiResponse = await chatCompletion(content, context, false);
+    const aiResponse = await chatCompletion(content, false);
     let category = aiResponse.choices[0].message.content.trim();
     // Correct: If AI returns a category not in predefined categories, assign to Other
     if (!tabGroupCategories.includes(category)) {
@@ -603,6 +612,101 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.sendMessage(response.id!, {request: "close-omni"})
       })
       break
+        case "ai-chat":
+      sendResponse({ success: true, message: "AI chat started" })
+      
+      try {
+        const { prompt, context, messageId } = message
+        
+        // Build conversation messages with context
+        let conversationMessages = []
+        
+        // Add conversation history if provided
+        if (context && Array.isArray(context) && context.length > 0) {
+          conversationMessages = [...context]
+        }
+        
+        // Add the current prompt as the latest user message
+        conversationMessages.push({ role: "user", content: prompt })
+        
+        chatCompletion(conversationMessages, true) // Pass full conversation and enable streaming
+          .then(async (response) => {
+            if (!response.body) {
+              throw new Error('No response body for streaming')
+            }
+            
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+            
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n')
+                buffer = lines.pop() || ''
+                
+                for (const line of lines) {
+                  if (line.trim() === '') continue
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6)
+                    if (data === '[DONE]') {
+                      // Send completion message
+                      chrome.runtime.sendMessage({
+                        request: "ai-chat-complete",
+                        messageId: messageId
+                      }).catch(err => {
+                        console.log('Failed to send completion message:', err)
+                      })
+                      return
+                    }
+                    
+                    try {
+                      const parsed = JSON.parse(data)
+                      const delta = parsed.choices?.[0]?.delta
+                      if (delta?.content) {
+                        // Send streaming chunk
+                        console.log('Sending streaming chunk:', delta.content)
+                        
+                        chrome.runtime.sendMessage({
+                          request: "ai-chat-stream",
+                          chunk: delta.content,
+                          messageId: messageId
+                        }).catch(err => {
+                          console.log('Failed to send streaming message:', err)
+                        })
+                      }
+                    } catch (e) {
+                      // Skip invalid JSON
+                    }
+                  }
+                }
+              }
+            } finally {
+              reader.releaseLock()
+            }
+          })
+          .catch((error) => {
+            chrome.runtime.sendMessage({
+              request: "ai-chat-error",
+              error: error.message,
+              messageId: messageId
+            }).catch(err => {
+              console.log('Failed to send error message:', err)
+            })
+          })
+      } catch (error) {
+        chrome.runtime.sendMessage({
+          request: "ai-chat-error",
+          error: error.message,
+          messageId: message.messageId
+        }).catch(err => {
+          console.log('Failed to send error message:', err)
+        })
+      }
+      return true // Keep the message channel open for async response
     case "organize-tabs":
       groupTabsByAI()
       break
