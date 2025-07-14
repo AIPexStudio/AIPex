@@ -336,12 +336,12 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       onClick={onClose}
     >
       <div
-        className="mt-24 w-[800px] bg-neutral-900 rounded-2xl shadow-2xl p-6 relative border border-neutral-800"
+        className="mt-24 w-[800px] bg-neutral-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 relative border border-neutral-800"
         onClick={(e) => e.stopPropagation()}
       >
         <input
           ref={inputRef}
-          className="w-full px-3 py-2 text-lg rounded-md border border-neutral-700 bg-neutral-800 text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-3 text-xl rounded-lg border border-neutral-700 bg-neutral-800/70 backdrop-blur-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
           placeholder="Search or ask anything"
           value={input}
           onChange={e => {
@@ -349,22 +349,22 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
             setInput(e.target.value)
           }}
         />
-        <div className="mt-4 max-h-[300px] overflow-y-auto">
-          {filteredActions.length === 0 && <div className="text-neutral-500">No actions</div>}
+        <div className="mt-4 max-h-[500px] overflow-y-auto">
+          {filteredActions.length === 0 && <div className="text-neutral-500 text-lg px-4 py-3">No actions</div>}
           {filteredActions.map((action, idx) => (
             <div
               key={action.title + idx}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-1 cursor-pointer border transition ${idx === selectedIndex ? "bg-neutral-800 border-blue-500" : "bg-transparent border-transparent hover:bg-neutral-800/60"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 cursor-pointer border transition ${idx === selectedIndex ? "bg-neutral-800/70 border-blue-500" : "bg-transparent border-transparent hover:bg-neutral-800/40"}`}
               onClick={() => handleAction(action)}
               onMouseEnter={() => setSelectedIndex(idx)}
             >
               {action.emoji ? (
-                <span style={{fontSize: 22}}>{action.emojiChar}</span>
+                <span style={{fontSize: 28}}>{action.emojiChar}</span>
               ) : (
                 <img
                   src={getActionIcon(action)}
                   alt="favicon"
-                  className="w-5 h-5 rounded"
+                  className="w-6 h-6 rounded"
                   onError={e => {
                     e.currentTarget.src = globeUrl
                   }}
@@ -374,12 +374,12 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
                 />
               )}
               <div className="flex-1 text-left">
-                <div className="font-semibold text-white">{action.title}</div>
-                <div className="text-xs text-neutral-400">{action.desc}</div>
+                <div className="font-semibold text-white text-lg">{action.title}</div>
+                <div className="text-sm text-neutral-400 mt-1">{action.desc}</div>
                 {action.url && (
-                  <div className="text-xs text-neutral-500 break-all mt-1">
-                    {action.url.length > 40
-                      ? action.url.slice(0, 40) + "..."
+                  <div className="text-sm text-neutral-500 break-all mt-1">
+                    {action.url.length > 60
+                      ? action.url.slice(0, 60) + "..."
                       : action.url}
                   </div>
                 )}

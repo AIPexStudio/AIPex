@@ -89,7 +89,7 @@ const clearActions = async () => {
     {title:"Fullscreen", desc:"Make the page fullscreen", type:"action", action:"fullscreen", emoji:true, emojiChar:"🖥", keycheck:true, keys:['⌘', 'Ctrl', 'F']},
     muteaction,
     {title:"Reload", desc:"Reload the page", type:"action", action:"reload", emoji:true, emojiChar:"♻️", keycheck:true, keys:['⌘','⇧', 'R']},
-    {title:"Help", desc:"Get help with Omni on GitHub", type:"action", action:"url", url:"https://github.com/alyssaxuu/omni", emoji:true, emojiChar:"🤔", keycheck:false},
+    {title:"Help", desc:"Get help with AIPex on GitHub", type:"action", action:"url", url:"https://github.com/buttercannfly/AIpex", emoji:true, emojiChar:"🤔", keycheck:false},
     {title:"Compose email", desc:"Compose a new email", type:"action", action:"email", emoji:true, emojiChar:"✉️", keycheck:true, keys:['⌥','⇧', 'C']},
     {title:"Print page", desc:"Print the current page", type:"action", action:"print", emoji:true, emojiChar:"🖨️", keycheck:true, keys:['⌘', 'P']},
     {title:"New Notion page", desc:"Create a new Notion page", type:"action", action:"url", url:"https://notion.new", emoji:false, favIconUrl:logoNotion, keycheck:false},
@@ -188,7 +188,7 @@ const clearActions = async () => {
 chrome.runtime.onInstalled.addListener((object) => {
   // Plasmo/Manifest V3: Cannot directly inject scripts using content_scripts field, need scripting API
   if (object.reason === "install") {
-    chrome.tabs.create({ url: "https://alyssax.com/omni/" })
+    chrome.tabs.create({ url: "https://aipex.quest" })
   }
 })
 
@@ -845,11 +845,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       break
     case "open-sidepanel":
-      // If it's coming from a newtab page, don't open the sidepanel
-      // since the AI chat is already embedded in the page
-      if (sender.tab?.url !== "chrome://newtab/") {
-        chrome.sidePanel.open({ tabId: sender.tab?.id })
-      }
+      // Open the sidepanel for all pages, including newtab
+      chrome.sidePanel.open({ tabId: sender.tab?.id })
       
       // If there's selected text, store it temporarily
       if (message.selectedText) {
@@ -962,32 +959,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       tabChangeCount = 0 // Reset counter after manual organization
       console.log('Tab change counter reset to 0 after manual organization')
       break
-    case "open-sidepanel":
-      console.log("Opening sidepanel with selected text:", message.selectedText);
-      
-      // Store selected text if provided
-      if (message.selectedText) {
-        selectedTextForSidepanel = message.selectedText;
-      }
-      
-      // Open the sidepanel
-      try {
-        if (chrome.sidePanel) {
-          chrome.sidePanel.open({ windowId: sender.tab?.windowId });
-          sendResponse({success: true});
-        } else {
-          // Fallback for browsers/versions without sidePanel API
-          console.log("SidePanel API not available, using fallback method");
-          // Try to open the sidepanel using the action API
-          chrome.action.openPopup();
-          sendResponse({success: true});
-        }
-      } catch (error) {
-        console.error("Error opening sidepanel:", error);
-        sendResponse({success: false, error: String(error)});
-      }
-      return true;
-      
+
     case "get-selected-text":
       console.log("Retrieving selected text:", selectedTextForSidepanel);
       sendResponse({selectedText: selectedTextForSidepanel});
