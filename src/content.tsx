@@ -296,7 +296,6 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         break
       case "ai-chat":
         chrome.runtime.sendMessage({ request: "open-sidepanel" })
-        onClose()
         break
       case "remove-all":
       case "remove-history":
@@ -310,6 +309,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         chrome.runtime.sendMessage({ request: action.action, tab: action, query: input })
         break
     }
+    // Always close the omni window after executing any action
+    onClose()
   }
 
   // Helper to get icon for action
