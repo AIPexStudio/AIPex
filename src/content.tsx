@@ -2,7 +2,6 @@ import cssText from "data-text:~style.css"
 import type { PlasmoCSConfig } from "plasmo"
 import React, { useEffect } from "react"
 import ReactDOM from "react-dom"
-import "~style.css"
 import globeUrl from "url:~/assets/globe.svg"
 import iconUrl from "url:~/assets/icon.png"
 
@@ -329,7 +328,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   }, [filteredActions])
 
   if (!isOpen) return null
-  return ReactDOM.createPortal(
+  // 直接返回 UI，不用 ReactDOM.createPortal
+  return (
     <div
       id="omni-extension"
       className="fixed inset-0 w-screen h-screen z-[99999] bg-black/60 flex items-start justify-center"
@@ -393,8 +393,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
           </div>
         )}
       </div>
-    </div>,
-    document.body
+    </div>
   )
 }
 
@@ -858,6 +857,7 @@ const PlasmoOverlay = () => {
     return () => document.removeEventListener('click', handleDoubleClick)
   }, [isBotVisible])
 
+  // 直接返回 UI，不用 ReactDOM.createPortal
   return (
     <>
       {/* <SelectionPopup /> */}

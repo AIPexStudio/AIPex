@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
-    "package": "plasmo package"
+    "package": "plasmo package",
+    "build:css": "npx tailwindcss -i ./src/style.css -o ./src/style.css --minify"
   },
   "dependencies": {
     "@ant-design/x": "^1.4.0",
@@ -30,6 +31,7 @@
     "@types/react": "18.2.48",
     "@types/react-dom": "18.2.18",
     "postcss": "8.4.33",
+    "postcss-modules": "^4.3.0",
     "prettier": "3.2.4",
     "typescript": "5.3.3"
   },
