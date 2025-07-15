@@ -48,6 +48,22 @@ export const getStyle = (): HTMLStyleElement => {
   return styleElement
 }
 
+const placeholderList = [
+  "Search or Ask anything",
+  "try /bookmark、/history、/ai、/group command",
+  "try mention a tab with @tab",
+  "Write some code...",
+  "Write a draft.."
+]
+
+// Add command suggestions list
+const commandSuggestions = [
+  { command: "/history", desc: "Show recent browsing history" },
+  { command: "/bookmarks", desc: "Show your bookmarks" },
+  { command: "/group", desc: "Show grouped tabs" },
+  { command: "/tabs", desc: "Show all tabs" },
+  { command: "/actions", desc: "Show all actions" }
+]
 
 const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [actions, setActions] = React.useState<any[]>([])
@@ -56,6 +72,19 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   const [selectedIndex, setSelectedIndex] = React.useState(0)
   const [toast, setToast] = React.useState<string | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const [placeholderIndex, setPlaceholderIndex] = React.useState(0)
+  const [showCommandSuggestions, setShowCommandSuggestions] = React.useState(false)
+  const [commandSuggestionIndex, setCommandSuggestionIndex] = React.useState(0)
+
+  // 轮播 placeholder
+  React.useEffect(() => {
+    if (!isOpen) return
+    setPlaceholderIndex(0)
+    const interval = setInterval(() => {
+      setPlaceholderIndex(idx => (idx + 1) % placeholderList.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [isOpen])
 
   // Get actions
   const fetchActions = () => {
@@ -78,51 +107,124 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     }
   }, [isOpen])
 
+  // Handle command selection
+  const handleCommandSelect = (command: string) => {
+    console.log("Content: Handling command selection:", command)
+    setInput(command + " ")
+    setShowCommandSuggestions(false)
+    
+    // Immediately fetch relevant actions based on command
+    if (command === "/bookmarks") {
+      console.log("Content: Sending get-bookmarks request")
+      chrome.runtime.sendMessage({ request: "get-bookmarks" }, (response) => {
+        console.log("Content: Received bookmarks response:", response)
+        if (response && response.bookmarks) {
+          const bookmarkActions = response.bookmarks.map(bookmark => ({
+            ...bookmark,
+            type: "bookmark",
+            action: "bookmark",  // Ensure action type is set for proper handling
+            title: bookmark.title || "Untitled Bookmark",
+            desc: bookmark.url,
+            url: bookmark.url
+          }))
+          console.log("Content: Processed bookmark actions:", bookmarkActions)
+          setFilteredActions(bookmarkActions)
+        } else {
+          console.log("Content: No bookmarks in response or error:", response?.error)
+          setFilteredActions([{
+            title: "No bookmarks found",
+            desc: response?.error || "Try adding some bookmarks first",
+            type: "info"
+          }])
+        }
+      })
+    } else if (command === "/history") {
+      chrome.runtime.sendMessage({ request: "get-history" }, (response) => {
+        if (response && response.history) {
+          setFilteredActions(response.history.map(item => ({
+            ...item,
+            type: "history"
+          })))
+        }
+      })
+    } else if (command === "/group") {
+      chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
+        if (response && response.actions) {
+          const groupActions = response.actions.filter(a => a.type === "group")
+          setFilteredActions(groupActions)
+        }
+      })
+    }
+  }
+
   // Input filtering
   React.useEffect(() => {
     let newFiltered: any[] = []
     if (!input) {
       newFiltered = actions
+    } else if (input === "/") {
+      setShowCommandSuggestions(true)
+      return
+    } else if (input.startsWith("/group ")) {
+      const tempvalue = input.replace("/group ", "")
+      chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
+        if (response && response.actions) {
+          const groupActions = response.actions.filter(a => 
+            a.type === "group" && (
+              !tempvalue || 
+              a.title?.toLowerCase().includes(tempvalue.toLowerCase()) || 
+              a.desc?.toLowerCase().includes(tempvalue.toLowerCase())
+            )
+          )
+          setFilteredActions(groupActions)
+        }
+      })
+      return
+    } else if (input.startsWith("/bookmarks ")) {
+      const tempvalue = input.replace("/bookmarks ", "")
+      chrome.runtime.sendMessage({ 
+        request: "search-bookmarks", 
+        query: tempvalue 
+      }, (response) => {
+        if (response && response.bookmarks) {
+          const bookmarkActions = response.bookmarks.map(bookmark => ({
+            ...bookmark,
+            type: "bookmark",
+            action: "bookmark",  // Ensure action type is set for proper handling
+            title: bookmark.title || "Untitled Bookmark",
+            desc: bookmark.url,
+            url: bookmark.url
+          }))
+          setFilteredActions(bookmarkActions)
+        } else {
+          setFilteredActions([{
+            title: "No bookmarks found",
+            desc: "Try a different search term",
+            type: "info"
+          }])
+        }
+      })
+      return
+    } else if (input.startsWith("/history ")) {
+      const tempvalue = input.replace("/history ", "")
+      chrome.runtime.sendMessage({ 
+        request: "search-history", 
+        query: tempvalue 
+      }, (response) => {
+        if (response && response.history) {
+          setFilteredActions(response.history.map(item => ({
+            ...item,
+            type: "history"
+          })))
+        }
+      })
+      return
     } else if (input.startsWith("/tabs")) {
       const tempvalue = input.replace("/tabs ", "")
       newFiltered =
         actions.filter(a => a.type === "tab" && (
           !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
         ))
-    } else if (input.startsWith("/bookmarks")) {
-      const tempvalue = input.replace("/bookmarks ", "")
-      if (tempvalue && tempvalue !== "/bookmarks") {
-        chrome.runtime.sendMessage({ request: "search-bookmarks", query: tempvalue }, (response) => {
-          setFilteredActions(((response?.bookmarks || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue))).concat([
-            {
-              title: "Ask AI",
-              desc: input,
-              action: "ai-chat-user-input",
-              type: "ai"
-            }
-          ]))
-        })
-        return
-      } else {
-        newFiltered = actions.filter(a => a.type === "bookmark")
-      }
-    } else if (input.startsWith("/history")) {
-      const tempvalue = input.replace("/history ", "")
-      if (tempvalue && tempvalue !== "/history") {
-        chrome.runtime.sendMessage({ request: "search-history", query: tempvalue }, (response) => {
-          setFilteredActions(((response?.history || []).filter(a => a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue))).concat([
-            {
-              title: "Ask AI",
-              desc: input,
-              action: "ai-chat-user-input",
-              type: "ai"
-            }
-          ]))
-        })
-        return
-      } else {
-        newFiltered = actions.filter(a => a.type === "history")
-      }
     } else if (input.startsWith("/remove")) {
       const tempvalue = input.replace("/remove ", "")
       newFiltered =
@@ -142,17 +244,17 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
           a.desc?.toLowerCase().includes(input.toLowerCase()) ||
           a.url?.toLowerCase().includes(input.toLowerCase())
         )
+      // Always add Ask AI action
+      newFiltered = newFiltered.concat([
+        {
+          title: "Ask AI",
+          desc: input,
+          action: "ai-chat-user-input",
+          type: "ai"
+        }
+      ])
+      setFilteredActions(newFiltered)
     }
-    // Always add Ask AI action
-    newFiltered = newFiltered.concat([
-      {
-        title: "Ask AI",
-        desc: input,
-        action: "ai-chat-user-input",
-        type: "ai"
-      }
-    ])
-    setFilteredActions(newFiltered)
   }, [input, actions])
 
   // Reset highlighted item when filtered actions change
@@ -193,13 +295,28 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         onClose()
         chrome.runtime.sendMessage({ request: "close-omni" })
       } else if (e.key === "ArrowDown") {
-        setSelectedIndex((idx) => Math.min(idx + 1, filteredActions.length - 1))
+        if (showCommandSuggestions) {
+          setCommandSuggestionIndex((idx) => Math.min(idx + 1, commandSuggestions.length - 1))
+        } else {
+          setSelectedIndex((idx) => Math.min(idx + 1, filteredActions.length - 1))
+        }
         e.preventDefault()
       } else if (e.key === "ArrowUp") {
-        setSelectedIndex((idx) => Math.max(idx - 1, 0))
+        if (showCommandSuggestions) {
+          setCommandSuggestionIndex((idx) => Math.max(idx - 1, 0))
+        } else {
+          setSelectedIndex((idx) => Math.max(idx - 1, 0))
+        }
         e.preventDefault()
-      } else if (e.key === "Enter" && filteredActions[selectedIndex]) {
-        handleAction(filteredActions[selectedIndex])
+      } else if (e.key === "Enter") {
+        if (showCommandSuggestions) {
+          handleCommandSelect(commandSuggestions[commandSuggestionIndex].command)
+        } else if (filteredActions[selectedIndex]) {
+          handleAction(filteredActions[selectedIndex])
+        }
+        e.preventDefault()
+      } else if (e.key === "Tab" && showCommandSuggestions) {
+        handleCommandSelect(commandSuggestions[commandSuggestionIndex].command)
         e.preventDefault()
       } else if (e.altKey && e.shiftKey && e.code === "KeyP") {
         setToast("Pin/Unpin tab triggered!")
@@ -217,7 +334,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
-  }, [isOpen, filteredActions, selectedIndex, onClose])
+  }, [isOpen, filteredActions, selectedIndex, showCommandSuggestions, commandSuggestionIndex, onClose])
 
   // Helper functions
   function addhttp(url: string) {
@@ -270,7 +387,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       case "bookmark":
       case "navigation":
       case "url":
-        window.open(action.url, "_self")
+      case "history":  // Add history case to handle history items
+        window.open(action.url, "_blank")  // Open in new tab
         break
       case "goto":
         window.open(addhttp(input), "_self")
@@ -321,11 +439,11 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   }
 
   // Diagnostic: log all favIconUrls when filteredActions change
-  React.useEffect(() => {
-    filteredActions.forEach(action => {
-      console.log("[DIAG] action.title:", action.title, "favIconUrl:", action.favIconUrl)
-    })
-  }, [filteredActions])
+  // React.useEffect(() => {
+  //   filteredActions.forEach(action => {
+  //     // console.log("[DIAG] action.title:", action.title, "favIconUrl:", action.favIconUrl)
+  //   })
+  // }, [filteredActions])
 
   if (!isOpen) return null
   // 直接返回 UI，不用 ReactDOM.createPortal
@@ -339,16 +457,41 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         className="mt-24 w-[800px] bg-neutral-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 relative border border-neutral-800"
         onClick={(e) => e.stopPropagation()}
       >
-        <input
-          ref={inputRef}
-          className="w-full px-4 py-3 text-xl rounded-lg border border-neutral-700 bg-neutral-800/70 backdrop-blur-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
-          placeholder="Search or ask anything"
-          value={input}
-          onChange={e => {
-            checkShortHand(e, e.target.value)
-            setInput(e.target.value)
-          }}
-        />
+        <div className="relative">
+          <input
+            ref={inputRef}
+            className="w-full px-4 py-3 text-xl rounded-lg border border-neutral-700 bg-neutral-800/70 backdrop-blur-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
+            placeholder={placeholderList[placeholderIndex]}
+            value={input}
+            onChange={e => {
+              const value = e.target.value
+              if (value === "/") {
+                setShowCommandSuggestions(true)
+                setCommandSuggestionIndex(0)
+              }
+              setInput(value)
+            }}
+          />
+          {showCommandSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900/80 backdrop-blur-sm rounded-lg border border-neutral-800 overflow-hidden z-50 shadow-lg">
+              {commandSuggestions.map((suggestion, idx) => (
+                <div
+                  key={suggestion.command}
+                  className={`px-3 py-2 cursor-pointer flex flex-col gap-0.5 ${
+                    idx === commandSuggestionIndex 
+                    ? 'bg-neutral-800/70 border border-blue-500 text-white' 
+                    : 'hover:bg-neutral-800/40 text-white border border-transparent'
+                  }`}
+                  onClick={() => handleCommandSelect(suggestion.command)}
+                  onMouseEnter={() => setCommandSuggestionIndex(idx)}
+                >
+                  <div className="font-semibold text-sm">{suggestion.command}</div>
+                  <div className="text-xs text-neutral-400">{suggestion.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="mt-4 max-h-[500px] overflow-y-auto">
           {filteredActions.length === 0 && <div className="text-neutral-500 text-lg px-4 py-3">No actions</div>}
           {filteredActions.map((action, idx) => (
@@ -369,7 +512,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
                     e.currentTarget.src = globeUrl
                   }}
                   onLoad={() => {
-                    console.log("[DIAG] Image loaded successfully:", getActionIcon(action))
+                    // console.log("[DIAG] Image loaded successfully:", getActionIcon(action))
                   }}
                 />
               )}

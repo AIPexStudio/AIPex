@@ -826,6 +826,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({bookmarks:data})
       })
       return true
+    case "get-bookmarks":
+      console.log("Background: Handling get-bookmarks request")
+      chrome.bookmarks.getRecent(100).then((data) => {
+        console.log("Background: Raw bookmarks data:", data)
+        data = data.filter((x: any) => x.url)
+        console.log("Background: Filtered bookmarks (with URLs only):", data)
+        data.forEach((action: any) => {
+          action.type = "bookmark"
+          action.emoji = true
+          action.emojiChar = "⭐️"
+          action.action = "bookmark"
+          action.keyCheck = false
+          action.desc = action.url
+        })
+        console.log("Background: Processed bookmarks data:", data)
+        sendResponse({bookmarks:data})
+      }).catch(error => {
+        console.error("Background: Error getting bookmarks:", error)
+        sendResponse({bookmarks: [], error: error.message})
+      })
+      return true
     case "remove":
       if (message.type == "bookmark") {
         removeBookmark(message.action)
