@@ -440,7 +440,7 @@ const AIChatSidebar = () => {
     }
   }, [messages, loading, buildContext])
 
-  // Sidepanel挂载时自动读取chrome.storage.local['aipex_user_input']，如有则自动填充并发送
+  // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
     chrome.storage?.local?.get(["aipex_user_input"], (result) => {
       if (result && result.aipex_user_input) {

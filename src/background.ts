@@ -512,7 +512,7 @@ async function classifyAndGroupSingleTab(tab) {
         groupId: existingGroup.id,
       }, (groupId) => {
         if (chrome.runtime.lastError) {
-          console.error("添加到现有分组失败:", chrome.runtime.lastError);
+          console.error("Failed to add to existing group:", chrome.runtime.lastError);
         } else {
           console.log(`Tab "${latestTab.title}" added to existing group "${category}"`);
         }
@@ -524,9 +524,9 @@ async function classifyAndGroupSingleTab(tab) {
         tabIds: [latestTab.id],
       }, (groupId) => {
         if (chrome.runtime.lastError) {
-          console.error("创建新分组失败:", chrome.runtime.lastError);
+          console.error("Failed to create new group:", chrome.runtime.lastError);
         } else {
-          console.log("分组成功！组ID:", groupId);
+          console.log("Group created successfully! Group ID:", groupId);
           
           // Set group title and color
           chrome.tabGroups.update(groupId, {
@@ -534,7 +534,7 @@ async function classifyAndGroupSingleTab(tab) {
             color: "blue"
           }, () => {
             if (chrome.runtime.lastError) {
-              console.error("更新分组标题失败:", chrome.runtime.lastError);
+              console.error("Failed to update group title:", chrome.runtime.lastError);
             } else {
               console.log(`Group "${category}" title and color set successfully`);
             }
@@ -546,7 +546,7 @@ async function classifyAndGroupSingleTab(tab) {
             collapsed,
           }, () => {
             if (chrome.runtime.lastError) {
-              console.error("设置分组折叠状态失败:", chrome.runtime.lastError);
+              console.error("Failed to set group collapse state:", chrome.runtime.lastError);
             } else {
               console.log(`Group "${category}" collapsed state set to ${collapsed}`);
             }
@@ -653,7 +653,7 @@ Example response format:
           groupId: existingGroup.id,
         }, (groupId) => {
           if (chrome.runtime.lastError) {
-            console.error(`添加到现有分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+            console.error(`Failed to add to existing group "${groupName}":`, chrome.runtime.lastError);
           } else {
             console.log(`Tabs added to existing group "${groupName}"`);
             
@@ -663,7 +663,7 @@ Example response format:
               collapsed: !containsActiveTab,
             }, () => {
               if (chrome.runtime.lastError) {
-                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+                console.error(`Failed to set group "${groupName}" collapse state:`, chrome.runtime.lastError);
               } else {
                 console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
               }
@@ -680,9 +680,9 @@ Example response format:
           tabIds: validTabIds,
         }, (groupId) => {
           if (chrome.runtime.lastError) {
-            console.error(`创建新分组 "${groupName}" 失败:`, chrome.runtime.lastError);
+            console.error(`Failed to create new group "${groupName}":`, chrome.runtime.lastError);
           } else {
-            console.log(`分组成功！组ID: ${groupId}, 分组名: ${groupName}`);
+            console.log(`Group created successfully! Group ID: ${groupId}, Group name: ${groupName}`);
             
             // Set group title and color
             chrome.tabGroups.update(groupId, {
@@ -690,7 +690,7 @@ Example response format:
               color: "green"
             }, () => {
               if (chrome.runtime.lastError) {
-                console.error(`更新分组 "${groupName}" 标题失败:`, chrome.runtime.lastError);
+                console.error(`Failed to update group "${groupName}" title:`, chrome.runtime.lastError);
               } else {
                 console.log(`Group "${groupName}" title and color set successfully`);
               }
@@ -702,7 +702,7 @@ Example response format:
               collapsed: !containsActiveTab,
             }, () => {
               if (chrome.runtime.lastError) {
-                console.error(`设置分组 "${groupName}" 折叠状态失败:`, chrome.runtime.lastError);
+                console.error(`Failed to set group "${groupName}" collapse state:`, chrome.runtime.lastError);
               } else {
                 console.log(`Group "${groupName}" collapsed state set to ${!containsActiveTab}`);
               }

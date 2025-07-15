@@ -76,7 +76,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   const [showCommandSuggestions, setShowCommandSuggestions] = React.useState(false)
   const [commandSuggestionIndex, setCommandSuggestionIndex] = React.useState(0)
 
-  // 轮播 placeholder
+  // Carousel placeholder
   React.useEffect(() => {
     if (!isOpen) return
     setPlaceholderIndex(0)
@@ -519,7 +519,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   // }, [filteredActions])
 
   if (!isOpen) return null
-  // 直接返回 UI，不用 ReactDOM.createPortal
+  // Return UI directly, no ReactDOM.createPortal needed
   return (
     <div
       id="omni-extension"
@@ -616,7 +616,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 // FloatingBot component
 const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => void, onClose: () => void, resetY?: number }) => {
   const iconWidth = 56 // px, w-14
-  const margin = 20 // px, 距离右边的间距
+  const margin = 20 // px, margin from right edge
   const [y, setY] = React.useState(0)
   const [left, setLeft] = React.useState(window.innerWidth - iconWidth - margin)
   const [isDragging, setIsDragging] = React.useState(false)
@@ -628,7 +628,7 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null)
   const positionKey = 'aipex_bot_y_position'
 
-  // 计算 left 贴边
+  // Calculate left edge alignment
   const updateLeft = React.useCallback(() => {
     setLeft(window.innerWidth - iconWidth - margin)
   }, [])
@@ -659,7 +659,7 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [updateLeft])
-  // 外部重置 y
+  // External y reset
   React.useEffect(() => {
     if (typeof resetY === 'number') {
       setY(resetY)
@@ -749,7 +749,7 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
     }
   }
 
-  // 保证每次渲染都贴边
+  // Ensure edge alignment on every render
   // const left = window.innerWidth - iconWidth - margin
 
   return (
@@ -989,7 +989,7 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
 const PlasmoOverlay = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false)
   const [isBotVisible, setIsBotVisible] = React.useState(true)
-  // 用于强制重置 FloatingBot 的 y 坐标
+  // For resetting FloatingBot's y coordinate
   const [resetBotY, setResetBotY] = React.useState(0)
 
   // Message listener for external triggers
@@ -1015,7 +1015,7 @@ const PlasmoOverlay = () => {
   }
 
   const handleCloseBotAndShowReopen = () => {
-    // 关闭时重置 y 坐标到底部
+    // Reset y coordinate to bottom when closing
     const iconWidth = 56
     const margin = 20
     const y = window.innerHeight - 80
@@ -1024,7 +1024,7 @@ const PlasmoOverlay = () => {
     try {
       localStorage.setItem('aipex_bot_y_position', String(finalY))
     } catch (e) {}
-    setResetBotY(finalY) // 触发 FloatingBot 重新渲染
+    setResetBotY(finalY) // Trigger FloatingBot re-render
     setIsBotVisible(false)
     
          // Show a toast notification for reopening
@@ -1054,7 +1054,7 @@ const PlasmoOverlay = () => {
         e.clientX > rightEdgeThreshold &&
         now - lastClickTime < 300 // Double click within 300ms
       ) {
-        // 恢复时也重置 y 坐标到底部
+        // Also reset y coordinate to bottom when restoring
         const iconWidth = 56
         const margin = 20
         const y = window.innerHeight - 80
@@ -1073,7 +1073,7 @@ const PlasmoOverlay = () => {
     return () => document.removeEventListener('click', handleDoubleClick)
   }, [isBotVisible])
 
-  // 直接返回 UI，不用 ReactDOM.createPortal
+  // Return UI directly, no ReactDOM.createPortal needed
   return (
     <>
       {/* <SelectionPopup /> */}
