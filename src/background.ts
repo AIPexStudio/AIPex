@@ -729,10 +729,13 @@ let selectedTextForSidepanel = "";
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.request) {
     case "get-actions":
-      console.log("get-actions")
-      console.log(actions)
-      resetOmni().then(() => sendResponse({actions}))
-      console.log("get-actions-end")
+      console.log("Background: Received get-actions request")
+      console.log("Background: Current actions:", actions)
+      resetOmni().then(() => {
+        console.log("Background: Actions after reset:", actions)
+        sendResponse({actions})
+      })
+      console.log("Background: get-actions response sent")
       return true
     case "switch-tab":
       switchTab(message.tab)
@@ -845,6 +848,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }).catch(error => {
         console.error("Background: Error getting bookmarks:", error)
         sendResponse({bookmarks: [], error: error.message})
+      })
+      return true
+    case "get-history":
+      console.log("Background: Handling get-history request")
+      chrome.history.search({text:"", maxResults:100, startTime:0}).then((data) => {
+        console.log("Background: Raw history data:", data)
+        data.forEach((action: any) => {
+          action.type = "history"
+          action.emoji = true
+          action.emojiChar = "🏛"
+          action.action = "history"
+          action.keyCheck = false
+          action.desc = action.url
+        })
+        console.log("Background: Processed history data:", data)
+        sendResponse({history:data})
+      }).catch(error => {
+        console.error("Background: Error getting history:", error)
+        sendResponse({history: [], error: error.message})
       })
       return true
     case "remove":

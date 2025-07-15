@@ -148,12 +148,40 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       })
     } else if (command === "/group") {
+      console.log("Content: Handling /group command")
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
+        console.log("Content: Received actions response:", response)
         if (response && response.actions) {
-          const groupActions = response.actions.filter(a => a.type === "group")
-          setFilteredActions(groupActions)
+          const organizeAction = response.actions.find(a => a.action === "organize-tabs")
+          console.log("Content: Found organize-tabs action:", organizeAction)
+          if (organizeAction) {
+            setFilteredActions([{
+              ...organizeAction,
+              type: "action",
+              title: "Organize Tabs",
+              desc: "Group tabs using AI",
+              emoji: true,
+              emojiChar: "📑"
+            }])
+            console.log("Content: Updated filtered actions with organize-tabs action")
+          } else {
+            setFilteredActions([{
+              title: "Organize Tabs",
+              desc: "No tabs to organize",
+              type: "info"
+            }])
+            console.log("Content: No organize-tabs action found, showing default message")
+          }
+        } else {
+          console.log("Content: No actions in response")
+          setFilteredActions([{
+            title: "Organize Tabs",
+            desc: "Failed to load actions",
+            type: "info"
+          }])
         }
       })
+      return
     }
   }
 
@@ -161,29 +189,52 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   React.useEffect(() => {
     let newFiltered: any[] = []
     if (!input) {
+      // Reload actions when input is empty
+      fetchActions()
       newFiltered = actions
+      setShowCommandSuggestions(false) // Hide command suggestions when input is empty
     } else if (input === "/") {
       setShowCommandSuggestions(true)
       return
-    } else if (input.startsWith("/group ")) {
-      const tempvalue = input.replace("/group ", "")
+    } else if (input.startsWith("/group")) {
+      console.log("Content: Handling /group input")
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
+        console.log("Content: Received actions response:", response)
         if (response && response.actions) {
-          const groupActions = response.actions.filter(a => 
-            a.type === "group" && (
-              !tempvalue || 
-              a.title?.toLowerCase().includes(tempvalue.toLowerCase()) || 
-              a.desc?.toLowerCase().includes(tempvalue.toLowerCase())
-            )
-          )
-          setFilteredActions(groupActions)
+          const organizeAction = response.actions.find(a => a.action === "organize-tabs")
+          console.log("Content: Found organize-tabs action:", organizeAction)
+          if (organizeAction) {
+            setFilteredActions([{
+              ...organizeAction,
+              type: "action",
+              title: "Organize Tabs",
+              desc: "Group tabs using AI",
+              emoji: true,
+              emojiChar: "📑"
+            }])
+            console.log("Content: Updated filtered actions with organize-tabs action")
+          } else {
+            setFilteredActions([{
+              title: "Organize Tabs",
+              desc: "No tabs to organize",
+              type: "info"
+            }])
+            console.log("Content: No organize-tabs action found, showing default message")
+          }
+        } else {
+          console.log("Content: No actions in response")
+          setFilteredActions([{
+            title: "Organize Tabs",
+            desc: "Failed to load actions",
+            type: "info"
+          }])
         }
       })
       return
-    } else if (input.startsWith("/bookmarks ")) {
+    } else if (input.startsWith("/bookmarks")) {
       const tempvalue = input.replace("/bookmarks ", "")
       chrome.runtime.sendMessage({ 
-        request: "search-bookmarks", 
+        request: tempvalue ? "search-bookmarks" : "get-bookmarks", 
         query: tempvalue 
       }, (response) => {
         if (response && response.bookmarks) {
@@ -220,11 +271,33 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       })
       return
     } else if (input.startsWith("/tabs")) {
-      const tempvalue = input.replace("/tabs ", "")
-      newFiltered =
-        actions.filter(a => a.type === "tab" && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
-        ))
+      console.log("Content: Handling /tabs input")
+      chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
+        console.log("Content: Received actions response:", response)
+        if (response && response.actions) {
+          const tabActions = response.actions.filter(a => a.type === "tab")
+          console.log("Content: Found tab actions:", tabActions)
+          if (tabActions.length > 0) {
+            setFilteredActions(tabActions)
+            console.log("Content: Updated filtered actions with tabs")
+          } else {
+            setFilteredActions([{
+              title: "No Tabs",
+              desc: "No open tabs found",
+              type: "info"
+            }])
+            console.log("Content: No tabs found, showing default message")
+          }
+        } else {
+          console.log("Content: No actions in response")
+          setFilteredActions([{
+            title: "No Tabs",
+            desc: "Failed to load tabs",
+            type: "info"
+          }])
+        }
+      })
+      return
     } else if (input.startsWith("/remove")) {
       const tempvalue = input.replace("/remove ", "")
       newFiltered =
