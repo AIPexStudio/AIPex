@@ -84,6 +84,15 @@ const clearActions = async () => {
       emojiChar: "📑",
       keycheck: false,
     },
+    {
+      title: "Ungroup Tabs",
+      desc: "Ungroup all tabs",
+      type: "action",
+      action: "ungroup-tabs",
+      emoji: true,
+      emojiChar: "📄",
+      keycheck: false,
+    },
     {title:"Bookmark", desc:"Create a bookmark", type:"action", action:"create-bookmark", emoji:true, emojiChar:"📕", keycheck:true, keys:['⌘','D']},
     pinaction,
     {title:"Fullscreen", desc:"Make the page fullscreen", type:"action", action:"fullscreen", emoji:true, emojiChar:"🖥", keycheck:true, keys:['⌘', 'Ctrl', 'F']},
@@ -398,6 +407,30 @@ const closeCurrentTab = () => {
 }
 const removeBookmark = (bookmark: any) => {
   chrome.bookmarks.remove(bookmark.id)
+}
+
+const ungroupAllTabs = async () => {
+  try {
+    // Get current window
+    const currentWindow = await chrome.windows.getCurrent()
+    
+    // Get all tab groups in the current window
+    const groups = await chrome.tabGroups.query({ windowId: currentWindow.id })
+    
+    // For each group, get its tabs and ungroup them
+    for (const group of groups) {
+      const tabs = await chrome.tabs.query({ groupId: group.id })
+      const tabIds = tabs.map(tab => tab.id)
+      
+      if (tabIds.length > 0) {
+        chrome.tabs.ungroup(tabIds)
+      }
+    }
+    
+    console.log(`Ungrouped ${groups.length} tab groups`)
+  } catch (error) {
+    console.error("Error ungrouping tabs:", error)
+  }
 }
 
 // OpenAI chat completion helper
@@ -1001,6 +1034,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       groupTabsByAI()
       tabChangeCount = 0 // Reset counter after manual organization
       console.log('Tab change counter reset to 0 after manual organization')
+      break
+    case "ungroup-tabs":
+      ungroupAllTabs()
       break
 
     case "get-selected-text":

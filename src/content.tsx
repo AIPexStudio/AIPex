@@ -75,13 +75,23 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0)
   const [showCommandSuggestions, setShowCommandSuggestions] = React.useState(false)
   const [commandSuggestionIndex, setCommandSuggestionIndex] = React.useState(0)
+  const debugRef = React.useRef({ lastSelectedIndex: 0 })
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // Debug log for selectedIndex changes
+  React.useEffect(() => {
+    debugRef.current.lastSelectedIndex = selectedIndex
+  }, [selectedIndex])
 
   // Carousel placeholder
   React.useEffect(() => {
     if (!isOpen) return
     setPlaceholderIndex(0)
     const interval = setInterval(() => {
-      setPlaceholderIndex(idx => (idx + 1) % placeholderList.length)
+      setPlaceholderIndex(idx => {
+        const newIdx = (idx + 1) % placeholderList.length
+        return newIdx
+      })
     }, 3000)
     return () => clearInterval(interval)
   }, [isOpen])
@@ -91,7 +101,10 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
       if (response && response.actions) {
         setActions(response.actions)
-        setFilteredActions(response.actions)
+        // Only set filteredActions when there's no input
+        if (!input) {
+          setFilteredActions(response.actions)
+        }
       }
     })
   }
@@ -109,15 +122,12 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 
   // Handle command selection
   const handleCommandSelect = (command: string) => {
-    console.log("Content: Handling command selection:", command)
     setInput(command + " ")
     setShowCommandSuggestions(false)
     
     // Immediately fetch relevant actions based on command
     if (command === "/bookmarks") {
-      console.log("Content: Sending get-bookmarks request")
       chrome.runtime.sendMessage({ request: "get-bookmarks" }, (response) => {
-        console.log("Content: Received bookmarks response:", response)
         if (response && response.bookmarks) {
           const bookmarkActions = response.bookmarks.map(bookmark => ({
             ...bookmark,
@@ -127,10 +137,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
             desc: bookmark.url,
             url: bookmark.url
           }))
-          console.log("Content: Processed bookmark actions:", bookmarkActions)
           setFilteredActions(bookmarkActions)
         } else {
-          console.log("Content: No bookmarks in response or error:", response?.error)
           setFilteredActions([{
             title: "No bookmarks found",
             desc: response?.error || "Try adding some bookmarks first",
@@ -148,34 +156,47 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       })
     } else if (command === "/group") {
-      console.log("Content: Handling /group command")
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
-        console.log("Content: Received actions response:", response)
         if (response && response.actions) {
           const organizeAction = response.actions.find(a => a.action === "organize-tabs")
-          console.log("Content: Found organize-tabs action:", organizeAction)
+          const ungroupAction = response.actions.find(a => a.action === "ungroup-tabs")
+          
+          const groupActions = []
+          
           if (organizeAction) {
-            setFilteredActions([{
+            groupActions.push({
               ...organizeAction,
               type: "action",
               title: "Organize Tabs",
               desc: "Group tabs using AI",
               emoji: true,
               emojiChar: "📑"
-            }])
-            console.log("Content: Updated filtered actions with organize-tabs action")
+            })
+          }
+          
+          if (ungroupAction) {
+            groupActions.push({
+              ...ungroupAction,
+              type: "action",
+              title: "Ungroup Tabs",
+              desc: "Ungroup all tabs",
+              emoji: true,
+              emojiChar: "📄"
+            })
+          }
+          
+          if (groupActions.length > 0) {
+            setFilteredActions(groupActions)
           } else {
             setFilteredActions([{
-              title: "Organize Tabs",
-              desc: "No tabs to organize",
+              title: "Group Actions",
+              desc: "No group actions available",
               type: "info"
             }])
-            console.log("Content: No organize-tabs action found, showing default message")
           }
         } else {
-          console.log("Content: No actions in response")
           setFilteredActions([{
-            title: "Organize Tabs",
+            title: "Group Actions",
             desc: "Failed to load actions",
             type: "info"
           }])
@@ -187,51 +208,75 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 
   // Input filtering
   React.useEffect(() => {
-    let newFiltered: any[] = []
     if (!input) {
-      // Reload actions when input is empty
-      fetchActions()
-      newFiltered = actions
+      // Only fetch actions if we don't have any
+      if (actions.length === 0) {
+        fetchActions()
+      } else {
+        setFilteredActions(actions)
+      }
       setShowCommandSuggestions(false) // Hide command suggestions when input is empty
-    } else if (input === "/") {
-      setShowCommandSuggestions(true)
+      setSelectedIndex(0) // Only reset selection when input is cleared
       return
-    } else if (input.startsWith("/group")) {
-      console.log("Content: Handling /group input")
+    } 
+    
+    if (input === "/") {
+      setShowCommandSuggestions(true)
+      setSelectedIndex(0) // Reset selection when showing command suggestions
+      return
+    } 
+    
+    if (input.startsWith("/group")) {
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
-        console.log("Content: Received actions response:", response)
         if (response && response.actions) {
           const organizeAction = response.actions.find(a => a.action === "organize-tabs")
-          console.log("Content: Found organize-tabs action:", organizeAction)
+          const ungroupAction = response.actions.find(a => a.action === "ungroup-tabs")
+          
+          const groupActions = []
+          
           if (organizeAction) {
-            setFilteredActions([{
+            groupActions.push({
               ...organizeAction,
               type: "action",
               title: "Organize Tabs",
               desc: "Group tabs using AI",
               emoji: true,
               emojiChar: "📑"
-            }])
-            console.log("Content: Updated filtered actions with organize-tabs action")
+            })
+          }
+          
+          if (ungroupAction) {
+            groupActions.push({
+              ...ungroupAction,
+              type: "action",
+              title: "Ungroup Tabs",
+              desc: "Ungroup all tabs",
+              emoji: true,
+              emojiChar: "📄"
+            })
+          }
+          
+          if (groupActions.length > 0) {
+            setFilteredActions(groupActions)
           } else {
             setFilteredActions([{
-              title: "Organize Tabs",
-              desc: "No tabs to organize",
+              title: "Group Actions",
+              desc: "No group actions available",
               type: "info"
             }])
-            console.log("Content: No organize-tabs action found, showing default message")
           }
         } else {
-          console.log("Content: No actions in response")
           setFilteredActions([{
-            title: "Organize Tabs",
+            title: "Group Actions",
             desc: "Failed to load actions",
             type: "info"
           }])
         }
       })
       return
-    } else if (input.startsWith("/bookmarks")) {
+    } 
+    
+    if (input.startsWith("/bookmarks")) {
       const tempvalue = input.replace("/bookmarks ", "")
       chrome.runtime.sendMessage({ 
         request: tempvalue ? "search-bookmarks" : "get-bookmarks", 
@@ -256,7 +301,9 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       })
       return
-    } else if (input.startsWith("/history ")) {
+    } 
+    
+    if (input.startsWith("/history ")) {
       const tempvalue = input.replace("/history ", "")
       chrome.runtime.sendMessage({ 
         request: "search-history", 
@@ -270,26 +317,22 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       })
       return
-    } else if (input.startsWith("/tabs")) {
-      console.log("Content: Handling /tabs input")
+    } 
+    
+    if (input.startsWith("/tabs")) {
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
-        console.log("Content: Received actions response:", response)
         if (response && response.actions) {
           const tabActions = response.actions.filter(a => a.type === "tab")
-          console.log("Content: Found tab actions:", tabActions)
           if (tabActions.length > 0) {
             setFilteredActions(tabActions)
-            console.log("Content: Updated filtered actions with tabs")
           } else {
             setFilteredActions([{
               title: "No Tabs",
               desc: "No open tabs found",
               type: "info"
             }])
-            console.log("Content: No tabs found, showing default message")
           }
         } else {
-          console.log("Content: No actions in response")
           setFilteredActions([{
             title: "No Tabs",
             desc: "Failed to load tabs",
@@ -298,42 +341,56 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       })
       return
-    } else if (input.startsWith("/remove")) {
+    } 
+    
+    if (input.startsWith("/remove")) {
       const tempvalue = input.replace("/remove ", "")
-      newFiltered =
-        actions.filter(a => (a.type === "bookmark" || a.type === "tab") && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
-        ))
-    } else if (input.startsWith("/actions")) {
-      const tempvalue = input.replace("/actions ", "")
-      newFiltered =
-        actions.filter(a => a.type === "action" && (
-          !tempvalue || a.title?.toLowerCase().includes(tempvalue) || a.desc?.toLowerCase().includes(tempvalue) || a.url?.toLowerCase().includes(tempvalue)
-        ))
-    } else {
-      newFiltered =
-        actions.filter((a) =>
-          a.title?.toLowerCase().includes(input.toLowerCase()) ||
-          a.desc?.toLowerCase().includes(input.toLowerCase()) ||
-          a.url?.toLowerCase().includes(input.toLowerCase())
+      const filtered = actions.filter(a => 
+        (a.type === "bookmark" || a.type === "tab") && 
+        (!tempvalue || 
+          a.title?.toLowerCase().includes(tempvalue) || 
+          a.desc?.toLowerCase().includes(tempvalue) || 
+          a.url?.toLowerCase().includes(tempvalue)
         )
-      // Always add Ask AI action
-      newFiltered = newFiltered.concat([
-        {
-          title: "Ask AI",
-          desc: input,
-          action: "ai-chat-user-input",
-          type: "ai"
-        }
-      ])
-      setFilteredActions(newFiltered)
+      )
+      setFilteredActions(filtered)
+      return
+    } 
+    
+    if (input.startsWith("/actions")) {
+      const tempvalue = input.replace("/actions ", "")
+      const filtered = actions.filter(a => 
+        a.type === "action" && 
+        (!tempvalue || 
+          a.title?.toLowerCase().includes(tempvalue) || 
+          a.desc?.toLowerCase().includes(tempvalue) || 
+          a.url?.toLowerCase().includes(tempvalue)
+        )
+      )
+      setFilteredActions(filtered)
+      return
+    }
+
+    // Default search behavior
+    const filtered = actions.filter((a) =>
+      a.title?.toLowerCase().includes(input.toLowerCase()) ||
+      a.desc?.toLowerCase().includes(input.toLowerCase()) ||
+      a.url?.toLowerCase().includes(input.toLowerCase())
+    )
+    
+    // Always add Ask AI action for non-command inputs
+    const newFilteredActions = filtered.concat([{
+      title: "Ask AI",
+      desc: input,
+      action: "ai-chat-user-input",
+      type: "ai"
+    }])
+    
+    // Only update if the filtered results have actually changed
+    if (JSON.stringify(newFilteredActions) !== JSON.stringify(filteredActions)) {
+      setFilteredActions(newFilteredActions)
     }
   }, [input, actions])
-
-  // Reset highlighted item when filtered actions change
-  React.useEffect(() => {
-    setSelectedIndex(0)
-  }, [filteredActions])
 
   // Message listener
   React.useEffect(() => {
@@ -367,18 +424,58 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       if (e.key === "Escape") {
         onClose()
         chrome.runtime.sendMessage({ request: "close-omni" })
-      } else if (e.key === "ArrowDown") {
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         if (showCommandSuggestions) {
-          setCommandSuggestionIndex((idx) => Math.min(idx + 1, commandSuggestions.length - 1))
+          if (e.key === "ArrowDown") {
+            setCommandSuggestionIndex((idx) => Math.min(idx + 1, commandSuggestions.length - 1))
+          } else {
+            setCommandSuggestionIndex((idx) => Math.max(idx - 1, 0))
+          }
         } else {
-          setSelectedIndex((idx) => Math.min(idx + 1, filteredActions.length - 1))
-        }
-        e.preventDefault()
-      } else if (e.key === "ArrowUp") {
-        if (showCommandSuggestions) {
-          setCommandSuggestionIndex((idx) => Math.max(idx - 1, 0))
-        } else {
-          setSelectedIndex((idx) => Math.max(idx - 1, 0))
+          const currentIndex = selectedIndex
+          const newIndex = e.key === "ArrowDown" 
+            ? Math.min(currentIndex + 1, filteredActions.length - 1)
+            : Math.max(currentIndex - 1, 0)
+
+          if (currentIndex !== newIndex) {
+            setSelectedIndex(newIndex)
+            // Scroll the selected item into view within the scrollable container
+            setTimeout(() => {
+              const container = scrollContainerRef.current
+              if (!container) return
+              
+              // Use a more specific selector to find action elements
+              const actionElements = container.querySelectorAll('[data-action-index]')
+              const selectedElement = actionElements[newIndex] as HTMLElement
+              
+              if (selectedElement) {
+                const containerRect = container.getBoundingClientRect()
+                const elementRect = selectedElement.getBoundingClientRect()
+                
+                // Calculate if element is outside visible area
+                const isAbove = elementRect.top < containerRect.top
+                const isBelow = elementRect.bottom > containerRect.bottom
+                
+                if (isAbove || isBelow) {
+                  // Calculate scroll position to center the element
+                  let newScrollTop
+                  if (isAbove) {
+                    // If element is above, scroll up to show it at the top with a small margin
+                    newScrollTop = container.scrollTop - (containerRect.top - elementRect.top) - 8
+                  } else {
+                    // If element is below, scroll down to show it at the bottom with a small margin
+                    newScrollTop = container.scrollTop + (elementRect.bottom - containerRect.bottom) + 8
+                  }
+                  
+                  // Apply smooth scrolling
+                  container.scrollTo({
+                    top: newScrollTop,
+                    behavior: 'smooth'
+                  })
+                }
+              }
+            }, 10) // Increase delay slightly to ensure DOM is updated
+          }
         }
         e.preventDefault()
       } else if (e.key === "Enter") {
@@ -511,13 +608,6 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     return globeUrl
   }
 
-  // Diagnostic: log all favIconUrls when filteredActions change
-  // React.useEffect(() => {
-  //   filteredActions.forEach(action => {
-  //     // console.log("[DIAG] action.title:", action.title, "favIconUrl:", action.favIconUrl)
-  //   })
-  // }, [filteredActions])
-
   if (!isOpen) return null
   // Return UI directly, no ReactDOM.createPortal needed
   return (
@@ -565,11 +655,15 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
             </div>
           )}
         </div>
-        <div className="mt-4 max-h-[500px] overflow-y-auto">
+        <div 
+          ref={scrollContainerRef} 
+          className="mt-4 max-h-[500px] overflow-y-auto scroll-smooth"
+        >
           {filteredActions.length === 0 && <div className="text-neutral-500 text-lg px-4 py-3">No actions</div>}
           {filteredActions.map((action, idx) => (
             <div
               key={action.title + idx}
+              data-action-index={idx}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 cursor-pointer border transition ${idx === selectedIndex ? "bg-neutral-800/70 border-blue-500" : "bg-transparent border-transparent hover:bg-neutral-800/40"}`}
               onClick={() => handleAction(action)}
               onMouseEnter={() => setSelectedIndex(idx)}
@@ -583,9 +677,6 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
                   className="w-6 h-6 rounded"
                   onError={e => {
                     e.currentTarget.src = globeUrl
-                  }}
-                  onLoad={() => {
-                    // console.log("[DIAG] Image loaded successfully:", getActionIcon(action))
                   }}
                 />
               )}
@@ -855,7 +946,7 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
 //           return
 //         }
 //       } catch (error) {
-//         console.error("Error getting selection rectangle:", error)
+//         // Error getting selection rectangle
 //       }
 //     }
     
