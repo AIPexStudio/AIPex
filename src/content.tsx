@@ -705,215 +705,215 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 }
 
 // FloatingBot component
-const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => void, onClose: () => void, resetY?: number }) => {
-  const iconWidth = 56 // px, w-14
-  const margin = 20 // px, margin from right edge
-  const [y, setY] = React.useState(0)
-  const [left, setLeft] = React.useState(window.innerWidth - iconWidth - margin)
-  const [isDragging, setIsDragging] = React.useState(false)
-  const [dragOffsetY, setDragOffsetY] = React.useState(0)
-  const [isHovered, setIsHovered] = React.useState(false)
-  const [hasDragged, setHasDragged] = React.useState(false)
-  const [isLongPressing, setIsLongPressing] = React.useState(false)
-  const botRef = React.useRef<HTMLDivElement>(null)
-  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null)
-  const positionKey = 'aipex_bot_y_position'
+// const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => void, onClose: () => void, resetY?: number }) => {
+//   const iconWidth = 56 // px, w-14
+//   const margin = 20 // px, margin from right edge
+//   const [y, setY] = React.useState(0)
+//   const [left, setLeft] = React.useState(window.innerWidth - iconWidth - margin)
+//   const [isDragging, setIsDragging] = React.useState(false)
+//   const [dragOffsetY, setDragOffsetY] = React.useState(0)
+//   const [isHovered, setIsHovered] = React.useState(false)
+//   const [hasDragged, setHasDragged] = React.useState(false)
+//   const [isLongPressing, setIsLongPressing] = React.useState(false)
+//   const botRef = React.useRef<HTMLDivElement>(null)
+//   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null)
+//   const positionKey = 'aipex_bot_y_position'
 
-  // Calculate left edge alignment
-  const updateLeft = React.useCallback(() => {
-    setLeft(window.innerWidth - iconWidth - margin)
-  }, [])
+//   // Calculate left edge alignment
+//   const updateLeft = React.useCallback(() => {
+//     setLeft(window.innerWidth - iconWidth - margin)
+//   }, [])
 
-  // Load saved y or initialize at bottom right
-  React.useEffect(() => {
-    const loadY = () => {
-      try {
-        const savedY = localStorage.getItem(positionKey)
-        let yVal = savedY ? parseInt(savedY, 10) : (window.innerHeight - 80)
-        const maxY = window.innerHeight - iconWidth - margin
-        yVal = Math.max(0, Math.min(yVal, maxY))
-        setY(yVal)
-      } catch (e) {
-        setY(window.innerHeight - 80)
-      }
-    }
-    loadY()
-    updateLeft()
-    // Update y and left on window resize
-    const handleResize = () => {
-      setY(prevY => {
-        const maxY = window.innerHeight - iconWidth - margin
-        return Math.max(0, Math.min(prevY, maxY))
-      })
-      updateLeft()
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [updateLeft])
-  // External y reset
-  React.useEffect(() => {
-    if (typeof resetY === 'number') {
-      setY(resetY)
-      updateLeft()
-    }
-  }, [resetY, updateLeft])
+//   // Load saved y or initialize at bottom right
+//   React.useEffect(() => {
+//     const loadY = () => {
+//       try {
+//         const savedY = localStorage.getItem(positionKey)
+//         let yVal = savedY ? parseInt(savedY, 10) : (window.innerHeight - 80)
+//         const maxY = window.innerHeight - iconWidth - margin
+//         yVal = Math.max(0, Math.min(yVal, maxY))
+//         setY(yVal)
+//       } catch (e) {
+//         setY(window.innerHeight - 80)
+//       }
+//     }
+//     loadY()
+//     updateLeft()
+//     // Update y and left on window resize
+//     const handleResize = () => {
+//       setY(prevY => {
+//         const maxY = window.innerHeight - iconWidth - margin
+//         return Math.max(0, Math.min(prevY, maxY))
+//       })
+//       updateLeft()
+//     }
+//     window.addEventListener('resize', handleResize)
+//     return () => window.removeEventListener('resize', handleResize)
+//   }, [updateLeft])
+//   // External y reset
+//   React.useEffect(() => {
+//     if (typeof resetY === 'number') {
+//       setY(resetY)
+//       updateLeft()
+//     }
+//   }, [resetY, updateLeft])
 
-  // Long press detection for dragging
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setHasDragged(false)
-    setIsLongPressing(true)
-    longPressTimer.current = setTimeout(() => {
-      setIsDragging(true)
-      setIsLongPressing(false)
-      const rect = botRef.current?.getBoundingClientRect()
-      if (rect) {
-        setDragOffsetY(e.clientY - rect.top)
-      }
-    }, 300)
-  }
+//   // Long press detection for dragging
+//   const handleMouseDown = (e: React.MouseEvent) => {
+//     e.preventDefault()
+//     setHasDragged(false)
+//     setIsLongPressing(true)
+//     longPressTimer.current = setTimeout(() => {
+//       setIsDragging(true)
+//       setIsLongPressing(false)
+//       const rect = botRef.current?.getBoundingClientRect()
+//       if (rect) {
+//         setDragOffsetY(e.clientY - rect.top)
+//       }
+//     }, 300)
+//   }
 
-  const handleMouseUp = (e?: React.MouseEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-    if (isDragging && e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    setIsLongPressing(false)
-    setIsDragging(false)
-  }
+//   const handleMouseUp = (e?: React.MouseEvent) => {
+//     if (longPressTimer.current) {
+//       clearTimeout(longPressTimer.current)
+//       longPressTimer.current = null
+//     }
+//     if (isDragging && e) {
+//       e.preventDefault()
+//       e.stopPropagation()
+//     }
+//     setIsLongPressing(false)
+//     setIsDragging(false)
+//   }
 
-  // Save y to localStorage whenever it changes
-  React.useEffect(() => {
-    try {
-      localStorage.setItem(positionKey, String(y))
-    } catch (e) {}
-  }, [y, positionKey])
+//   // Save y to localStorage whenever it changes
+//   React.useEffect(() => {
+//     try {
+//       localStorage.setItem(positionKey, String(y))
+//     } catch (e) {}
+//   }, [y, positionKey])
 
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return
-      setHasDragged(true)
-      const newY = e.clientY - dragOffsetY
-      const maxY = window.innerHeight - iconWidth - margin
-      setY(Math.max(0, Math.min(newY, maxY)))
-    }
-    const handleGlobalMouseUp = () => {
-      handleMouseUp()
-    }
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleGlobalMouseUp)
-    }
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleGlobalMouseUp)
-    }
-  }, [isDragging, dragOffsetY])
+//   React.useEffect(() => {
+//     const handleMouseMove = (e: MouseEvent) => {
+//       if (!isDragging) return
+//       setHasDragged(true)
+//       const newY = e.clientY - dragOffsetY
+//       const maxY = window.innerHeight - iconWidth - margin
+//       setY(Math.max(0, Math.min(newY, maxY)))
+//     }
+//     const handleGlobalMouseUp = () => {
+//       handleMouseUp()
+//     }
+//     if (isDragging) {
+//       document.addEventListener('mousemove', handleMouseMove)
+//       document.addEventListener('mouseup', handleGlobalMouseUp)
+//     }
+//     return () => {
+//       document.removeEventListener('mousemove', handleMouseMove)
+//       document.removeEventListener('mouseup', handleGlobalMouseUp)
+//     }
+//   }, [isDragging, dragOffsetY])
 
-  React.useEffect(() => {
-    return () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-      }
-    }
-  }, [])
+//   React.useEffect(() => {
+//     return () => {
+//       if (longPressTimer.current) {
+//         clearTimeout(longPressTimer.current)
+//       }
+//     }
+//   }, [])
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!hasDragged && !isLongPressing && !isDragging) {
-      try {
-        localStorage.setItem(positionKey, String(y))
-      } catch (e) {}
-      onOpenAIChat()
-    }
-  }
+//   const handleClick = (e: React.MouseEvent) => {
+//     e.stopPropagation()
+//     if (!hasDragged && !isLongPressing && !isDragging) {
+//       try {
+//         localStorage.setItem(positionKey, String(y))
+//       } catch (e) {}
+//       onOpenAIChat()
+//     }
+//   }
 
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    if (!isDragging && !isLongPressing) {
-      onClose()
-    }
-  }
+//   const handleClose = (e: React.MouseEvent) => {
+//     e.stopPropagation()
+//     e.preventDefault()
+//     if (!isDragging && !isLongPressing) {
+//       onClose()
+//     }
+//   }
 
-  // Ensure edge alignment on every render
-  // const left = window.innerWidth - iconWidth - margin
+//   // Ensure edge alignment on every render
+//   // const left = window.innerWidth - iconWidth - margin
 
-  return (
-    <>
-      {isDragging && (
-        <div
-          className="fixed z-[99997] pointer-events-none"
-          style={{
-            left: left,
-            top: 0,
-            width: iconWidth,
-            height: window.innerHeight,
-            border: '2px dashed rgba(59, 130, 246, 0.5)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)'
-          }}
-        />
-      )}
-      <div
-        ref={botRef}
-        className={`fixed z-[99998] transition-all duration-200 ${isDragging ? 'cursor-grabbing' : isLongPressing ? 'cursor-grab' : 'cursor-pointer'}`}
-        style={{
-          left: left,
-          top: y,
-          transform: isDragging ? 'scale(1.1)' : isLongPressing ? 'scale(1.05)' : isHovered ? 'scale(1.05)' : 'scale(1)',
-          transition: isDragging ? 'none' : 'transform 0.2s ease-out'
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => {
-          setIsHovered(false)
-          if (isLongPressing && longPressTimer.current) {
-            clearTimeout(longPressTimer.current)
-            longPressTimer.current = null
-            setIsLongPressing(false)
-          }
-        }}
-        onClick={handleClick}
-      >
-        <div className={`w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border hover:shadow-xl ${isDragging ? 'border-blue-500 border-2' : isLongPressing ? 'border-blue-400 border-2' : 'border-gray-200'}`}>
-          <img 
-            src={iconUrl} 
-            alt="AI Assistant" 
-            className="w-8 h-8 rounded"
-          />
-        </div>
-        {isHovered && (
-          <button
-            onClick={handleClose}
-            onMouseDown={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-            }}
-            className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 hover:bg-gray-500 rounded-full shadow-md transition-all duration-200 flex items-center justify-center text-white text-sm font-bold"
-            style={{ fontSize: '12px' }}
-          >
-            ×
-          </button>
-        )}
-        {isLongPressing && (
-          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-            Long press to drag...
-          </div>
-        )}
-        {isDragging && (
-          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-500 bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-            Dragging (vertical only)
-          </div>
-        )}
-      </div>
-    </>
-  )
-}
+//   return (
+//     <>
+//       {isDragging && (
+//         <div
+//           className="fixed z-[99997] pointer-events-none"
+//           style={{
+//             left: left,
+//             top: 0,
+//             width: iconWidth,
+//             height: window.innerHeight,
+//             border: '2px dashed rgba(59, 130, 246, 0.5)',
+//             backgroundColor: 'rgba(59, 130, 246, 0.1)'
+//           }}
+//         />
+//       )}
+//       <div
+//         ref={botRef}
+//         className={`fixed z-[99998] transition-all duration-200 ${isDragging ? 'cursor-grabbing' : isLongPressing ? 'cursor-grab' : 'cursor-pointer'}`}
+//         style={{
+//           left: left,
+//           top: y,
+//           transform: isDragging ? 'scale(1.1)' : isLongPressing ? 'scale(1.05)' : isHovered ? 'scale(1.05)' : 'scale(1)',
+//           transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+//         }}
+//         onMouseDown={handleMouseDown}
+//         onMouseUp={handleMouseUp}
+//         onMouseEnter={() => setIsHovered(true)}
+//         onMouseLeave={() => {
+//           setIsHovered(false)
+//           if (isLongPressing && longPressTimer.current) {
+//             clearTimeout(longPressTimer.current)
+//             longPressTimer.current = null
+//             setIsLongPressing(false)
+//           }
+//         }}
+//         onClick={handleClick}
+//       >
+//         <div className={`w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border hover:shadow-xl ${isDragging ? 'border-blue-500 border-2' : isLongPressing ? 'border-blue-400 border-2' : 'border-gray-200'}`}>
+//           <img 
+//             src={iconUrl} 
+//             alt="AI Assistant" 
+//             className="w-8 h-8 rounded"
+//           />
+//         </div>
+//         {isHovered && (
+//           <button
+//             onClick={handleClose}
+//             onMouseDown={(e) => {
+//               e.stopPropagation()
+//               e.preventDefault()
+//             }}
+//             className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 hover:bg-gray-500 rounded-full shadow-md transition-all duration-200 flex items-center justify-center text-white text-sm font-bold"
+//             style={{ fontSize: '12px' }}
+//           >
+//             ×
+//           </button>
+//         )}
+//         {isLongPressing && (
+//           <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+//             Long press to drag...
+//           </div>
+//         )}
+//         {isDragging && (
+//           <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-500 bg-opacity-75 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+//             Dragging (vertical only)
+//           </div>
+//         )}
+//       </div>
+//     </>
+//   )
+// }
 
 // SelectionPopup component
 // const SelectionPopup = () => {
@@ -1079,9 +1079,10 @@ const FloatingBot = ({ onOpenAIChat, onClose, resetY }: { onOpenAIChat: () => vo
 
 const PlasmoOverlay = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false)
-  const [isBotVisible, setIsBotVisible] = React.useState(true)
   // For resetting FloatingBot's y coordinate
-  const [resetBotY, setResetBotY] = React.useState(0)
+  // const [resetBotY, setResetBotY] = React.useState(0)
+  // const hoverTimer = React.useRef<NodeJS.Timeout | null>(null)
+  // const isHoveringEdge = React.useRef(false)
 
   // Message listener for external triggers
   React.useEffect(() => {
@@ -1096,85 +1097,25 @@ const PlasmoOverlay = () => {
     return () => chrome.runtime.onMessage.removeListener(onMessage)
   }, [])
 
-  const handleOpenOmni = () => {
-    setIsOmniOpen(true)
-  }
+  // 悬停右侧2秒显示icon逻辑已移除
 
-  const handleOpenAIChat = () => {
-    // Just open the side panel without any other changes
-    chrome.runtime.sendMessage({ request: "open-sidepanel" })
-  }
+  // const handleOpenOmni = () => {
+  //   setIsOmniOpen(true)
+  // }
 
-  const handleCloseBotAndShowReopen = () => {
-    // Reset y coordinate to bottom when closing
-    const iconWidth = 56
-    const margin = 20
-    const y = window.innerHeight - 80
-    const maxY = window.innerHeight - iconWidth - margin
-    const finalY = Math.max(0, Math.min(y, maxY))
-    try {
-      localStorage.setItem('aipex_bot_y_position', String(finalY))
-    } catch (e) {}
-    setResetBotY(finalY) // Trigger FloatingBot re-render
-    setIsBotVisible(false)
-    
-         // Show a toast notification for reopening
-     const toast = document.createElement('div')
-     toast.className = 'fixed z-[99999] top-4 right-4 bg-neutral-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm'
-     toast.textContent = 'Double-click on the right edge to show the AI assistant'
-    toast.style.transition = 'opacity 0.3s'
-    document.body.appendChild(toast)
-    
-    setTimeout(() => {
-      toast.style.opacity = '0'
-      setTimeout(() => {
-        document.body.removeChild(toast)
-      }, 300)
-    }, 3000)
-  }
+  // const handleOpenAIChat = () => {
+  //   chrome.runtime.sendMessage({ request: "open-sidepanel" })
+  // }
 
-  // Double click on right edge to show bot again
-  React.useEffect(() => {
-    let lastClickTime = 0
-    const handleDoubleClick = (e: MouseEvent) => {
-      const now = Date.now()
-      const rightEdgeThreshold = window.innerWidth * 0.95 // Right 5% of screen
-      
-      if (
-        !isBotVisible && 
-        e.clientX > rightEdgeThreshold &&
-        now - lastClickTime < 300 // Double click within 300ms
-      ) {
-        // Also reset y coordinate to bottom when restoring
-        const iconWidth = 56
-        const margin = 20
-        const y = window.innerHeight - 80
-        const maxY = window.innerHeight - iconWidth - margin
-        const finalY = Math.max(0, Math.min(y, maxY))
-        try {
-          localStorage.setItem('aipex_bot_y_position', String(finalY))
-        } catch (e) {}
-        setResetBotY(finalY)
-        setIsBotVisible(true)
-      }
-      lastClickTime = now
-    }
-
-    document.addEventListener('click', handleDoubleClick)
-    return () => document.removeEventListener('click', handleDoubleClick)
-  }, [isBotVisible])
+  // const handleCloseBotAndShowReopen = () => {
+  //   // 逻辑已移除
+  // }
 
   // Return UI directly, no ReactDOM.createPortal needed
   return (
     <>
       {/* <SelectionPopup /> */}
-      {isBotVisible && (
-        <FloatingBot 
-          onOpenAIChat={handleOpenAIChat}
-          onClose={handleCloseBotAndShowReopen}
-          resetY={resetBotY}
-        />
-      )}
+      {/* FloatingBot 已移除 */}
       {isOmniOpen && (
         <Omni 
           isOpen={isOmniOpen}
