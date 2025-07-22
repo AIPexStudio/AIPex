@@ -19,6 +19,7 @@ function IndexPopup() {
   const [aiModel, setAiModel] = useState("")
   const [showSelectionToolbar, setShowSelectionToolbar] = useState(false)
   const [message, setMessage] = useState("")
+  const [showCommandWindow, setShowCommandWindow] = useState(false)
 
   useEffect(() => {
     // Load shortcut
@@ -100,109 +101,160 @@ function IndexPopup() {
     })
   }
 
+  const handleOpenCommandWindow = () => {
+    setShowCommandWindow(true)
+  }
+
+  const handleCloseCommandWindow = () => {
+    setShowCommandWindow(false)
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[420px] w-[320px] bg-white p-6 text-black font-sans">
-      <h1 className="text-xl font-bold mb-6 tracking-tight">Settings</h1>
-      <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-        <label htmlFor="shortcutInput" className="block text-sm font-medium mb-2 text-gray-900">
-          Current Shortcut
-        </label>
-        <input
-          type="text"
-          id="shortcutInput"
-          className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-          value={shortcut}
-          disabled
-        />
+    <div className={`flex flex-col items-center justify-center ${showCommandWindow ? 'min-h-[420px]' : 'min-h-[420px]'} w-[320px] bg-white p-6 text-black font-sans`}>
+      <div className="flex items-center justify-between w-full mb-6">
+        <h1 className="text-xl font-bold tracking-tight">Settings</h1>
         <button
-          className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold transition"
-          onClick={handleShortcutClick}
+          onClick={handleOpenCommandWindow}
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          title="Open Command Window"
         >
-          Change Shortcut
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
         </button>
       </div>
-      <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-        <label htmlFor="tab_group_categories" className="block text-sm font-medium mb-2 text-gray-900">
-          Tab Group Categories
-        </label>
-        <input
-          type="text"
-          id="tab_group_categories"
-          className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-          placeholder={DEFAULT_TAB_GROUP_CATEGORIES}
-          value={tabGroupCategories}
-          onChange={(e) => setTabGroupCategories(e.target.value)}
-        />
-      </div>
-      <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 flex items-center justify-between bg-white">
-        <label htmlFor="auto_group_tabs" className="text-sm font-medium text-gray-900">
-          Auto Group Tabs
-        </label>
-        <input
-          type="checkbox"
-          id="auto_group_tabs"
-          checked={autoGroupTabs}
-          onChange={(e) => setAutoGroupTabs(e.target.checked)}
-          className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
-        />
-      </div>
-      <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-        <label htmlFor="ai_host" className="block text-sm font-medium mb-2 text-gray-900">
-          AI Host
-        </label>
-        <input
-          type="text"
-          id="ai_host"
-          className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-          placeholder={DEFAULT_AI_HOST}
-          value={aiHost}
-          onChange={(e) => setAiHost(e.target.value)}
-        />
-        <label htmlFor="ai_token" className="block text-sm font-medium mb-2 text-gray-900">
-          AI Token
-        </label>
-        <input
-          type="text"
-          id="ai_token"
-          className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-          value={aiToken}
-          onChange={(e) => setAiToken(e.target.value)}
-        />
-        <label htmlFor="ai_model" className="block text-sm font-medium mb-2 text-gray-900">
-          AI Model
-        </label>
-        <input
-          type="text"
-          id="ai_model"
-          className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-          placeholder="Enter model name"
-          value={aiModel}
-          onChange={(e) => setAiModel(e.target.value)}
-        />
-      </div>
-      <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-        <label htmlFor="show_selection_toolbar" className="text-sm font-medium flex items-center text-gray-900">
-          Show Selection Toolbar
-          <input
-            type="checkbox"
-            id="show_selection_toolbar"
-            checked={showSelectionToolbar}
-            onChange={(e) => setShowSelectionToolbar(e.target.checked)}
-            className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
-          />
-        </label>
-        <div className="text-xs text-gray-400 mt-1">
-          Show toolbar with AI and translate options when text is selected
+      
+      {showCommandWindow ? (
+        <div className="w-full h-full bg-neutral-900/80 backdrop-blur-sm rounded-2xl border border-neutral-800 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Command Window</h2>
+            <button
+              onClick={handleCloseCommandWindow}
+              className="p-2 rounded-full hover:bg-neutral-800 transition-colors"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="text-white">
+            <p className="mb-4 text-sm">Use the keyboard shortcut <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs">{shortcut}</kbd> to open the command window from any page.</p>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm">Available Commands:</h3>
+              <ul className="space-y-1 text-xs text-neutral-300">
+                <li><code className="bg-neutral-800 px-1 rounded">/tabs</code> - Search your open tabs</li>
+                <li><code className="bg-neutral-800 px-1 rounded">/bookmarks</code> - Search your bookmarks</li>
+                <li><code className="bg-neutral-800 px-1 rounded">/history</code> - Search your browser history</li>
+                <li><code className="bg-neutral-800 px-1 rounded">/group</code> - Group tabs using AI</li>
+                <li><code className="bg-neutral-800 px-1 rounded">/ai</code> - Start AI chat in sidebar</li>
+              </ul>
+            </div>
+          </div>
         </div>
-      </div>
-      <button
-        className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold mb-2 transition"
-        onClick={handleSaveAllSettings}
-      >
-        Save All Settings
-      </button>
-      {message && (
-        <div className="text-sm text-center text-black mt-3">{message}</div>
+      ) : (
+        <>
+          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
+            <label htmlFor="shortcutInput" className="block text-sm font-medium mb-2 text-gray-900">
+              Current Shortcut
+            </label>
+            <input
+              type="text"
+              id="shortcutInput"
+              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-black/10 transition"
+              value={shortcut}
+              disabled
+            />
+            <button
+              className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold transition"
+              onClick={handleShortcutClick}
+            >
+              Change Shortcut
+            </button>
+          </div>
+          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
+            <label htmlFor="tab_group_categories" className="block text-sm font-medium mb-2 text-gray-900">
+              Tab Group Categories
+            </label>
+            <input
+              type="text"
+              id="tab_group_categories"
+              className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
+              placeholder={DEFAULT_TAB_GROUP_CATEGORIES}
+              value={tabGroupCategories}
+              onChange={(e) => setTabGroupCategories(e.target.value)}
+            />
+          </div>
+          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 flex items-center justify-between bg-white">
+            <label htmlFor="auto_group_tabs" className="text-sm font-medium text-gray-900">
+              Auto Group Tabs
+            </label>
+            <input
+              type="checkbox"
+              id="auto_group_tabs"
+              checked={autoGroupTabs}
+              onChange={(e) => setAutoGroupTabs(e.target.checked)}
+              className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
+            />
+          </div>
+          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
+            <label htmlFor="ai_host" className="block text-sm font-medium mb-2 text-gray-900">
+              AI Host
+            </label>
+            <input
+              type="text"
+              id="ai_host"
+              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
+              placeholder={DEFAULT_AI_HOST}
+              value={aiHost}
+              onChange={(e) => setAiHost(e.target.value)}
+            />
+            <label htmlFor="ai_token" className="block text-sm font-medium mb-2 text-gray-900">
+              AI Token
+            </label>
+            <input
+              type="text"
+              id="ai_token"
+              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
+              value={aiToken}
+              onChange={(e) => setAiToken(e.target.value)}
+            />
+            <label htmlFor="ai_model" className="block text-sm font-medium mb-2 text-gray-900">
+              AI Model
+            </label>
+            <input
+              type="text"
+              id="ai_model"
+              className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
+              placeholder="Enter model name"
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+            />
+          </div>
+          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
+            <label htmlFor="show_selection_toolbar" className="text-sm font-medium flex items-center text-gray-900">
+              Show Selection Toolbar
+              <input
+                type="checkbox"
+                id="show_selection_toolbar"
+                checked={showSelectionToolbar}
+                onChange={(e) => setShowSelectionToolbar(e.target.checked)}
+                className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
+              />
+            </label>
+            <div className="text-xs text-gray-400 mt-1">
+              Show toolbar with AI and translate options when text is selected
+            </div>
+          </div>
+          <button
+            className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold mb-2 transition"
+            onClick={handleSaveAllSettings}
+          >
+            Save All Settings
+          </button>
+          {message && (
+            <div className="text-sm text-center text-black mt-3">{message}</div>
+          )}
+        </>
       )}
     </div>
   )
