@@ -249,6 +249,7 @@ const restoreNewTab = () => {
 const resetOmni = async () => {
   await clearActions()
   await getTabs()
+  await getHistory()
 //   await getBookmarks()
   
   // Find AI Chat action and move it to the front
@@ -344,6 +345,23 @@ const getBookmarks = async () => {
   }
   const bookmarks = await chrome.bookmarks.getRecent(100)
   process_bookmark(bookmarks)
+}
+
+// Get all history
+const getHistory = async () => {
+  const history = await chrome.history.search({text:"", maxResults:1000, startTime:0})
+  history.forEach((item: any) => {
+    actions.push({
+      title: item.title || "Untitled",
+      desc: item.url,
+      url: item.url,
+      type: "history",
+      action: "history",
+      emoji: true,
+      emojiChar: "🏛",
+      keycheck: false
+    })
+  })
 }
 
 // Action execution functions
@@ -895,7 +913,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true
     case "get-history":
       console.log("Background: Handling get-history request")
-      chrome.history.search({text:"", maxResults:100, startTime:0}).then((data) => {
+      chrome.history.search({text:"", maxResults:1000, startTime:0}).then((data) => {
         console.log("Background: Raw history data:", data)
         data.forEach((action: any) => {
           action.type = "history"

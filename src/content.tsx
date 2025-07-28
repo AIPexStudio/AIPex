@@ -107,6 +107,30 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         }
       }
     })
+    
+    // Also fetch recent history and add to actions
+    chrome.runtime.sendMessage({ request: "get-history" }, (historyResponse) => {
+      if (historyResponse && historyResponse.history) {
+        const historyActions = historyResponse.history.map((item: any) => ({
+          ...item,
+          type: "history",
+          action: "history",
+          emoji: true,
+          emojiChar: "🏛",
+          keyCheck: false,
+          desc: item.url
+        }))
+        
+        // Update actions with history appended
+        setActions(prevActions => {
+          const newActions = [...prevActions, ...historyActions]
+          if (!input) {
+            setFilteredActions(newActions)
+          }
+          return newActions
+        })
+      }
+    })
   }
 
   // Get actions when modal is opened
@@ -378,13 +402,23 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       a.url?.toLowerCase().includes(input.toLowerCase())
     )
     
-    // Always add Ask AI action for non-command inputs
-    const newFilteredActions = filtered.concat([{
-      title: "Ask AI",
-      desc: input,
-      action: "ai-chat-user-input",
-      type: "ai"
-    }])
+    // Always add Ask AI and Google Search actions for non-command inputs
+    const newFilteredActions = filtered.concat([
+      {
+        title: "Ask AI",
+        desc: input,
+        action: "ai-chat-user-input",
+        type: "ai"
+      },
+      {
+        title: "Google Search",
+        desc: input,
+        action: "google-search",
+        type: "search",
+        emoji: true,
+        emojiChar: "🔍"
+      }
+    ])
     
     // Only update if the filtered results have actually changed
     if (JSON.stringify(newFilteredActions) !== JSON.stringify(filteredActions)) {
@@ -554,6 +588,9 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       return
     }
     switch (action.action) {
+      case "google-search":
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(action.desc)}`, "_blank")
+        break
       case "bookmark":
       case "navigation":
       case "url":

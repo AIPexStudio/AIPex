@@ -11,6 +11,7 @@ const NewTabPage = () => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   
   // Update time every minute
   useEffect(() => {
@@ -27,6 +28,28 @@ const NewTabPage = () => {
       if (response && response.actions) {
         setActions(response.actions)
         setFilteredActions(response.actions)
+      }
+    })
+    
+    // Also fetch recent history and add to actions
+    chrome.runtime.sendMessage({ request: "get-history" }, (historyResponse) => {
+      if (historyResponse && historyResponse.history) {
+        const historyActions = historyResponse.history.map((item: any) => ({
+          ...item,
+          type: "history",
+          action: "history",
+          emoji: true,
+          emojiChar: "🏛",
+          keyCheck: false,
+          desc: item.url
+        }))
+        
+        // Update actions with history appended
+        setActions(prevActions => {
+          const newActions = [...prevActions, ...historyActions]
+          setFilteredActions(newActions)
+          return newActions
+        })
       }
     })
   }
@@ -102,13 +125,21 @@ const NewTabPage = () => {
       )
     }
     
-    // Always add Ask AI action
+    // Always add Ask AI and Google Search actions
     newFiltered = newFiltered.concat([
       {
         title: "Ask AI",
         desc: input,
         action: "ai-chat-user-input",
         type: "ai"
+      },
+      {
+        title: "Google Search",
+        desc: input,
+        action: "google-search",
+        type: "search",
+        emoji: true,
+        emojiChar: "🔍"
       }
     ])
     setFilteredActions(newFiltered)
@@ -123,10 +154,92 @@ const NewTabPage = () => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
-        setSelectedIndex((idx) => Math.min(idx + 1, filteredActions.length - 1))
+        const currentIndex = selectedIndex
+        const newIndex = Math.min(currentIndex + 1, filteredActions.length - 1)
+        
+        if (currentIndex !== newIndex) {
+          setSelectedIndex(newIndex)
+          // Scroll the selected item into view within the scrollable container
+          setTimeout(() => {
+            const container = scrollContainerRef.current
+            if (!container) return
+            
+            // Use a more specific selector to find action elements
+            const actionElements = container.querySelectorAll('[data-action-index]')
+            const selectedElement = actionElements[newIndex] as HTMLElement
+            
+            if (selectedElement) {
+              const containerRect = container.getBoundingClientRect()
+              const elementRect = selectedElement.getBoundingClientRect()
+              
+              // Calculate if element is outside visible area
+              const isAbove = elementRect.top < containerRect.top
+              const isBelow = elementRect.bottom > containerRect.bottom
+              
+              if (isAbove || isBelow) {
+                // Calculate scroll position to center the element
+                let newScrollTop
+                if (isAbove) {
+                  // If element is above, scroll up to show it at the top with a small margin
+                  newScrollTop = container.scrollTop - (containerRect.top - elementRect.top) - 8
+                } else {
+                  // If element is below, scroll down to show it at the bottom with a small margin
+                  newScrollTop = container.scrollTop + (elementRect.bottom - containerRect.bottom) + 8
+                }
+                
+                // Apply smooth scrolling
+                container.scrollTo({
+                  top: newScrollTop,
+                  behavior: 'smooth'
+                })
+              }
+            }
+          }, 10) // Increase delay slightly to ensure DOM is updated
+        }
         e.preventDefault()
       } else if (e.key === "ArrowUp") {
-        setSelectedIndex((idx) => Math.max(idx - 1, 0))
+        const currentIndex = selectedIndex
+        const newIndex = Math.max(currentIndex - 1, 0)
+        
+        if (currentIndex !== newIndex) {
+          setSelectedIndex(newIndex)
+          // Scroll the selected item into view within the scrollable container
+          setTimeout(() => {
+            const container = scrollContainerRef.current
+            if (!container) return
+            
+            // Use a more specific selector to find action elements
+            const actionElements = container.querySelectorAll('[data-action-index]')
+            const selectedElement = actionElements[newIndex] as HTMLElement
+            
+            if (selectedElement) {
+              const containerRect = container.getBoundingClientRect()
+              const elementRect = selectedElement.getBoundingClientRect()
+              
+              // Calculate if element is outside visible area
+              const isAbove = elementRect.top < containerRect.top
+              const isBelow = elementRect.bottom > containerRect.bottom
+              
+              if (isAbove || isBelow) {
+                // Calculate scroll position to center the element
+                let newScrollTop
+                if (isAbove) {
+                  // If element is above, scroll up to show it at the top with a small margin
+                  newScrollTop = container.scrollTop - (containerRect.top - elementRect.top) - 8
+                } else {
+                  // If element is below, scroll down to show it at the bottom with a small margin
+                  newScrollTop = container.scrollTop + (elementRect.bottom - containerRect.bottom) + 8
+                }
+                
+                // Apply smooth scrolling
+                container.scrollTo({
+                  top: newScrollTop,
+                  behavior: 'smooth'
+                })
+              }
+            }
+          }, 10) // Increase delay slightly to ensure DOM is updated
+        }
         e.preventDefault()
       } else if (e.key === "Enter" && filteredActions[selectedIndex]) {
         handleAction(filteredActions[selectedIndex])
@@ -181,10 +294,14 @@ const NewTabPage = () => {
     }
     
     switch (action.action) {
+      case "google-search":
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(action.desc)}`, "_blank")
+        break
       case "bookmark":
       case "navigation":
       case "url":
-        window.open(action.url, "_self")
+      case "history":  // Add history case to handle history items
+        window.open(action.url, "_blank")  // Open in new tab
         break
       case "goto":
         window.open(addhttp(input), "_self")
@@ -273,7 +390,10 @@ const NewTabPage = () => {
           />
           
           {/* Results */}
-          <div className="mt-6 max-h-[400px] overflow-y-auto">
+          <div 
+            ref={scrollContainerRef} 
+            className="mt-6 max-h-[400px] overflow-y-auto scroll-smooth"
+          >
             {filteredActions.length === 0 && (
               <div className="text-neutral-500 text-lg px-4 py-6 text-center">
                 No actions found
@@ -282,6 +402,7 @@ const NewTabPage = () => {
             {filteredActions.map((action, idx) => (
               <div
                 key={action.title + idx}
+                data-action-index={idx}
                 className={`flex items-center gap-4 px-4 py-3 rounded-xl mb-2 cursor-pointer border transition-all duration-200 ${
                   idx === selectedIndex 
                     ? "bg-blue-600/20 border-blue-500 shadow-lg" 
