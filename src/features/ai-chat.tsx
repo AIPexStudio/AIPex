@@ -281,18 +281,18 @@ const AIChatSidebar = () => {
     }
   }, [])
 
-  // Auto-scroll function with smooth animation
+  // Auto-scroll function with smooth animation - only for manual scroll button
   const scrollToBottom = useCallback((force = false) => {
     if (!messagesEndRef.current) return
     
-    // Only scroll if user hasn't manually scrolled far away, or if forced
-    if (force || !userScrolled) {
+    // Only scroll when explicitly forced (manual button click)
+    if (force) {
       messagesEndRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'end'
       })
     }
-  }, [userScrolled])
+  }, [])
 
   // Manual scroll to bottom (for button click)
   const handleScrollToBottom = useCallback(() => {
@@ -300,16 +300,16 @@ const AIChatSidebar = () => {
     scrollToBottom(true)
   }, [scrollToBottom])
 
-  // Auto-scroll when new messages arrive
-  useEffect(() => {
-    if (messages.length > 0) {
-      // For new messages, always try to scroll if user hasn't scrolled far away
-      if (!userScrolled) {
-        // Small delay to ensure DOM has updated
-        setTimeout(() => scrollToBottom(), 100)
-      }
-    }
-  }, [messages, scrollToBottom, userScrolled])
+  // Auto-scroll when new messages arrive - DISABLED
+  // useEffect(() => {
+  //   if (messages.length > 0) {
+  //     // For new messages, always try to scroll if user hasn't scrolled far away
+  //     if (!userScrolled) {
+  //       // Small delay to ensure DOM has updated
+  //       setTimeout(() => scrollToBottom(), 100)
+  //     }
+  //   }
+  // }, [messages, scrollToBottom, userScrolled])
 
   // Listen for streaming responses from background script
   useEffect(() => {
