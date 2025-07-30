@@ -1,27 +1,25 @@
 import React, { useEffect, useState } from "react"
-import { CountButton } from "~features/count-button"
 import "~style.css"
 import { Storage } from "@plasmohq/storage"
-
-const DEFAULT_TAB_GROUP_CATEGORIES =
-  "Social, Entertainment, Read Material, Education, Productivity, Utilities"
-const DEFAULT_AI_HOST = "https://api.openai.com/v1/chat/completions"
-const DEFAULT_AI_MODEL = "gpt-3.5-turbo"
 
 const storage = new Storage()
 
 function IndexPopup() {
   const [shortcut, setShortcut] = useState("Not set")
-  const [tabGroupCategories, setTabGroupCategories] = useState("")
-  const [autoGroupTabs, setAutoGroupTabs] = useState(true)
+  const [activeTab, setActiveTab] = useState<"organize" | "command" | "config">("organize")
+  const [isOrganizing, setIsOrganizing] = useState(false)
+  const [organizeStatus, setOrganizeStatus] = useState("")
+  const [organizeSteps, setOrganizeSteps] = useState<string[]>([])
+  const [currentStep, setCurrentStep] = useState(0)
+  const [operationType, setOperationType] = useState<"organize" | "ungroup" | null>(null)
+  const [message, setMessage] = useState("")
+  const [showUngroupOption, setShowUngroupOption] = useState(false)
   const [aiHost, setAiHost] = useState("")
   const [aiToken, setAiToken] = useState("")
   const [aiModel, setAiModel] = useState("")
-  const [showSelectionToolbar, setShowSelectionToolbar] = useState(false)
-  const [message, setMessage] = useState("")
-  const [showCommandWindow, setShowCommandWindow] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
+    useEffect(() => {
     // Load shortcut
     if (chrome?.commands) {
       chrome.commands.getAll(function (commands) {
@@ -33,229 +31,669 @@ function IndexPopup() {
         }
       })
     }
-    // Load settings from Plasmo Storage
-    Promise.all([
-      storage.get("tabGroupCategories"),
-      storage.get("autoGroupTabs"),
+
+    // Load AI settings
+    const loadAISettings = async () => {
+      try {
+        const [hostValue, tokenValue, modelValue] = await Promise.all([
       storage.get("aiHost"),
       storage.get("aiToken"),
-      storage.get("aiModel"),
-      storage.get("showSelectionToolbar")
-    ]).then(([
-      tabGroupCategoriesValue,
-      autoGroupTabsValue,
-      aiHostValue,
-      aiTokenValue,
-      aiModelValue,
-      showSelectionToolbarValue
-    ]) => {
-      setTabGroupCategories(tabGroupCategoriesValue || DEFAULT_TAB_GROUP_CATEGORIES)
-      setAutoGroupTabs(typeof autoGroupTabsValue === "boolean" ? autoGroupTabsValue : autoGroupTabsValue === "true" ? true : !!autoGroupTabsValue)
-      setAiHost(aiHostValue || DEFAULT_AI_HOST)
-      setAiToken(aiTokenValue || "")
-      setAiModel(aiModelValue || DEFAULT_AI_MODEL)
-      setShowSelectionToolbar(typeof showSelectionToolbarValue === "boolean" ? showSelectionToolbarValue : showSelectionToolbarValue === "true" ? true : !!showSelectionToolbarValue)
-    })
-  }, [])
+          storage.get("aiModel")
+        ])
+        
+        setAiHost(hostValue || "https://api.openai.com/v1/chat/completions")
+        setAiToken(tokenValue || "")
+        setAiModel(modelValue || "gpt-3.5-turbo")
+      } catch (error) {
+        console.error("Error loading AI settings:", error)
+      }
+    }
 
-  useEffect(() => {
-    if (chrome?.commands) {
-      const handler = () => {
-        chrome.commands.getAll((commands) => {
-          const openaipexCommand = commands.find(
-            (command) => command.name === "open-aipex"
-          )
-          if (openaipexCommand) {
-            setShortcut(openaipexCommand.shortcut || "Not set")
-            storage.set("aipexShortcut", openaipexCommand.shortcut)
-          }
-        })
+    loadAISettings()
+
+    // Listen for completion messages from background script
+    const handleMessage = (message: any) => {
+      if (message.request === "organize-tabs-complete") {
+        setIsOrganizing(false)
+        setOperationType(null)
+        if (message.success) {
+          setOrganizeStatus("Tabs organized successfully!")
+          setOrganizeSteps(prev => [...prev, message.message])
+          setMessage("Your tabs have been organized into groups using AI")
+        } else {
+          setOrganizeStatus("Failed to organize tabs")
+          setOrganizeSteps(prev => [...prev, `Error: ${message.message}`])
+          setMessage("Error organizing tabs. Please try again.")
+        }
+        setTimeout(() => setMessage(""), 3000)
+      } else if (message.request === "ungroup-tabs-complete") {
+        setIsOrganizing(false)
+        setOperationType(null)
+        if (message.success) {
+          setOrganizeStatus("Tabs ungrouped successfully!")
+          setOrganizeSteps(prev => [...prev, message.message])
+          setMessage("All tab groups have been removed")
+        } else {
+          setOrganizeStatus("Failed to ungroup tabs")
+          setOrganizeSteps(prev => [...prev, `Error: ${message.message}`])
+          setMessage("Error ungrouping tabs. Please try again.")
+        }
+        setTimeout(() => setMessage(""), 3000)
       }
-      chrome.commands.onCommand.addListener(handler)
-      return () => {
-        chrome.commands.onCommand.removeListener(handler)
-      }
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage)
+
+    // Cleanup listener on unmount
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage)
     }
   }, [])
 
-  const handleSaveAllSettings = async () => {
-    const categories = tabGroupCategories
-      .split(",")
-      .map((cat) => cat.trim())
-      .join(", ")
-    await Promise.all([
-      storage.set("tabGroupCategories", categories),
-      storage.set("autoGroupTabs", autoGroupTabs),
-      storage.set("aiHost", aiHost),
-      storage.set("aiToken", aiToken),
-      storage.set("aiModel", aiModel),
-      storage.set("showSelectionToolbar", showSelectionToolbar)
-    ])
-    setMessage("All settings saved successfully.")
-    setTimeout(() => setMessage(""), 3000)
+  const handleOrganizeTabs = async () => {
+    setIsOrganizing(true)
+    setCurrentStep(0)
+    setOrganizeSteps([])
+    setOperationType("organize")
+    setOrganizeStatus("Starting tab organization...")
+    
+    try {
+      // Check if AI token is available
+      const aiToken = await storage.get("aiToken")
+      if (!aiToken) {
+        setOrganizeStatus("AI token not configured")
+        setMessage("Please configure your AI token in settings first")
+        setTimeout(() => setMessage(""), 3000)
+        setIsOrganizing(false)
+        setOperationType(null)
+        return
+      }
+
+      // Get all tabs
+      setOrganizeStatus("Getting all open tabs...")
+      setOrganizeSteps(prev => [...prev, "Getting all open tabs"])
+      setCurrentStep(1)
+      
+      const tabs = await chrome.tabs.query({ currentWindow: true })
+      const validTabs = tabs.filter(tab => tab.url)
+      
+      if (validTabs.length === 0) {
+        setOrganizeStatus("No tabs found to organize")
+        setMessage("No open tabs found to organize")
+        setTimeout(() => setMessage(""), 3000)
+        setIsOrganizing(false)
+        setOperationType(null)
+        return
+      }
+
+      // Show tab info
+      setOrganizeStatus(`Found ${validTabs.length} tabs to organize...`)
+      setOrganizeSteps(prev => [...prev, `Found ${validTabs.length} tabs to analyze`])
+      setCurrentStep(2)
+      
+      // Show sample tabs
+      const tabDetails = validTabs.slice(0, 5).map(tab => {
+        const hostname = tab.url ? new URL(tab.url).hostname : "unknown"
+        return `${tab.title} (${hostname})`
+      })
+      
+      if (validTabs.length > 5) {
+        tabDetails.push(`... and ${validTabs.length - 5} more tabs`)
+      }
+      
+      setOrganizeSteps(prev => [...prev, "Sample tabs:", ...tabDetails])
+      setCurrentStep(3)
+
+      // Send to background script
+      setOrganizeStatus("Organizing tabs with AI...")
+      setOrganizeSteps(prev => [...prev, "Sending to AI for classification"])
+      setCurrentStep(4)
+      
+      // Send message to background script - completion will be handled by message listener
+      chrome.runtime.sendMessage({ request: "organize-tabs" })
+      
+    } catch (error) {
+      console.error("Error in handleOrganizeTabs:", error)
+      setOrganizeStatus("Error occurred")
+      setOrganizeSteps(prev => [...prev, `Error: ${error.message}`])
+      setMessage("An error occurred while organizing tabs")
+      setTimeout(() => setMessage(""), 3000)
+      setIsOrganizing(false)
+      setOperationType(null)
+    }
   }
 
   const handleShortcutClick = () => {
     chrome.tabs.create({ url: "chrome://extensions/shortcuts" }, () => {
       setMessage("Please set the new shortcut in the Chrome Extensions Shortcuts page.")
+      setTimeout(() => setMessage(""), 3000)
     })
   }
 
-  const handleOpenCommandWindow = () => {
-    setShowCommandWindow(true)
+  const handleQuickOrganize = () => {
+    setActiveTab("organize")
+    handleOrganizeTabs()
   }
 
-  const handleCloseCommandWindow = () => {
-    setShowCommandWindow(false)
+  const handleUngroupTabs = async () => {
+    setIsOrganizing(true)
+    setCurrentStep(0)
+    setOrganizeSteps([])
+    setOperationType("ungroup")
+    setOrganizeStatus("Starting tab ungrouping...")
+    
+    try {
+      // Get current groups
+      setOrganizeStatus("Finding existing tab groups...")
+      setOrganizeSteps(prev => [...prev, "Finding existing tab groups"])
+      setCurrentStep(1)
+      
+      const currentWindow = await chrome.windows.getCurrent()
+      const groups = await chrome.tabGroups.query({ windowId: currentWindow.id })
+      
+      if (groups.length === 0) {
+        setOrganizeStatus("No groups found")
+        setOrganizeSteps(prev => [...prev, "No tab groups found to ungroup"])
+        setMessage("No tab groups found to ungroup")
+        setTimeout(() => setMessage(""), 3000)
+        setIsOrganizing(false)
+        setOperationType(null)
+        return
+      }
+
+      // Show group info
+      setOrganizeStatus(`Found ${groups.length} groups to ungroup...`)
+      setOrganizeSteps(prev => [...prev, `Found ${groups.length} tab groups`])
+      setCurrentStep(2)
+      
+      const groupDetails = groups.slice(0, 3).map(group => 
+        `"${group.title || 'Untitled'}" (${group.id})`
+      )
+      
+      if (groups.length > 3) {
+        groupDetails.push(`... and ${groups.length - 3} more groups`)
+      }
+      
+      setOrganizeSteps(prev => [...prev, "Groups to ungroup:", ...groupDetails])
+      setCurrentStep(3)
+
+      // Ungroup tabs
+      setOrganizeStatus("Ungrouping tabs...")
+      setOrganizeSteps(prev => [...prev, "Removing tab groups"])
+      setCurrentStep(4)
+      
+      // Send message to background script - completion will be handled by message listener
+      chrome.runtime.sendMessage({ request: "ungroup-tabs" })
+      
+    } catch (error) {
+      console.error("Error in handleUngroupTabs:", error)
+      setOrganizeStatus("Error occurred")
+      setOrganizeSteps(prev => [...prev, `Error: ${error.message}`])
+      setMessage("An error occurred while ungrouping tabs")
+      setTimeout(() => setMessage(""), 3000)
+      setIsOrganizing(false)
+      setOperationType(null)
+    }
+  }
+
+  const handleSaveAISettings = async () => {
+    setIsSaving(true)
+    try {
+      await Promise.all([
+        storage.set("aiHost", aiHost),
+        storage.set("aiToken", aiToken),
+        storage.set("aiModel", aiModel)
+      ])
+      setMessage("AI settings saved successfully!")
+      setTimeout(() => setMessage(""), 3000)
+    } catch (error) {
+      console.error("Error saving AI settings:", error)
+      setMessage("Error saving AI settings. Please try again.")
+      setTimeout(() => setMessage(""), 3000)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center ${showCommandWindow ? 'min-h-[420px]' : 'min-h-[420px]'} w-[320px] bg-white p-6 text-black font-sans`}>
-      <div className="flex items-center justify-between w-full mb-6">
-        <h1 className="text-xl font-bold tracking-tight">Settings</h1>
-        <button
-          onClick={handleOpenCommandWindow}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          title="Open Command Window"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
+    <div style={{ width: "360px", backgroundColor: "white", color: "black", fontFamily: "system-ui, sans-serif" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px", borderBottom: "1px solid #e5e7eb" }}>
+        <h1 style={{ fontSize: "20px", fontWeight: "bold", letterSpacing: "-0.025em" }}>AIpex</h1>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => setActiveTab("organize")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "9999px",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.15s",
+              backgroundColor: activeTab === "organize" ? "black" : "#f3f4f6",
+              color: activeTab === "organize" ? "white" : "#374151",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            Organize
+          </button>
+          <button
+            onClick={() => setActiveTab("command")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "9999px",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.15s",
+              backgroundColor: activeTab === "command" ? "black" : "#f3f4f6",
+              color: activeTab === "command" ? "white" : "#374151",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            Command
+          </button>
+          <button
+            onClick={() => setActiveTab("config")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "9999px",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.15s",
+              backgroundColor: activeTab === "config" ? "black" : "#f3f4f6",
+              color: activeTab === "config" ? "white" : "#374151",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            Config
+          </button>
+        </div>
       </div>
-      
-      {showCommandWindow ? (
-        <div className="w-full h-full bg-neutral-900/80 backdrop-blur-sm rounded-2xl border border-neutral-800 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Command Window</h2>
-            <button
-              onClick={handleCloseCommandWindow}
-              className="p-2 rounded-full hover:bg-neutral-800 transition-colors"
-            >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="text-white">
-            <p className="mb-4 text-sm">Use the keyboard shortcut <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs">{shortcut}</kbd> to open the command window from any page.</p>
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Available Commands:</h3>
-              <ul className="space-y-1 text-xs text-neutral-300">
-                <li><code className="bg-neutral-800 px-1 rounded">/tabs</code> - Search your open tabs</li>
-                <li><code className="bg-neutral-800 px-1 rounded">/bookmarks</code> - Search your bookmarks</li>
-                <li><code className="bg-neutral-800 px-1 rounded">/history</code> - Search your browser history</li>
-                <li><code className="bg-neutral-800 px-1 rounded">/group</code> - Group tabs using AI</li>
-                <li><code className="bg-neutral-800 px-1 rounded">/ai</code> - Start AI chat in sidebar</li>
+
+      {/* Content */}
+      <div style={{ padding: "24px" }}>
+        {activeTab === "organize" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* Quick Organize Section */}
+            <div style={{ textAlign: "center" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>Organize Your Tabs</h2>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px" }}>
+                Automatically group your open tabs using AI
+              </p>
+              
+              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                <button
+                  onClick={handleOrganizeTabs}
+                  disabled={isOrganizing}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    fontWeight: "600",
+                    transition: "all 0.15s",
+                    backgroundColor: isOrganizing ? "#d1d5db" : "black",
+                    color: isOrganizing ? "#6b7280" : "white",
+                    border: "none",
+                    cursor: isOrganizing ? "not-allowed" : "pointer",
+                    fontSize: "14px"
+                  }}
+                >
+                  {isOrganizing ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <div style={{ width: "16px", height: "16px", border: "2px solid white", borderTop: "2px solid transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                      <span>Organizing...</span>
+                    </div>
+                  ) : (
+                    "Organize"
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleUngroupTabs}
+                  disabled={isOrganizing}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    fontWeight: "600",
+                    transition: "all 0.15s",
+                    backgroundColor: isOrganizing ? "#d1d5db" : "#ef4444",
+                    color: isOrganizing ? "#6b7280" : "white",
+                    border: "none",
+                    cursor: isOrganizing ? "not-allowed" : "pointer",
+                    fontSize: "14px"
+                  }}
+                >
+                  {isOrganizing ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <div style={{ width: "16px", height: "16px", border: "2px solid white", borderTop: "2px solid transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                      <span>Ungrouping...</span>
+                    </div>
+                  ) : (
+                    "Ungroup"
+                  )}
+                </button>
+              </div>
+              
+              {organizeStatus && (
+                <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "12px" }}>{organizeStatus}</p>
+              )}
+              
+              {/* Progress Steps */}
+              {isOrganizing && organizeSteps.length > 0 && (
+                <div style={{ marginTop: "16px", backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "600", marginBottom: "12px", color: "#111827" }}>
+                    Progress ({currentStep}/{operationType === "ungroup" ? 4 : 4})
+                  </h4>
+                  <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                    {organizeSteps.map((step, index) => (
+                      <div 
+                        key={index} 
+                        style={{ 
+                          display: "flex", 
+                          alignItems: "flex-start", 
+                          gap: "8px", 
+                          marginBottom: "8px",
+                          fontSize: "13px",
+                          color: step.startsWith("Error:") ? "#dc2626" : 
+                                 step.startsWith("Successfully") ? "#059669" : "#6b7280"
+                        }}
+                      >
+                        <div style={{ 
+                          width: "6px", 
+                          height: "6px", 
+                          backgroundColor: step.startsWith("Error:") ? "#dc2626" : 
+                                           step.startsWith("Successfully") ? "#059669" : "#3b82f6", 
+                          borderRadius: "50%", 
+                          marginTop: "6px", 
+                          flexShrink: 0 
+                        }}></div>
+                        <span style={{ 
+                          fontFamily: step.includes("Sample tabs:") || step.includes("(") ? "monospace" : "inherit",
+                          fontSize: step.includes("Sample tabs:") || step.includes("(") ? "11px" : "13px"
+                        }}>
+                          {step}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Features List */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "12px", fontSize: "14px" }}>What this does:</h3>
+              <ul style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "#6b7280" }}>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <span>Analyzes all your open tabs using AI</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <span>Groups them by category (Social, Work, Shopping, etc.)</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <span>Creates tab groups with descriptive names</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <span>Requires OpenAI API token in settings</span>
+                </li>
               </ul>
             </div>
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-            <label htmlFor="shortcutInput" className="block text-sm font-medium mb-2 text-gray-900">
-              Current Shortcut
-            </label>
-            <input
-              type="text"
-              id="shortcutInput"
-              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-              value={shortcut}
-              disabled
-            />
-            <button
-              className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold transition"
-              onClick={handleShortcutClick}
-            >
-              Change Shortcut
-            </button>
-          </div>
-          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-            <label htmlFor="tab_group_categories" className="block text-sm font-medium mb-2 text-gray-900">
-              Tab Group Categories
-            </label>
-            <input
-              type="text"
-              id="tab_group_categories"
-              className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-              placeholder={DEFAULT_TAB_GROUP_CATEGORIES}
-              value={tabGroupCategories}
-              onChange={(e) => setTabGroupCategories(e.target.value)}
-            />
-          </div>
-          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 flex items-center justify-between bg-white">
-            <label htmlFor="auto_group_tabs" className="text-sm font-medium text-gray-900">
-              Auto Group Tabs
-            </label>
-            <input
-              type="checkbox"
-              id="auto_group_tabs"
-              checked={autoGroupTabs}
-              onChange={(e) => setAutoGroupTabs(e.target.checked)}
-              className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
-            />
-          </div>
-          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-            <label htmlFor="ai_host" className="block text-sm font-medium mb-2 text-gray-900">
-              AI Host
-            </label>
-            <input
-              type="text"
-              id="ai_host"
-              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-              placeholder={DEFAULT_AI_HOST}
-              value={aiHost}
-              onChange={(e) => setAiHost(e.target.value)}
-            />
-            <label htmlFor="ai_token" className="block text-sm font-medium mb-2 text-gray-900">
-              AI Token
-            </label>
-            <input
-              type="text"
-              id="ai_token"
-              className="w-full p-2 border border-gray-200 rounded-full mb-2 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-              value={aiToken}
-              onChange={(e) => setAiToken(e.target.value)}
-            />
-            <label htmlFor="ai_model" className="block text-sm font-medium mb-2 text-gray-900">
-              AI Model
-            </label>
-            <input
-              type="text"
-              id="ai_model"
-              className="w-full p-2 border border-gray-200 rounded-full bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-black/10 transition"
-              placeholder="Enter model name"
-              value={aiModel}
-              onChange={(e) => setAiModel(e.target.value)}
-            />
-          </div>
-          <div className="rounded-2xl border border-gray-200 p-4 w-full mb-4 bg-white">
-            <label htmlFor="show_selection_toolbar" className="text-sm font-medium flex items-center text-gray-900">
-              Show Selection Toolbar
-              <input
-                type="checkbox"
-                id="show_selection_toolbar"
-                checked={showSelectionToolbar}
-                onChange={(e) => setShowSelectionToolbar(e.target.checked)}
-                className="ml-2 accent-black w-5 h-5 rounded-full border border-gray-300 focus:ring-black/20 transition"
-              />
-            </label>
-            <div className="text-xs text-gray-400 mt-1">
-              Show toolbar with AI and translate options when text is selected
+        )}
+
+        {activeTab === "command" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* Command Panel Section */}
+            <div style={{ textAlign: "center" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>Command Panel</h2>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px" }}>
+                Access AIpex from anywhere with a keyboard shortcut
+              </p>
+            </div>
+
+            {/* Current Shortcut */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "12px", color: "#111827" }}>
+                Current Shortcut
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <kbd style={{ padding: "8px 12px", backgroundColor: "white", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", fontFamily: "monospace" }}>
+                  {shortcut}
+                </kbd>
+                <button
+                  onClick={handleShortcutClick}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "black",
+                    color: "white",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    transition: "all 0.15s",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
+            {/* Available Commands */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "12px", fontSize: "14px" }}>Available Commands:</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "#374151" }}>Search tabs</span>
+                  <code style={{ backgroundColor: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace" }}>/tabs</code>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "#374151" }}>Search bookmarks</span>
+                  <code style={{ backgroundColor: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace" }}>/bookmarks</code>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "#374151" }}>Search history</span>
+                  <code style={{ backgroundColor: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace" }}>/history</code>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "#374151" }}>Group tabs</span>
+                  <code style={{ backgroundColor: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace" }}>/group</code>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: "#374151" }}>AI chat</span>
+                  <code style={{ backgroundColor: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace" }}>/ai</code>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Access */}
+            <div style={{ backgroundColor: "#eff6ff", borderRadius: "12px", padding: "16px", border: "1px solid #bfdbfe" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#1e3a8a" }}>Quick Access</h3>
+              <p style={{ fontSize: "12px", color: "#1d4ed8", marginBottom: "12px" }}>
+                Press the shortcut key from any webpage to open the command panel
+              </p>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={handleQuickOrganize}
+                  style={{
+                    flex: 1,
+                    padding: "8px 16px",
+                    backgroundColor: "#2563eb",
+                    color: "white",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    transition: "all 0.15s",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  Organize
+                </button>
+                <button
+                  onClick={handleUngroupTabs}
+                  style={{
+                    flex: 1,
+                    padding: "8px 16px",
+                    backgroundColor: "#dc2626",
+                    color: "white",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    transition: "all 0.15s",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  Ungroup
+                </button>
+              </div>
             </div>
           </div>
-          <button
-            className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-2 w-full text-sm font-semibold mb-2 transition"
-            onClick={handleSaveAllSettings}
-          >
-            Save All Settings
-          </button>
-          {message && (
-            <div className="text-sm text-center text-black mt-3">{message}</div>
-          )}
-        </>
-      )}
+        )}
+
+        {activeTab === "config" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* AI Configuration Section */}
+            <div style={{ textAlign: "center" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>AI Configuration</h2>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px" }}>
+                Configure your AI settings for tab organization
+              </p>
+            </div>
+
+            {/* AI Host */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
+                AI Host
+              </label>
+              <input
+                type="text"
+                value={aiHost}
+                onChange={(e) => setAiHost(e.target.value)}
+                placeholder="https://api.openai.com/v1/chat/completions"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  color: "#111827"
+                }}
+              />
+            </div>
+
+            {/* AI Token */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
+                AI Token
+              </label>
+              <input
+                type="password"
+                value={aiToken}
+                onChange={(e) => setAiToken(e.target.value)}
+                placeholder="Enter your OpenAI API token"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  color: "#111827"
+                }}
+              />
+              <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style={{ color: "#2563eb", textDecoration: "underline" }}>OpenAI Platform</a>
+              </p>
+            </div>
+
+            {/* AI Model */}
+            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
+                AI Model
+              </label>
+              <input
+                type="text"
+                value={aiModel}
+                onChange={(e) => setAiModel(e.target.value)}
+                placeholder="gpt-3.5-turbo"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  color: "#111827"
+                }}
+              />
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSaveAISettings}
+              disabled={isSaving}
+              style={{
+                width: "100%",
+                padding: "12px 24px",
+                borderRadius: "12px",
+                fontWeight: "600",
+                transition: "all 0.15s",
+                backgroundColor: isSaving ? "#d1d5db" : "black",
+                color: isSaving ? "#6b7280" : "white",
+                border: "none",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                fontSize: "14px"
+              }}
+            >
+              {isSaving ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <div style={{ width: "16px", height: "16px", border: "2px solid white", borderTop: "2px solid transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                "Save AI Settings"
+              )}
+            </button>
+
+            {/* Info Section */}
+            <div style={{ backgroundColor: "#fef3c7", borderRadius: "12px", padding: "16px", border: "1px solid #f59e0b" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#92400e" }}>Required for Tab Organization</h3>
+              <p style={{ fontSize: "12px", color: "#92400e", marginBottom: "8px" }}>
+                These settings are required to use the AI-powered tab organization feature.
+              </p>
+              <ul style={{ fontSize: "12px", color: "#92400e", paddingLeft: "16px" }}>
+                <li>AI Host: The API endpoint for your AI service</li>
+                <li>AI Token: Your API authentication key</li>
+                <li>AI Model: The AI model to use for classification</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Message */}
+        {message && (
+          <div style={{ marginTop: "16px", padding: "12px", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px" }}>
+            <p style={{ fontSize: "14px", color: "#166534", textAlign: "center" }}>{message}</p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }

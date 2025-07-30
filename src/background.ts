@@ -445,6 +445,19 @@ const ungroupAllTabs = async () => {
     // Get all tab groups in the current window
     const groups = await chrome.tabGroups.query({ windowId: currentWindow.id })
     
+    if (groups.length === 0) {
+      console.log("No tab groups found to ungroup")
+      // Notify popup that operation is complete
+      chrome.runtime.sendMessage({ 
+        request: "ungroup-tabs-complete", 
+        success: true, 
+        message: "No tab groups found to ungroup" 
+      }).catch(err => {
+        console.log('Failed to send ungroup completion message:', err)
+      });
+      return;
+    }
+    
     // For each group, get its tabs and ungroup them
     for (const group of groups) {
       const tabs = await chrome.tabs.query({ groupId: group.id })
@@ -456,8 +469,27 @@ const ungroupAllTabs = async () => {
     }
     
     console.log(`Ungrouped ${groups.length} tab groups`)
+    
+    // Notify popup that operation completed successfully
+    chrome.runtime.sendMessage({ 
+      request: "ungroup-tabs-complete", 
+      success: true, 
+      message: `Successfully ungrouped ${groups.length} tab groups` 
+    }).catch(err => {
+      console.log('Failed to send ungroup completion message:', err)
+    });
+    
   } catch (error) {
     console.error("Error ungrouping tabs:", error)
+    
+    // Notify popup that operation failed
+    chrome.runtime.sendMessage({ 
+      request: "ungroup-tabs-complete", 
+      success: false, 
+      message: `Error ungrouping tabs: ${error.message}` 
+    }).catch(err => {
+      console.log('Failed to send ungroup error message:', err)
+    });
   }
 }
 
@@ -633,6 +665,14 @@ async function groupTabsByAI() {
   
   if (validTabs.length === 0) {
     console.log("No valid tabs to group");
+    // Notify popup that operation is complete
+    chrome.runtime.sendMessage({ 
+      request: "organize-tabs-complete", 
+      success: true, 
+      message: "No tabs found to organize" 
+    }).catch(err => {
+      console.log('Failed to send organize completion message:', err)
+    });
     return;
   }
   
@@ -774,8 +814,27 @@ Example response format:
       
       console.log(`Processing group "${groupName}" with ${validTabIds.length} tabs`);
     }
+    
+    // Notify popup that operation completed successfully
+    chrome.runtime.sendMessage({ 
+      request: "organize-tabs-complete", 
+      success: true, 
+      message: `Successfully organized ${validTabs.length} tabs into ${groupingResult.length} groups` 
+    }).catch(err => {
+      console.log('Failed to send organize completion message:', err)
+    });
+    
   } catch (error) {
     console.error("Error in AI tab grouping:", error);
+    
+    // Notify popup that operation failed
+    chrome.runtime.sendMessage({ 
+      request: "organize-tabs-complete", 
+      success: false, 
+      message: `Error organizing tabs: ${error.message}` 
+    }).catch(err => {
+      console.log('Failed to send organize error message:', err)
+    });
   }
   
   console.log("All tabs have been processed and grouped by content.");
