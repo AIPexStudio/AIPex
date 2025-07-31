@@ -32,7 +32,6 @@ console.log(logoNotion)
 
 let actions: any[] = []
 let newtaburl = ""
-let tabChangeCount = 0 // Track tab changes for smart grouping
 
 // Check if AI grouping is available
 async function isAIGroupingAvailable() {
@@ -260,57 +259,13 @@ const resetOmni = async () => {
   }
 }
 
-// Smart tab grouping on tab changes
+// Tab updates - only reset actions, no auto-grouping
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   resetOmni()
-  
-  // Only process completed loads and URL changes
-  if (changeInfo.status === 'complete' || changeInfo.url) {
-    // Check if AI grouping is available
-    if (!(await isAIGroupingAvailable())) {
-      console.log('AI grouping not available, skipping auto-grouping')
-      return
-    }
-    
-    tabChangeCount++
-    console.log(`Tab change count: ${tabChangeCount}/10`)
-    
-    if (tabChangeCount <= 10) {
-      // For small changes, just classify and group the single tab
-      classifyAndGroupSingleTab(tab)
-    } else {
-      // For large changes, do a full regroup and reset counter
-      console.log('Performing full tab regroup after', tabChangeCount, 'changes')
-      groupTabsByAI()
-      tabChangeCount = 0
-    }
-  }
 })
 
 chrome.tabs.onCreated.addListener(async (tab) => {
   resetOmni()
-  
-  // Check if AI grouping is available
-  if (!(await isAIGroupingAvailable())) {
-    console.log('AI grouping not available, skipping auto-grouping')
-    return
-  }
-  
-  tabChangeCount++
-  console.log(`Tab change count: ${tabChangeCount}/10`)
-  
-  if (tabChangeCount <= 10) {
-    // For small changes, just classify and group the single tab
-    // Wait a bit for the tab to load before grouping
-    setTimeout(() => {
-      classifyAndGroupSingleTab(tab)
-    }, 1000)
-  } else {
-    // For large changes, do a full regroup and reset counter
-    console.log('Performing full tab regroup after', tabChangeCount, 'changes')
-    groupTabsByAI()
-    tabChangeCount = 0
-  }
 })
 
 chrome.tabs.onRemoved.addListener(() => { 
@@ -838,8 +793,6 @@ Example response format:
   }
   
   console.log("All tabs have been processed and grouped by content.");
-  tabChangeCount = 0 // Reset counter after full regroup
-  console.log('Tab change counter reset to 0 after full regroup')
 }
 
 // Global variable to store selected text temporarily
@@ -1119,8 +1072,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true // Keep the message channel open for async response
     case "organize-tabs":
       groupTabsByAI()
-      tabChangeCount = 0 // Reset counter after manual organization
-      console.log('Tab change counter reset to 0 after manual organization')
       break
     case "ungroup-tabs":
       ungroupAllTabs()
@@ -1133,7 +1084,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       selectedTextForSidepanel = "";
       return true
     case "get-tab-change-count":
-      sendResponse({ count: tabChangeCount, threshold: 10 })
+      sendResponse({ count: 0, threshold: 0 })
       return true
   }
 })
