@@ -23,11 +23,11 @@ const CodeBlock = ({ children, className, ...props }: any) => {
       style={oneLight}
       language={language}
       PreTag="div"
-      className="rounded-lg mb-3 border border-gray-300 text-sm"
+      className="rounded-lg mb-3 border border-gray-200 text-sm"
       customStyle={{
         margin: 0,
         padding: '1rem',
-        backgroundColor: '#fafafa',
+        backgroundColor: '#f8f9fa',
         fontSize: '0.875rem',
         lineHeight: '1.5'
       }}
@@ -44,7 +44,7 @@ const CodeBlock = ({ children, className, ...props }: any) => {
 const InlineCode = ({ children, ...props }: any) => {
   return (
     <code 
-      className="bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded text-sm border border-gray-300 font-mono"
+      className="bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded text-sm border border-gray-200 font-mono"
       {...props}
     >
       {children}
@@ -82,7 +82,7 @@ const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?:
               }
               
               // Otherwise, render as a regular pre
-              return <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto mb-3 border border-gray-300 font-mono text-sm" {...props}>{children}</pre>
+              return <pre className="bg-gray-50 rounded-lg p-4 overflow-x-auto mb-3 border border-gray-200 font-mono text-sm" {...props}>{children}</pre>
             },
             // Paragraph styling
             p: {
@@ -125,7 +125,7 @@ const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?:
             // Link styling
             a: {
               props: {
-                className: "text-blue-600 hover:text-blue-800 underline transition-colors",
+                className: "text-red-600 hover:text-red-700 underline transition-colors",
                 target: "_blank",
                 rel: "noopener noreferrer"
               }
@@ -133,23 +133,23 @@ const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?:
             // Blockquote styling
             blockquote: {
               props: {
-                className: "border-l-4 border-gray-400 pl-4 italic text-gray-700 mb-3 bg-gray-100 py-2 rounded-r"
+                className: "border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-3 bg-gray-50 py-2 rounded-r"
               }
             },
             // Table styling
             table: {
               props: {
-                className: "border-collapse border border-gray-300 mb-3 text-gray-800 w-full"
+                className: "border-collapse border border-gray-200 mb-3 text-gray-800 w-full"
               }
             },
             th: {
               props: {
-                className: "border border-gray-300 px-3 py-2 bg-gray-200 text-gray-900 font-semibold"
+                className: "border border-gray-200 px-3 py-2 bg-gray-50 text-gray-900 font-semibold"
               }
             },
             td: {
               props: {
-                className: "border border-gray-300 px-3 py-2 text-gray-800"
+                className: "border border-gray-200 px-3 py-2 text-gray-800"
               }
             },
             // Strong/Bold styling
@@ -161,13 +161,13 @@ const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?:
             // Emphasis/Italic styling
             em: {
               props: {
-                className: "italic text-gray-700"
+                className: "italic text-gray-600"
               }
             },
             // Horizontal rule
             hr: {
               props: {
-                className: "border-gray-300 my-4"
+                className: "border-gray-200 my-4"
               }
             }
           }
@@ -477,14 +477,14 @@ const AIChatSidebar = () => {
   , [messages])
 
   return (
-    <div className="fixed bottom-0 left-0 w-full h-full bg-white flex flex-col border-t border-gray-300">
+    <div className="fixed bottom-0 left-0 w-full h-full bg-white flex flex-col border-t border-gray-200">
       {/* Header with close icon */}
-      <div className="relative px-4 py-3 border-b border-gray-300 flex-shrink-0">
+      <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0">
         <h2 className="text-xl font-bold text-gray-900 text-center">AI Chat</h2>
         <button
           onClick={handleClearConversation}
           disabled={loading}
-          className="absolute right-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="absolute right-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           title="New Chat"
         >
           <img src={newChatIcon} alt="New Chat" className="w-5 h-6" />
@@ -508,7 +508,7 @@ const AIChatSidebar = () => {
         {showScrollButton && (
           <button
             onClick={handleScrollToBottom}
-            className="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10"
+            className="absolute bottom-4 right-4 w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10"
             title="Scroll to bottom"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -519,7 +519,7 @@ const AIChatSidebar = () => {
       </div>
       
       {/* Input area fixed at bottom */}
-      <div className="px-4 py-3 border-t border-gray-300 bg-white flex-shrink-0">
+      <div className="px-4 py-3 border-t border-gray-200 bg-white flex-shrink-0">
         <Sender
           ref={inputRef}
           placeholder={loading ? "AI is responding..." : "Ask anything"}

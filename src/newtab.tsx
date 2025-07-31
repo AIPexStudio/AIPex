@@ -349,6 +349,82 @@ const NewTabPage = () => {
     return globeUrl
   }
 
+  // Helper to get action hint text
+  function getActionHint(action: any) {
+    switch (action.action) {
+      case "ai-chat-user-input":
+        return "Ask AI"
+      case "google-search":
+        return "Search"
+      case "bookmark":
+        return "Open Bookmark"
+      case "navigation":
+      case "url":
+        return "Open URL"
+      case "history":
+        return "Open History"
+      case "goto":
+        return "Navigate"
+      case "scroll-bottom":
+        return "Scroll Down"
+      case "scroll-top":
+        return "Scroll Up"
+      case "fullscreen":
+        return "Fullscreen"
+      case "new-tab":
+        return "New Tab"
+      case "email":
+        return "Open Mail"
+      case "print":
+        return "Print"
+      case "ai-chat":
+        return "Open AI Chat"
+      case "organize-tabs":
+        return "Organize Tabs"
+      case "ungroup-tabs":
+        return "Ungroup Tabs"
+      case "remove-all":
+        return "Clear All"
+      case "remove-history":
+        return "Clear History"
+      case "remove-cookies":
+        return "Clear Cookies"
+      case "remove-cache":
+        return "Clear Cache"
+      case "remove-local-storage":
+        return "Clear Storage"
+      case "remove-passwords":
+        return "Clear Passwords"
+      default:
+        // For tab actions
+        if (action.type === "tab") {
+          return "Switch Tab"
+        }
+        // For bookmark actions
+        if (action.type === "bookmark") {
+          return "Open Bookmark"
+        }
+        // For history actions
+        if (action.type === "history") {
+          return "Open History"
+        }
+        // For action types
+        if (action.type === "action") {
+          return "Execute"
+        }
+        // For search actions
+        if (action.type === "search") {
+          return "Search"
+        }
+        // For AI actions
+        if (action.type === "ai") {
+          return "Ask AI"
+        }
+        // Default fallback
+        return "Open"
+    }
+  }
+
   // Format time as HH:MM
   const formattedTime = currentTime.toLocaleTimeString([], { 
     hour: '2-digit', 
@@ -364,23 +440,26 @@ const NewTabPage = () => {
   });
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center px-4">
+    <div className="w-full h-screen bg-gradient-to-br from-red-100 via-white to-red-50 flex flex-col items-center justify-center px-4">
       {/* Header with time and branding */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <img src={iconUrl} alt="AIpex" className="w-12 h-12 mr-3" />
-          <h1 className="text-4xl font-bold text-white">AIpex</h1>
+          <h1 className="text-4xl font-bold text-red-600">AIpex</h1>
         </div>
-        <div className="text-6xl font-bold text-white mb-2">{formattedTime}</div>
-        <div className="text-xl text-blue-200">{formattedDate}</div>
+        <div className="text-6xl font-bold text-red-700 mb-2">{formattedTime}</div>
+        <div className="text-xl text-red-500">{formattedDate}</div>
       </div>
 
       {/* Command Interface */}
       <div className="w-full max-w-4xl">
-        <div className="bg-neutral-900/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-neutral-800">
+        <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-red-200 relative overflow-hidden">
+          {/* Red accent line */}
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-red-600"></div>
+          
           <input
             ref={inputRef}
-            className="w-full px-6 py-4 text-xl rounded-xl border border-neutral-700 bg-neutral-800/70 backdrop-blur-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50"
+            className="w-full px-6 py-4 text-xl rounded-xl border-2 border-red-200 bg-white text-gray-900 placeholder:text-red-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-all duration-150"
             placeholder="Search or ask anything..."
             value={input}
             onChange={e => {
@@ -395,7 +474,7 @@ const NewTabPage = () => {
             className="mt-6 max-h-[400px] overflow-y-auto scroll-smooth"
           >
             {filteredActions.length === 0 && (
-              <div className="text-neutral-500 text-lg px-4 py-6 text-center">
+              <div className="text-red-400 text-lg px-4 py-6 text-center">
                 No actions found
               </div>
             )}
@@ -403,10 +482,10 @@ const NewTabPage = () => {
               <div
                 key={action.title + idx}
                 data-action-index={idx}
-                className={`flex items-center gap-4 px-4 py-3 rounded-xl mb-2 cursor-pointer border transition-all duration-200 ${
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl mb-2 cursor-pointer border-2 transition-all duration-150 ${
                   idx === selectedIndex 
-                    ? "bg-blue-600/20 border-blue-500 shadow-lg" 
-                    : "bg-transparent border-transparent hover:bg-neutral-800/50"
+                    ? "bg-red-50 border-red-500 shadow-md" 
+                    : "bg-transparent border-transparent hover:bg-red-50 hover:border-red-200"
                 }`}
                 onClick={() => handleAction(action)}
                 onMouseEnter={() => setSelectedIndex(idx)}
@@ -424,15 +503,18 @@ const NewTabPage = () => {
                   />
                 )}
                 <div className="flex-1 text-left">
-                  <div className="font-semibold text-white text-lg">{action.title}</div>
-                  <div className="text-sm text-neutral-400 mt-1">{action.desc}</div>
+                  <div className="font-semibold text-gray-900 text-lg">{action.title}</div>
+                  <div className="text-sm text-gray-600 mt-1">{action.desc}</div>
                   {action.url && (
-                    <div className="text-sm text-neutral-500 break-all mt-1">
+                    <div className="text-sm text-gray-500 break-all mt-1">
                       {action.url.length > 80
                         ? action.url.slice(0, 80) + "..."
                         : action.url}
                     </div>
                   )}
+                </div>
+                <div className="text-xs text-gray-400 font-medium">
+                  {getActionHint(action)}
                 </div>
               </div>
             ))}
@@ -441,13 +523,13 @@ const NewTabPage = () => {
       </div>
 
       {/* Help text */}
-      <div className="mt-8 text-center text-blue-200/80 text-sm">
+      <div className="mt-8 text-center text-red-500 text-sm">
         <p>Use arrow keys to navigate • Press Enter to execute </p>
       </div>
 
       {/* Toast notification */}
       {toast && (
-        <div className="fixed top-8 right-8 bg-neutral-800 text-white px-6 py-3 rounded-xl shadow-lg text-base z-50">
+        <div className="fixed top-8 right-8 bg-white text-gray-900 px-6 py-3 rounded-xl shadow-lg text-base z-50 border-2 border-red-200">
           {toast}
         </div>
       )}

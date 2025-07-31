@@ -98,17 +98,6 @@ function IndexPopup() {
     setOrganizeStatus("Starting tab organization...")
     
     try {
-      // Check if AI token is available
-      const aiToken = await storage.get("aiToken")
-      if (!aiToken) {
-        setOrganizeStatus("AI token not configured")
-        setMessage("Please configure your AI token in settings first")
-        setTimeout(() => setMessage(""), 3000)
-        setIsOrganizing(false)
-        setOperationType(null)
-        return
-      }
-
       // Get all tabs
       setOrganizeStatus("Getting all open tabs...")
       setOrganizeSteps(prev => [...prev, "Getting all open tabs"])
@@ -269,7 +258,7 @@ function IndexPopup() {
               fontSize: "14px",
               fontWeight: "500",
               transition: "all 0.15s",
-              backgroundColor: activeTab === "organize" ? "black" : "#f3f4f6",
+              backgroundColor: activeTab === "organize" ? "#FF3B30" : "#f8f9fa",
               color: activeTab === "organize" ? "white" : "#374151",
               border: "none",
               cursor: "pointer"
@@ -285,7 +274,7 @@ function IndexPopup() {
               fontSize: "14px",
               fontWeight: "500",
               transition: "all 0.15s",
-              backgroundColor: activeTab === "command" ? "black" : "#f3f4f6",
+              backgroundColor: activeTab === "command" ? "#FF3B30" : "#f8f9fa",
               color: activeTab === "command" ? "white" : "#374151",
               border: "none",
               cursor: "pointer"
@@ -301,7 +290,7 @@ function IndexPopup() {
               fontSize: "14px",
               fontWeight: "500",
               transition: "all 0.15s",
-              backgroundColor: activeTab === "config" ? "black" : "#f3f4f6",
+              backgroundColor: activeTab === "config" ? "#FF3B30" : "#f8f9fa",
               color: activeTab === "config" ? "white" : "#374151",
               border: "none",
               cursor: "pointer"
@@ -333,7 +322,7 @@ function IndexPopup() {
                     borderRadius: "12px",
                     fontWeight: "600",
                     transition: "all 0.15s",
-                    backgroundColor: isOrganizing ? "#d1d5db" : "black",
+                    backgroundColor: isOrganizing ? "#d1d5db" : "#FF3B30",
                     color: isOrganizing ? "#6b7280" : "white",
                     border: "none",
                     cursor: isOrganizing ? "not-allowed" : "pointer",
@@ -359,7 +348,7 @@ function IndexPopup() {
                     borderRadius: "12px",
                     fontWeight: "600",
                     transition: "all 0.15s",
-                    backgroundColor: isOrganizing ? "#d1d5db" : "#ef4444",
+                    backgroundColor: isOrganizing ? "#d1d5db" : "#8E8E93",
                     color: isOrganizing ? "#6b7280" : "white",
                     border: "none",
                     cursor: isOrganizing ? "not-allowed" : "pointer",
@@ -424,23 +413,23 @@ function IndexPopup() {
             </div>
 
             {/* Features List */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <h3 style={{ fontWeight: "600", marginBottom: "12px", fontSize: "14px" }}>What this does:</h3>
               <ul style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "#6b7280" }}>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "#FF3B30", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
                   <span>Analyzes all your open tabs using AI</span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "#FF3B30", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
                   <span>Groups them by category (Social, Work, Shopping, etc.)</span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "#FF3B30", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
                   <span>Creates tab groups with descriptive names</span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <div style={{ width: "6px", height: "6px", backgroundColor: "black", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
+                  <div style={{ width: "6px", height: "6px", backgroundColor: "#FF3B30", borderRadius: "50%", marginTop: "8px", flexShrink: 0 }}></div>
                   <span>Requires OpenAI API token in settings</span>
                 </li>
               </ul>
@@ -459,7 +448,7 @@ function IndexPopup() {
             </div>
 
             {/* Current Shortcut */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "12px", color: "#111827" }}>
                 Current Shortcut
               </label>
@@ -471,7 +460,7 @@ function IndexPopup() {
                   onClick={handleShortcutClick}
                   style={{
                     padding: "8px 16px",
-                    backgroundColor: "black",
+                    backgroundColor: "#FF3B30",
                     color: "white",
                     borderRadius: "8px",
                     fontSize: "14px",
@@ -487,7 +476,7 @@ function IndexPopup() {
             </div>
 
             {/* Available Commands */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <h3 style={{ fontWeight: "600", marginBottom: "12px", fontSize: "14px" }}>Available Commands:</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -514,9 +503,9 @@ function IndexPopup() {
             </div>
 
             {/* Quick Access */}
-            <div style={{ backgroundColor: "#eff6ff", borderRadius: "12px", padding: "16px", border: "1px solid #bfdbfe" }}>
-              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#1e3a8a" }}>Quick Access</h3>
-              <p style={{ fontSize: "12px", color: "#1d4ed8", marginBottom: "12px" }}>
+            <div style={{ backgroundColor: "#fff5f5", borderRadius: "12px", padding: "16px", border: "1px solid #fecaca" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#991b1b" }}>Quick Access</h3>
+              <p style={{ fontSize: "12px", color: "#dc2626", marginBottom: "12px" }}>
                 Press the shortcut key from any webpage to open the command panel
               </p>
               <div style={{ display: "flex", gap: "8px" }}>
@@ -525,7 +514,7 @@ function IndexPopup() {
                   style={{
                     flex: 1,
                     padding: "8px 16px",
-                    backgroundColor: "#2563eb",
+                    backgroundColor: "#FF3B30",
                     color: "white",
                     borderRadius: "8px",
                     fontSize: "14px",
@@ -542,7 +531,7 @@ function IndexPopup() {
                   style={{
                     flex: 1,
                     padding: "8px 16px",
-                    backgroundColor: "#dc2626",
+                    backgroundColor: "#8E8E93",
                     color: "white",
                     borderRadius: "8px",
                     fontSize: "14px",
@@ -570,7 +559,7 @@ function IndexPopup() {
             </div>
 
             {/* AI Host */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
                 AI Host
               </label>
@@ -592,7 +581,7 @@ function IndexPopup() {
             </div>
 
             {/* AI Token */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
                 AI Token
               </label>
@@ -612,12 +601,12 @@ function IndexPopup() {
                 }}
               />
               <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style={{ color: "#2563eb", textDecoration: "underline" }}>OpenAI Platform</a>
+                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style={{ color: "#FF3B30", textDecoration: "underline" }}>OpenAI Platform</a>
               </p>
             </div>
 
             {/* AI Model */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "16px" }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "16px" }}>
               <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "8px", color: "#111827" }}>
                 AI Model
               </label>
@@ -648,7 +637,7 @@ function IndexPopup() {
                 borderRadius: "12px",
                 fontWeight: "600",
                 transition: "all 0.15s",
-                backgroundColor: isSaving ? "#d1d5db" : "black",
+                backgroundColor: isSaving ? "#d1d5db" : "#FF3B30",
                 color: isSaving ? "#6b7280" : "white",
                 border: "none",
                 cursor: isSaving ? "not-allowed" : "pointer",
@@ -666,12 +655,12 @@ function IndexPopup() {
             </button>
 
             {/* Info Section */}
-            <div style={{ backgroundColor: "#fef3c7", borderRadius: "12px", padding: "16px", border: "1px solid #f59e0b" }}>
-              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#92400e" }}>Required for Tab Organization</h3>
-              <p style={{ fontSize: "12px", color: "#92400e", marginBottom: "8px" }}>
+            <div style={{ backgroundColor: "#fff5f5", borderRadius: "12px", padding: "16px", border: "1px solid #fecaca" }}>
+              <h3 style={{ fontWeight: "600", marginBottom: "8px", fontSize: "14px", color: "#991b1b" }}>Required for Tab Organization</h3>
+              <p style={{ fontSize: "12px", color: "#dc2626", marginBottom: "8px" }}>
                 These settings are required to use the AI-powered tab organization feature.
               </p>
-              <ul style={{ fontSize: "12px", color: "#92400e", paddingLeft: "16px" }}>
+              <ul style={{ fontSize: "12px", color: "#dc2626", paddingLeft: "16px" }}>
                 <li>AI Host: The API endpoint for your AI service</li>
                 <li>AI Token: Your API authentication key</li>
                 <li>AI Model: The AI model to use for classification</li>

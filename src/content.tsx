@@ -576,6 +576,21 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     }
   }
 
+  // Highlight search terms in text
+  function highlightText(text: string, searchTerm: string) {
+    if (!searchTerm || !text) return text
+    
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === searchTerm.toLowerCase()) {
+        return <mark key={index} className="bg-red-100 text-red-900 font-medium px-0.5 rounded">{part}</mark>
+      }
+      return part
+    })
+  }
+
   // Execute action
   const handleAction = (action: any) => {
     setToast(`Action: ${action.title} executed`)
@@ -645,22 +660,98 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     return globeUrl
   }
 
+  // Helper to get action hint text
+  function getActionHint(action: any) {
+    switch (action.action) {
+      case "ai-chat-user-input":
+        return "Ask AI"
+      case "google-search":
+        return "Search"
+      case "bookmark":
+        return "Open Bookmark"
+      case "navigation":
+      case "url":
+        return "Open URL"
+      case "history":
+        return "Open History"
+      case "goto":
+        return "Navigate"
+      case "scroll-bottom":
+        return "Scroll Down"
+      case "scroll-top":
+        return "Scroll Up"
+      case "fullscreen":
+        return "Fullscreen"
+      case "new-tab":
+        return "New Tab"
+      case "email":
+        return "Open Mail"
+      case "print":
+        return "Print"
+      case "ai-chat":
+        return "Open AI Chat"
+      case "organize-tabs":
+        return "Organize Tabs"
+      case "ungroup-tabs":
+        return "Ungroup Tabs"
+      case "remove-all":
+        return "Clear All"
+      case "remove-history":
+        return "Clear History"
+      case "remove-cookies":
+        return "Clear Cookies"
+      case "remove-cache":
+        return "Clear Cache"
+      case "remove-local-storage":
+        return "Clear Storage"
+      case "remove-passwords":
+        return "Clear Passwords"
+      default:
+        // For tab actions
+        if (action.type === "tab") {
+          return "Switch Tab"
+        }
+        // For bookmark actions
+        if (action.type === "bookmark") {
+          return "Open Bookmark"
+        }
+        // For history actions
+        if (action.type === "history") {
+          return "Open History"
+        }
+        // For action types
+        if (action.type === "action") {
+          return "Execute"
+        }
+        // For search actions
+        if (action.type === "search") {
+          return "Search"
+        }
+        // For AI actions
+        if (action.type === "ai") {
+          return "Ask AI"
+        }
+        // Default fallback
+        return "Open"
+    }
+  }
+
   if (!isOpen) return null
   // Return UI directly, no ReactDOM.createPortal needed
   return (
     <div
       id="omni-extension"
-      className="fixed inset-0 w-screen h-screen z-[99999] bg-black/60 flex items-start justify-center"
+      className="fixed inset-0 w-screen h-screen z-[99999] bg-black/20 flex items-start justify-center backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="mt-24 w-[800px] bg-neutral-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 relative border border-neutral-800"
+        className="mt-24 w-[800px] bg-white rounded-2xl shadow-xl p-6 relative border border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative">
           <input
             ref={inputRef}
-            className="w-full px-4 py-3 text-xl rounded-lg border border-neutral-700 bg-neutral-800/70 backdrop-blur-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-3 text-xl rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-150"
             placeholder={placeholderList[placeholderIndex]}
             value={input}
             onChange={e => {
@@ -673,20 +764,20 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
             }}
           />
           {showCommandSuggestions && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900/80 backdrop-blur-sm rounded-lg border border-neutral-800 overflow-hidden z-50 shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-200 overflow-hidden z-50 shadow-lg">
               {commandSuggestions.map((suggestion, idx) => (
                 <div
                   key={suggestion.command}
-                  className={`px-3 py-2 cursor-pointer flex flex-col gap-0.5 ${
+                  className={`px-3 py-2 cursor-pointer flex flex-col gap-0.5 transition-colors duration-150 ${
                     idx === commandSuggestionIndex 
-                    ? 'bg-neutral-800/70 border border-blue-500 text-white' 
-                    : 'hover:bg-neutral-800/40 text-white border border-transparent'
+                    ? 'bg-red-50 border border-red-500 text-gray-900' 
+                    : 'hover:bg-gray-50 text-gray-900 border border-transparent'
                   }`}
                   onClick={() => handleCommandSelect(suggestion.command)}
                   onMouseEnter={() => setCommandSuggestionIndex(idx)}
                 >
-                  <div className="font-semibold text-sm">{suggestion.command}</div>
-                  <div className="text-xs text-neutral-400">{suggestion.desc}</div>
+                  <div className="font-semibold text-sm">{highlightText(suggestion.command, input)}</div>
+                  <div className="text-xs text-gray-500">{highlightText(suggestion.desc, input)}</div>
                 </div>
               ))}
             </div>
@@ -696,12 +787,16 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
           ref={scrollContainerRef} 
           className="mt-4 max-h-[500px] overflow-y-auto scroll-smooth"
         >
-          {filteredActions.length === 0 && <div className="text-neutral-500 text-lg px-4 py-3">No actions</div>}
+          {filteredActions.length === 0 && <div className="text-gray-500 text-lg px-4 py-3">No actions</div>}
           {filteredActions.map((action, idx) => (
             <div
               key={action.title + idx}
               data-action-index={idx}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 cursor-pointer border transition ${idx === selectedIndex ? "bg-neutral-800/70 border-blue-500" : "bg-transparent border-transparent hover:bg-neutral-800/40"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 cursor-pointer border transition-all duration-150 ${
+                idx === selectedIndex 
+                ? "bg-red-50 border-red-500 shadow-sm" 
+                : "bg-transparent border-transparent hover:bg-gray-50"
+              }`}
               onClick={() => handleAction(action)}
               onMouseEnter={() => setSelectedIndex(idx)}
             >
@@ -718,21 +813,28 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
                 />
               )}
               <div className="flex-1 text-left">
-                <div className="font-semibold text-white text-lg">{action.title}</div>
-                <div className="text-sm text-neutral-400 mt-1">{action.desc}</div>
+                <div className="font-semibold text-gray-900 text-lg">
+                  {highlightText(action.title, input)}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {highlightText(action.desc, input)}
+                </div>
                 {action.url && (
-                  <div className="text-sm text-neutral-500 break-all mt-1">
+                  <div className="text-sm text-gray-500 break-all mt-1">
                     {action.url.length > 60
-                      ? action.url.slice(0, 60) + "..."
-                      : action.url}
+                      ? highlightText(action.url.slice(0, 60) + "...", input)
+                      : highlightText(action.url, input)}
                   </div>
                 )}
+              </div>
+              <div className="text-xs text-gray-400 font-medium">
+                {getActionHint(action)}
               </div>
             </div>
           ))}
         </div>
         {toast && (
-          <div className="absolute -top-16 left-0 right-0 mx-auto bg-neutral-800 text-white px-6 py-3 rounded-xl text-base text-center shadow-lg w-fit min-w-[180px]">
+          <div className="absolute -top-16 left-0 right-0 mx-auto bg-white text-gray-900 px-6 py-3 rounded-xl text-base text-center shadow-lg w-fit min-w-[180px] border border-gray-200">
             {toast}
           </div>
         )}

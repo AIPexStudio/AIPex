@@ -30,6 +30,89 @@
 - Maintain dark/light theme compatibility
 - Use semantic class names in English
 
+## UI Design System
+
+### 🎨 Minimalist Design Philosophy
+- Follow Apple Spotlight and Raycast design principles
+- Emphasize clean, uncluttered interfaces
+- Prioritize functionality over decoration
+- Use subtle animations and transitions
+- Maintain consistent visual hierarchy
+
+### 🎯 Color Palette
+- **Primary Colors:**
+  - White (`#FFFFFF`) - Main background and primary text
+  - Red (`#FF3B30`) - Accent color for actions and highlights
+  - Gray (`#8E8E93`) - Secondary text and borders
+- **Supporting Colors:**
+  - Light Gray (`#F2F2F7`) - Subtle backgrounds and dividers
+  - Dark Gray (`#1C1C1E`) - Dark mode backgrounds
+  - Red variants: Light Red (`#FF6B6B`), Dark Red (`#CC2E2E`)
+- **Usage Guidelines:**
+  - Use white as the primary background
+  - Apply red sparingly for CTAs and important actions
+  - Use gray for secondary information and subtle elements
+
+### 📐 Typography
+- **Font Family:** Inter (already included in assets)
+- **Font Weights:**
+  - Regular (400) - Body text
+  - Medium (500) - Subheadings
+  - SemiBold (600) - Headings
+  - Bold (700) - Important labels
+- **Font Sizes:**
+  - 12px - Captions and small text
+  - 14px - Body text
+  - 16px - Subheadings
+  - 18px - Headings
+  - 24px - Large headings
+
+### 🔲 Component Design
+- **Cards and Containers:**
+  - Use subtle shadows: `shadow-sm` or `shadow-md`
+  - Border radius: 8px for cards, 4px for buttons
+  - Minimal borders: `border-gray-200` or `border-gray-300`
+- **Buttons:**
+  - Primary: White background with red text/border
+  - Secondary: Transparent with gray border
+  - Hover states: Subtle opacity changes
+- **Input Fields:**
+  - Clean borders with focus states
+  - Minimal padding and spacing
+  - Clear placeholder text in gray
+
+### 📱 Layout Principles
+- **Spacing System:**
+  - 4px, 8px, 12px, 16px, 24px, 32px, 48px
+  - Use consistent spacing throughout
+- **Grid System:**
+  - 12-column grid for complex layouts
+  - Flexible containers for responsive design
+- **Margins and Padding:**
+  - Generous whitespace between sections
+  - Compact spacing within components
+
+### ✨ Interactive Elements
+- **Hover States:**
+  - Subtle background color changes
+  - Smooth transitions (150ms ease-in-out)
+- **Focus States:**
+  - Clear visual indicators
+  - Red accent color for focus rings
+- **Loading States:**
+  - Minimal spinners or skeleton screens
+  - Maintain visual hierarchy during loading
+
+### 🌙 Dark Mode Support
+- **Dark Theme Colors:**
+  - Background: `#1C1C1E`
+  - Surface: `#2C2C2E`
+  - Text: `#FFFFFF`
+  - Secondary Text: `#8E8E93`
+- **Consistent Contrast:**
+  - Maintain WCAG AA accessibility standards
+  - Use appropriate color combinations for both themes
+
 ## Development Practices
 
 ### 🔍 Code Quality
