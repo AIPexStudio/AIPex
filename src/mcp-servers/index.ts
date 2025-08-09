@@ -1,3 +1,12 @@
-export { getAllTabs, getCurrentTab, switchToTab, groupTabsByAI, ungroupAllTabs, chatCompletion } from "./tools"
+export {
+  getAllTabs,
+  getCurrentTab,
+  switchToTab,
+  groupTabsByAI,
+  ungroupAllTabs,
+  chatCompletion,
+  getCurrentTabContent,
+  createNewTab
+} from "./tools"
 
 

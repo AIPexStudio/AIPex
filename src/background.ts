@@ -500,6 +500,8 @@ const SYSTEM_PROMPT = [
   "- get_all_tabs: list all tabs (id, title, url)",
   "- get_current_tab: get the active tab",
   "- switch_to_tab: switch to a tab by id",
+  "- get_current_tab_content: get visible text content of the current tab (title, url, content)",
+  "- create_new_tab: create a new tab with the given URL",
   "- organize_tabs: AI-organize current-window tabs",
   "- ungroup_tabs: remove all tab groups in the current window",
   "\nUsage guidance: For requests like ‘switch to X’, first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
@@ -546,6 +548,29 @@ const tabTools = [
   {
     type: "function",
     function: {
+      name: "get_current_tab_content",
+      description: "Get visible text content of the current tab (returns title, url, and content; content truncated).",
+      parameters: { type: "object", properties: {}, additionalProperties: false }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_new_tab",
+      description: "Create a new tab with the given URL.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The URL to open; protocol will be added if missing." }
+        },
+        required: ["url"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "organize_tabs",
       description: "Organize the current window tabs into groups using AI.",
       parameters: { type: "object", properties: {}, additionalProperties: false }
@@ -584,6 +609,37 @@ async function executeToolCall(name: string, args: any) {
       await chrome.tabs.highlight({ tabs: tab.index, windowId: tab.windowId })
       await chrome.windows.update(tab.windowId, { focused: true })
       return { success: true }
+    }
+    case "get_current_tab_content": {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (!tab || typeof tab.id !== "number") return null
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          try {
+            const title = document.title || ""
+            const url = location.href
+            const text = (document.body?.innerText || "").trim()
+            const content = text && text.length > 0 ? text : (document.body?.textContent || "")
+            const MAX = 200_000
+            return { title, url, content: (content || "").slice(0, MAX) }
+          } catch (e) {
+            return { title: document.title || "", url: location.href, content: "" }
+          }
+        }
+      })
+      const [{ result }] = results
+      return result || null
+    }
+    case "create_new_tab": {
+      let url = String(args?.url || "").trim()
+      if (!url) throw new Error("Invalid url")
+      if (!/^https?:\/\//i.test(url) && !/^chrome:|^chrome-extension:/i.test(url)) {
+        url = `https://${url}`
+      }
+      const tab = await chrome.tabs.create({ url })
+      if (!tab?.id) throw new Error("Failed to create tab")
+      return { tabId: tab.id, url: tab.url || url }
     }
     case "organize_tabs": {
       groupTabsByAI()

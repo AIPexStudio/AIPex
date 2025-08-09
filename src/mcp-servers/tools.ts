@@ -171,3 +171,48 @@ export async function groupTabsByAI(): Promise<{ success: boolean; groupedTabs?:
 }
 
 
+// Get the visible text content of the current tab (best-effort, truncated)
+export async function getCurrentTabContent(): Promise<
+  | { title: string; url: string; content: string }
+  | null
+> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  // Execute in-page to extract content
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      try {
+        const title = document.title || ""
+        const url = location.href
+        // Prefer human-readable text; fall back to HTML if empty
+        const text = (document.body?.innerText || "").trim()
+        const content = text && text.length > 0 ? text : (document.body?.textContent || "")
+        // Truncate to avoid extremely large payloads
+        const MAX = 200_000
+        return { title, url, content: (content || "").slice(0, MAX) }
+      } catch (e) {
+        return { title: document.title || "", url: location.href, content: "" }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+// Create a new tab with a given URL (adds https:// if protocol missing)
+export async function createNewTab(url: string): Promise<{ tabId: number; url: string }> {
+  let finalUrl = url?.trim()
+  if (!finalUrl) throw new Error("URL is required")
+  // Prepend protocol if missing
+  if (!/^https?:\/\//i.test(finalUrl) && !/^chrome:|^chrome-extension:/i.test(finalUrl)) {
+    finalUrl = `https://${finalUrl}`
+  }
+  const tab = await chrome.tabs.create({ url: finalUrl })
+  if (!tab?.id) throw new Error("Failed to create tab")
+  return { tabId: tab.id, url: tab.url || finalUrl }
+}
+
+
