@@ -769,36 +769,7 @@ const AIChatSidebar = () => {
           </svg>
         </button>
       </div>
-      {/* Quick actions bar always visible */}
-      <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center gap-2">
-        <button
-          onClick={() => { setShowSettings(true); handleOrganizeTabs() }}
-          disabled={isOrganizing}
-          className={`px-3 py-1.5 rounded-md text-white text-sm font-semibold inline-flex items-center ${isOrganizing ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-        >
-          {isOrganizing && operationType === 'organize' ? (
-            <>
-              <span className="mr-2 inline-block h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Organizing...
-            </>
-          ) : 'Organize Tabs'}
-        </button>
-        <button
-          onClick={() => { setShowSettings(true); handleUngroupTabs() }}
-          disabled={isOrganizing}
-          className={`px-3 py-1.5 rounded-md text-white text-sm font-semibold inline-flex items-center ${isOrganizing ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-700'}`}
-        >
-          {isOrganizing && operationType === 'ungroup' ? (
-            <>
-              <span className="mr-2 inline-block h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Ungrouping...
-            </>
-          ) : 'Ungroup Tabs'}
-        </button>
-        {organizeStatus && (
-          <div className="ml-2 text-sm text-gray-700 truncate">{organizeStatus}</div>
-        )}
-      </div>
+      {/* Removed top quick actions bar for organize/ungroup on chat page */}
       
       {showSettings ? (
         // Settings view (styled)
@@ -921,12 +892,53 @@ const AIChatSidebar = () => {
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto min-h-0 relative"
           >
-            {items.length > 0 && (
+            {items.length > 0 ? (
               <div className="p-4">
                 <Bubble.List items={items} />
                 {/* Invisible element to scroll to */}
                 <div ref={messagesEndRef} />
               </div>
+            ) : (
+              !showSettings && (
+                <div className="p-6">
+                  <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-4">
+                      <h3 className="text-base font-semibold text-gray-900">Try one of these</h3>
+                      <p className="text-sm text-gray-600">Quick starters to help you get going</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={() => handleSubmit('Please organize my open tabs by topic and purpose')}
+                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="text-sm font-semibold text-gray-900">Help organize tabs</div>
+                        <div className="text-xs text-gray-600">Use AI to group current-window tabs</div>
+                      </button>
+                      <button
+                        onClick={() => handleSubmit('Summarize this page')}
+                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="text-sm font-semibold text-gray-900">Summarize the page</div>
+                        <div className="text-xs text-gray-600">Generate a concise summary of this tab</div>
+                      </button>
+                      <button
+                        onClick={() => handleSubmit('Switch to bilibili')}
+                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="text-sm font-semibold text-gray-900">Switch to bilibili</div>
+                        <div className="text-xs text-gray-600">Find and focus the bilibili tab</div>
+                      </button>
+                      <button
+                        onClick={() => handleSubmit('What tabs do I have open?')}
+                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="text-sm font-semibold text-gray-900">List my tabs</div>
+                        <div className="text-xs text-gray-600">Show open tabs with ids</div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
             )}
             
             {/* Scroll to bottom button */}

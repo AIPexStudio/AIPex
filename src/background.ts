@@ -503,7 +503,7 @@ const SYSTEM_PROMPT = [
   "- organize_tabs: AI-organize current-window tabs",
   "- ungroup_tabs: remove all tab groups in the current window",
   "\nUsage guidance: For requests like ‘switch to X’, first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
-  "\nSlash commands in chat: /tabs, /current, /switch <id>, /organize, /ungroup."
+  "\nEncourage natural, semantic requests instead of slash commands (e.g., ‘help organize my tabs’, ‘switch to the bilibili tab’, ‘summarize this page’)."
 ].join("\n")
 
 // Tool definitions for OpenAI function calling-style tools
