@@ -470,7 +470,7 @@ async function chatCompletion(messages, stream = false, options = {}) {
   
   const requestBody = {
     model: aiModel,
-    messages: conversationMessages,
+    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationMessages],
     stream,
     ...options
   }
@@ -487,6 +487,302 @@ async function chatCompletion(messages, stream = false, options = {}) {
   
   // Return response object for streaming, parsed JSON for non-streaming
   return stream ? res : await res.json()
+}
+
+// Unified system prompt describing AIPex product capabilities (Chinese)
+const SYSTEM_PROMPT = [
+  "You are the AIPex browser assistant. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
+  "\nWhat you can do:",
+  "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
+  "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
+  "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
+  "\nWhen tools are available, prefer these:",
+  "- get_all_tabs: list all tabs (id, title, url)",
+  "- get_current_tab: get the active tab",
+  "- switch_to_tab: switch to a tab by id",
+  "- organize_tabs: AI-organize current-window tabs",
+  "- ungroup_tabs: remove all tab groups in the current window",
+  "\nUsage guidance: For requests like ‘switch to X’, first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
+  "\nSlash commands in chat: /tabs, /current, /switch <id>, /organize, /ungroup."
+].join("\n")
+
+// Tool definitions for OpenAI function calling-style tools
+const tabTools = [
+  {
+    type: "function",
+    function: {
+      name: "get_all_tabs",
+      description: "List all open tabs (id, title, url) to help decide which one to act on.",
+      parameters: {
+        type: "object",
+        properties: {},
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_current_tab",
+      description: "Get the active tab in the current window (id, title, url).",
+      parameters: { type: "object", properties: {}, additionalProperties: false }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "switch_to_tab",
+      description: "Switch focus to a specific tab by id.",
+      parameters: {
+        type: "object",
+        properties: {
+          tabId: { type: "number", description: "The Chrome tab id to switch to" }
+        },
+        required: ["tabId"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "organize_tabs",
+      description: "Organize the current window tabs into groups using AI.",
+      parameters: { type: "object", properties: {}, additionalProperties: false }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "ungroup_tabs",
+      description: "Ungroup all tab groups in the current window.",
+      parameters: { type: "object", properties: {}, additionalProperties: false }
+    }
+  }
+]
+
+async function executeToolCall(name: string, args: any) {
+  switch (name) {
+    case "get_all_tabs": {
+      const tabs = await chrome.tabs.query({})
+      return tabs
+        .filter((t) => typeof t.id === "number")
+        .map((t) => ({ id: t.id, index: t.index, windowId: t.windowId, title: t.title, url: t.url }))
+    }
+    case "get_current_tab": {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (!tab || typeof tab.id !== "number") return null
+      return { id: tab.id, index: tab.index, windowId: tab.windowId, title: tab.title, url: tab.url }
+    }
+    case "switch_to_tab": {
+      const tabId = Number(args?.tabId)
+      if (!Number.isFinite(tabId)) throw new Error("Invalid tabId")
+      const tab = await chrome.tabs.get(tabId)
+      if (!tab || typeof tab.index !== "number" || typeof tab.windowId !== "number") {
+        throw new Error("Tab not found")
+      }
+      await chrome.tabs.highlight({ tabs: tab.index, windowId: tab.windowId })
+      await chrome.windows.update(tab.windowId, { focused: true })
+      return { success: true }
+    }
+    case "organize_tabs": {
+      groupTabsByAI()
+      return { started: true }
+    }
+    case "ungroup_tabs": {
+      await ungroupAllTabs()
+      return { success: true }
+    }
+    default:
+      throw new Error("Unknown tool: " + name)
+  }
+}
+
+async function runChatWithTools(userMessages: any[], messageId?: string) {
+  // System instruction to encourage tool usage in Chinese as well
+  const systemPrompt = { role: "system", content: SYSTEM_PROMPT }
+
+  let messages = [systemPrompt, ...userMessages]
+  // First call allowing tool use
+  let response = await chatCompletion(messages, false, { tools: tabTools, tool_choice: "auto" })
+
+  // Loop over tool calls if present
+  // OpenAI responses may put tool calls under choices[0].message.tool_calls
+  // Repeat until there are no further tool calls
+  const executedCalls = new Set<string>()
+  for (let guard = 0; guard < 5; guard++) {
+    const choice = response?.choices?.[0]
+    const toolCalls = choice?.message?.tool_calls
+    if (!toolCalls || toolCalls.length === 0) {
+      // Final assistant turn — stream it for better UX when possible
+      const content = choice?.message?.content || ""
+      if (messageId) {
+        try {
+          const response = await chatCompletion(messages, true) // no tools needed for final text
+          if (!response.body) {
+            throw new Error('No response body for streaming')
+          }
+          const reader = response.body.getReader()
+          const decoder = new TextDecoder()
+          let buffer = ''
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              buffer += decoder.decode(value, { stream: true })
+              const lines = buffer.split('\n')
+              buffer = lines.pop() || ''
+              for (const line of lines) {
+                if (line.trim() === '') continue
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6)
+                  if (data === '[DONE]') {
+                    chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
+                    return ''
+                  }
+                  try {
+                    const parsed = JSON.parse(data)
+                    const delta = parsed.choices?.[0]?.delta
+                    if (delta?.content) {
+                      chrome.runtime.sendMessage({ request: 'ai-chat-stream', chunk: delta.content, messageId }).catch(() => {})
+                    }
+                  } catch {}
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock()
+          }
+        } catch (e) {
+          // Fallback: send final once if streaming fails
+          try {
+            chrome.runtime.sendMessage({ request: 'ai-chat-tools-final', messageId, content })
+          } catch {}
+        }
+      }
+      return content
+    }
+
+    // If there is assistant content alongside tool calls, surface it as think
+    const assistantThought = choice?.message?.content
+    if (assistantThought && messageId) {
+      try {
+        chrome.runtime.sendMessage({
+          request: "ai-chat-tools-step",
+          messageId,
+          step: { type: "think", content: assistantThought }
+        })
+      } catch {}
+    }
+
+    // Execute each tool and append tool results
+    let executedMutating = false
+    for (const tc of toolCalls) {
+      const name = tc?.function?.name
+      let args
+      try {
+        args = tc?.function?.arguments ? JSON.parse(tc.function.arguments) : {}
+      } catch (e) {
+        args = {}
+      }
+      try {
+        // deduplicate identical tool calls in the same conversation turn chain
+        const callKey = `${name}:${JSON.stringify(args)}`
+        if (executedCalls.has(callKey)) {
+          // Notify duplicate and skip executing to avoid loops
+          if (messageId) {
+            try {
+              chrome.runtime.sendMessage({
+                request: "ai-chat-tools-step",
+                messageId,
+                step: { type: "tool_result", name, result: "(duplicate call skipped)" }
+              })
+            } catch {}
+          }
+          // Still append a tool role so the model sees the effect
+          messages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            name,
+            content: JSON.stringify({ skipped: true, reason: "duplicate_call" })
+          })
+          continue
+        }
+        executedCalls.add(callKey)
+        if (["switch_to_tab", "organize_tabs", "ungroup_tabs"].includes(name)) {
+          executedMutating = true
+        }
+        // announce tool call
+        if (messageId) {
+          try {
+            chrome.runtime.sendMessage({
+              request: "ai-chat-tools-step",
+              messageId,
+              step: { type: "call_tool", name, args }
+            })
+          } catch {}
+        }
+        const toolResult = await executeToolCall(name, args)
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name,
+          content: JSON.stringify(toolResult)
+        })
+        // stream tool result (truncated)
+        if (messageId) {
+          const resultString = (() => {
+            try {
+              const s = JSON.stringify(toolResult)
+              return s.length > 1200 ? s.slice(0, 1200) + "…" : s
+            } catch {
+              const s = String(toolResult)
+              return s.length > 1200 ? s.slice(0, 1200) + "…" : s
+            }
+          })()
+          try {
+            chrome.runtime.sendMessage({
+              request: "ai-chat-tools-step",
+              messageId,
+              step: { type: "tool_result", name, result: resultString }
+            })
+          } catch {}
+        }
+      } catch (err: any) {
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name,
+          content: JSON.stringify({ error: err?.message || String(err) })
+        })
+        if (messageId) {
+          try {
+            chrome.runtime.sendMessage({
+              request: "ai-chat-tools-step",
+              messageId,
+              step: { type: "tool_result", name, result: JSON.stringify({ error: err?.message || String(err) }) }
+            })
+          } catch {}
+        }
+      }
+    }
+
+    // Ask the model to produce final answer given tool outputs.
+    // If we've executed any mutating action, force finalization (no more tools).
+    const nextOptions = executedMutating
+      ? { tool_choice: "none" as const }
+      : { tools: tabTools, tool_choice: "auto" as const }
+    response = await chatCompletion(messages, false, nextOptions)
+  }
+
+  // Fallback if too many tool rounds
+  const fallback = response?.choices?.[0]?.message?.content || ""
+  if (messageId) {
+    try {
+      chrome.runtime.sendMessage({ request: "ai-chat-tools-final", messageId, content: fallback })
+    } catch {}
+  }
+  return fallback
 }
 
 // Classify and group a single tab by AI
@@ -879,6 +1175,52 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "close-tab":
       closeCurrentTab()
       break
+    // MCP-style: get all tabs (lightweight info only)
+    case "mcp-get-all-tabs":
+      (async () => {
+        console.log("Background: Received mcp-get-all-tabs request")
+        console.log("Background: Current tabs:")
+        try {
+          const tabs = await chrome.tabs.query({})
+          const simplified = tabs
+            .filter((t) => typeof t.id === "number")
+            .map((t) => ({
+              id: t.id,
+              index: t.index,
+              windowId: t.windowId,
+              title: t.title,
+              url: t.url
+            }))
+          sendResponse({ success: true, tabs: simplified })
+        } catch (err: any) {
+          sendResponse({ success: false, error: err?.message || String(err) })
+        }
+      })()
+      return true
+    // MCP-style: switch to a tab by id
+    case "mcp-switch-to-tab":
+      console.log("Background: Received mcp-switch-to-tab request")
+      console.log("Background: Tab ID:", message.tabId)
+      ;(async () => {
+        try {
+          const tabId: number | undefined = message.tabId
+          if (typeof tabId !== "number") {
+            sendResponse({ success: false, error: "Invalid tabId" })
+            return
+          }
+          const tab = await chrome.tabs.get(tabId)
+          if (!tab || typeof tab.index !== "number" || typeof tab.windowId !== "number") {
+            sendResponse({ success: false, error: "Tab not found" })
+            return
+          }
+          await chrome.tabs.highlight({ tabs: tab.index, windowId: tab.windowId })
+          await chrome.windows.update(tab.windowId, { focused: true })
+          sendResponse({ success: true })
+        } catch (err: any) {
+          sendResponse({ success: false, error: err?.message || String(err) })
+        }
+      })()
+      return true
     case "search-history":
       chrome.history.search({text:message.query, maxResults:0, startTime:0}).then((data) => {
         data.forEach((action: any) => {
@@ -1072,6 +1414,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
       }
       return true // Keep the message channel open for async response
+    case "ai-chat-tools":
+      ;(async () => {
+        try {
+          const { prompt, context, messageId } = message
+          let conversationMessages = []
+          if (context && Array.isArray(context) && context.length > 0) {
+            conversationMessages = [...context]
+          }
+          conversationMessages.push({ role: "user", content: prompt })
+          const finalText = await runChatWithTools(conversationMessages, messageId)
+          sendResponse({ success: true, content: finalText })
+        } catch (error: any) {
+          sendResponse({ success: false, error: error?.message || String(error) })
+        }
+      })()
+      return true
     case "organize-tabs":
       groupTabsByAI()
       break

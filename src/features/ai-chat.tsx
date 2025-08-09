@@ -5,12 +5,18 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
+import { callMcpTool } from "~mcp"
 interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
   streaming?: boolean
 }
+
+  type ToolStep =
+    | { type: 'think'; content: string }
+    | { type: 'call_tool'; name: string; args: any }
+    | { type: 'tool_result'; name: string; result: string }
 
 // Code block component for syntax highlighting
 const CodeBlock = ({ children, className, ...props }: any) => {
@@ -195,6 +201,7 @@ const AIChatSidebar = () => {
   const [aiToken, setAiToken] = useState("")
   const [aiModel, setAiModel] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+    const [stepsByMessageId, setStepsByMessageId] = useState<Record<string, ToolStep[]>>({})
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -399,6 +406,24 @@ const AIChatSidebar = () => {
           setOrganizeStatus("Failed to ungroup tabs")
           setOrganizeSteps(prev => [...prev, `Error: ${message.message}`])
         }
+      } else if (message.request === 'ai-chat-tools-step') {
+        const { messageId, step } = message as { messageId: string; step: ToolStep }
+        setStepsByMessageId(prev => {
+          const prevSteps = prev[messageId] || []
+          return { ...prev, [messageId]: [...prevSteps, step] }
+        })
+      } else if (message.request === 'ai-chat-tools-final') {
+        const { messageId, content } = message as { messageId: string; content: string }
+        // flush final content to the assistant message and mark done
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, content, streaming: false }
+            : msg
+        ))
+        setLoading(false)
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 100)
       }
     }
 
@@ -446,43 +471,105 @@ const AIChatSidebar = () => {
       streaming: true
     }
     setMessages(prev => [...prev, aiMessage])
+    // prepare steps container for this message
+    setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
 
     try {
-      // Build conversation context for AI memory
+      // Intercept MCP tool commands
+      const lowered = message.trim().toLowerCase()
+      if (lowered === "/tabs" || lowered === "/get_all_tabs") {
+        const res = await callMcpTool({ tool: "get_all_tabs" })
+        const content = res.success
+          ? `Open tabs (id — title):\n` +
+            (res.data as any[])
+              .map((t) => `${t.id} — ${t.title || '(no title)'}`)
+              .join('\n')
+          : `Error getting tabs: ${(res as any).error}`
+        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+        return
+      }
+
+      if (lowered === "/current" || lowered === "/get_current_tab") {
+        const res = await callMcpTool({ tool: "get_current_tab" })
+        const t = (res.success ? (res.data as any) : null)
+        const content = res.success && t
+          ? `Current tab: ${t.id} — ${t.title || '(no title)'}\n${t.url || ''}`
+          : res.success
+            ? `No active tab`
+            : `Error: ${(res as any).error}`
+        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+        return
+      }
+
+      if (lowered.startsWith("/switch ")) {
+        const parts = lowered.split(/\s+/)
+        const tabId = Number(parts[1])
+        const res = isFinite(tabId)
+          ? await callMcpTool({ tool: "switch_to_tab", args: { tabId } })
+          : { success: false, error: "Usage: /switch <tabId>" }
+        const content = res.success ? `Switched to tab ${tabId}` : `Failed: ${(res as any).error}`
+        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+        return
+      }
+
+      if (lowered === "/organize" || lowered === "/organize_tabs") {
+        await callMcpTool({ tool: "organize_tabs" })
+        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content: "Organizing tabs...", streaming: false } : m))
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+        return
+      }
+
+      if (lowered === "/ungroup" || lowered === "/ungroup_tabs") {
+        await callMcpTool({ tool: "ungroup_tabs" })
+        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content: "Ungrouping tabs...", streaming: false } : m))
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+        return
+      }
+
+      // Try tools-enabled flow for natural MCP actions
       const conversationContext = buildContext(updatedMessages)
-      
-      // Send message to background script for AI processing with streaming
-      const response = await chrome.runtime.sendMessage({
-        request: "ai-chat",
+      const toolRes = await chrome.runtime.sendMessage({
+        request: "ai-chat-tools",
         prompt: message,
-        context: conversationContext, // Send full conversation history
+        context: conversationContext,
         messageId: aiMessageId
       })
-
-      if (!response || !response.success) {
-        // Handle immediate error response
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMessageId 
-            ? { ...msg, content: `Error: Failed to start AI chat`, streaming: false }
-            : msg
-        ))
-        setLoading(false)
-        // Focus back to input after error
-        setTimeout(() => {
-          inputRef.current?.focus()
-        }, 100)
+      if (!toolRes?.success) {
+        // Fallback to streaming LLM
+        const response = await chrome.runtime.sendMessage({
+          request: "ai-chat",
+          prompt: message,
+          context: conversationContext,
+          messageId: aiMessageId
+        })
+        if (!response || !response.success) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: `Error: Failed to start AI chat`, streaming: false }
+              : msg
+          ))
+          setLoading(false)
+          setTimeout(() => {
+            inputRef.current?.focus()
+          }, 100)
+        }
       }
-      // Success case is handled by the message listener
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI response failed:', error)
-      // Update message with error
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
           ? { ...msg, content: `Error: ${error?.message || 'Unknown error'}`, streaming: false }
           : msg
       ))
       setLoading(false)
-      // Focus back to input after error
       setTimeout(() => {
         inputRef.current?.focus()
       }, 100)
@@ -516,14 +603,48 @@ const AIChatSidebar = () => {
     messages.map(msg => ({
       key: msg.id,
       content: msg.role === 'assistant' ? (
-        <MarkdownRenderer content={msg.content} streaming={msg.streaming} />
+        <div className="flex flex-col gap-2">
+          {stepsByMessageId[msg.id]?.length ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-2.5">
+              <div className="text-xs font-semibold text-gray-700 mb-1">Reasoning & Tools</div>
+              <div className="space-y-1.5">
+                {stepsByMessageId[msg.id].map((step, idx) => {
+                  if (step.type === 'think') {
+                    return (
+                      <div key={idx} className="text-xs text-gray-700">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 mr-1">think</span>
+                        <span className="align-middle">{step.content}</span>
+                      </div>
+                    )
+                  }
+                  if (step.type === 'call_tool') {
+                    return (
+                      <div key={idx} className="text-xs text-gray-700">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 mr-1">call_tool</span>
+                        <span className="font-semibold">{step.name}</span>
+                        <span className="text-gray-500"> {" "}({Object.keys(step.args || {}).map(k => `${k}: ${String((step.args as any)[k])}`).join(', ')})</span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div key={idx} className="text-xs text-gray-700">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-900 mr-1">tool_result</span>
+                      <span className="break-all align-middle">{step.result}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+          <MarkdownRenderer content={msg.content} streaming={msg.streaming} />
+        </div>
       ) : (
         <div className="text-gray-800">{msg.content}</div>
       ),
       role: msg.role,
       placement: (msg.role === 'user' ? 'end' : 'start') as 'end' | 'start'
     }))
-  , [messages])
+  , [messages, stepsByMessageId])
 
   const handleOrganizeTabs = async () => {
     setIsOrganizing(true)
