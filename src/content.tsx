@@ -35,9 +35,10 @@ export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"]
 }
 
+// Inject Tailwind only into the shadow host created by Plasmo (prevents leaking to host page)
 export const getStyle = (): HTMLStyleElement => {
   const baseFontSize = 16
-  let updatedCssText = cssText.replaceAll(":root", ":host(plasmo-csui)")
+  let updatedCssText = cssText
   const remRegex = /([\d.]+)rem/g
   updatedCssText = updatedCssText.replace(remRegex, (match, remValue) => {
     const pixelsValue = parseFloat(remValue) * baseFontSize
@@ -47,6 +48,7 @@ export const getStyle = (): HTMLStyleElement => {
   styleElement.textContent = updatedCssText
   return styleElement
 }
+
 
 const placeholderList = [
   "Search or Ask anything",

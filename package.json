@@ -8,7 +8,7 @@
     "dev": "plasmo dev",
     "build": "plasmo build",
     "package": "plasmo package",
-    "build:css": "npx tailwindcss -i ./src/style.css -o ./src/style.css --minify"
+    "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify"
   },
   "dependencies": {
     "@ant-design/x": "^1.4.0",

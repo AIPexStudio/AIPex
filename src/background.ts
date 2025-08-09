@@ -212,8 +212,10 @@ chrome.runtime.onInstalled.addListener((object) => {
 
 // Extension button click
 chrome.action.onClicked.addListener((tab) => {
-  if (tab.id)
-    chrome.tabs.sendMessage(tab.id, {request: "open-aipex"})
+  if (tab.id) {
+    // Open AI Chat sidepanel directly when clicking the toolbar icon
+    chrome.sidePanel.open({ tabId: tab.id })
+  }
 })
 
 // Shortcut listener
