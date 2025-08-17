@@ -1,188 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { Bubble, Sender } from "@ant-design/x"
-import Markdown from "markdown-to-jsx"
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { Sender } from "@ant-design/x"
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
 import { callMcpTool } from "~mcp"
-interface Message {
-  id: string
-  content: string
-  role: 'user' | 'assistant'
-  streaming?: boolean
-}
-
-  type ToolStep =
-    | { type: 'think'; content: string }
-    | { type: 'call_tool'; name: string; args: any }
-    | { type: 'tool_result'; name: string; result: string }
-
-// Code block component for syntax highlighting
-const CodeBlock = ({ children, className, ...props }: any) => {
-  const match = /language-(\w+)/.exec(className || '')
-  const language = match ? match[1] : 'text'
-  
-  return (
-    <SyntaxHighlighter
-      style={oneLight}
-      language={language}
-      PreTag="div"
-      className="rounded-lg mb-3 border border-gray-200 text-sm"
-      customStyle={{
-        margin: 0,
-        padding: '1rem',
-        backgroundColor: '#f8f9fa',
-        fontSize: '0.875rem',
-        lineHeight: '1.5'
-      }}
-      showLineNumbers={false}
-      wrapLines={false}
-      {...props}
-    >
-      {String(children).replace(/\n$/, '')}
-    </SyntaxHighlighter>
-  )
-}
-
-// Inline code component
-const InlineCode = ({ children, ...props }: any) => {
-  return (
-    <code 
-      className="bg-gray-50 text-gray-900 px-1.5 py-0.5 rounded text-sm border border-gray-200 font-mono"
-      {...props}
-    >
-      {children}
-    </code>
-  )
-}
-
-// Custom markdown renderer component
-const MarkdownRenderer = ({ content, streaming }: { content: string, streaming?: boolean }) => {
-  return (
-    <div className="markdown-content text-gray-800">
-      <Markdown
-        options={{
-          overrides: {
-            // Code block styling with syntax highlighting
-            code: ({ children, className, ...props }) => {
-              // Check if this is a code block (has language class) or inline code
-              const isCodeBlock = className && className.startsWith('language-')
-              
-              if (isCodeBlock) {
-                return <CodeBlock className={className} {...props}>{children}</CodeBlock>
-              } else {
-                return <InlineCode {...props}>{children}</InlineCode>
-              }
-            },
-            pre: ({ children, ...props }) => {
-              // Check if this is a code block by looking for code child
-              const firstChild = React.Children.toArray(children)[0]
-              if (React.isValidElement(firstChild) && firstChild.type === 'code') {
-                const codeProps = firstChild.props as any
-                if (codeProps.className && codeProps.className.startsWith('language-')) {
-                  // This is a code block, render with syntax highlighting
-                  return <CodeBlock className={codeProps.className}>{codeProps.children}</CodeBlock>
-                }
-              }
-              
-              // Otherwise, render as a regular pre
-              return <pre className="bg-gray-50 rounded-lg p-4 overflow-x-auto mb-3 border border-gray-200 font-mono text-sm" {...props}>{children}</pre>
-            },
-            // Paragraph styling
-            p: {
-              props: {
-                className: "mb-3 last:mb-0 text-gray-800 leading-relaxed"
-              }
-            },
-            // Heading styling
-            h1: {
-              props: {
-                className: "text-xl font-bold mb-3 text-gray-900"
-              }
-            },
-            h2: {
-              props: {
-                className: "text-lg font-bold mb-3 text-gray-900"
-              }
-            },
-            h3: {
-              props: {
-                className: "text-base font-bold mb-2 text-gray-900"
-              }
-            },
-            // List styling
-            ul: {
-              props: {
-                className: "list-disc ml-5 mb-3 text-gray-800 space-y-1"
-              }
-            },
-            ol: {
-              props: {
-                className: "list-decimal ml-5 mb-3 text-gray-800 space-y-1"
-              }
-            },
-            li: {
-              props: {
-                className: "text-gray-800 leading-relaxed"
-              }
-            },
-            // Link styling
-            a: {
-              props: {
-                className: "text-red-600 hover:text-red-700 underline transition-colors",
-                target: "_blank",
-                rel: "noopener noreferrer"
-              }
-            },
-            // Blockquote styling
-            blockquote: {
-              props: {
-                className: "border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-3 bg-gray-50 py-2 rounded-r"
-              }
-            },
-            // Table styling
-            table: {
-              props: {
-                className: "border-collapse border border-gray-200 mb-3 text-gray-800 w-full"
-              }
-            },
-            th: {
-              props: {
-                className: "border border-gray-200 px-3 py-2 bg-gray-50 text-gray-900 font-semibold"
-              }
-            },
-            td: {
-              props: {
-                className: "border border-gray-200 px-3 py-2 text-gray-800"
-              }
-            },
-            // Strong/Bold styling
-            strong: {
-              props: {
-                className: "font-semibold text-gray-900"
-              }
-            },
-            // Emphasis/Italic styling
-            em: {
-              props: {
-                className: "italic text-gray-600"
-              }
-            },
-            // Horizontal rule
-            hr: {
-              props: {
-                className: "border-gray-200 my-4"
-              }
-            }
-          }
-        }}
-      >
-        {content + (streaming ? '▎' : '')}
-      </Markdown>
-    </div>
-  )
-}
+import { Thread, MarkdownRenderer, CallTool } from "~/lib/components"
+import type { Message, ToolStep } from "~/lib/components"
 
 const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
@@ -599,52 +421,7 @@ const AIChatSidebar = () => {
     setShowScrollButton(false)
   }, [])
 
-  const items = useMemo(() => 
-    messages.map(msg => ({
-      key: msg.id,
-      content: msg.role === 'assistant' ? (
-        <div className="flex flex-col gap-2">
-          {stepsByMessageId[msg.id]?.length ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-2.5">
-              <div className="text-xs font-semibold text-gray-700 mb-1">Reasoning & Tools</div>
-              <div className="space-y-1.5">
-                {stepsByMessageId[msg.id].map((step, idx) => {
-                  if (step.type === 'think') {
-                    return (
-                      <div key={idx} className="text-xs text-gray-700">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 mr-1">think</span>
-                        <span className="align-middle">{step.content}</span>
-                      </div>
-                    )
-                  }
-                  if (step.type === 'call_tool') {
-                    return (
-                      <div key={idx} className="text-xs text-gray-700">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 mr-1">call_tool</span>
-                        <span className="font-semibold">{step.name}</span>
-                        <span className="text-gray-500"> {" "}({Object.keys(step.args || {}).map(k => `${k}: ${String((step.args as any)[k])}`).join(', ')})</span>
-                      </div>
-                    )
-                  }
-                  return (
-                    <div key={idx} className="text-xs text-gray-700">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-900 mr-1">tool_result</span>
-                      <span className="break-all align-middle">{step.result}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : null}
-          <MarkdownRenderer content={msg.content} streaming={msg.streaming} />
-        </div>
-      ) : (
-        <div className="text-gray-800">{msg.content}</div>
-      ),
-      role: msg.role,
-      placement: (msg.role === 'user' ? 'end' : 'start') as 'end' | 'start'
-    }))
-  , [messages, stepsByMessageId])
+
 
   const handleOrganizeTabs = async () => {
     setIsOrganizing(true)
@@ -874,7 +651,7 @@ const AIChatSidebar = () => {
                   <button
                     onClick={handleSaveAISettings}
                     disabled={isSaving}
-                    className={`px-4 py-2 rounded-lg text-white font-semibold ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                    className={`px-4 py-2 rounded-lg text-white font-semibold ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >{isSaving ? 'Saving...' : 'Save Settings'}</button>
                   <button
                     onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
@@ -890,50 +667,95 @@ const AIChatSidebar = () => {
           {/* Messages area - takes up remaining space */}
           <div 
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto min-h-0 relative"
+            className="flex-1 overflow-y-auto min-h-0 relative bg-gradient-to-b from-blue-50 to-white"
           >
-            {items.length > 0 ? (
-              <div className="p-4">
-                <Bubble.List items={items} />
+            {messages.length > 0 ? (
+              <div className="p-6">
+                <Thread messages={messages}>
+                  {(message) => (
+                    message.role === 'assistant' ? (
+                      <div className="flex flex-col gap-4">
+                        {stepsByMessageId[message.id]?.length ? (
+                          <CallTool steps={stepsByMessageId[message.id]} />
+                        ) : null}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                          <MarkdownRenderer content={message.content} streaming={message.streaming} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-sm p-6 font-medium">
+                        {message.content}
+                      </div>
+                    )
+                  )}
+                </Thread>
                 {/* Invisible element to scroll to */}
                 <div ref={messagesEndRef} />
               </div>
             ) : (
               !showSettings && (
-                <div className="p-6">
+                <div className="p-8">
                   <div className="max-w-3xl mx-auto">
-                    <div className="text-center mb-4">
-                      <h3 className="text-base font-semibold text-gray-900">Try one of these</h3>
-                      <p className="text-sm text-gray-600">Quick starters to help you get going</p>
+                    <div className="text-center mb-8">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to AIpex</h3>
+                      <p className="text-gray-600">Choose a quick action or ask anything to get started</p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <button
                         onClick={() => handleSubmit('Please organize my open tabs by topic and purpose')}
-                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
-                        <div className="text-sm font-semibold text-gray-900">Help organize tabs</div>
-                        <div className="text-xs text-gray-600">Use AI to group current-window tabs</div>
+                        <div className="flex items-center mb-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900">Organize tabs</div>
+                        </div>
+                        <div className="text-xs text-gray-600">Use AI to group current-window tabs by topic</div>
                       </button>
                       <button
                         onClick={() => handleSubmit('Summarize this page')}
-                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
-                        <div className="text-sm font-semibold text-gray-900">Summarize the page</div>
+                        <div className="flex items-center mb-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900">Summarize page</div>
+                        </div>
                         <div className="text-xs text-gray-600">Generate a concise summary of this tab</div>
                       </button>
                       <button
                         onClick={() => handleSubmit('Switch to bilibili')}
-                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
-                        <div className="text-sm font-semibold text-gray-900">Switch to bilibili</div>
+                        <div className="flex items-center mb-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
+                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                            </svg>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900">Switch to bilibili</div>
+                        </div>
                         <div className="text-xs text-gray-600">Find and focus the bilibili tab</div>
                       </button>
                       <button
                         onClick={() => handleSubmit('What tabs do I have open?')}
-                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
-                        <div className="text-sm font-semibold text-gray-900">List my tabs</div>
-                        <div className="text-xs text-gray-600">Show open tabs with ids</div>
+                        <div className="flex items-center mb-3">
+                          <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
+                            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900">List my tabs</div>
+                        </div>
+                        <div className="text-xs text-gray-600">Show open tabs with details</div>
                       </button>
                     </div>
                   </div>
@@ -945,10 +767,10 @@ const AIChatSidebar = () => {
             {showScrollButton && (
               <button
                 onClick={handleScrollToBottom}
-                className="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10"
+                className="absolute bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 hover:scale-105"
                 title="Scroll to bottom"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               </button>
@@ -956,7 +778,7 @@ const AIChatSidebar = () => {
           </div>
           
           {/* Input area fixed at bottom */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+          <div className="px-6 py-4 border-t border-blue-200 bg-white/90 backdrop-blur-sm flex-shrink-0">
             <Sender
               ref={inputRef}
               placeholder={loading ? "AI is responding..." : "Ask anything"}
