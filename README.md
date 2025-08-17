@@ -11,8 +11,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
 
-<div align="center">
-  <img src="assets/preview.png" alt="AIPex Preview" width="600"/>
   
   **⭐ Star this repo if you find it helpful! ⭐**
   
