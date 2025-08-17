@@ -60,14 +60,47 @@ export async function chatCompletion(messages: any, stream = false, options: any
     "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
     "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
     "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
+    "4) Manage bookmarks: create, delete, search, and organize bookmarks.",
+    "5) Manage history: search, view recent history, and clear browsing data.",
+    "6) Manage windows: create, switch, minimize, maximize, and close windows.",
+    "7) Manage tab groups: create, update, and organize tab groups.",
     "\nWhen tools are available, prefer these:",
+    "Tab Management:",
     "- get_all_tabs: list all tabs (id, title, url)",
     "- get_current_tab: get the active tab",
     "- switch_to_tab: switch to a tab by id",
+    "- create_new_tab: create a new tab with URL",
+    "- get_tab_info: get detailed tab information",
+    "- duplicate_tab: duplicate an existing tab",
+    "- close_tab: close a specific tab",
+    "- get_current_tab_content: extract content from current tab",
+    "\nTab Group Management:",
     "- organize_tabs: AI-organize current-window tabs",
     "- ungroup_tabs: remove all tab groups in the current window",
-    "\nUsage guidance: For requests like ‘switch to X’, first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
-    "\nEncourage natural, semantic requests instead of slash commands (e.g., ‘help organize my tabs’, ‘switch to the bilibili tab’, ‘summarize this page’)."
+    "- get_all_tab_groups: list all tab groups",
+    "- create_tab_group: create a new tab group",
+    "- update_tab_group: update tab group properties",
+    "\nBookmark Management:",
+    "- get_all_bookmarks: list all bookmarks",
+    "- get_bookmark_folders: get bookmark folder structure",
+    "- create_bookmark: create a new bookmark",
+    "- delete_bookmark: delete a bookmark by ID",
+    "- search_bookmarks: search bookmarks by title/URL",
+    "\nHistory Management:",
+    "- get_recent_history: get recent browsing history",
+    "- search_history: search browsing history",
+    "- delete_history_item: delete a specific history item",
+    "- clear_history: clear browsing history for specified days",
+    "\nWindow Management:",
+    "- get_all_windows: list all browser windows",
+    "- get_current_window: get the current focused window",
+    "- switch_to_window: switch focus to a specific window",
+    "- create_new_window: create a new browser window",
+    "- close_window: close a specific window",
+    "- minimize_window: minimize a specific window",
+    "- maximize_window: maximize a specific window",
+    "\nUsage guidance: For requests like 'switch to X', first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
+    "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github')."
   ].join("\n")
 
   const requestBody = {
@@ -213,6 +246,346 @@ export async function createNewTab(url: string): Promise<{ tabId: number; url: s
   const tab = await chrome.tabs.create({ url: finalUrl })
   if (!tab?.id) throw new Error("Failed to create tab")
   return { tabId: tab.id, url: tab.url || finalUrl }
+}
+
+// ===== BOOKMARK MANAGEMENT =====
+
+export type SimplifiedBookmark = {
+  id: string
+  title: string
+  url?: string
+  parentId?: string
+  children?: SimplifiedBookmark[]
+}
+
+export async function getAllBookmarks(): Promise<SimplifiedBookmark[]> {
+  const bookmarks = await chrome.bookmarks.getTree()
+  
+  function flattenBookmarks(nodes: chrome.bookmarks.BookmarkTreeNode[]): SimplifiedBookmark[] {
+    const result: SimplifiedBookmark[] = []
+    
+    for (const node of nodes) {
+      if (node.url) {
+        // This is a bookmark
+        result.push({
+          id: node.id,
+          title: node.title,
+          url: node.url,
+          parentId: node.parentId
+        })
+      } else if (node.children) {
+        // This is a folder, recursively process children
+        result.push(...flattenBookmarks(node.children))
+      }
+    }
+    
+    return result
+  }
+  
+  return flattenBookmarks(bookmarks)
+}
+
+export async function getBookmarkFolders(): Promise<SimplifiedBookmark[]> {
+  const bookmarks = await chrome.bookmarks.getTree()
+  
+  function getFolders(nodes: chrome.bookmarks.BookmarkTreeNode[]): SimplifiedBookmark[] {
+    const result: SimplifiedBookmark[] = []
+    
+    for (const node of nodes) {
+      if (!node.url && node.children) {
+        // This is a folder
+        result.push({
+          id: node.id,
+          title: node.title,
+          parentId: node.parentId,
+          children: getFolders(node.children)
+        })
+      }
+    }
+    
+    return result
+  }
+  
+  return getFolders(bookmarks)
+}
+
+export async function createBookmark(title: string, url: string, parentId?: string): Promise<{ success: boolean; bookmarkId?: string; error?: string }> {
+  try {
+    const bookmark = await chrome.bookmarks.create({
+      title,
+      url,
+      parentId: parentId || "1" // Default to bookmarks bar
+    })
+    return { success: true, bookmarkId: bookmark.id }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function deleteBookmark(bookmarkId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.bookmarks.remove(bookmarkId)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function searchBookmarks(query: string): Promise<SimplifiedBookmark[]> {
+  const results = await chrome.bookmarks.search(query)
+  return results.map(bookmark => ({
+    id: bookmark.id,
+    title: bookmark.title,
+    url: bookmark.url,
+    parentId: bookmark.parentId
+  }))
+}
+
+// ===== HISTORY MANAGEMENT =====
+
+export type HistoryItem = {
+  id: string
+  url: string
+  title: string
+  lastVisitTime: number
+  visitCount: number
+}
+
+export async function getRecentHistory(limit: number = 50): Promise<HistoryItem[]> {
+  const endTime = Date.now()
+  const startTime = endTime - (7 * 24 * 60 * 60 * 1000) // Last 7 days
+  
+  const history = await chrome.history.search({
+    text: "",
+    startTime,
+    endTime,
+    maxResults: limit
+  })
+  
+  return history.map(item => ({
+    id: item.id,
+    url: item.url || "",
+    title: item.title || "",
+    lastVisitTime: item.lastVisitTime || 0,
+    visitCount: item.visitCount || 0
+  }))
+}
+
+export async function searchHistory(query: string, limit: number = 50): Promise<HistoryItem[]> {
+  const history = await chrome.history.search({
+    text: query,
+    maxResults: limit
+  })
+  
+  return history.map(item => ({
+    id: item.id,
+    url: item.url || "",
+    title: item.title || "",
+    lastVisitTime: item.lastVisitTime || 0,
+    visitCount: item.visitCount || 0
+  }))
+}
+
+export async function deleteHistoryItem(url: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.history.deleteUrl({ url })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function clearHistory(days: number = 1): Promise<{ success: boolean; error?: string }> {
+  try {
+    const endTime = Date.now()
+    const startTime = endTime - (days * 24 * 60 * 60 * 1000)
+    
+    await chrome.history.deleteRange({ startTime, endTime })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+// ===== WINDOW MANAGEMENT =====
+
+export type SimplifiedWindow = {
+  id: number
+  focused: boolean
+  state: string
+  type: string
+  left?: number
+  top?: number
+  width?: number
+  height?: number
+  tabCount: number
+}
+
+export async function getAllWindows(): Promise<SimplifiedWindow[]> {
+  const windows = await chrome.windows.getAll({ populate: true })
+  
+  return windows.map(window => ({
+    id: window.id,
+    focused: window.focused || false,
+    state: window.state || "normal",
+    type: window.type || "normal",
+    left: window.left,
+    top: window.top,
+    width: window.width,
+    height: window.height,
+    tabCount: window.tabs?.length || 0
+  }))
+}
+
+export async function getCurrentWindow(): Promise<SimplifiedWindow | null> {
+  const window = await chrome.windows.getCurrent({ populate: true })
+  
+  return {
+    id: window.id,
+    focused: window.focused || false,
+    state: window.state || "normal",
+    type: window.type || "normal",
+    left: window.left,
+    top: window.top,
+    width: window.width,
+    height: window.height,
+    tabCount: window.tabs?.length || 0
+  }
+}
+
+export async function switchToWindow(windowId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.windows.update(windowId, { focused: true })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function createNewWindow(url?: string): Promise<{ success: boolean; windowId?: number; error?: string }> {
+  try {
+    const window = await chrome.windows.create({
+      url: url ? [url] : undefined
+    })
+    return { success: true, windowId: window.id }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function closeWindow(windowId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.windows.remove(windowId)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function minimizeWindow(windowId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.windows.update(windowId, { state: "minimized" })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function maximizeWindow(windowId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.windows.update(windowId, { state: "maximized" })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+// ===== TAB GROUP MANAGEMENT =====
+
+export type TabGroup = {
+  id: number
+  title: string
+  color: string
+  collapsed: boolean
+  windowId: number
+  tabCount: number
+}
+
+export async function getAllTabGroups(): Promise<TabGroup[]> {
+  const groups = await chrome.tabGroups.query({})
+  
+  return Promise.all(groups.map(async (group) => {
+    const tabs = await chrome.tabs.query({ groupId: group.id })
+    return {
+      id: group.id,
+      title: group.title || "",
+      color: group.color || "grey",
+      collapsed: group.collapsed || false,
+      windowId: group.windowId,
+      tabCount: tabs.length
+    }
+  }))
+}
+
+export async function createTabGroup(tabIds: number[], title?: string, color?: chrome.tabGroups.ColorEnum): Promise<{ success: boolean; groupId?: number; error?: string }> {
+  try {
+    const groupId = await chrome.tabs.group({ tabIds })
+    if (title || color) {
+      await chrome.tabGroups.update(groupId, {
+        title: title || "",
+        color: color || "green"
+      })
+    }
+    return { success: true, groupId }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function updateTabGroup(groupId: number, updates: { title?: string; color?: chrome.tabGroups.ColorEnum; collapsed?: boolean }): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.tabGroups.update(groupId, updates)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+export async function getTabInfo(tabId: number): Promise<SimplifiedTab | null> {
+  try {
+    const tab = await chrome.tabs.get(tabId)
+    if (!tab || typeof tab.id !== "number") return null
+    
+    return {
+      id: tab.id,
+      index: tab.index || 0,
+      windowId: tab.windowId || 0,
+      title: tab.title,
+      url: tab.url
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function duplicateTab(tabId: number): Promise<{ success: boolean; newTabId?: number; error?: string }> {
+  try {
+    const tab = await chrome.tabs.duplicate(tabId)
+    return { success: true, newTabId: tab.id || undefined }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function closeTab(tabId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.tabs.remove(tabId)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
+  }
 }
 
 
