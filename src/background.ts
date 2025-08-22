@@ -508,149 +508,34 @@ const SYSTEM_PROMPT = [
   "\nEncourage natural, semantic requests instead of slash commands (e.g., ‘help organize my tabs’, ‘switch to the bilibili tab’, ‘summarize this page’)."
 ].join("\n")
 
-// Tool definitions for OpenAI function calling-style tools
-const tabTools = [
-  {
-    type: "function",
+// Import MCP client to get all available tools
+import { browserMcpClient } from "~mcp/client"
+
+// Get all available tools from MCP client
+const getAllTools = () => {
+  const tools = browserMcpClient.getToolDescriptions()
+  return tools.map(tool => ({
+    type: "function" as const,
     function: {
-      name: "get_all_tabs",
-      description: "List all open tabs (id, title, url) to help decide which one to act on.",
-      parameters: {
+      name: tool.name,
+      description: tool.description,
+      parameters: browserMcpClient.tools.find(t => t.name === tool.name)?.inputSchema || {
         type: "object",
         properties: {},
         additionalProperties: false
       }
     }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_current_tab",
-      description: "Get the active tab in the current window (id, title, url).",
-      parameters: { type: "object", properties: {}, additionalProperties: false }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "switch_to_tab",
-      description: "Switch focus to a specific tab by id.",
-      parameters: {
-        type: "object",
-        properties: {
-          tabId: { type: "number", description: "The Chrome tab id to switch to" }
-        },
-        required: ["tabId"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_current_tab_content",
-      description: "Get visible text content of the current tab (returns title, url, and content; content truncated).",
-      parameters: { type: "object", properties: {}, additionalProperties: false }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "create_new_tab",
-      description: "Create a new tab with the given URL.",
-      parameters: {
-        type: "object",
-        properties: {
-          url: { type: "string", description: "The URL to open; protocol will be added if missing." }
-        },
-        required: ["url"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "organize_tabs",
-      description: "Organize the current window tabs into groups using AI.",
-      parameters: { type: "object", properties: {}, additionalProperties: false }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "ungroup_tabs",
-      description: "Ungroup all tab groups in the current window.",
-      parameters: { type: "object", properties: {}, additionalProperties: false }
-    }
-  }
-]
+  }))
+}
 
 async function executeToolCall(name: string, args: any) {
-  switch (name) {
-    case "get_all_tabs": {
-      const tabs = await chrome.tabs.query({})
-      return tabs
-        .filter((t) => typeof t.id === "number")
-        .map((t) => ({ id: t.id, index: t.index, windowId: t.windowId, title: t.title, url: t.url }))
-    }
-    case "get_current_tab": {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      if (!tab || typeof tab.id !== "number") return null
-      return { id: tab.id, index: tab.index, windowId: tab.windowId, title: tab.title, url: tab.url }
-    }
-    case "switch_to_tab": {
-      const tabId = Number(args?.tabId)
-      if (!Number.isFinite(tabId)) throw new Error("Invalid tabId")
-      const tab = await chrome.tabs.get(tabId)
-      if (!tab || typeof tab.index !== "number" || typeof tab.windowId !== "number") {
-        throw new Error("Tab not found")
-      }
-      await chrome.tabs.highlight({ tabs: tab.index, windowId: tab.windowId })
-      await chrome.windows.update(tab.windowId, { focused: true })
-      return { success: true }
-    }
-    case "get_current_tab_content": {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      if (!tab || typeof tab.id !== "number") return null
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          try {
-            const title = document.title || ""
-            const url = location.href
-            const text = (document.body?.innerText || "").trim()
-            const content = text && text.length > 0 ? text : (document.body?.textContent || "")
-            const MAX = 200_000
-            return { title, url, content: (content || "").slice(0, MAX) }
-          } catch (e) {
-            return { title: document.title || "", url: location.href, content: "" }
-          }
-        }
-      })
-      const [{ result }] = results
-      return result || null
-    }
-    case "create_new_tab": {
-      let url = String(args?.url || "").trim()
-      if (!url) throw new Error("Invalid url")
-      if (!/^https?:\/\//i.test(url) && !/^chrome:|^chrome-extension:/i.test(url)) {
-        url = `https://${url}`
-      }
-      const tab = await chrome.tabs.create({ url })
-      if (!tab?.id) throw new Error("Failed to create tab")
-      return { tabId: tab.id, url: tab.url || url }
-    }
-    case "organize_tabs": {
-      groupTabsByAI()
-      return { started: true }
-    }
-    case "ungroup_tabs": {
-      await ungroupAllTabs()
-      return { success: true }
-    }
-    default:
-      throw new Error("Unknown tool: " + name)
+  try {
+    // Use MCP client to call the tool
+    const result = await browserMcpClient.callTool(name, args)
+    return result
+  } catch (error: any) {
+    console.error(`Error executing tool ${name}:`, error)
+    throw new Error(`Failed to execute tool ${name}: ${error?.message || String(error)}`)
   }
 }
 
@@ -660,7 +545,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
 
   let messages = [systemPrompt, ...userMessages]
   // First call allowing tool use
-  let response = await chatCompletion(messages, false, { tools: tabTools, tool_choice: "auto" })
+      let response = await chatCompletion(messages, false, { tools: getAllTools(), tool_choice: "auto" })
 
   // Loop over tool calls if present
   // OpenAI responses may put tool calls under choices[0].message.tool_calls
@@ -827,7 +712,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     // If we've executed any mutating action, force finalization (no more tools).
     const nextOptions = executedMutating
       ? { tool_choice: "none" as const }
-      : { tools: tabTools, tool_choice: "auto" as const }
+              : { tools: getAllTools(), tool_choice: "auto" as const }
     response = await chatCompletion(messages, false, nextOptions)
   }
 
@@ -1479,6 +1364,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             conversationMessages = [...context]
           }
           conversationMessages.push({ role: "user", content: prompt })
+          const finalText = await runChatWithTools(conversationMessages, messageId)
+          sendResponse({ success: true, content: finalText })
+        } catch (error: any) {
+          sendResponse({ success: false, error: error?.message || String(error) })
+        }
+      })()
+      return true
+    case "ai-chat-with-tools":
+      ;(async () => {
+        try {
+          const { prompt, context, tools, messageId } = message
+          
+          // Build conversation messages with context
+          let conversationMessages = []
+          if (context && typeof context === 'string') {
+            // If context is a string, treat it as system context
+            conversationMessages.push({ role: "system", content: context })
+          } else if (context && Array.isArray(context) && context.length > 0) {
+            conversationMessages = [...context]
+          }
+          
+          conversationMessages.push({ role: "user", content: prompt })
+          
+          // Use the tools-enabled chat completion
           const finalText = await runChatWithTools(conversationMessages, messageId)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {

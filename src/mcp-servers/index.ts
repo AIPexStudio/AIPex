@@ -1,3 +1,43 @@
+// Tab Management
+export * from "./tab-management"
+
+// Tab Groups
+export * from "./tab-groups"
+
+// Bookmarks
+export * from "./bookmarks"
+
+// History
+export * from "./history"
+
+// Windows
+export * from "./windows"
+
+// Page Content
+export * from "./page-content"
+
+// Clipboard
+export * from "./clipboard"
+
+// Storage
+export * from "./storage"
+
+// Utils
+export * from "./utils"
+
+// Extensions
+export * from "./extensions"
+
+// Downloads
+export * from "./downloads"
+
+// Sessions
+export * from "./sessions"
+
+// Context Menus
+export * from "./context-menus"
+
+// Legacy exports from tools.ts (for backward compatibility)
 export {
   getAllTabs,
   getCurrentTab,

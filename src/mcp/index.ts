@@ -33,6 +33,78 @@ export type McpToolName =
   | "get_tab_info"
   | "duplicate_tab"
   | "close_tab"
+  // Page content
+  | "get_page_metadata"
+  | "extract_page_text"
+  | "get_page_links"
+  | "get_page_images"
+  | "search_page_text"
+  | "get_page_performance"
+  | "get_page_accessibility"
+  // Clipboard
+  | "copy_to_clipboard"
+  | "read_from_clipboard"
+  | "copy_current_page_url"
+  | "copy_current_page_title"
+  | "copy_selected_text"
+  | "copy_page_as_markdown"
+  | "copy_page_as_text"
+  | "copy_page_links"
+  | "copy_page_metadata"
+  // Storage
+  | "get_storage_value"
+  | "set_storage_value"
+  | "remove_storage_value"
+  | "get_all_storage_keys"
+  | "clear_all_storage"
+  | "get_extension_settings"
+  | "update_extension_settings"
+  | "get_ai_config"
+  | "set_ai_config"
+  | "export_storage_data"
+  | "import_storage_data"
+  | "get_storage_stats"
+  // Utils
+  | "get_browser_info"
+  | "get_system_info"
+  | "get_current_datetime"
+  | "format_timestamp"
+  | "generate_random_string"
+  | "validate_url"
+  | "extract_domain"
+  | "get_url_parameters"
+  | "build_url"
+  | "get_text_stats"
+  | "convert_text_case"
+  | "check_permissions"
+  // Extensions
+  | "get_all_extensions"
+  | "get_extension"
+  | "set_extension_enabled"
+  | "uninstall_extension"
+  | "get_extension_permissions"
+  // Downloads
+  | "get_all_downloads"
+  | "get_download"
+  | "pause_download"
+  | "resume_download"
+  | "cancel_download"
+  | "remove_download"
+  | "open_download"
+  | "show_download_in_folder"
+  | "get_download_stats"
+  // Sessions
+  | "get_all_sessions"
+  | "get_session"
+  | "restore_session"
+  | "get_current_device"
+  | "get_all_devices"
+  // Context Menus
+  | "create_context_menu_item"
+  | "update_context_menu_item"
+  | "remove_context_menu_item"
+  | "remove_all_context_menu_items"
+  | "get_context_menu_items"
 
 export type McpRequest =
   | { tool: "get_all_tabs" }
@@ -69,6 +141,78 @@ export type McpRequest =
   | { tool: "get_tab_info"; args: { tabId: number } }
   | { tool: "duplicate_tab"; args: { tabId: number } }
   | { tool: "close_tab"; args: { tabId: number } }
+  // Page content
+  | { tool: "get_page_metadata" }
+  | { tool: "extract_page_text" }
+  | { tool: "get_page_links" }
+  | { tool: "get_page_images" }
+  | { tool: "search_page_text"; args: { query: string } }
+  | { tool: "get_page_performance" }
+  | { tool: "get_page_accessibility" }
+  // Clipboard
+  | { tool: "copy_to_clipboard"; args: { text: string } }
+  | { tool: "read_from_clipboard" }
+  | { tool: "copy_current_page_url" }
+  | { tool: "copy_current_page_title" }
+  | { tool: "copy_selected_text" }
+  | { tool: "copy_page_as_markdown" }
+  | { tool: "copy_page_as_text" }
+  | { tool: "copy_page_links" }
+  | { tool: "copy_page_metadata" }
+  // Storage
+  | { tool: "get_storage_value"; args: { key: string } }
+  | { tool: "set_storage_value"; args: { key: string; value: any } }
+  | { tool: "remove_storage_value"; args: { key: string } }
+  | { tool: "get_all_storage_keys" }
+  | { tool: "clear_all_storage" }
+  | { tool: "get_extension_settings" }
+  | { tool: "update_extension_settings"; args: { updates: any } }
+  | { tool: "get_ai_config" }
+  | { tool: "set_ai_config"; args: { config: any } }
+  | { tool: "export_storage_data" }
+  | { tool: "import_storage_data"; args: { jsonData: string } }
+  | { tool: "get_storage_stats" }
+  // Utils
+  | { tool: "get_browser_info" }
+  | { tool: "get_system_info" }
+  | { tool: "get_current_datetime" }
+  | { tool: "format_timestamp"; args: { timestamp: number; format?: string } }
+  | { tool: "generate_random_string"; args: { length?: number; type?: string } }
+  | { tool: "validate_url"; args: { url: string } }
+  | { tool: "extract_domain"; args: { url: string } }
+  | { tool: "get_url_parameters"; args: { url: string } }
+  | { tool: "build_url"; args: { baseUrl: string; parameters: Record<string, string> } }
+  | { tool: "get_text_stats"; args: { text: string } }
+  | { tool: "convert_text_case"; args: { text: string; caseType: string } }
+  | { tool: "check_permissions" }
+  // Extensions
+  | { tool: "get_all_extensions" }
+  | { tool: "get_extension"; args: { extensionId: string } }
+  | { tool: "set_extension_enabled"; args: { extensionId: string; enabled: boolean } }
+  | { tool: "uninstall_extension"; args: { extensionId: string } }
+  | { tool: "get_extension_permissions"; args: { extensionId: string } }
+  // Downloads
+  | { tool: "get_all_downloads" }
+  | { tool: "get_download"; args: { downloadId: number } }
+  | { tool: "pause_download"; args: { downloadId: number } }
+  | { tool: "resume_download"; args: { downloadId: number } }
+  | { tool: "cancel_download"; args: { downloadId: number } }
+  | { tool: "remove_download"; args: { downloadId: number } }
+  | { tool: "open_download"; args: { downloadId: number } }
+  | { tool: "show_download_in_folder"; args: { downloadId: number } }
+  | { tool: "get_download_stats" }
+  // Sessions
+  | { tool: "get_all_sessions" }
+  | { tool: "get_session"; args: { sessionId: string } }
+  | { tool: "restore_session"; args: { sessionId: string } }
+  | { tool: "get_current_device" }
+  | { tool: "get_all_devices" }
+  // Context Menus
+  | { tool: "create_context_menu_item"; args: { id: string; title: string; contexts?: string[]; documentUrlPatterns?: string[] } }
+  | { tool: "update_context_menu_item"; args: { id: string; updates: any } }
+  | { tool: "remove_context_menu_item"; args: { id: string } }
+  | { tool: "remove_all_context_menu_items" }
+  | { tool: "get_context_menu_items" }
 
 export type McpResponse =
   | { success: true; data?: any }
@@ -109,7 +253,79 @@ import {
   // Utility functions
   getTabInfo,
   duplicateTab,
-  closeTab
+  closeTab,
+  // Page content
+  getPageMetadata,
+  extractPageText,
+  getPageLinks,
+  getPageImages,
+  searchPageText,
+  getPagePerformance,
+  getPageAccessibility,
+  // Clipboard
+  copyToClipboard,
+  readFromClipboard,
+  copyCurrentPageUrl,
+  copyCurrentPageTitle,
+  copySelectedText,
+  copyPageAsMarkdown,
+  copyPageAsText,
+  copyPageLinks,
+  copyPageMetadata,
+  // Storage
+  getStorageValue,
+  setStorageValue,
+  removeStorageValue,
+  getAllStorageKeys,
+  clearAllStorage,
+  getExtensionSettings,
+  updateExtensionSettings,
+  getAiConfig,
+  setAiConfig,
+  exportStorageData,
+  importStorageData,
+  getStorageStats,
+  // Utils
+  getBrowserInfo,
+  getSystemInfo,
+  getCurrentDateTime,
+  formatTimestamp,
+  generateRandomString,
+  validateUrl,
+  extractDomain,
+  getUrlParameters,
+  buildUrl,
+  getTextStats,
+  convertTextCase,
+  checkPermissions,
+  // Extensions
+  getAllExtensions,
+  getExtension,
+  setExtensionEnabled,
+  uninstallExtension,
+  getExtensionPermissions,
+  // Downloads
+  getAllDownloads,
+  getDownload,
+  pauseDownload,
+  resumeDownload,
+  cancelDownload,
+  removeDownload,
+  openDownload,
+  showDownloadInFolder,
+  getDownloadStats,
+  // Sessions
+  getAllSessions,
+  getSession,
+  restoreSession,
+  getCurrentDevice,
+  getAllDevices,
+  // Context Menus
+  createContextMenuItem,
+  updateContextMenuItem,
+  removeContextMenuItem,
+  removeAllContextMenuItems,
+  getContextMenuItems
 } from "~mcp-servers"
 
 export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
@@ -284,6 +500,333 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         if (!Number.isFinite(tabId)) return { success: false, error: "Invalid tabId" }
         const result = await closeTab(tabId)
         return result.success ? { success: true } : { success: false, error: result.error || "Failed to close tab" }
+      }
+      // Page content
+      case "get_page_metadata": {
+        const metadata = await getPageMetadata()
+        return { success: true, data: metadata }
+      }
+      case "extract_page_text": {
+        const content = await extractPageText()
+        return { success: true, data: content }
+      }
+      case "get_page_links": {
+        const links = await getPageLinks()
+        return { success: true, data: links }
+      }
+      case "get_page_images": {
+        const images = await getPageImages()
+        return { success: true, data: images }
+      }
+      case "search_page_text": {
+        const { query } = request.args
+        if (!query) return { success: false, error: "Query is required" }
+        const results = await searchPageText(query)
+        return { success: true, data: results }
+      }
+      case "get_page_performance": {
+        const performance = await getPagePerformance()
+        return { success: true, data: performance }
+      }
+      case "get_page_accessibility": {
+        const accessibility = await getPageAccessibility()
+        return { success: true, data: accessibility }
+      }
+      // Clipboard
+      case "copy_to_clipboard": {
+        const { text } = request.args
+        if (!text) return { success: false, error: "Text is required" }
+        const result = await copyToClipboard(text)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to copy to clipboard" }
+      }
+      case "read_from_clipboard": {
+        const result = await readFromClipboard()
+        return result.success ? { success: true, data: result.text } : { success: false, error: result.error || "Failed to read from clipboard" }
+      }
+      case "copy_current_page_url": {
+        const result = await copyCurrentPageUrl()
+        return result.success ? { success: true, data: result.url } : { success: false, error: result.error || "Failed to copy URL" }
+      }
+      case "copy_current_page_title": {
+        const result = await copyCurrentPageTitle()
+        return result.success ? { success: true, data: result.title } : { success: false, error: result.error || "Failed to copy title" }
+      }
+      case "copy_selected_text": {
+        const result = await copySelectedText()
+        return result.success ? { success: true, data: result.text } : { success: false, error: result.error || "Failed to copy selected text" }
+      }
+      case "copy_page_as_markdown": {
+        const result = await copyPageAsMarkdown()
+        return result.success ? { success: true, data: result.markdown } : { success: false, error: result.error || "Failed to copy page as markdown" }
+      }
+      case "copy_page_as_text": {
+        const result = await copyPageAsText()
+        return result.success ? { success: true, data: result.text } : { success: false, error: result.error || "Failed to copy page as text" }
+      }
+      case "copy_page_links": {
+        const result = await copyPageLinks()
+        return result.success ? { success: true, data: result.links } : { success: false, error: result.error || "Failed to copy page links" }
+      }
+      case "copy_page_metadata": {
+        const result = await copyPageMetadata()
+        return result.success ? { success: true, data: result.metadata } : { success: false, error: result.error || "Failed to copy page metadata" }
+      }
+      // Storage
+      case "get_storage_value": {
+        const { key } = request.args
+        if (!key) return { success: false, error: "Key is required" }
+        const result = await getStorageValue(key)
+        return result.success ? { success: true, data: result.value } : { success: false, error: result.error || "Failed to get storage value" }
+      }
+      case "set_storage_value": {
+        const { key, value } = request.args
+        if (!key) return { success: false, error: "Key is required" }
+        const result = await setStorageValue(key, value)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to set storage value" }
+      }
+      case "remove_storage_value": {
+        const { key } = request.args
+        if (!key) return { success: false, error: "Key is required" }
+        const result = await removeStorageValue(key)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to remove storage value" }
+      }
+      case "get_all_storage_keys": {
+        const result = await getAllStorageKeys()
+        return result.success ? { success: true, data: result.keys } : { success: false, error: result.error || "Failed to get storage keys" }
+      }
+      case "clear_all_storage": {
+        const result = await clearAllStorage()
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to clear storage" }
+      }
+      case "get_extension_settings": {
+        const result = await getExtensionSettings()
+        return result.success ? { success: true, data: result.settings } : { success: false, error: result.error || "Failed to get extension settings" }
+      }
+      case "update_extension_settings": {
+        const { updates } = request.args
+        if (!updates) return { success: false, error: "Updates are required" }
+        const result = await updateExtensionSettings(updates)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to update extension settings" }
+      }
+      case "get_ai_config": {
+        const result = await getAiConfig()
+        return result.success ? { success: true, data: result.config } : { success: false, error: result.error || "Failed to get AI config" }
+      }
+      case "set_ai_config": {
+        const { config } = request.args
+        if (!config) return { success: false, error: "Config is required" }
+        const result = await setAiConfig(config)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to set AI config" }
+      }
+      case "export_storage_data": {
+        const result = await exportStorageData()
+        return result.success ? { success: true, data: result.data } : { success: false, error: result.error || "Failed to export storage data" }
+      }
+      case "import_storage_data": {
+        const { jsonData } = request.args
+        if (!jsonData) return { success: false, error: "JSON data is required" }
+        const result = await importStorageData(jsonData)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to import storage data" }
+      }
+      case "get_storage_stats": {
+        const result = await getStorageStats()
+        return result.success ? { success: true, data: result.stats } : { success: false, error: result.error || "Failed to get storage stats" }
+      }
+      // Utils
+      case "get_browser_info": {
+        const result = await getBrowserInfo()
+        return { success: true, data: result }
+      }
+      case "get_system_info": {
+        const result = await getSystemInfo()
+        return { success: true, data: result }
+      }
+      case "get_current_datetime": {
+        const result = await getCurrentDateTime()
+        return { success: true, data: result }
+      }
+      case "format_timestamp": {
+        const { timestamp, format } = request.args
+        if (!timestamp) return { success: false, error: "Timestamp is required" }
+        const result = await formatTimestamp(timestamp, format)
+        return result.success ? { success: true, data: result.formatted } : { success: false, error: result.error || "Failed to format timestamp" }
+      }
+      case "generate_random_string": {
+        const { length, type } = request.args
+        const result = await generateRandomString(length, type as any)
+        return result.success ? { success: true, data: result.result } : { success: false, error: result.error || "Failed to generate random string" }
+      }
+      case "validate_url": {
+        const { url } = request.args
+        if (!url) return { success: false, error: "URL is required" }
+        const result = await validateUrl(url)
+        return result.success ? { success: true, data: result.isValid } : { success: false, error: result.error || "Failed to validate URL" }
+      }
+      case "extract_domain": {
+        const { url } = request.args
+        if (!url) return { success: false, error: "URL is required" }
+        const result = await extractDomain(url)
+        return result.success ? { success: true, data: result.domain } : { success: false, error: result.error || "Failed to extract domain" }
+      }
+      case "get_url_parameters": {
+        const { url } = request.args
+        if (!url) return { success: false, error: "URL is required" }
+        const result = await getUrlParameters(url)
+        return result.success ? { success: true, data: result.parameters } : { success: false, error: result.error || "Failed to get URL parameters" }
+      }
+      case "build_url": {
+        const { baseUrl, parameters } = request.args
+        if (!baseUrl) return { success: false, error: "Base URL is required" }
+        const result = await buildUrl(baseUrl, parameters)
+        return result.success ? { success: true, data: result.url } : { success: false, error: result.error || "Failed to build URL" }
+      }
+      case "get_text_stats": {
+        const { text } = request.args
+        if (!text) return { success: false, error: "Text is required" }
+        const result = await getTextStats(text)
+        return result.success ? { success: true, data: result.stats } : { success: false, error: result.error || "Failed to get text stats" }
+      }
+      case "convert_text_case": {
+        const { text, caseType } = request.args
+        if (!text || !caseType) return { success: false, error: "Text and case type are required" }
+        const result = await convertTextCase(text, caseType as any)
+        return result.success ? { success: true, data: result.result } : { success: false, error: result.error || "Failed to convert text case" }
+      }
+      case "check_permissions": {
+        const result = await checkPermissions()
+        return result.success ? { success: true, data: result } : { success: false, error: result.error || "Failed to check permissions" }
+      }
+      // Extensions
+      case "get_all_extensions": {
+        const result = await getAllExtensions()
+        return result.success ? { success: true, data: result.extensions } : { success: false, error: result.error || "Failed to get extensions" }
+      }
+      case "get_extension": {
+        const { extensionId } = request.args
+        if (!extensionId) return { success: false, error: "Extension ID is required" }
+        const result = await getExtension(extensionId)
+        return result.success ? { success: true, data: result.extension } : { success: false, error: result.error || "Failed to get extension" }
+      }
+      case "set_extension_enabled": {
+        const { extensionId, enabled } = request.args
+        if (!extensionId) return { success: false, error: "Extension ID is required" }
+        const result = await setExtensionEnabled(extensionId, enabled)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to set extension enabled" }
+      }
+      case "uninstall_extension": {
+        const { extensionId } = request.args
+        if (!extensionId) return { success: false, error: "Extension ID is required" }
+        const result = await uninstallExtension(extensionId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to uninstall extension" }
+      }
+      case "get_extension_permissions": {
+        const { extensionId } = request.args
+        if (!extensionId) return { success: false, error: "Extension ID is required" }
+        const result = await getExtensionPermissions(extensionId)
+        return result.success ? { success: true, data: result.permissions } : { success: false, error: result.error || "Failed to get extension permissions" }
+      }
+      // Downloads
+      case "get_all_downloads": {
+        const result = await getAllDownloads()
+        return result.success ? { success: true, data: result.downloads } : { success: false, error: result.error || "Failed to get downloads" }
+      }
+      case "get_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await getDownload(downloadId)
+        return result.success ? { success: true, data: result.download } : { success: false, error: result.error || "Failed to get download" }
+      }
+      case "pause_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await pauseDownload(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to pause download" }
+      }
+      case "resume_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await resumeDownload(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to resume download" }
+      }
+      case "cancel_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await cancelDownload(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to cancel download" }
+      }
+      case "remove_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await removeDownload(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to remove download" }
+      }
+      case "open_download": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await openDownload(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to open download" }
+      }
+      case "show_download_in_folder": {
+        const { downloadId } = request.args
+        if (!Number.isFinite(downloadId)) return { success: false, error: "Invalid download ID" }
+        const result = await showDownloadInFolder(downloadId)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to show download in folder" }
+      }
+      case "get_download_stats": {
+        const result = await getDownloadStats()
+        return result.success ? { success: true, data: result.stats } : { success: false, error: result.error || "Failed to get download stats" }
+      }
+      // Sessions
+      case "get_all_sessions": {
+        const result = await getAllSessions()
+        return result.success ? { success: true, data: result.sessions } : { success: false, error: result.error || "Failed to get sessions" }
+      }
+      case "get_session": {
+        const { sessionId } = request.args
+        if (!sessionId) return { success: false, error: "Session ID is required" }
+        const result = await getSession(sessionId)
+        return result.success ? { success: true, data: result.session } : { success: false, error: result.error || "Failed to get session" }
+      }
+      case "restore_session": {
+        const { sessionId } = request.args
+        if (!sessionId) return { success: false, error: "Session ID is required" }
+        const result = await restoreSession(sessionId)
+        return result.success ? { success: true, data: result.session } : { success: false, error: result.error || "Failed to restore session" }
+      }
+      case "get_current_device": {
+        const result = await getCurrentDevice()
+        return result.success ? { success: true, data: result.device } : { success: false, error: result.error || "Failed to get current device" }
+      }
+      case "get_all_devices": {
+        const result = await getAllDevices()
+        return result.success ? { success: true, data: result.devices } : { success: false, error: result.error || "Failed to get all devices" }
+      }
+      // Context Menus
+      case "create_context_menu_item": {
+        const { id, title, contexts, documentUrlPatterns } = request.args
+        if (!id || !title) return { success: false, error: "ID and title are required" }
+        const result = await createContextMenuItem({ id, title, contexts: contexts as any, documentUrlPatterns })
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to create context menu item" }
+      }
+      case "update_context_menu_item": {
+        const { id, updates } = request.args
+        if (!id) return { success: false, error: "ID is required" }
+        const result = await updateContextMenuItem(id, updates)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to update context menu item" }
+      }
+      case "remove_context_menu_item": {
+        const { id } = request.args
+        if (!id) return { success: false, error: "ID is required" }
+        const result = await removeContextMenuItem(id)
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to remove context menu item" }
+      }
+      case "remove_all_context_menu_items": {
+        const result = await removeAllContextMenuItems()
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to remove all context menu items" }
+      }
+      case "get_context_menu_items": {
+        const result = await getContextMenuItems()
+        return result.success ? { success: true, data: result.items } : { success: false, error: result.error || "Failed to get context menu items" }
       }
       default:
         return { success: false, error: "Unsupported tool" }

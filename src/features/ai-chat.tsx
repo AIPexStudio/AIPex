@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Sender } from "@ant-design/x"
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
-import { callMcpTool } from "~mcp"
+
 import { Thread, MarkdownRenderer, CallTool } from "~/lib/components"
 import type { Message, ToolStep } from "~/lib/components"
 
@@ -297,92 +297,24 @@ const AIChatSidebar = () => {
     setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
 
     try {
-      // Intercept MCP tool commands
-      const lowered = message.trim().toLowerCase()
-      if (lowered === "/tabs" || lowered === "/get_all_tabs") {
-        const res = await callMcpTool({ tool: "get_all_tabs" })
-        const content = res.success
-          ? `Open tabs (id — title):\n` +
-            (res.data as any[])
-              .map((t) => `${t.id} — ${t.title || '(no title)'}`)
-              .join('\n')
-          : `Error getting tabs: ${(res as any).error}`
-        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
-        setLoading(false)
-        setTimeout(() => inputRef.current?.focus(), 100)
-        return
-      }
-
-      if (lowered === "/current" || lowered === "/get_current_tab") {
-        const res = await callMcpTool({ tool: "get_current_tab" })
-        const t = (res.success ? (res.data as any) : null)
-        const content = res.success && t
-          ? `Current tab: ${t.id} — ${t.title || '(no title)'}\n${t.url || ''}`
-          : res.success
-            ? `No active tab`
-            : `Error: ${(res as any).error}`
-        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
-        setLoading(false)
-        setTimeout(() => inputRef.current?.focus(), 100)
-        return
-      }
-
-      if (lowered.startsWith("/switch ")) {
-        const parts = lowered.split(/\s+/)
-        const tabId = Number(parts[1])
-        const res = isFinite(tabId)
-          ? await callMcpTool({ tool: "switch_to_tab", args: { tabId } })
-          : { success: false, error: "Usage: /switch <tabId>" }
-        const content = res.success ? `Switched to tab ${tabId}` : `Failed: ${(res as any).error}`
-        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content, streaming: false } : m))
-        setLoading(false)
-        setTimeout(() => inputRef.current?.focus(), 100)
-        return
-      }
-
-      if (lowered === "/organize" || lowered === "/organize_tabs") {
-        await callMcpTool({ tool: "organize_tabs" })
-        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content: "Organizing tabs...", streaming: false } : m))
-        setLoading(false)
-        setTimeout(() => inputRef.current?.focus(), 100)
-        return
-      }
-
-      if (lowered === "/ungroup" || lowered === "/ungroup_tabs") {
-        await callMcpTool({ tool: "ungroup_tabs" })
-        setMessages(prev => prev.map(m => m.id === aiMessageId ? { ...m, content: "Ungrouping tabs...", streaming: false } : m))
-        setLoading(false)
-        setTimeout(() => inputRef.current?.focus(), 100)
-        return
-      }
-
-      // Try tools-enabled flow for natural MCP actions
+      // Use MCP client for tool-enabled AI chat
       const conversationContext = buildContext(updatedMessages)
-      const toolRes = await chrome.runtime.sendMessage({
-        request: "ai-chat-tools",
+      const response = await chrome.runtime.sendMessage({
+        request: "ai-chat-with-tools",
         prompt: message,
         context: conversationContext,
         messageId: aiMessageId
       })
-      if (!toolRes?.success) {
-        // Fallback to streaming LLM
-        const response = await chrome.runtime.sendMessage({
-          request: "ai-chat",
-          prompt: message,
-          context: conversationContext,
-          messageId: aiMessageId
-        })
-        if (!response || !response.success) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: `Error: Failed to start AI chat`, streaming: false }
-              : msg
-          ))
-          setLoading(false)
-          setTimeout(() => {
-            inputRef.current?.focus()
-          }, 100)
-        }
+      if (!response || !response.success) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMessageId 
+            ? { ...msg, content: `Error: Failed to start AI chat`, streaming: false }
+            : msg
+        ))
+        setLoading(false)
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 100)
       }
     } catch (error: any) {
       console.error('AI response failed:', error)
