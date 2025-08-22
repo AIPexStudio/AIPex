@@ -711,8 +711,8 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     // Ask the model to produce final answer given tool outputs.
     // If we've executed any mutating action, force finalization (no more tools).
     const nextOptions = executedMutating
-      ? { tool_choice: "none" as const }
-              : { tools: getAllTools(), tool_choice: "auto" as const }
+      ? {} // Don't include tool_choice or tools when tools are not needed
+      : { tools: getAllTools(), tool_choice: "auto" as const }
     response = await chatCompletion(messages, false, nextOptions)
   }
 
