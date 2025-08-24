@@ -24,12 +24,173 @@ const AIChatSidebar = () => {
   const [aiModel, setAiModel] = useState("")
   const [isSaving, setIsSaving] = useState(false)
     const [stepsByMessageId, setStepsByMessageId] = useState<Record<string, ToolStep[]>>({})
+  const [showToolsInfo, setShowToolsInfo] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<any>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout>()
   const lastScrollTopRef = useRef<number>(0)
+
+  // Available tools data organized by category
+  const availableTools = [
+    {
+      category: "Tab Management",
+      description: "Manage browser tabs, switch between them, and get tab information",
+      tools: [
+        { name: "get_all_tabs", description: "Get all open tabs across all windows with their IDs, titles, and URLs" },
+        { name: "get_current_tab", description: "Get information about the currently active tab" },
+        { name: "switch_to_tab", description: "Switch to a specific tab by ID" },
+        { name: "create_new_tab", description: "Create a new tab with the specified URL" },
+        { name: "get_tab_info", description: "Get detailed information about a specific tab" },
+        { name: "duplicate_tab", description: "Duplicate an existing tab" },
+        { name: "close_tab", description: "Close a specific tab" },
+        { name: "get_current_tab_content", description: "Get the visible text content of the current tab" }
+      ]
+    },
+    {
+      category: "Tab Groups",
+      description: "Organize tabs into groups and manage tab organization",
+      tools: [
+        { name: "organize_tabs", description: "Use AI to automatically group tabs by topic/purpose" },
+        { name: "ungroup_tabs", description: "Remove all tab groups in the current window" },
+        { name: "get_all_tab_groups", description: "Get all tab groups across all windows" },
+        { name: "create_tab_group", description: "Create a new tab group with specified tabs" },
+        { name: "update_tab_group", description: "Update tab group properties" }
+      ]
+    },
+    {
+      category: "Bookmarks",
+      description: "Manage bookmarks, create, delete, and search bookmarks",
+      tools: [
+        { name: "get_all_bookmarks", description: "Get all bookmarks in a flattened list" },
+        { name: "get_bookmark_folders", description: "Get bookmark folder structure" },
+        { name: "create_bookmark", description: "Create a new bookmark" },
+        { name: "delete_bookmark", description: "Delete a bookmark by ID" },
+        { name: "search_bookmarks", description: "Search bookmarks by title/URL" }
+      ]
+    },
+    {
+      category: "History",
+      description: "Manage browsing history, search and clear history",
+      tools: [
+        { name: "get_recent_history", description: "Get recent browsing history" },
+        { name: "search_history", description: "Search browsing history" },
+        { name: "delete_history_item", description: "Delete a specific history item by URL" },
+        { name: "clear_history", description: "Clear browsing history for specified days" }
+      ]
+    },
+    {
+      category: "Windows",
+      description: "Manage browser windows, create, switch, and control windows",
+      tools: [
+        { name: "get_all_windows", description: "Get all browser windows" },
+        { name: "get_current_window", description: "Get the current focused window" },
+        { name: "switch_to_window", description: "Switch focus to a specific window" },
+        { name: "create_new_window", description: "Create a new browser window" },
+        { name: "close_window", description: "Close a specific window" },
+        { name: "minimize_window", description: "Minimize a specific window" },
+        { name: "maximize_window", description: "Maximize a specific window" }
+      ]
+    },
+    {
+      category: "Page Content",
+      description: "Extract and analyze content from web pages",
+      tools: [
+        { name: "get_page_metadata", description: "Get page metadata including title, description, keywords, etc." },
+        { name: "extract_page_text", description: "Extract text content from the current page with word count and reading time" },
+        { name: "get_page_links", description: "Get all links from the current page" },
+        { name: "get_page_images", description: "Get all images from the current page" },
+        { name: "search_page_text", description: "Search for text on the current page" }
+      ]
+    },
+    {
+      category: "Clipboard",
+      description: "Copy and manage clipboard content",
+      tools: [
+        { name: "copy_to_clipboard", description: "Copy text to clipboard" },
+        { name: "read_from_clipboard", description: "Read text from clipboard" },
+        { name: "copy_current_page_url", description: "Copy current page URL to clipboard" },
+        { name: "copy_current_page_title", description: "Copy current page title to clipboard" },
+        { name: "copy_selected_text", description: "Copy selected text from current page" },
+        { name: "copy_page_as_markdown", description: "Copy page content as markdown format" },
+        { name: "copy_page_as_text", description: "Copy page content as plain text" }
+      ]
+    },
+    {
+      category: "Storage",
+      description: "Manage extension storage and settings",
+      tools: [
+        { name: "get_storage_value", description: "Get a value from storage" },
+        { name: "set_storage_value", description: "Set a value in storage" },
+        { name: "get_extension_settings", description: "Get extension settings" },
+        { name: "get_ai_config", description: "Get AI configuration" }
+      ]
+    },
+    {
+      category: "Utilities",
+      description: "Utility functions for browser and system information",
+      tools: [
+        { name: "get_browser_info", description: "Get browser information" },
+        { name: "get_system_info", description: "Get system information" },
+        { name: "get_current_datetime", description: "Get current date and time" },
+        { name: "validate_url", description: "Validate if a URL is properly formatted" },
+        { name: "extract_domain", description: "Extract domain from URL" },
+        { name: "get_text_stats", description: "Get text statistics including word count, reading time, etc." },
+        { name: "check_permissions", description: "Check if all required permissions are available for the extension" }
+      ]
+    },
+    {
+      category: "Extensions",
+      description: "Manage browser extensions",
+      tools: [
+        { name: "get_all_extensions", description: "Get all installed extensions with their details" },
+        { name: "get_extension", description: "Get extension details by ID" },
+        { name: "set_extension_enabled", description: "Enable or disable an extension" },
+        { name: "uninstall_extension", description: "Uninstall an extension" },
+        { name: "get_extension_permissions", description: "Get extension permissions" }
+      ]
+    },
+    {
+      category: "Downloads",
+      description: "Manage browser downloads",
+      tools: [
+        { name: "get_all_downloads", description: "Get all downloads with their status and progress" },
+        { name: "get_download", description: "Get download details by ID" },
+        { name: "pause_download", description: "Pause a download" },
+        { name: "resume_download", description: "Resume a paused download" },
+        { name: "cancel_download", description: "Cancel a download" },
+        { name: "remove_download", description: "Remove a download from history" },
+        { name: "open_download", description: "Open a downloaded file" },
+        { name: "show_download_in_folder", description: "Show a download in its folder" },
+        { name: "get_download_stats", description: "Get download statistics" }
+      ]
+    },
+    {
+      category: "Sessions",
+      description: "Manage browser sessions and device information",
+      tools: [
+        { name: "get_all_sessions", description: "Get all recently closed sessions" },
+        { name: "get_session", description: "Get session details by ID" },
+        { name: "restore_session", description: "Restore a closed session" },
+        { name: "get_current_device", description: "Get current device information" },
+        { name: "get_all_devices", description: "Get all devices information" }
+      ]
+    },
+    {
+      category: "Context Menus",
+      description: "Manage browser context menu items",
+      tools: [
+        { name: "create_context_menu_item", description: "Create a new context menu item" },
+        { name: "update_context_menu_item", description: "Update an existing context menu item" },
+        { name: "remove_context_menu_item", description: "Remove a context menu item" },
+        { name: "remove_all_context_menu_items", description: "Remove all context menu items" },
+        { name: "get_context_menu_items", description: "Get all context menu items (limited by Chrome API)" }
+      ]
+    }
+  ]
+
+  const totalToolsCount = availableTools.reduce((sum, category) => sum + category.tools.length, 0)
 
   // Check for selected text when component mounts
   useEffect(() => {
@@ -458,7 +619,16 @@ const AIChatSidebar = () => {
     <div className="fixed bottom-0 left-0 w-full h-full bg-white flex flex-col border-t border-gray-200 font-sans text-gray-900">
       {/* Header with close icon */}
       <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900 text-center">AI Chat</h2>
+        <div className="text-center">
+          <button
+            onClick={() => setShowToolsInfo(!showToolsInfo)}
+            className="inline-flex flex-col items-center hover:bg-gray-50 rounded-lg px-3 py-1 transition-colors"
+            title="Click to view available tools"
+          >
+            <h2 className="text-xl font-bold text-gray-900">AI Chat</h2>
+            <span className="text-sm text-blue-600 font-medium">({totalToolsCount} tools)</span>
+          </button>
+        </div>
         <button
           onClick={handleClearConversation}
           disabled={loading}
@@ -489,6 +659,8 @@ const AIChatSidebar = () => {
               <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
               <p className="text-sm text-gray-600">Organize/Ungroup and AI configuration</p>
             </div>
+
+
 
             {/* Card: Tab Organization */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
@@ -591,6 +763,55 @@ const AIChatSidebar = () => {
                   >Open Shortcuts</button>
                 </div>
               </div>
+            </div>
+
+            
+          </div>
+        </div>
+      ) : showToolsInfo ? (
+        // Tools Information View
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 bg-slate-50">
+          <div className="max-w-6xl mx-auto space-y-4">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Available AI Tools</h3>
+              <p className="text-gray-600">AIpex provides {totalToolsCount} tools to enhance AI capabilities</p>
+            </div>
+
+            {/* Tools Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {availableTools.map((category, index) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900">{category.category}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                  </div>
+                  <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+                    {category.tools.map((tool, toolIndex) => (
+                      <div key={toolIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                        <div className="font-mono text-sm text-blue-600 font-semibold mb-1">{tool.name}</div>
+                        <div className="text-sm text-gray-700 leading-relaxed">{tool.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="text-center pt-6 border-t border-gray-200">
+              <p className="text-lg font-semibold text-gray-900 mb-2">
+                Total Tools Available: {totalToolsCount}
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                These tools enable the AI to perform various browser automation and management tasks
+              </p>
+              <button
+                onClick={() => setShowToolsInfo(false)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                Back to Chat
+              </button>
             </div>
           </div>
         </div>
