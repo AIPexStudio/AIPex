@@ -41,6 +41,9 @@ export type McpToolName =
   | "search_page_text"
   | "get_page_performance"
   | "get_page_accessibility"
+  | "get_interactive_elements"
+  | "click_element"
+  | "summarize_page"
   // Clipboard
   | "copy_to_clipboard"
   | "read_from_clipboard"
@@ -149,6 +152,9 @@ export type McpRequest =
   | { tool: "search_page_text"; args: { query: string } }
   | { tool: "get_page_performance" }
   | { tool: "get_page_accessibility" }
+  | { tool: "get_interactive_elements" }
+  | { tool: "click_element"; args: { selector: string } }
+  | { tool: "summarize_page" }
   // Clipboard
   | { tool: "copy_to_clipboard"; args: { text: string } }
   | { tool: "read_from_clipboard" }
@@ -262,6 +268,9 @@ import {
   searchPageText,
   getPagePerformance,
   getPageAccessibility,
+  getInteractiveElements,
+  clickElement,
+  summarizePage,
   // Clipboard
   copyToClipboard,
   readFromClipboard,
@@ -531,6 +540,20 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       case "get_page_accessibility": {
         const accessibility = await getPageAccessibility()
         return { success: true, data: accessibility }
+      }
+      case "get_interactive_elements": {
+        const elements = await getInteractiveElements()
+        return { success: true, data: elements }
+      }
+      case "click_element": {
+        const { selector } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await clickElement(selector)
+        return { success: true, data: result }
+      }
+      case "summarize_page": {
+        const summary = await summarizePage()
+        return { success: true, data: summary }
       }
       // Clipboard
       case "copy_to_clipboard": {

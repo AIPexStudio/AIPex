@@ -446,6 +446,38 @@ export class BrowserMcpClient {
         required: ["query"]
       }
     },
+    {
+      name: "get_interactive_elements",
+      description: "Get all interactive elements (links, buttons, inputs) from the current page with their selectors and properties",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
+    {
+      name: "click_element",
+      description: "Click an element on the current page using its CSS selector",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the element to click (e.g., 'a[href*=\"google\"]', '.button', '#submit')"
+          }
+        },
+        required: ["selector"]
+      }
+    },
+    {
+      name: "summarize_page",
+      description: "Summarize the current page content with key points and reading statistics",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
 
     // Clipboard
     {

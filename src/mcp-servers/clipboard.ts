@@ -173,7 +173,7 @@ export async function copyPageAsText(): Promise<{ success: boolean; text?: strin
 
         // Get main content
         const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
-        const text = mainContent.innerText || mainContent.textContent || ""
+        const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
         
         // Clean up text
         const cleanedText = text

@@ -491,25 +491,231 @@ async function chatCompletion(messages, stream = false, options = {}) {
 
 // Unified system prompt describing AIPex product capabilities (Chinese)
 const SYSTEM_PROMPT = [
-  "You are the AIPex browser assistant. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
-  "\nWhat you can do:",
+  "You are the AIPex browser assistant with enhanced planning capabilities. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
+  
+  "\n=== ENHANCED PLANNING FRAMEWORK ===",
+  "You follow a structured Planning Agent approach with ReAct (Reasoning + Acting) pattern:",
+  
+  "\n1. TASK ANALYSIS PHASE:",
+  "   - Analyze the user's request and identify the core objective",
+  "   - Determine if this is a simple task or requires multi-step planning",
+  "   - Identify required tools and dependencies",
+  
+  "\n2. PLANNING PHASE:",
+  "   - For complex tasks, create a detailed execution plan with numbered steps",
+  "   - Consider potential obstacles and alternative approaches",
+  "   - Estimate the sequence and dependencies of tool calls",
+  
+  "\n3. EXECUTION PHASE (ReAct Loop):",
+  "   - THINK: Analyze current situation and decide next action",
+  "   - ACT: Execute the planned tool or action",
+  "   - OBSERVE: Evaluate the result and update understanding",
+  "   - REASON: Adjust plan if needed and continue or conclude",
+  
+  "\n4. MONITORING & ADAPTATION:",
+  "   - Track progress against the original plan",
+  "   - Adapt strategy if unexpected results occur",
+  "   - Provide status updates and explain deviations",
+  
+  "\n=== PLANNING TEMPLATES ===",
+  "For complex tasks, use this planning format:",
+  "```",
+  "📋 TASK ANALYSIS:",
+  "- Objective: [Clear goal]",
+  "- Complexity: [Simple/Medium/Complex]",
+  "- Required Tools: [List of needed tools]",
+  "- Dependencies: [What needs to happen first]",
+  
+  "📝 EXECUTION PLAN:",
+  "1. [First step with tool call]",
+  "2. [Second step with tool call]",
+  "3. [Continue as needed...]",
+  
+  "🔄 REACT CYCLE:",
+  "THINK → ACT → OBSERVE → REASON → [Repeat]",
+  "```",
+  
+  "\n=== CAPABILITIES ===",
   "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
   "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
   "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
-  "\nWhen tools are available, prefer these:",
+  "4) Manage bookmarks: create, delete, search, and organize bookmarks.",
+  "5) Manage history: search, view recent history, and clear browsing data.",
+  "6) Manage windows: create, switch, minimize, maximize, and close windows.",
+  "7) Manage tab groups: create, update, and organize tab groups.",
+  "8) Page content analysis: extract and analyze content from web pages.",
+  "9) Clipboard management: copy and manage clipboard content.",
+  "10) Storage management: manage extension storage and settings.",
+  
+  "\n=== AVAILABLE TOOLS ===",
+  "When tools are available, prefer these:",
+  
+  "Tab Management:",
   "- get_all_tabs: list all tabs (id, title, url)",
   "- get_current_tab: get the active tab",
   "- switch_to_tab: switch to a tab by id",
-  "- get_current_tab_content: get visible text content of the current tab (title, url, content)",
-  "- create_new_tab: create a new tab with the given URL",
+  "- create_new_tab: create a new tab with URL",
+  "- get_tab_info: get detailed tab information",
+  "- duplicate_tab: duplicate an existing tab",
+  "- close_tab: close a specific tab",
+  "- get_current_tab_content: extract content from current tab",
+  
+  "Tab Group Management:",
   "- organize_tabs: AI-organize current-window tabs",
   "- ungroup_tabs: remove all tab groups in the current window",
-  "\nUsage guidance: For requests like ‘switch to X’, first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
-  "\nEncourage natural, semantic requests instead of slash commands (e.g., ‘help organize my tabs’, ‘switch to the bilibili tab’, ‘summarize this page’)."
+  "- get_all_tab_groups: list all tab groups",
+  "- create_tab_group: create a new tab group",
+  "- update_tab_group: update tab group properties",
+  
+  "Bookmark Management:",
+  "- get_all_bookmarks: list all bookmarks",
+  "- get_bookmark_folders: get bookmark folder structure",
+  "- create_bookmark: create a new bookmark",
+  "- delete_bookmark: delete a bookmark by ID",
+  "- search_bookmarks: search bookmarks by title/URL",
+  
+  "History Management:",
+  "- get_recent_history: get recent browsing history",
+  "- search_history: search browsing history",
+  "- delete_history_item: delete a specific history item",
+  "- clear_history: clear browsing history for specified days",
+  
+  "Window Management:",
+  "- get_all_windows: list all browser windows",
+  "- get_current_window: get the current focused window",
+  "- switch_to_window: switch focus to a specific window",
+  "- create_new_window: create a new browser window",
+  "- close_window: close a specific window",
+  "- minimize_window: minimize a specific window",
+  "- maximize_window: maximize a specific window",
+  
+  "Page Content:",
+  "- get_page_metadata: get page metadata (title, description, keywords)",
+  "- extract_page_text: extract text content with word count and reading time",
+  "- get_page_links: get all links from the current page",
+  "- get_page_images: get all images from the current page",
+  "- search_page_text: search for text on the current page",
+  
+  "Clipboard:",
+  "- copy_to_clipboard: copy text to clipboard",
+  "- read_from_clipboard: read text from clipboard",
+  "- copy_current_page_url: copy current page URL to clipboard",
+  "- copy_current_page_title: copy current page title to clipboard",
+  "- copy_selected_text: copy selected text from current page",
+  "- copy_page_as_markdown: copy page content as markdown format",
+  "- copy_page_as_text: copy page content as plain text",
+  
+  "Storage:",
+  "- get_storage_value: get a value from storage",
+  "- set_storage_value: set a value in storage",
+  "- get_extension_settings: get extension settings",
+  "- get_ai_config: get AI configuration",
+  
+  "Utilities:",
+  "- get_browser_info: get browser information",
+  "- get_system_info: get system information",
+  "- get_current_datetime: get current date and time",
+  "- validate_url: validate if a URL is properly formatted",
+  "- extract_domain: extract domain from URL",
+  "- get_text_stats: get text statistics (word count, reading time)",
+  "- check_permissions: check if all required permissions are available",
+  
+  "Extensions:",
+  "- get_all_extensions: get all installed extensions with details",
+  "- get_extension: get extension details by ID",
+  "- set_extension_enabled: enable or disable an extension",
+  "- uninstall_extension: uninstall an extension",
+  "- get_extension_permissions: get extension permissions",
+  
+  "Downloads:",
+  "- get_all_downloads: get all downloads with status and progress",
+  "- get_download: get download details by ID",
+  "- pause_download: pause a download",
+  "- resume_download: resume a paused download",
+  "- cancel_download: cancel a download",
+  "- remove_download: remove a download from history",
+  "- open_download: open a downloaded file",
+  "- show_download_in_folder: show a download in its folder",
+  "- get_download_stats: get download statistics",
+  
+  "Sessions:",
+  "- get_all_sessions: get all recently closed sessions",
+  "- get_session: get session details by ID",
+  "- restore_session: restore a closed session",
+  "- get_current_device: get current device information",
+  "- get_all_devices: get all devices information",
+  
+  "Context Menus:",
+  "- create_context_menu_item: create a new context menu item",
+  "- update_context_menu_item: update an existing context menu item",
+  "- remove_context_menu_item: remove a context menu item",
+  "- remove_all_context_menu_items: remove all context menu items",
+  "- get_context_menu_items: get all context menu items",
+  
+  "\n=== USAGE GUIDELINES ===",
+  "1. For simple requests (e.g., 'switch to X'), use direct tool calls:",
+  "   - First call get_all_tabs to find the target",
+  "   - Then call switch_to_tab with the matching ID",
+  
+  "2. For complex requests, follow the planning framework:",
+  "   - Analyze the task complexity",
+  "   - Create a step-by-step plan",
+  "   - Execute with ReAct cycle",
+  "   - Monitor and adapt as needed",
+  
+  "3. For content analysis requests:",
+  "   - Use get_current_tab_content for current page analysis",
+  "   - Use get_page_metadata for page information",
+  "   - Use extract_page_text for detailed content extraction",
+  
+  "4. For organization tasks:",
+  "   - Use organize_tabs for AI-powered tab grouping",
+  "   - Use ungroup_tabs to reset organization",
+  "   - Use create_tab_group for manual grouping",
+  
+  "5. For information gathering:",
+  "   - Use get_all_tabs for tab overview",
+  "   - Use get_all_bookmarks for bookmark management",
+  "   - Use get_recent_history for browsing history",
+  "   - Use get_interactive_elements to find clickable elements on the current page",
+  "   - Use summarize_page to analyze and summarize the current page content",
+  
+  "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
+  
+  "\n=== PLANNING EXAMPLES ===",
+  "Example 1 - Simple Task:",
+  "User: 'Switch to bilibili'",
+  "Plan: 1. Get all tabs → 2. Find bilibili tab → 3. Switch to it",
+  
+  "Example 2 - Complex Task:",
+  "User: 'Organize my tabs and bookmark the current page'",
+  "Plan: 1. Get current tab info → 2. Create bookmark → 3. Get all tabs → 4. Organize tabs by AI",
+  
+  "Example 3 - Analysis Task:",
+  "User: 'Summarize this page and save key points'",
+  "Plan: 1. Extract page content → 2. Analyze content → 3. Create summary → 4. Copy to clipboard",
+  
+  "Example 4 - Page Interaction Task:",
+  "User: 'Open Google, search for MCP, and analyze the first result'",
+  "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page"
 ].join("\n")
 
 // Import MCP client to get all available tools
 import { browserMcpClient } from "~mcp/client"
+
+// Import PlanningStep type
+interface PlanningStep {
+  type: 'analysis' | 'plan' | 'think' | 'act' | 'observe' | 'reason' | 'complete'
+  content: string
+  timestamp: number
+  status?: 'pending' | 'in-progress' | 'completed' | 'failed'
+  toolCall?: {
+    name: string
+    args: any
+    result?: any
+    error?: string
+  }
+}
 
 // Get all available tools from MCP client
 const getAllTools = () => {
@@ -559,6 +765,18 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
       const content = choice?.message?.content || ""
       if (messageId) {
         try {
+          // Add planning completion step
+          chrome.runtime.sendMessage({
+            request: "ai-chat-planning-step",
+            messageId,
+            step: {
+              type: "complete",
+              content: "Task completed successfully",
+              timestamp: Date.now(),
+              status: "completed"
+            }
+          })
+          
           const response = await chatCompletion(messages, true) // no tools needed for final text
           if (!response.body) {
             throw new Error('No response body for streaming')
@@ -616,6 +834,24 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
       } catch {}
     }
 
+    // Check if this is a planning phase (before tool calls)
+    if (assistantThought && assistantThought.includes("📋 TASK ANALYSIS") && messageId) {
+      try {
+        // Extract planning information from the thought
+        const planningStep: PlanningStep = {
+          type: "analysis",
+          content: assistantThought,
+          timestamp: Date.now(),
+          status: "completed"
+        }
+        chrome.runtime.sendMessage({
+          request: "ai-chat-planning-step",
+          messageId,
+          step: planningStep
+        })
+      } catch {}
+    }
+
     // Execute each tool and append tool results
     let executedMutating = false
     for (const tc of toolCalls) {
@@ -663,6 +899,36 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
             })
           } catch {}
         }
+        
+        // Add ReAct planning steps
+        if (messageId) {
+          try {
+            // Add "think" step
+            chrome.runtime.sendMessage({
+              request: "ai-chat-planning-step",
+              messageId,
+              step: {
+                type: "think",
+                content: `Analyzing the need to call tool: ${name}`,
+                timestamp: Date.now(),
+                status: "completed"
+              }
+            })
+            
+            // Add "act" step
+            chrome.runtime.sendMessage({
+              request: "ai-chat-planning-step",
+              messageId,
+              step: {
+                type: "act",
+                content: `Executing tool: ${name}`,
+                timestamp: Date.now(),
+                status: "in-progress",
+                toolCall: { name, args }
+              }
+            })
+          } catch {}
+        }
         const toolResult = await executeToolCall(name, args)
         messages.push({
           role: "tool",
@@ -686,6 +952,56 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
               request: "ai-chat-tools-step",
               messageId,
               step: { type: "tool_result", name, result: resultString }
+            })
+          } catch {}
+        }
+        
+        // Add ReAct observation and reasoning steps
+        if (messageId) {
+          try {
+            // Add "observe" step
+            chrome.runtime.sendMessage({
+              request: "ai-chat-planning-step",
+              messageId,
+              step: {
+                type: "observe",
+                content: `Observing result from tool: ${name}`,
+                timestamp: Date.now(),
+                status: "completed",
+                toolCall: { 
+                  name, 
+                  args, 
+                  result: (() => {
+                    const resultStr = String(toolResult)
+                    return resultStr.length > 200 ? resultStr.slice(0, 200) + '...' : resultStr
+                  })()
+                }
+              }
+            })
+            
+            // Add "reason" step
+            chrome.runtime.sendMessage({
+              request: "ai-chat-planning-step",
+              messageId,
+              step: {
+                type: "reason",
+                content: `Evaluating result and planning next action`,
+                timestamp: Date.now(),
+                status: "completed"
+              }
+            })
+            
+            // Update the "act" step to completed
+            chrome.runtime.sendMessage({
+              request: "ai-chat-planning-step",
+              messageId,
+              step: {
+                type: "act",
+                content: `Executing tool: ${name}`,
+                timestamp: Date.now(),
+                status: "completed",
+                toolCall: { name, args }
+              }
             })
           } catch {}
         }

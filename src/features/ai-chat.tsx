@@ -3,8 +3,8 @@ import { Sender } from "@ant-design/x"
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
 
-import { Thread, MarkdownRenderer, CallTool } from "~/lib/components"
-import type { Message, ToolStep } from "~/lib/components"
+import { Thread, MarkdownRenderer, CallTool, PlanningAgent } from "~/lib/components"
+import type { Message, ToolStep, PlanningStep } from "~/lib/components"
 
 const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
@@ -25,6 +25,7 @@ const AIChatSidebar = () => {
   const [isSaving, setIsSaving] = useState(false)
     const [stepsByMessageId, setStepsByMessageId] = useState<Record<string, ToolStep[]>>({})
   const [showToolsInfo, setShowToolsInfo] = useState(false)
+  const [planningStepsByMessageId, setPlanningStepsByMessageId] = useState<Record<string, PlanningStep[]>>({})
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -407,6 +408,19 @@ const AIChatSidebar = () => {
         setTimeout(() => {
           inputRef.current?.focus()
         }, 100)
+      } else if (message.request === 'ai-chat-planning-step') {
+        const { messageId, step } = message as { messageId: string; step: PlanningStep }
+        setPlanningStepsByMessageId(prev => {
+          const prevSteps = prev[messageId] || []
+          return { ...prev, [messageId]: [...prevSteps, step] }
+        })
+      } else if (message.request === 'ai-chat-planning-complete') {
+        const { messageId } = message as { messageId: string }
+        // Mark planning as complete
+        setPlanningStepsByMessageId(prev => {
+          const steps = prev[messageId] || []
+          return { ...prev, [messageId]: steps.map(step => ({ ...step, status: 'completed' as const })) }
+        })
       }
     }
 
@@ -456,6 +470,8 @@ const AIChatSidebar = () => {
     setMessages(prev => [...prev, aiMessage])
     // prepare steps container for this message
     setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
+    // prepare planning steps container for this message
+    setPlanningStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
 
     try {
       // Use MCP client for tool-enabled AI chat
@@ -828,6 +844,12 @@ const AIChatSidebar = () => {
                   {(message) => (
                     message.role === 'assistant' ? (
                       <div className="flex flex-col gap-4">
+                        {planningStepsByMessageId[message.id]?.length ? (
+                          <PlanningAgent 
+                            steps={planningStepsByMessageId[message.id]} 
+                            isActive={true}
+                          />
+                        ) : null}
                         {stepsByMessageId[message.id]?.length ? (
                           <CallTool steps={stepsByMessageId[message.id]} />
                         ) : null}
@@ -869,7 +891,7 @@ const AIChatSidebar = () => {
                         <div className="text-xs text-gray-600">Use AI to group current-window tabs by topic</div>
                       </button>
                       <button
-                        onClick={() => handleSubmit('Summarize this page')}
+                        onClick={() => handleSubmit('Summarize this page and save key points to clipboard')}
                         className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
                         <div className="flex items-center mb-3">
@@ -878,12 +900,12 @@ const AIChatSidebar = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           </div>
-                          <div className="text-sm font-semibold text-gray-900">Summarize page</div>
+                          <div className="text-sm font-semibold text-gray-900">Analyze & Save</div>
                         </div>
-                        <div className="text-xs text-gray-600">Generate a concise summary of this tab</div>
+                        <div className="text-xs text-gray-600">Extract content, summarize, and copy to clipboard</div>
                       </button>
                       <button
-                        onClick={() => handleSubmit('Switch to bilibili')}
+                        onClick={() => handleSubmit('Find all my GitHub tabs and organize them into a group')}
                         className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
                         <div className="flex items-center mb-3">
@@ -892,12 +914,12 @@ const AIChatSidebar = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
                             </svg>
                           </div>
-                          <div className="text-sm font-semibold text-gray-900">Switch to bilibili</div>
+                          <div className="text-sm font-semibold text-gray-900">Smart Grouping</div>
                         </div>
-                        <div className="text-xs text-gray-600">Find and focus the bilibili tab</div>
+                        <div className="text-xs text-gray-600">Find specific tabs and create targeted groups</div>
                       </button>
                       <button
-                        onClick={() => handleSubmit('What tabs do I have open?')}
+                        onClick={() => handleSubmit('What tabs do I have open? Show me a detailed overview')}
                         className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
                         <div className="flex items-center mb-3">
@@ -906,9 +928,9 @@ const AIChatSidebar = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                           </div>
-                          <div className="text-sm font-semibold text-gray-900">List my tabs</div>
+                          <div className="text-sm font-semibold text-gray-900">Tab Overview</div>
                         </div>
-                        <div className="text-xs text-gray-600">Show open tabs with details</div>
+                        <div className="text-xs text-gray-600">Get detailed analysis of all open tabs</div>
                       </button>
                     </div>
                   </div>

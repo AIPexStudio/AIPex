@@ -63,7 +63,7 @@ export async function extractPageText(): Promise<{
 
       // Get main content areas
       const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
-      const text = mainContent.innerText || mainContent.textContent || ""
+      const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
       
       // Clean up text
       const cleanedText = text
@@ -296,6 +296,234 @@ export async function getPageAccessibility(): Promise<{
           withAlt: imagesWithAlt,
           withoutAlt: images.length - imagesWithAlt
         }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Get interactive elements from the current page
+ */
+export async function getInteractiveElements(): Promise<{
+  title: string
+  url: string
+  elements: Array<{
+    type: string
+    text: string
+    selector: string
+    href?: string
+    value?: string
+    placeholder?: string
+    isVisible: boolean
+    isClickable: boolean
+  }>
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const getSelector = (element: Element): string => {
+        if (element.id) return `#${element.id}`
+        if (element.className) {
+          const classes = element.className.split(' ').filter(c => c.trim())
+          if (classes.length > 0) return `.${classes.join('.')}`
+        }
+        return element.tagName.toLowerCase()
+      }
+
+      const isVisible = (element: Element): boolean => {
+        const style = window.getComputedStyle(element)
+        return style.display !== 'none' && 
+               style.visibility !== 'hidden' && 
+               style.opacity !== '0' &&
+               (element as HTMLElement).offsetWidth > 0 && 
+               (element as HTMLElement).offsetHeight > 0
+      }
+
+      const isClickable = (element: Element): boolean => {
+        const tag = element.tagName.toLowerCase()
+        return ['a', 'button', 'input', 'select', 'textarea'].includes(tag) ||
+               (element as HTMLElement).onclick !== null ||
+               element.getAttribute('role') === 'button' ||
+               element.getAttribute('tabindex') !== null
+      }
+
+      const interactiveElements: Array<{
+        type: string
+        text: string
+        selector: string
+        href?: string
+        value?: string
+        placeholder?: string
+        isVisible: boolean
+        isClickable: boolean
+      }> = []
+
+      // Get all interactive elements
+      const elements = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [onclick], [tabindex]')
+      
+      elements.forEach((element, index) => {
+        const tag = element.tagName.toLowerCase()
+        const text = element.textContent?.trim() || 
+                    (element as HTMLInputElement).placeholder ||
+                    (element as HTMLInputElement).value ||
+                    element.getAttribute('aria-label') ||
+                    element.getAttribute('title') ||
+                    ''
+        
+        if (text && isVisible(element)) {
+          interactiveElements.push({
+            type: tag,
+            text: text.substring(0, 100), // Limit text length
+            selector: getSelector(element),
+            href: (element as HTMLAnchorElement).href,
+            value: (element as HTMLInputElement).value,
+            placeholder: (element as HTMLInputElement).placeholder,
+            isVisible: isVisible(element),
+            isClickable: isClickable(element)
+          })
+        }
+      })
+
+      return {
+        title: document.title || "",
+        url: location.href,
+        elements: interactiveElements.slice(0, 50) // Limit to 50 elements
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Click an element on the current page
+ */
+export async function clickElement(selector: string): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector],
+    func: (selector: string) => {
+      try {
+        const element = document.querySelector(selector)
+        if (!element) {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is visible and clickable
+        const style = window.getComputedStyle(element)
+        if (style.display === 'none' || style.visibility === 'hidden') {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" is not visible`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Click the element
+        (element as HTMLElement).click()
+        
+        return {
+          success: true,
+          message: `Successfully clicked element with selector "${selector}"`,
+          title: document.title || "",
+          url: location.href
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error clicking element: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Summarize the current page content
+ */
+export async function summarizePage(): Promise<{
+  title: string
+  url: string
+  summary: string
+  keyPoints: string[]
+  wordCount: number
+  readingTime: number
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      // Remove script and style elements
+      const scripts = document.querySelectorAll('script, style, nav, header, footer, aside')
+      scripts.forEach(el => el.remove())
+
+      // Get main content areas
+      const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
+      const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
+      
+      // Clean up text
+      const cleanedText = text
+        .replace(/\s+/g, ' ')
+        .replace(/\n+/g, '\n')
+        .trim()
+      
+      const wordCount = cleanedText.split(/\s+/).length
+      const readingTime = Math.ceil(wordCount / 200) // Average reading speed
+
+      // Extract key points (headings and important text)
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+        .map(h => h.textContent?.trim())
+        .filter(h => h && h.length > 0)
+        .slice(0, 10)
+
+      // Extract important content (first few paragraphs)
+      const paragraphs = Array.from(document.querySelectorAll('p'))
+        .map(p => p.textContent?.trim())
+        .filter(p => p && p.length > 50)
+        .slice(0, 5)
+
+      const keyPoints = [...headings, ...paragraphs].slice(0, 8)
+
+      // Create a simple summary
+      const summary = cleanedText.length > 500 
+        ? cleanedText.substring(0, 500) + "..."
+        : cleanedText
+
+      return {
+        title: document.title || "",
+        url: location.href,
+        summary,
+        keyPoints,
+        wordCount,
+        readingTime
       }
     }
   })
