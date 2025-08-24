@@ -187,6 +187,7 @@ Thanks to all our amazing contributors!
 - [x] **Keyboard Shortcuts** - Quick access commands
 - [x] **Dark Mode Support** - Beautiful dark theme
 - [x] **Google Search Enhancement** - AI-powered insights
+- [x] **Form & Input Management** - Fill forms, manage inputs, and interact with web elements
 
 ### 🚧 In Progress
 - [ ] **Enhanced AI Toolbar** - Real-time translation and summarization
@@ -198,6 +199,24 @@ Thanks to all our amazing contributors!
 - [ ] **Firefox Support** - Cross-browser compatibility
 - [ ] **Mobile Extension** - Mobile browser support
 - [ ] **API Integration** - Connect with external services
+
+## 🆕 Latest Features
+
+### 📝 Form & Input Management
+- **Smart Form Filling**: Automatically fill out web forms using AI
+- **Input Field Operations**: Clear, read, and modify input fields
+- **Form Discovery**: Find and analyze all forms on web pages
+- **Interactive Elements**: Click buttons and interact with page elements
+- **Form Submission**: Submit forms automatically
+
+**New AI Tools Available:**
+- `fill_input` - Fill input fields with text
+- `clear_input` - Clear input field content
+- `get_input_value` - Read current input values
+- `submit_form` - Submit web forms
+- `get_form_elements` - Discover all forms and inputs
+- `click_element` - Click page elements
+- `get_interactive_elements` - Find clickable elements
 - [ ] **Advanced AI Models** - Support for multiple AI providers
 
 ## 🐛 Known Issues

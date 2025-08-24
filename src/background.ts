@@ -595,6 +595,16 @@ const SYSTEM_PROMPT = [
   "- get_page_links: get all links from the current page",
   "- get_page_images: get all images from the current page",
   "- search_page_text: search for text on the current page",
+  "- get_interactive_elements: get all interactive elements (links, buttons, inputs) from the current page",
+  "- click_element: click an element on the current page using its CSS selector",
+  "- summarize_page: summarize the current page content with key points and reading statistics",
+  
+  "Form & Input Management:",
+  "- fill_input: fill an input field with text using CSS selector",
+  "- clear_input: clear the content of an input field using CSS selector",
+  "- get_input_value: get the current value of an input field using CSS selector",
+  "- submit_form: submit a form using CSS selector",
+  "- get_form_elements: get all form elements and their input fields on the current page",
   
   "Clipboard:",
   "- copy_to_clipboard: copy text to clipboard",
@@ -680,6 +690,14 @@ const SYSTEM_PROMPT = [
   "   - Use get_interactive_elements to find clickable elements on the current page",
   "   - Use summarize_page to analyze and summarize the current page content",
   
+  "6. For form and input interaction:",
+  "   - Use get_form_elements to discover all forms and input fields on the current page",
+  "   - Use fill_input to populate input fields with text",
+  "   - Use clear_input to clear input field content",
+  "   - Use get_input_value to read current input values",
+  "   - Use submit_form to submit forms",
+  "   - Use click_element to interact with buttons and other clickable elements",
+  
   "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
   
   "\n=== PLANNING EXAMPLES ===",
@@ -697,6 +715,14 @@ const SYSTEM_PROMPT = [
   
   "Example 4 - Page Interaction Task:",
   "User: 'Open Google, search for MCP, and analyze the first result'",
+  
+  "Example 5 - Form Interaction Task:",
+  "User: 'Fill out the contact form on this page with my information'",
+  "Plan: 1. Get form elements → 2. Fill name input → 3. Fill email input → 4. Fill message textarea → 5. Submit form",
+  
+  "Example 6 - Input Management Task:",
+  "User: 'Clear the search box and enter a new query'",
+  "Plan: 1. Get interactive elements → 2. Find search input → 3. Clear input → 4. Fill with new query → 5. Submit or click search button",
   "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page"
 ].join("\n")
 

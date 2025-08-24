@@ -13,6 +13,8 @@ const AIChatSidebar = () => {
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [userScrolled, setUserScrolled] = useState(false)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [hasNewMessages, setHasNewMessages] = useState(false)
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [organizeStatus, setOrganizeStatus] = useState("")
@@ -102,7 +104,21 @@ const AIChatSidebar = () => {
         { name: "extract_page_text", description: "Extract text content from the current page with word count and reading time" },
         { name: "get_page_links", description: "Get all links from the current page" },
         { name: "get_page_images", description: "Get all images from the current page" },
-        { name: "search_page_text", description: "Search for text on the current page" }
+        { name: "search_page_text", description: "Search for text on the current page" },
+        { name: "get_interactive_elements", description: "Get all interactive elements (links, buttons, inputs) from the current page" },
+        { name: "click_element", description: "Click an element on the current page using its CSS selector" },
+        { name: "summarize_page", description: "Summarize the current page content with key points and reading statistics" }
+      ]
+    },
+    {
+      category: "Form & Input Management",
+      description: "Fill forms, manage input fields, and interact with web forms",
+      tools: [
+        { name: "fill_input", description: "Fill an input field with text using CSS selector" },
+        { name: "clear_input", description: "Clear the content of an input field using CSS selector" },
+        { name: "get_input_value", description: "Get the current value of an input field using CSS selector" },
+        { name: "submit_form", description: "Submit a form using CSS selector" },
+        { name: "get_form_elements", description: "Get all form elements and their input fields on the current page" }
       ]
     },
     {
@@ -249,24 +265,28 @@ const AIChatSidebar = () => {
       
       // Calculate distance from bottom
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-      const isNearBottom = distanceFromBottom < 150 // 150px threshold
+      const isNearBottom = distanceFromBottom < 100 // Reduced threshold for better UX
       
       // Clear existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
       
-      // Only consider it user scrolling away if they scroll up AND are far from bottom
+      // Detect user scrolling away from bottom
       if (scrollDirection === 'up' && !isNearBottom) {
         setUserScrolled(true)
+        setShouldAutoScroll(false) // Disable auto-scroll when user scrolls away
         
-        // Reset user scrolled state after some time of inactivity
+        // Reset user scrolled state after inactivity - longer timeout for better UX
         scrollTimeoutRef.current = setTimeout(() => {
           setUserScrolled(false)
-        }, 2000) // Reduced to 2 seconds for better responsiveness
+          setShouldAutoScroll(true) // Re-enable auto-scroll after timeout
+        }, 3000) // 3 seconds timeout
       } else if (isNearBottom) {
-        // If user is near bottom, reset the scrolled state
+        // If user scrolls back to bottom, immediately reset the scrolled state
         setUserScrolled(false)
+        setHasNewMessages(false)
+        setShouldAutoScroll(true) // Re-enable auto-scroll when user is at bottom
       }
       
       lastScrollTopRef.current = currentScrollTop
@@ -281,35 +301,45 @@ const AIChatSidebar = () => {
     }
   }, [])
 
-  // Auto-scroll function with smooth animation - only for manual scroll button
+  // Auto-scroll function with smooth animation
   const scrollToBottom = useCallback((force = false) => {
     if (!messagesEndRef.current) return
     
-    // Only scroll when explicitly forced (manual button click)
-    if (force) {
-      messagesEndRef.current.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'end'
-      })
-    }
+    messagesEndRef.current.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'end'
+    })
   }, [])
 
   // Manual scroll to bottom (for button click)
   const handleScrollToBottom = useCallback(() => {
     setUserScrolled(false)
-    scrollToBottom(true)
+    setHasNewMessages(false)
+    setShouldAutoScroll(true)
+    scrollToBottom()
   }, [scrollToBottom])
 
-  // Auto-scroll when new messages arrive - DISABLED
-  // useEffect(() => {
-  //   if (messages.length > 0) {
-  //     // For new messages, always try to scroll if user hasn't scrolled far away
-  //     if (!userScrolled) {
-  //       // Small delay to ensure DOM has updated
-  //       setTimeout(() => scrollToBottom(), 100)
-  //     }
-  //   }
-  // }, [messages, scrollToBottom, userScrolled])
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0 && shouldAutoScroll) {
+      if (!userScrolled && !loading) {
+        // Auto-scroll to bottom if user hasn't scrolled away AND AI is not currently responding
+        setTimeout(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'end'
+            })
+          }
+        }, 100)
+      } else if (userScrolled && !loading) {
+        // Show new message indicator if user is scrolled up AND AI is not currently responding
+        setHasNewMessages(true)
+        // Auto-hide indicator after 5 seconds
+        setTimeout(() => setHasNewMessages(false), 5000)
+      }
+    }
+  }, [messages, userScrolled, loading, shouldAutoScroll])
 
   // Load AI settings initially
   useEffect(() => {
@@ -468,6 +498,12 @@ const AIChatSidebar = () => {
       streaming: true
     }
     setMessages(prev => [...prev, aiMessage])
+    
+    // If user hasn't scrolled away, allow auto-scroll for the new AI response
+    if (!userScrolled) {
+      setShouldAutoScroll(true)
+    }
+    
     // prepare steps container for this message
     setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
     // prepare planning steps container for this message
@@ -528,6 +564,10 @@ const AIChatSidebar = () => {
     setUserScrolled(false)
     setIsAtBottom(true)
     setShowScrollButton(false)
+    setHasNewMessages(false)
+    setShouldAutoScroll(true)
+    setStepsByMessageId({})
+    setPlanningStepsByMessageId({})
   }, [])
 
 
@@ -942,13 +982,24 @@ const AIChatSidebar = () => {
             {showScrollButton && (
               <button
                 onClick={handleScrollToBottom}
-                className="absolute bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 hover:scale-105"
-                title="Scroll to bottom"
+                className={`absolute bottom-6 right-6 w-12 h-12 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 hover:scale-105 ${
+                  hasNewMessages 
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 animate-pulse' 
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                }`}
+                title={hasNewMessages ? "New message - Scroll to bottom" : "Scroll to bottom"}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               </button>
+            )}
+            
+            {/* New message indicator when user is scrolled up */}
+            {userScrolled && hasNewMessages && (
+              <div className="absolute bottom-20 right-6 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg animate-bounce">
+                New message
+              </div>
             )}
           </div>
           

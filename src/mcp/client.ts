@@ -478,6 +478,75 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    {
+      name: "fill_input",
+      description: "Fill an input field with text using CSS selector",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the input field to fill (e.g., 'input[name=\"username\"]', '#email', '.search-input')"
+          },
+          text: {
+            type: "string",
+            description: "Text to fill in the input field"
+          }
+        },
+        required: ["selector", "text"]
+      }
+    },
+    {
+      name: "clear_input",
+      description: "Clear the content of an input field using CSS selector",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the input field to clear (e.g., 'input[name=\"username\"]', '#email', '.search-input')"
+          }
+        },
+        required: ["selector"]
+      }
+    },
+    {
+      name: "get_input_value",
+      description: "Get the current value of an input field using CSS selector",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the input field to get value from (e.g., 'input[name=\"username\"]', '#email', '.search-input')"
+          }
+        },
+        required: ["selector"]
+      }
+    },
+    {
+      name: "submit_form",
+      description: "Submit a form using CSS selector",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the form to submit (e.g., 'form', '#login-form', '.contact-form')"
+          }
+        },
+        required: ["selector"]
+      }
+    },
+    {
+      name: "get_form_elements",
+      description: "Get all form elements and their input fields on the current page",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
 
     // Clipboard
     {

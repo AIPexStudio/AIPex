@@ -44,6 +44,11 @@ export type McpToolName =
   | "get_interactive_elements"
   | "click_element"
   | "summarize_page"
+  | "fill_input"
+  | "clear_input"
+  | "get_input_value"
+  | "submit_form"
+  | "get_form_elements"
   // Clipboard
   | "copy_to_clipboard"
   | "read_from_clipboard"
@@ -155,6 +160,11 @@ export type McpRequest =
   | { tool: "get_interactive_elements" }
   | { tool: "click_element"; args: { selector: string } }
   | { tool: "summarize_page" }
+  | { tool: "fill_input"; args: { selector: string; text: string } }
+  | { tool: "clear_input"; args: { selector: string } }
+  | { tool: "get_input_value"; args: { selector: string } }
+  | { tool: "submit_form"; args: { selector: string } }
+  | { tool: "get_form_elements" }
   // Clipboard
   | { tool: "copy_to_clipboard"; args: { text: string } }
   | { tool: "read_from_clipboard" }
@@ -233,6 +243,11 @@ import {
   ungroupAllTabs,
   getCurrentTabContent,
   createNewTab,
+  fillInput,
+  clearInput,
+  getInputValue,
+  submitForm,
+  getFormElements,
   // Bookmark management
   getAllBookmarks,
   getBookmarkFolders,
@@ -554,6 +569,34 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       case "summarize_page": {
         const summary = await summarizePage()
         return { success: true, data: summary }
+      }
+      case "fill_input": {
+        const { selector, text } = request.args
+        if (!selector || !text) return { success: false, error: "Selector and text are required" }
+        const result = await fillInput(selector, text)
+        return { success: true, data: result }
+      }
+      case "clear_input": {
+        const { selector } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await clearInput(selector)
+        return { success: true, data: result }
+      }
+      case "get_input_value": {
+        const { selector } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await getInputValue(selector)
+        return { success: true, data: result }
+      }
+      case "submit_form": {
+        const { selector } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await submitForm(selector)
+        return { success: true, data: result }
+      }
+      case "get_form_elements": {
+        const result = await getFormElements()
+        return { success: true, data: result }
       }
       // Clipboard
       case "copy_to_clipboard": {

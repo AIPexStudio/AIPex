@@ -531,3 +531,340 @@ export async function summarizePage(): Promise<{
   const [{ result }] = results
   return result || null
 }
+
+/**
+ * Fill an input field with text
+ */
+export async function fillInput(selector: string, text: string): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector, text],
+    func: (selector: string, text: string) => {
+      try {
+        const element = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
+        if (!element) {
+          return {
+            success: false,
+            message: `Input element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is an input or textarea
+        if (element.tagName.toLowerCase() !== 'input' && element.tagName.toLowerCase() !== 'textarea') {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" is not an input field`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is visible
+        const style = window.getComputedStyle(element)
+        if (style.display === 'none' || style.visibility === 'hidden') {
+          return {
+            success: false,
+            message: `Input element with selector "${selector}" is not visible`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Focus and fill the input
+        element.focus()
+        element.value = text
+        
+        // Trigger input and change events to simulate user input
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+        
+        return {
+          success: true,
+          message: `Successfully filled input "${selector}" with text: "${text}"`,
+          title: document.title || "",
+          url: location.href
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error filling input: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Clear an input field
+ */
+export async function clearInput(selector: string): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector],
+    func: (selector: string) => {
+      try {
+        const element = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
+        if (!element) {
+          return {
+            success: false,
+            message: `Input element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is an input or textarea
+        if (element.tagName.toLowerCase() !== 'input' && element.tagName.toLowerCase() !== 'textarea') {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" is not an input field`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Focus and clear the input
+        element.focus()
+        element.value = ''
+        
+        // Trigger input and change events
+        element.dispatchEvent(new Event('input', { bubbles: true }))
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+        
+        return {
+          success: true,
+          message: `Successfully cleared input "${selector}"`,
+          title: document.title || "",
+          url: location.href
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error clearing input: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Get the value of an input field
+ */
+export async function getInputValue(selector: string): Promise<{
+  success: boolean
+  value?: string
+  message: string
+  title: string
+  url: string
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector],
+    func: (selector: string) => {
+      try {
+        const element = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
+        if (!element) {
+          return {
+            success: false,
+            message: `Input element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is an input or textarea
+        if (element.tagName.toLowerCase() !== 'input' && element.tagName.toLowerCase() !== 'textarea') {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" is not an input field`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        return {
+          success: true,
+          value: element.value,
+          message: `Successfully retrieved value from input "${selector}"`,
+          title: document.title || "",
+          url: location.href
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error getting input value: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Submit a form
+ */
+export async function submitForm(selector: string): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector],
+    func: (selector: string) => {
+      try {
+        const form = document.querySelector(selector) as HTMLFormElement
+        if (!form) {
+          return {
+            success: false,
+            message: `Form with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Check if element is a form
+        if (form.tagName.toLowerCase() !== 'form') {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" is not a form`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Submit the form
+        form.submit()
+        
+        return {
+          success: true,
+          message: `Successfully submitted form "${selector}"`,
+          title: document.title || "",
+          url: location.href
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error submitting form: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Get all form elements on the current page
+ */
+export async function getFormElements(): Promise<{
+  title: string
+  url: string
+  forms: Array<{
+    selector: string
+    action: string
+    method: string
+    inputs: Array<{
+      type: string
+      name: string
+      id: string
+      placeholder: string
+      value: string
+      required: boolean
+      selector: string
+    }>
+  }>
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      try {
+        const forms = Array.from(document.querySelectorAll('form'))
+        
+        const formData = forms.map((form, formIndex) => {
+          const inputs = Array.from(form.querySelectorAll('input, textarea, select'))
+          
+          const inputData = inputs.map((input, inputIndex) => {
+                         const element = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+             return {
+               type: element.type || element.tagName.toLowerCase(),
+               name: element.name || '',
+               id: element.id || '',
+               placeholder: (element as HTMLInputElement | HTMLTextAreaElement).placeholder || '',
+               value: element.value || '',
+               required: element.required || false,
+               selector: `form:nth-of-type(${formIndex + 1}) ${element.tagName.toLowerCase()}:nth-of-type(${inputIndex + 1})`
+             }
+          })
+
+          return {
+            selector: `form:nth-of-type(${formIndex + 1})`,
+            action: form.action || '',
+            method: form.method || 'get',
+            inputs: inputData
+          }
+        })
+
+        return {
+          title: document.title || "",
+          url: location.href,
+          forms: formData
+        }
+      } catch (error) {
+        return {
+          title: document.title || "",
+          url: location.href,
+          forms: []
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
