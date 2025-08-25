@@ -6,6 +6,19 @@ import "~/style.css"
 import { Thread, MarkdownRenderer, CallTool, StreamingToolCall } from "~/lib/components"
 import type { Message, ToolStep } from "~/lib/components"
 
+// 调试函数 - 用于测试滚动功能
+const debugScrollState = (state: {
+  userScrolled: boolean
+  shouldAutoScroll: boolean
+  hasNewMessages: boolean
+  isAtBottom: boolean
+  showScrollButton: boolean
+}) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Scroll State:', state)
+  }
+}
+
 const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
@@ -262,38 +275,98 @@ const AIChatSidebar = () => {
       const currentScrollTop = container.scrollTop
       const scrollDirection = currentScrollTop > lastScrollTopRef.current ? 'down' : 'up'
       
-      // Calculate distance from bottom
+      // Calculate distance from bottom with threshold
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-      const isNearBottom = distanceFromBottom < 100 // Reduced threshold for better UX
+      const threshold = 150 // 像素阈值，距离底部150px内认为接近底部
+      const isNearBottom = distanceFromBottom <= threshold
       
       // Clear existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
       
-      // Detect user scrolling away from bottom
+      // 更尊重用户滚动行为的逻辑
       if (scrollDirection === 'up' && !isNearBottom) {
+        // 用户向上滚动且不在底部附近 - 暂停自动滚动
         setUserScrolled(true)
-        setShouldAutoScroll(false) // Disable auto-scroll when user scrolls away
+        setShouldAutoScroll(false)
+        setHasNewMessages(false)
         
-        // Reset user scrolled state after inactivity - longer timeout for better UX
+        // 延长重置时间到30秒，给用户更多时间阅读
         scrollTimeoutRef.current = setTimeout(() => {
-          setUserScrolled(false)
-          setShouldAutoScroll(true) // Re-enable auto-scroll after timeout
-        }, 3000) // 3 seconds timeout
+          // 只有在用户仍然不在底部时才重置
+          const currentDistanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+          if (currentDistanceFromBottom > threshold) {
+            setUserScrolled(false)
+            setShouldAutoScroll(true)
+          }
+        }, 30000) // 30秒后重新启用自动滚动
       } else if (isNearBottom) {
-        // If user scrolls back to bottom, immediately reset the scrolled state
+        // 用户滚动到底部附近，立即重置状态
         setUserScrolled(false)
         setHasNewMessages(false)
-        setShouldAutoScroll(true) // Re-enable auto-scroll when user is at bottom
+        setShouldAutoScroll(true)
       }
+      
+      // 调试滚动状态
+      debugScrollState({
+        userScrolled: scrollDirection === 'up' && !isNearBottom,
+        shouldAutoScroll: isNearBottom,
+        hasNewMessages: false,
+        isAtBottom: isNearBottom,
+        showScrollButton: !isNearBottom && messages.length > 0
+      })
       
       lastScrollTopRef.current = currentScrollTop
     }
 
+    // 键盘导航支持
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'End' || (e.ctrlKey && e.key === 'End')) {
+        // 用户按End键，立即滚动到底部
+        e.preventDefault()
+        handleScrollToBottom()
+      } else if (e.key === 'Home' || (e.ctrlKey && e.key === 'Home')) {
+        // 用户按Home键，滚动到顶部
+        e.preventDefault()
+        if (container) {
+          container.scrollTo({ top: 0, behavior: 'smooth' })
+          setUserScrolled(true)
+          setShouldAutoScroll(false)
+        }
+      }
+    }
+
+    // 鼠标滚轮事件处理
+    const handleWheel = (e: WheelEvent) => {
+      // 检测滚轮方向
+      if (e.deltaY > 0) {
+        // 向下滚动
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+        if (distanceFromBottom <= 150) {
+          // 接近底部时，重新启用自动滚动
+          setUserScrolled(false)
+          setShouldAutoScroll(true)
+          setHasNewMessages(false)
+        }
+      } else if (e.deltaY < 0) {
+        // 向上滚动 - 立即暂停自动滚动
+        const distanceFromTop = container.scrollTop
+        if (distanceFromTop > 100) {
+          setUserScrolled(true)
+          setShouldAutoScroll(false)
+        }
+      }
+    }
+
     container.addEventListener('scroll', handleScroll, { passive: true })
+    container.addEventListener('wheel', handleWheel, { passive: true })
+    document.addEventListener('keydown', handleKeyDown)
+    
     return () => {
       container.removeEventListener('scroll', handleScroll)
+      container.removeEventListener('wheel', handleWheel)
+      document.removeEventListener('keydown', handleKeyDown)
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
@@ -312,33 +385,77 @@ const AIChatSidebar = () => {
 
   // Manual scroll to bottom (for button click)
   const handleScrollToBottom = useCallback(() => {
+    // 重置所有滚动相关状态
     setUserScrolled(false)
     setHasNewMessages(false)
     setShouldAutoScroll(true)
+    
+    // 滚动到底部
     scrollToBottom()
+    
+    // 清除任何待处理的滚动超时
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
   }, [scrollToBottom])
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
-    if (messages.length > 0 && shouldAutoScroll) {
-      if (!userScrolled && !loading) {
-        // Auto-scroll to bottom if user hasn't scrolled away AND AI is not currently responding
+    if (messages.length > 0) {
+      // 新消息处理 - 更尊重用户滚动行为
+      if (shouldAutoScroll && !userScrolled) {
+        // 自动滚动 - 用户没有滚动且允许自动滚动
         setTimeout(() => {
-          if (messagesEndRef.current) {
+          if (messagesEndRef.current && !userScrolled) {
             messagesEndRef.current.scrollIntoView({ 
               behavior: 'smooth',
               block: 'end'
             })
           }
         }, 100)
-      } else if (userScrolled && !loading) {
-        // Show new message indicator if user is scrolled up AND AI is not currently responding
+      } else if (userScrolled) {
+        // 用户已滚动，显示新消息提示而不是强制滚动
         setHasNewMessages(true)
-        // Auto-hide indicator after 5 seconds
-        setTimeout(() => setHasNewMessages(false), 5000)
+        // 10秒后自动隐藏提示
+        setTimeout(() => setHasNewMessages(false), 10000)
       }
     }
-  }, [messages, userScrolled, loading, shouldAutoScroll])
+  }, [messages, userScrolled, shouldAutoScroll])
+
+  // 在AI响应期间的特殊滚动处理
+  useEffect(() => {
+    if (loading && shouldAutoScroll && !userScrolled) {
+      // AI正在响应且用户没有滚动，保持自动滚动
+      const scrollInterval = setInterval(() => {
+        // 检查用户是否仍然没有滚动
+        if (messagesContainerRef.current && !userScrolled) {
+          const distanceFromBottom = messagesContainerRef.current.scrollHeight - messagesContainerRef.current.scrollTop - messagesContainerRef.current.clientHeight
+          const threshold = 150
+          
+          // 只有在接近底部时才自动滚动
+          if (distanceFromBottom <= threshold) {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'end'
+              })
+            }
+          }
+        }
+      }, 2000) // 降低检查频率到2秒一次
+
+      return () => clearInterval(scrollInterval)
+    }
+  }, [loading, shouldAutoScroll, userScrolled])
+
+  // 组件卸载时的清理
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Load AI settings initially
   useEffect(() => {
@@ -485,9 +602,22 @@ const AIChatSidebar = () => {
     }
     setMessages(prev => [...prev, aiMessage])
     
-    // If user hasn't scrolled away, allow auto-scroll for the new AI response
+    // 如果用户没有滚动，允许新AI响应的自动滚动
     if (!userScrolled) {
       setShouldAutoScroll(true)
+      // 立即滚动到底部以显示用户消息
+      setTimeout(() => {
+        if (messagesEndRef.current && !userScrolled) {
+          messagesEndRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'end'
+          })
+        }
+      }, 50)
+    } else {
+      // 用户已经滚动，显示新消息提示
+      setHasNewMessages(true)
+      setTimeout(() => setHasNewMessages(false), 10000)
     }
     
     // prepare steps container for this message
@@ -545,12 +675,19 @@ const AIChatSidebar = () => {
     setMessages([])
     setLoading(false)
     setInputValue('')
+    
+    // 重置所有滚动相关状态
     setUserScrolled(false)
     setIsAtBottom(true)
     setShowScrollButton(false)
     setHasNewMessages(false)
     setShouldAutoScroll(true)
     setStepsByMessageId({})
+    
+    // 清除滚动超时
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
   }, [])
 
 
@@ -972,19 +1109,48 @@ const AIChatSidebar = () => {
                     ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 animate-pulse' 
                     : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
                 }`}
-                title={hasNewMessages ? "New message - Scroll to bottom" : "Scroll to bottom"}
+                title={hasNewMessages ? "有新消息 - 滚动到底部" : "滚动到底部"}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
+                {hasNewMessages && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white font-bold">!</span>
+                  </div>
+                )}
               </button>
             )}
             
             {/* New message indicator when user is scrolled up */}
             {userScrolled && hasNewMessages && (
-              <div className="absolute bottom-20 right-6 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg animate-bounce">
-                New message
+              <div className="absolute bottom-20 right-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-bounce flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                新消息
               </div>
+            )}
+            
+            {/* Scroll status indicator */}
+            {userScrolled && !hasNewMessages && (
+              <button
+                onClick={() => {
+                  setUserScrolled(false)
+                  setShouldAutoScroll(true)
+                  handleScrollToBottom()
+                }}
+                className="absolute bottom-20 right-6 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all duration-200 flex items-center gap-2 cursor-pointer"
+                title="点击恢复自动滚动"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                自动滚动已暂停
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
             )}
           </div>
           
