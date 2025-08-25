@@ -451,7 +451,7 @@ const ungroupAllTabs = async () => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(messages, stream = false, options = {}) {
+async function chatCompletion(messages, stream = true, options = {}) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
@@ -470,8 +470,8 @@ async function chatCompletion(messages, stream = false, options = {}) {
   
   const requestBody = {
     model: aiModel,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationMessages],
-    stream,
+    messages: conversationMessages,
+    stream: true, // Always use streaming
     ...options
   }
   
@@ -485,8 +485,117 @@ async function chatCompletion(messages, stream = false, options = {}) {
   })
   if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
   
-  // Return response object for streaming, parsed JSON for non-streaming
-  return stream ? res : await res.json()
+  // Always return response object for streaming
+  return res
+}
+
+// Helper function to parse streaming response and extract tool calls
+async function parseStreamingResponse(response: Response, messageId?: string) {
+  if (!response.body) {
+    throw new Error('No response body for streaming')
+  }
+  
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let content = ''
+  let toolCalls: any[] = []
+  let currentToolCall: any = null
+  
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+      
+      for (const line of lines) {
+        if (line.trim() === '') continue
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') {
+            // Send completion message
+            if (messageId) {
+              chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
+            }
+            return { content, toolCalls }
+          }
+          
+          try {
+            const parsed = JSON.parse(data)
+            const delta = parsed.choices?.[0]?.delta
+            
+            // Handle content streaming
+            if (delta?.content) {
+              content += delta.content
+              if (messageId) {
+                chrome.runtime.sendMessage({ 
+                  request: 'ai-chat-stream', 
+                  chunk: delta.content, 
+                  messageId 
+                }).catch(() => {})
+              }
+            }
+            
+            // Handle tool call streaming
+            if (delta?.tool_calls) {
+              for (const toolCall of delta.tool_calls) {
+                if (toolCall.index !== undefined) {
+                  // Start new tool call
+                  if (!currentToolCall || currentToolCall.index !== toolCall.index) {
+                    currentToolCall = {
+                      index: toolCall.index,
+                      id: toolCall.id || '',
+                      type: 'function',
+                      function: {
+                        name: toolCall.function?.name || '',
+                        arguments: toolCall.function?.arguments || ''
+                      }
+                    }
+                    toolCalls[toolCall.index] = currentToolCall
+                    
+                    // Send tool call notification
+                    if (messageId && currentToolCall.function.name) {
+                      try {
+                        const args = currentToolCall.function.arguments ? 
+                          JSON.parse(currentToolCall.function.arguments) : {}
+                        chrome.runtime.sendMessage({
+                          request: 'ai-chat-tools-step',
+                          messageId,
+                          step: { 
+                            type: 'call_tool', 
+                            name: currentToolCall.function.name, 
+                            args 
+                          }
+                        }).catch(() => {})
+                      } catch (e) {
+                        console.warn('Failed to parse tool call arguments:', e)
+                      }
+                    }
+                  }
+                  
+                  // Update existing tool call
+                  if (toolCall.id) currentToolCall.id = toolCall.id
+                  if (toolCall.function?.name) currentToolCall.function.name = toolCall.function.name
+                  if (toolCall.function?.arguments) {
+                    currentToolCall.function.arguments += toolCall.function.arguments
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  
+  return { content, toolCalls }
 }
 
 // Unified system prompt describing AIPex product capabilities (Chinese)
@@ -776,19 +885,17 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
   const systemPrompt = { role: "system", content: SYSTEM_PROMPT }
 
   let messages = [systemPrompt, ...userMessages]
-  // First call allowing tool use
-      let response = await chatCompletion(messages, false, { tools: getAllTools(), tool_choice: "auto" })
+  // First call allowing tool use with streaming
+  let response = await chatCompletion(messages, true, { tools: getAllTools(), tool_choice: "auto" })
+  let { content, toolCalls } = await parseStreamingResponse(response, messageId)
 
   // Loop over tool calls if present
   // OpenAI responses may put tool calls under choices[0].message.tool_calls
   // Repeat until there are no further tool calls
   const executedCalls = new Set<string>()
-  for (let guard = 0; guard < 5; guard++) {
-    const choice = response?.choices?.[0]
-    const toolCalls = choice?.message?.tool_calls
+  while (true) {
     if (!toolCalls || toolCalls.length === 0) {
       // Final assistant turn — stream it for better UX when possible
-      const content = choice?.message?.content || ""
       if (messageId) {
         try {
           // Add planning completion step
@@ -803,41 +910,9 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
             }
           })
           
-          const response = await chatCompletion(messages, true) // no tools needed for final text
-          if (!response.body) {
-            throw new Error('No response body for streaming')
-          }
-          const reader = response.body.getReader()
-          const decoder = new TextDecoder()
-          let buffer = ''
-          try {
-            while (true) {
-              const { done, value } = await reader.read()
-              if (done) break
-              buffer += decoder.decode(value, { stream: true })
-              const lines = buffer.split('\n')
-              buffer = lines.pop() || ''
-              for (const line of lines) {
-                if (line.trim() === '') continue
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6)
-                  if (data === '[DONE]') {
-                    chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
-                    return ''
-                  }
-                  try {
-                    const parsed = JSON.parse(data)
-                    const delta = parsed.choices?.[0]?.delta
-                    if (delta?.content) {
-                      chrome.runtime.sendMessage({ request: 'ai-chat-stream', chunk: delta.content, messageId }).catch(() => {})
-                    }
-                  } catch {}
-                }
-              }
-            }
-          } finally {
-            reader.releaseLock()
-          }
+          // Final streaming response
+          const finalResponse = await chatCompletion(messages, true)
+          await parseStreamingResponse(finalResponse, messageId)
         } catch (e) {
           // Fallback: send final once if streaming fails
           try {
@@ -849,24 +924,23 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     }
 
     // If there is assistant content alongside tool calls, surface it as think
-    const assistantThought = choice?.message?.content
-    if (assistantThought && messageId) {
+    if (content && messageId) {
       try {
         chrome.runtime.sendMessage({
           request: "ai-chat-tools-step",
           messageId,
-          step: { type: "think", content: assistantThought }
+          step: { type: "think", content: content }
         })
       } catch {}
     }
 
     // Check if this is a planning phase (before tool calls)
-    if (assistantThought && assistantThought.includes("📋 TASK ANALYSIS") && messageId) {
+    if (content && content.includes("📋 TASK ANALYSIS") && messageId) {
       try {
         // Extract planning information from the thought
         const planningStep: PlanningStep = {
           type: "analysis",
-          content: assistantThought,
+          content: content,
           timestamp: Date.now(),
           status: "completed"
         }
@@ -1055,17 +1129,11 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     const nextOptions = executedMutating
       ? {} // Don't include tool_choice or tools when tools are not needed
       : { tools: getAllTools(), tool_choice: "auto" as const }
-    response = await chatCompletion(messages, false, nextOptions)
+    response = await chatCompletion(messages, true, nextOptions)
+    const result = await parseStreamingResponse(response, messageId)
+    content = result.content
+    toolCalls = result.toolCalls
   }
-
-  // Fallback if too many tool rounds
-  const fallback = response?.choices?.[0]?.message?.content || ""
-  if (messageId) {
-    try {
-      chrome.runtime.sendMessage({ request: "ai-chat-tools-final", messageId, content: fallback })
-    } catch {}
-  }
-  return fallback
 }
 
 // Classify and group a single tab by AI
@@ -1119,8 +1187,9 @@ async function classifyAndGroupSingleTab(tab) {
       const content = `Classify this tab based on URL (${latestTab.url}) and title (${latestTab.title}) into one of these existing categories: ${existingCategories.join(", ")}. If none fit well, respond with "Other". Response with the category only, without any comments.`;
 
       try {
-        const aiResponse = await chatCompletion(content, false);
-        const suggestedCategory = aiResponse.choices[0].message.content.trim();
+        const aiResponse = await chatCompletion(content, true);
+        const result = await parseStreamingResponse(aiResponse);
+        const suggestedCategory = result.content.trim();
         
         // Use the suggested category if it exists, otherwise use "Other"
         if (existingCategories.includes(suggestedCategory)) {
@@ -1260,8 +1329,9 @@ Example response format:
 }`;
     
     // Use response_format to ensure proper JSON output
-    const aiResponse = await chatCompletion(content, false, { response_format: { type: "json_object" } });
-    const responseData = JSON.parse(aiResponse.choices[0].message.content.trim());
+    const aiResponse = await chatCompletion(content, true, { response_format: { type: "json_object" } });
+    const result = await parseStreamingResponse(aiResponse);
+    const responseData = JSON.parse(result.content.trim());
     const groupingResult = responseData.groups || [];
     
     // Process each group from AI response
@@ -1720,10 +1790,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           
           // Build conversation messages with context
           let conversationMessages = []
-          if (context && typeof context === 'string') {
-            // If context is a string, treat it as system context
-            conversationMessages.push({ role: "system", content: context })
-          } else if (context && Array.isArray(context) && context.length > 0) {
+          if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
           }
           

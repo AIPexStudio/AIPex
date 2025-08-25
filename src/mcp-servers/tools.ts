@@ -105,7 +105,7 @@ export async function chatCompletion(messages: any, stream = false, options: any
 
   const requestBody = {
     model: aiModel,
-    messages: [{ role: "system", content: systemInstruction }, ...conversationMessages],
+    messages: conversationMessages,
     stream,
     ...options
   }

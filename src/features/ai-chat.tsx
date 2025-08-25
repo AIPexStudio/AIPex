@@ -3,8 +3,8 @@ import { Sender } from "@ant-design/x"
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
 
-import { Thread, MarkdownRenderer, CallTool, PlanningAgent } from "~/lib/components"
-import type { Message, ToolStep, PlanningStep } from "~/lib/components"
+import { Thread, MarkdownRenderer, CallTool, StreamingToolCall } from "~/lib/components"
+import type { Message, ToolStep } from "~/lib/components"
 
 const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
@@ -27,7 +27,6 @@ const AIChatSidebar = () => {
   const [isSaving, setIsSaving] = useState(false)
     const [stepsByMessageId, setStepsByMessageId] = useState<Record<string, ToolStep[]>>({})
   const [showToolsInfo, setShowToolsInfo] = useState(false)
-  const [planningStepsByMessageId, setPlanningStepsByMessageId] = useState<Record<string, PlanningStep[]>>({})
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -438,19 +437,6 @@ const AIChatSidebar = () => {
         setTimeout(() => {
           inputRef.current?.focus()
         }, 100)
-      } else if (message.request === 'ai-chat-planning-step') {
-        const { messageId, step } = message as { messageId: string; step: PlanningStep }
-        setPlanningStepsByMessageId(prev => {
-          const prevSteps = prev[messageId] || []
-          return { ...prev, [messageId]: [...prevSteps, step] }
-        })
-      } else if (message.request === 'ai-chat-planning-complete') {
-        const { messageId } = message as { messageId: string }
-        // Mark planning as complete
-        setPlanningStepsByMessageId(prev => {
-          const steps = prev[messageId] || []
-          return { ...prev, [messageId]: steps.map(step => ({ ...step, status: 'completed' as const })) }
-        })
       }
     }
 
@@ -506,8 +492,6 @@ const AIChatSidebar = () => {
     
     // prepare steps container for this message
     setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
-    // prepare planning steps container for this message
-    setPlanningStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
 
     try {
       // Use MCP client for tool-enabled AI chat
@@ -567,7 +551,6 @@ const AIChatSidebar = () => {
     setHasNewMessages(false)
     setShouldAutoScroll(true)
     setStepsByMessageId({})
-    setPlanningStepsByMessageId({})
   }, [])
 
 
@@ -884,15 +867,17 @@ const AIChatSidebar = () => {
                   {(message) => (
                     message.role === 'assistant' ? (
                       <div className="flex flex-col gap-4">
-                        {planningStepsByMessageId[message.id]?.length ? (
-                          <PlanningAgent 
-                            steps={planningStepsByMessageId[message.id]} 
-                            isActive={true}
-                          />
-                        ) : null}
-                        {stepsByMessageId[message.id]?.length ? (
+                        {/* Streaming Tool Call Component for real-time tool execution */}
+                        <StreamingToolCall 
+                          messageId={message.id}
+                          isActive={message.streaming || false}
+                        />
+                        
+                        {/* Legacy CallTool component for completed tool calls */}
+                        {!message.streaming && stepsByMessageId[message.id]?.length ? (
                           <CallTool steps={stepsByMessageId[message.id]} />
                         ) : null}
+                        
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                           <MarkdownRenderer content={message.content} streaming={message.streaming} />
                         </div>

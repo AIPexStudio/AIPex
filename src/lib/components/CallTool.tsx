@@ -14,6 +14,7 @@ interface CallToolProps {
 
 const CallTool: React.FC<CallToolProps> = ({ steps }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showResults, setShowResults] = useState(false)
   
   if (steps.length === 0) return null
 
@@ -24,6 +25,7 @@ const CallTool: React.FC<CallToolProps> = ({ steps }) => {
   
   const totalSteps = steps.length
   const hasThinking = thinkSteps.length > 0
+  const hasResults = resultSteps.length > 0
 
   return (
     <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-white p-4 mb-4 shadow-sm">
@@ -44,7 +46,7 @@ const CallTool: React.FC<CallToolProps> = ({ steps }) => {
                 {toolSteps.length} tools
               </span>
             )}
-            {resultSteps.length > 0 && (
+            {hasResults && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                 {resultSteps.length} results
               </span>
@@ -103,19 +105,35 @@ const CallTool: React.FC<CallToolProps> = ({ steps }) => {
                 </div>
               )
             }
-            return (
-              <div key={idx} className="text-sm text-gray-700 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
-                <div className="flex items-start space-x-3">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-900 text-xs font-medium flex-shrink-0 border border-green-200">
-                    result
-                  </span>
-                  <div className="flex-1">
-                    <div className="text-gray-800 break-words leading-relaxed font-medium">{step.result}</div>
+            // Only show tool results if showResults is true
+            if (step.type === 'tool_result' && showResults) {
+              return (
+                <div key={idx} className="text-sm text-gray-700 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                  <div className="flex items-start space-x-3">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-900 text-xs font-medium flex-shrink-0 border border-green-200">
+                      result
+                    </span>
+                    <div className="flex-1">
+                      <div className="text-gray-800 break-words leading-relaxed font-medium">{step.result}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
+              )
+            }
+            return null
           })}
+          
+          {/* Show results toggle button if there are results */}
+          {hasResults && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setShowResults(!showResults)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                {showResults ? 'Hide tool results' : 'Show tool results'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
