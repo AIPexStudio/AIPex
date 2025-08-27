@@ -2,6 +2,10 @@
 
 > **Transform your browsing experience with intelligent tab management, AI assistance, and productivity tools**
 
+<div align="right">
+  <a href="README.md">🇺🇸 English</a> | <a href="README.zh-CN.md">🇨🇳 中文</a>
+</div>
+
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 [![GitHub stars](https://img.shields.io/github/stars/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
 [![GitHub forks](https://img.shields.io/github/forks/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
@@ -11,7 +15,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
 
-  
+<div align="center">
   **⭐ Star this repo if you find it helpful! ⭐**
   
   [![Chrome Web Store](https://img.shields.io/badge/Install%20on%20Chrome%20Web%20Store-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
@@ -19,11 +23,14 @@
 
 ## 🌟 What is AIPex?
 
-AIPex is a powerful Chrome extension that revolutionizes your browsing experience by combining **intelligent tab management** with **AI-powered assistance**. Think of it as your personal browser command center that helps you stay organized, productive, and efficient.
+AIPex is a powerful Chrome extension that revolutionizes your browsing experience by combining **intelligent tab management** with **AI-powered assistance** and **advanced automation capabilities**. Think of it as your personal browser command center that helps you stay organized, productive, and efficient.
 
 ### 🎯 Why AIPex?
 
-- 🤖 **AI-Powered**: Intelligent tab organization and AI chat assistance
+- 🤖 **AI-Powered**: Intelligent tab organization and AI chat assistance with 80+ MCP tools
+- 🔬 **Auto Research**: Automatic topic research and content discovery
+- 📧 **Email Automation**: Send emails automatically with AI assistance
+- 🤖 **Browser Automation**: Automate virtually all browser operations
 - ⚡ **Lightning Fast**: Quick access with keyboard shortcuts (⌘+M / Ctrl+M)
 - 🎨 **Beautiful UI**: Modern, responsive design with dark mode support
 - 🔧 **Highly Customizable**: Tailor the experience to your workflow
