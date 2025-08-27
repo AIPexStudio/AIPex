@@ -6,7 +6,7 @@ import "~/style.css"
 import { Thread, MarkdownRenderer, CallTool, StreamingToolCall } from "~/lib/components"
 import type { Message, ToolStep } from "~/lib/components"
 
-// 调试函数 - 用于测试滚动功能
+// Debug function - for testing scroll functionality
 const debugScrollState = (state: {
   userScrolled: boolean
   shouldAutoScroll: boolean
@@ -277,7 +277,7 @@ const AIChatSidebar = () => {
       
       // Calculate distance from bottom with threshold
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-      const threshold = 150 // 像素阈值，距离底部150px内认为接近底部
+      const threshold = 150 // Pixel threshold, consider near bottom within 150px
       const isNearBottom = distanceFromBottom <= threshold
       
       // Clear existing timeout
@@ -285,24 +285,24 @@ const AIChatSidebar = () => {
         clearTimeout(scrollTimeoutRef.current)
       }
       
-      // 更尊重用户滚动行为的逻辑
+      // Logic that respects user scroll behavior more
       if (scrollDirection === 'up' && !isNearBottom) {
-        // 用户向上滚动且不在底部附近 - 暂停自动滚动
+        // User scrolling up and not near bottom - pause auto-scroll
         setUserScrolled(true)
         setShouldAutoScroll(false)
         setHasNewMessages(false)
         
-        // 延长重置时间到30秒，给用户更多时间阅读
+        // Extend reset time to 30 seconds, giving user more time to read
         scrollTimeoutRef.current = setTimeout(() => {
-          // 只有在用户仍然不在底部时才重置
+          // Only reset if user is still not at bottom
           const currentDistanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
           if (currentDistanceFromBottom > threshold) {
             setUserScrolled(false)
             setShouldAutoScroll(true)
           }
-        }, 30000) // 30秒后重新启用自动滚动
+        }, 30000) // Re-enable auto-scroll after 30 seconds
       } else if (isNearBottom) {
-        // 用户滚动到底部附近，立即重置状态
+        // User scrolled near bottom, immediately reset state
         setUserScrolled(false)
         setHasNewMessages(false)
         setShouldAutoScroll(true)
@@ -320,14 +320,14 @@ const AIChatSidebar = () => {
       lastScrollTopRef.current = currentScrollTop
     }
 
-    // 键盘导航支持
+    // Keyboard navigation support
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'End' || (e.ctrlKey && e.key === 'End')) {
-        // 用户按End键，立即滚动到底部
+        // User presses End key, immediately scroll to bottom
         e.preventDefault()
         handleScrollToBottom()
       } else if (e.key === 'Home' || (e.ctrlKey && e.key === 'Home')) {
-        // 用户按Home键，滚动到顶部
+        // User presses Home key, scroll to top
         e.preventDefault()
         if (container) {
           container.scrollTo({ top: 0, behavior: 'smooth' })
@@ -337,20 +337,20 @@ const AIChatSidebar = () => {
       }
     }
 
-    // 鼠标滚轮事件处理
+    // Mouse wheel event handling
     const handleWheel = (e: WheelEvent) => {
-      // 检测滚轮方向
+      // Detect wheel direction
       if (e.deltaY > 0) {
-        // 向下滚动
+        // Scrolling down
         const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
         if (distanceFromBottom <= 150) {
-          // 接近底部时，重新启用自动滚动
+          // When near bottom, re-enable auto-scroll
           setUserScrolled(false)
           setShouldAutoScroll(true)
           setHasNewMessages(false)
         }
       } else if (e.deltaY < 0) {
-        // 向上滚动 - 立即暂停自动滚动
+        // Scrolling up - immediately pause auto-scroll
         const distanceFromTop = container.scrollTop
         if (distanceFromTop > 100) {
           setUserScrolled(true)
@@ -385,15 +385,15 @@ const AIChatSidebar = () => {
 
   // Manual scroll to bottom (for button click)
   const handleScrollToBottom = useCallback(() => {
-    // 重置所有滚动相关状态
+    // Reset all scroll-related states
     setUserScrolled(false)
     setHasNewMessages(false)
     setShouldAutoScroll(true)
     
-    // 滚动到底部
+    // Scroll to bottom
     scrollToBottom()
     
-    // 清除任何待处理的滚动超时
+    // Clear any pending scroll timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
@@ -402,9 +402,9 @@ const AIChatSidebar = () => {
   // Auto-scroll when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
-      // 新消息处理 - 更尊重用户滚动行为
+      // New message handling - more respectful of user scroll behavior
       if (shouldAutoScroll && !userScrolled) {
-        // 自动滚动 - 用户没有滚动且允许自动滚动
+        // Auto-scroll - user hasn't scrolled and auto-scroll is allowed
         setTimeout(() => {
           if (messagesEndRef.current && !userScrolled) {
             messagesEndRef.current.scrollIntoView({ 
@@ -414,25 +414,25 @@ const AIChatSidebar = () => {
           }
         }, 100)
       } else if (userScrolled) {
-        // 用户已滚动，显示新消息提示而不是强制滚动
+        // User has scrolled, show new message indicator instead of forcing scroll
         setHasNewMessages(true)
-        // 10秒后自动隐藏提示
+        // Auto-hide indicator after 10 seconds
         setTimeout(() => setHasNewMessages(false), 10000)
       }
     }
   }, [messages, userScrolled, shouldAutoScroll])
 
-  // 在AI响应期间的特殊滚动处理
+  // Special scroll handling during AI response
   useEffect(() => {
     if (loading && shouldAutoScroll && !userScrolled) {
-      // AI正在响应且用户没有滚动，保持自动滚动
+      // AI is responding and user hasn't scrolled, maintain auto-scroll
       const scrollInterval = setInterval(() => {
-        // 检查用户是否仍然没有滚动
+        // Check if user still hasn't scrolled
         if (messagesContainerRef.current && !userScrolled) {
           const distanceFromBottom = messagesContainerRef.current.scrollHeight - messagesContainerRef.current.scrollTop - messagesContainerRef.current.clientHeight
           const threshold = 150
           
-          // 只有在接近底部时才自动滚动
+          // Only auto-scroll when near bottom
           if (distanceFromBottom <= threshold) {
             if (messagesEndRef.current) {
               messagesEndRef.current.scrollIntoView({ 
@@ -442,13 +442,13 @@ const AIChatSidebar = () => {
             }
           }
         }
-      }, 2000) // 降低检查频率到2秒一次
+      }, 2000) // Reduce check frequency to once every 2 seconds
 
       return () => clearInterval(scrollInterval)
     }
   }, [loading, shouldAutoScroll, userScrolled])
 
-  // 组件卸载时的清理
+  // Cleanup when component unmounts
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) {
@@ -602,10 +602,10 @@ const AIChatSidebar = () => {
     }
     setMessages(prev => [...prev, aiMessage])
     
-    // 如果用户没有滚动，允许新AI响应的自动滚动
+    // If user hasn't scrolled, allow auto-scroll for new AI response
     if (!userScrolled) {
       setShouldAutoScroll(true)
-      // 立即滚动到底部以显示用户消息
+      // Immediately scroll to bottom to show user message
       setTimeout(() => {
         if (messagesEndRef.current && !userScrolled) {
           messagesEndRef.current.scrollIntoView({ 
@@ -615,7 +615,7 @@ const AIChatSidebar = () => {
         }
       }, 50)
     } else {
-      // 用户已经滚动，显示新消息提示
+      // User has scrolled, show new message indicator
       setHasNewMessages(true)
       setTimeout(() => setHasNewMessages(false), 10000)
     }
@@ -676,7 +676,7 @@ const AIChatSidebar = () => {
     setLoading(false)
     setInputValue('')
     
-    // 重置所有滚动相关状态
+    // Reset all scroll-related states
     setUserScrolled(false)
     setIsAtBottom(true)
     setShowScrollButton(false)
@@ -684,7 +684,7 @@ const AIChatSidebar = () => {
     setShouldAutoScroll(true)
     setStepsByMessageId({})
     
-    // 清除滚动超时
+    // Clear scroll timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
@@ -1109,7 +1109,7 @@ const AIChatSidebar = () => {
                     ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 animate-pulse' 
                     : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
                 }`}
-                title={hasNewMessages ? "有新消息 - 滚动到底部" : "滚动到底部"}
+                title={hasNewMessages ? "New messages - scroll to bottom" : "Scroll to bottom"}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -1128,7 +1128,7 @@ const AIChatSidebar = () => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                新消息
+                New Messages
               </div>
             )}
             
@@ -1141,12 +1141,12 @@ const AIChatSidebar = () => {
                   handleScrollToBottom()
                 }}
                 className="absolute bottom-20 right-6 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all duration-200 flex items-center gap-2 cursor-pointer"
-                title="点击恢复自动滚动"
+                title="Click to resume auto-scroll"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                自动滚动已暂停
+                Auto-scroll Paused
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -1157,6 +1157,7 @@ const AIChatSidebar = () => {
           {/* Input area fixed at bottom */}
           <div className="px-6 py-4 border-t border-blue-200 bg-white/90 backdrop-blur-sm flex-shrink-0">
             <Sender
+              
               ref={inputRef}
               placeholder={loading ? "AI is responding..." : "Ask anything"}
               onSubmit={handleSubmit}
