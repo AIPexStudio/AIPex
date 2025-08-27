@@ -952,6 +952,20 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
       } catch {}
     }
 
+    // Add the assistant message with tool calls before processing tool results
+    messages.push({
+      role: "assistant",
+      content: content || null,
+      tool_calls: toolCalls.map(tc => ({
+        id: tc.id,
+        type: "function",
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments
+        }
+      }))
+    })
+
     // Execute each tool and append tool results
     let executedMutating = false
     for (const tc of toolCalls) {
