@@ -868,3 +868,465 @@ export async function getFormElements(): Promise<{
   const [{ result }] = results
   return result || null
 }
+
+/**
+ * Scroll to a DOM element and center it in the viewport
+ */
+export async function scrollToElement(selector: string): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+  elementInfo?: {
+    tagName: string
+    text: string
+    position: { x: number; y: number }
+  }
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector],
+    func: (selector: string) => {
+      try {
+        const element = document.querySelector(selector) as HTMLElement
+        if (!element) {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Get element position and size
+        const rect = element.getBoundingClientRect()
+        const elementCenter = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2
+        }
+
+        // Calculate scroll position to center the element
+        const viewportHeight = window.innerHeight
+        const viewportWidth = window.innerWidth
+        
+        const scrollX = window.scrollX + elementCenter.x - viewportWidth / 2
+        const scrollY = window.scrollY + elementCenter.y - viewportHeight / 2
+
+        // Smooth scroll to the calculated position
+        window.scrollTo({
+          left: Math.max(0, scrollX),
+          top: Math.max(0, scrollY),
+          behavior: 'smooth'
+        })
+
+        // Get element info
+        const elementInfo = {
+          tagName: element.tagName.toLowerCase(),
+          text: element.textContent?.trim()?.substring(0, 100) || '',
+          position: { 
+            x: rect.left + window.scrollX, 
+            y: rect.top + window.scrollY 
+          }
+        }
+
+        return {
+          success: true,
+          message: `Successfully scrolled to and centered element "${selector}"`,
+          title: document.title || "",
+          url: location.href,
+          elementInfo
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error scrolling to element: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Highlight a DOM element with visual emphasis
+ */
+export async function highlightElement(selector: string, options?: {
+  color?: string
+  duration?: number
+  style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'
+  intensity?: 'subtle' | 'normal' | 'strong'
+  animation?: boolean
+  persist?: boolean
+  customCSS?: string
+}): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+  elementInfo?: {
+    tagName: string
+    text: string
+    position: { x: number; y: number }
+    size: { width: number; height: number }
+  }
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector, options || {}],
+    func: (selector: string, options: {
+      color?: string
+      duration?: number
+      style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'
+      intensity?: 'subtle' | 'normal' | 'strong'
+      animation?: boolean
+      persist?: boolean
+      customCSS?: string
+    }) => {
+      try {
+        const element = document.querySelector(selector) as HTMLElement
+        if (!element) {
+          return {
+            success: false,
+            message: `Element with selector "${selector}" not found`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Default options
+        const highlightColor = options.color || '#00d4ff'
+        const highlightDuration = options.duration || 3000
+        const highlightStyle = options.style || 'glow'
+        const intensity = options.intensity || 'normal'
+        const enableAnimation = options.animation !== false
+        const persistHighlight = options.persist || false
+        const customCSS = options.customCSS || ''
+
+        // Helper function to convert hex to rgb
+        function hexToRgb(hex: string): {r: number, g: number, b: number} | null {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+          return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+          } : null
+        }
+
+        // Store original styles to restore later
+        const originalStyles: { [key: string]: string } = {}
+
+        // Create unique highlight ID
+        const highlightId = `aipex-highlight-${Date.now()}`
+        element.setAttribute('data-highlight-id', highlightId)
+
+        // Insert CSS styles if not already present
+        if (!document.getElementById('aipex-highlight-styles')) {
+          const styleSheet = document.createElement('style')
+          styleSheet.id = 'aipex-highlight-styles'
+          styleSheet.textContent = `
+            .aipex-highlight-glow {
+              position: relative;
+              z-index: 9999;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .aipex-highlight-glow.subtle {
+              box-shadow: 0 0 10px rgba(0, 212, 255, 0.4), 0 0 20px rgba(0, 212, 255, 0.2);
+            }
+            
+            .aipex-highlight-glow.normal {
+              box-shadow: 0 0 15px rgba(0, 212, 255, 0.6), 0 0 30px rgba(0, 212, 255, 0.4), 0 0 45px rgba(0, 212, 255, 0.2);
+            }
+            
+            .aipex-highlight-glow.strong {
+              box-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.4), 0 0 80px rgba(0, 212, 255, 0.2);
+            }
+            
+            @keyframes aipex-pulse {
+              0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.6), 0 0 30px rgba(0, 212, 255, 0.4);
+              }
+              50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 25px rgba(0, 212, 255, 0.8), 0 0 50px rgba(0, 212, 255, 0.6);
+              }
+            }
+            
+            .aipex-highlight-pulse {
+              animation: aipex-pulse 2s ease-in-out infinite;
+              transition: all 0.3s ease;
+            }
+            
+            @keyframes aipex-shine {
+              0% { background-position: -100% 0; }
+              100% { background-position: 100% 0; }
+            }
+            
+            .aipex-highlight-shine {
+              position: relative;
+              overflow: hidden;
+            }
+            
+            .aipex-highlight-shine::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: -100%;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+              animation: aipex-shine 2s ease-in-out infinite;
+              z-index: 1;
+            }
+            
+            @keyframes aipex-bounce {
+              0%, 20%, 53%, 80%, 100% { transform: translate3d(0, 0, 0); }
+              40%, 43% { transform: translate3d(0, -8px, 0); }
+              70% { transform: translate3d(0, -4px, 0); }
+              90% { transform: translate3d(0, -2px, 0); }
+            }
+            
+            .aipex-highlight-bounce {
+              animation: aipex-bounce 1.5s ease-in-out infinite;
+            }
+            
+            .aipex-highlight-neon {
+              color: #ffffff !important;
+              text-shadow: 
+                0 0 5px currentColor,
+                0 0 10px currentColor,
+                0 0 15px currentColor,
+                0 0 20px #00d4ff,
+                0 0 35px #00d4ff,
+                0 0 40px #00d4ff;
+              border: 2px solid #00d4ff;
+              border-radius: 8px;
+              background: rgba(0, 212, 255, 0.1);
+            }
+            
+            .aipex-highlight-gradient {
+              background: linear-gradient(45deg, #00d4ff, #ff00d4, #d4ff00, #00d4ff) !important;
+              background-size: 400% 400% !important;
+              animation: aipex-gradient 3s ease infinite;
+              color: white !important;
+              border-radius: 8px;
+              padding: 4px 8px;
+            }
+            
+            @keyframes aipex-gradient {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+            
+            .aipex-highlight-shadow {
+              filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.8));
+              transition: all 0.3s ease;
+            }
+            
+            .aipex-highlight-outline {
+              outline: 3px solid #00d4ff;
+              outline-offset: 4px;
+              border-radius: 6px;
+              transition: all 0.3s ease;
+            }
+            
+            .aipex-highlight-border {
+              border: 3px solid #00d4ff !important;
+              border-radius: 8px;
+              position: relative;
+              transition: all 0.3s ease;
+            }
+            
+            .aipex-highlight-background {
+              background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1)) !important;
+              border-radius: 6px;
+              backdrop-filter: blur(2px);
+              transition: all 0.3s ease;
+            }
+          `
+          document.head.appendChild(styleSheet)
+        }
+
+        // Save original styles that might be modified
+        const stylesToSave = ['boxShadow', 'outline', 'outlineOffset', 'border', 'borderRadius', 'backgroundColor', 'color', 'textShadow', 'filter', 'transform', 'animation', 'transition']
+        stylesToSave.forEach(prop => {
+          originalStyles[prop] = (element.style as any)[prop] || ''
+        })
+
+        // Apply custom CSS if provided
+        if (customCSS) {
+          element.style.cssText += '; ' + customCSS
+        } else {
+          // Apply highlight style
+          const colorWithAlpha = highlightColor.startsWith('#') 
+            ? `${highlightColor}${intensity === 'subtle' ? '66' : intensity === 'strong' ? 'CC' : '99'}`
+            : highlightColor
+
+          element.classList.add('aipex-highlighted')
+          
+          switch (highlightStyle) {
+            case 'glow':
+              element.classList.add('aipex-highlight-glow', intensity)
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                const intensityValues = {
+                  subtle: '0 0 10px rgba({r}, {g}, {b}, 0.4), 0 0 20px rgba({r}, {g}, {b}, 0.2)',
+                  normal: '0 0 15px rgba({r}, {g}, {b}, 0.6), 0 0 30px rgba({r}, {g}, {b}, 0.4), 0 0 45px rgba({r}, {g}, {b}, 0.2)',
+                  strong: '0 0 20px rgba({r}, {g}, {b}, 0.8), 0 0 40px rgba({r}, {g}, {b}, 0.6), 0 0 60px rgba({r}, {g}, {b}, 0.4), 0 0 80px rgba({r}, {g}, {b}, 0.2)'
+                }
+                element.style.boxShadow = intensityValues[intensity].replace(/{r}/g, rgb.r.toString()).replace(/{g}/g, rgb.g.toString()).replace(/{b}/g, rgb.b.toString())
+              }
+              break
+              
+            case 'pulse':
+              element.classList.add('aipex-highlight-pulse')
+              if (enableAnimation && highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                const keyframes = `
+                  @keyframes aipex-pulse-${highlightId} {
+                    0%, 100% { 
+                      transform: scale(1);
+                      box-shadow: 0 0 15px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6), 0 0 30px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4);
+                    }
+                    50% { 
+                      transform: scale(1.05);
+                      box-shadow: 0 0 25px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8), 0 0 50px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6);
+                    }
+                  }
+                `
+                const style = document.createElement('style')
+                style.textContent = keyframes
+                document.head.appendChild(style)
+                element.style.animation = `aipex-pulse-${highlightId} 2s ease-in-out infinite`
+              }
+              break
+              
+            case 'shine':
+              element.classList.add('aipex-highlight-shine')
+              break
+              
+            case 'bounce':
+              element.classList.add('aipex-highlight-bounce')
+              break
+              
+            case 'neon':
+              element.classList.add('aipex-highlight-neon')
+              if (highlightColor !== '#00d4ff') {
+                element.style.borderColor = highlightColor
+                element.style.backgroundColor = `${colorWithAlpha}1A`
+                element.style.textShadow = `
+                  0 0 5px currentColor,
+                  0 0 10px currentColor,
+                  0 0 15px currentColor,
+                  0 0 20px ${highlightColor},
+                  0 0 35px ${highlightColor},
+                  0 0 40px ${highlightColor}
+                `
+              }
+              break
+              
+            case 'gradient':
+              element.classList.add('aipex-highlight-gradient')
+              break
+              
+            case 'shadow':
+              element.classList.add('aipex-highlight-shadow')
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                element.style.filter = `drop-shadow(0 0 15px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8))`
+              }
+              break
+              
+            case 'outline':
+              element.classList.add('aipex-highlight-outline')
+              if (highlightColor !== '#00d4ff') {
+                element.style.outline = `3px solid ${highlightColor}`
+              }
+              break
+              
+            case 'border':
+              element.classList.add('aipex-highlight-border')
+              if (highlightColor !== '#00d4ff') {
+                element.style.border = `3px solid ${highlightColor} !important`
+              }
+              break
+              
+            case 'background':
+              element.classList.add('aipex-highlight-background')
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                element.style.background = `linear-gradient(135deg, rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2), rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)) !important`
+              }
+              break
+          }
+        }
+
+        // Remove highlight after duration (unless persist is true)
+        if (!persistHighlight && highlightDuration > 0) {
+          setTimeout(() => {
+            // Restore original styles
+            Object.entries(originalStyles).forEach(([property, value]) => {
+              (element.style as any)[property] = value
+            })
+            
+            // Remove all highlight classes
+            element.classList.remove('aipex-highlighted', 'aipex-highlight-glow', 'aipex-highlight-pulse', 'aipex-highlight-shine', 'aipex-highlight-bounce', 'aipex-highlight-neon', 'aipex-highlight-gradient', 'aipex-highlight-shadow', 'aipex-highlight-outline', 'aipex-highlight-border', 'aipex-highlight-background', 'subtle', 'normal', 'strong')
+            element.removeAttribute('data-highlight-id')
+            
+            // Remove custom keyframe styles
+            const customStyle = document.querySelector(`style:has([contains(text(), "aipex-pulse-${highlightId}")])`)
+            if (customStyle) {
+              customStyle.remove()
+            }
+          }, highlightDuration)
+        }
+
+        // Get element info
+        const rect = element.getBoundingClientRect()
+        const elementInfo = {
+          tagName: element.tagName.toLowerCase(),
+          text: element.textContent?.trim()?.substring(0, 100) || '',
+          position: { 
+            x: rect.left + window.scrollX, 
+            y: rect.top + window.scrollY 
+          },
+          size: {
+            width: rect.width,
+            height: rect.height
+          }
+        }
+
+        const persistMessage = persistHighlight ? ' (persistent)' : ` for ${highlightDuration}ms`
+        return {
+          success: true,
+          message: `Successfully highlighted element "${selector}" with ${highlightStyle} style (${intensity} intensity)${persistMessage}`,
+          title: document.title || "",
+          url: location.href,
+          elementInfo
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error highlighting element: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
