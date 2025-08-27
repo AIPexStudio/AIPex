@@ -31,6 +31,16 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 
 ## ✨ Key Features
 
+### 🔬 Research Topic
+- **AI-Powered Research**: Intelligent topic research and analysis
+- **Smart Content Discovery**: Find relevant information and resources
+- **Research Organization**: Organize and track your research topics
+- **Enhanced Learning**: Get deeper insights into any subject
+
+![Research Topic](gif/research.gif)
+
+> 📺 **Watch the demo**: [Research Topic Feature Demo](https://youtu.be/vrp7OCxGy_Y)
+
 ### 🗂️ Smart Tab Management
 - **AI-Powered Organization**: Automatically group related tabs using AI
 - **Quick Tab Switching**: Find and switch between tabs instantly
