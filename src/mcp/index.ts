@@ -49,6 +49,8 @@ export type McpToolName =
   | "get_input_value"
   | "submit_form"
   | "get_form_elements"
+  | "scroll_to_element"
+  | "highlight_element"
   // Clipboard
   | "copy_to_clipboard"
   | "read_from_clipboard"
@@ -165,6 +167,8 @@ export type McpRequest =
   | { tool: "get_input_value"; args: { selector: string } }
   | { tool: "submit_form"; args: { selector: string } }
   | { tool: "get_form_elements" }
+  | { tool: "scroll_to_element"; args: { selector: string } }
+  | { tool: "highlight_element"; args: { selector: string; color?: string; duration?: number; style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'; intensity?: 'subtle' | 'normal' | 'strong'; animation?: boolean; persist?: boolean; customCSS?: string } }
   // Clipboard
   | { tool: "copy_to_clipboard"; args: { text: string } }
   | { tool: "read_from_clipboard" }
@@ -248,6 +252,8 @@ import {
   getInputValue,
   submitForm,
   getFormElements,
+  scrollToElement,
+  highlightElement,
   // Bookmark management
   getAllBookmarks,
   getBookmarkFolders,
@@ -596,6 +602,18 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       }
       case "get_form_elements": {
         const result = await getFormElements()
+        return { success: true, data: result }
+      }
+      case "scroll_to_element": {
+        const { selector } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await scrollToElement(selector)
+        return { success: true, data: result }
+      }
+      case "highlight_element": {
+        const { selector, color, duration, style, intensity, animation, persist, customCSS } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        const result = await highlightElement(selector, { color, duration, style, intensity, animation, persist, customCSS })
         return { success: true, data: result }
       }
       // Clipboard

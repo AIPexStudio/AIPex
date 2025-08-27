@@ -547,6 +547,64 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    {
+      name: "scroll_to_element",
+      description: "Scroll to a DOM element and center it in the viewport",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the element to scroll to (e.g., '#my-element', '.content', 'h2')"
+          }
+        },
+        required: ["selector"]
+      }
+    },
+    {
+      name: "highlight_element",
+      description: "Highlight a DOM element with stunning visual effects and animations",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the element to highlight (e.g., '#my-element', '.content', 'h2')"
+          },
+          color: {
+            type: "string",
+            description: "Highlight color (e.g., '#00d4ff', '#ff0066', '#00ff88'). Default: '#00d4ff' (cyan blue)"
+          },
+          duration: {
+            type: "number",
+            description: "Duration in milliseconds to show highlight. Default: 3000"
+          },
+          style: {
+            type: "string",
+            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon"],
+            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect)"
+          },
+          intensity: {
+            type: "string",
+            enum: ["subtle", "normal", "strong"],
+            description: "Effect intensity: 'subtle' (gentle), 'normal' (default), 'strong' (dramatic)"
+          },
+          animation: {
+            type: "boolean",
+            description: "Whether to enable animations. Default: true"
+          },
+          persist: {
+            type: "boolean",
+            description: "Whether to keep the highlight permanently. Default: false"
+          },
+          customCSS: {
+            type: "string",
+            description: "Custom CSS styles to apply instead of predefined styles"
+          }
+        },
+        required: ["selector"]
+      }
+    },
 
     // Clipboard
     {

@@ -707,6 +707,8 @@ const SYSTEM_PROMPT = [
   "- get_interactive_elements: get all interactive elements (links, buttons, inputs) from the current page",
   "- click_element: click an element on the current page using its CSS selector",
   "- summarize_page: summarize the current page content with key points and reading statistics",
+  "- scroll_to_element: scroll to a DOM element and center it in the viewport",
+  "- highlight_element: highlight a DOM element with visual emphasis using various styles",
   
   "Form & Input Management:",
   "- fill_input: fill an input field with text using CSS selector",
@@ -798,6 +800,8 @@ const SYSTEM_PROMPT = [
   "   - Use get_recent_history for browsing history",
   "   - Use get_interactive_elements to find clickable elements on the current page",
   "   - Use summarize_page to analyze and summarize the current page content",
+  "   - Use scroll_to_element to navigate to specific elements and center them in view",
+  "   - Use highlight_element to visually emphasize elements for better user focus",
   
   "6. For form and input interaction:",
   "   - Use get_form_elements to discover all forms and input fields on the current page",
