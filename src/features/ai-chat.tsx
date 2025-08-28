@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Sender } from "@ant-design/x"
 import newChatIcon from "url:~/assets/add-action.png"
 import "~/style.css"
@@ -6,28 +6,14 @@ import "~/style.css"
 import { Thread, MarkdownRenderer, CallTool, StreamingToolCall } from "~/lib/components"
 import type { Message, ToolStep } from "~/lib/components"
 
-// Debug function - for testing scroll functionality
-const debugScrollState = (state: {
-  userScrolled: boolean
-  shouldAutoScroll: boolean
-  hasNewMessages: boolean
-  isAtBottom: boolean
-  showScrollButton: boolean
-}) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Scroll State:', state)
-  }
-}
 
 const AIChatSidebar = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
-  const [isAtBottom, setIsAtBottom] = useState(true)
-  const [userScrolled, setUserScrolled] = useState(false)
+  const [isThresholdBottom, setIsThresholdBottom] = useState(true)
+  const [scrollArrow, setScrollArrow] = useState<'up' | 'down'>('down')
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [hasNewMessages, setHasNewMessages] = useState(false)
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [organizeStatus, setOrganizeStatus] = useState("")
@@ -44,8 +30,8 @@ const AIChatSidebar = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<any>(null)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
-  const lastScrollTopRef = useRef<number>(0)
+  const previousScrollTopRef = useRef<number>(0)
+  const SCROLL_THRESHOLD = 50
 
   // Available tools data organized by category
   const availableTools = [
@@ -248,214 +234,77 @@ const AIChatSidebar = () => {
     checkForSelectedText();
   }, []);
 
-  // IntersectionObserver to detect when bottom element is visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const isVisible = entry.isIntersecting
-        setIsAtBottom(isVisible)
-        setShowScrollButton(!isVisible && messages.length > 0)
-      },
-      { threshold: 0.1 }
-    )
 
-    if (messagesEndRef.current) {
-      observer.observe(messagesEndRef.current)
-    }
 
-    return () => observer.disconnect()
-  }, [messages.length])
-
-  // Handle scroll events to detect user scrolling
-  useEffect(() => {
-    const container = messagesContainerRef.current
-    if (!container) return
-
-    const handleScroll = () => {
-      const currentScrollTop = container.scrollTop
-      const scrollDirection = currentScrollTop > lastScrollTopRef.current ? 'down' : 'up'
-      
-      // Calculate distance from bottom with threshold
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-      const threshold = 150 // Pixel threshold, consider near bottom within 150px
-      const isNearBottom = distanceFromBottom <= threshold
-      
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-      
-      // Logic that respects user scroll behavior more
-      if (scrollDirection === 'up' && !isNearBottom) {
-        // User scrolling up and not near bottom - pause auto-scroll
-        setUserScrolled(true)
-        setShouldAutoScroll(false)
-        setHasNewMessages(false)
-        
-        // Extend reset time to 30 seconds, giving user more time to read
-        scrollTimeoutRef.current = setTimeout(() => {
-          // Only reset if user is still not at bottom
-          const currentDistanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-          if (currentDistanceFromBottom > threshold) {
-            setUserScrolled(false)
-            setShouldAutoScroll(true)
-          }
-        }, 30000) // Re-enable auto-scroll after 30 seconds
-      } else if (isNearBottom) {
-        // User scrolled near bottom, immediately reset state
-        setUserScrolled(false)
-        setHasNewMessages(false)
-        setShouldAutoScroll(true)
-      }
-      
-      // 调试滚动状态
-      debugScrollState({
-        userScrolled: scrollDirection === 'up' && !isNearBottom,
-        shouldAutoScroll: isNearBottom,
-        hasNewMessages: false,
-        isAtBottom: isNearBottom,
-        showScrollButton: !isNearBottom && messages.length > 0
-      })
-      
-      lastScrollTopRef.current = currentScrollTop
-    }
-
-    // Keyboard navigation support
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'End' || (e.ctrlKey && e.key === 'End')) {
-        // User presses End key, immediately scroll to bottom
-        e.preventDefault()
-        handleScrollToBottom()
-      } else if (e.key === 'Home' || (e.ctrlKey && e.key === 'Home')) {
-        // User presses Home key, scroll to top
-        e.preventDefault()
-        if (container) {
-          container.scrollTo({ top: 0, behavior: 'smooth' })
-          setUserScrolled(true)
-          setShouldAutoScroll(false)
-        }
-      }
-    }
-
-    // Mouse wheel event handling
-    const handleWheel = (e: WheelEvent) => {
-      // Detect wheel direction
-      if (e.deltaY > 0) {
-        // Scrolling down
-        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-        if (distanceFromBottom <= 150) {
-          // When near bottom, re-enable auto-scroll
-          setUserScrolled(false)
-          setShouldAutoScroll(true)
-          setHasNewMessages(false)
-        }
-      } else if (e.deltaY < 0) {
-        // Scrolling up - immediately pause auto-scroll
-        const distanceFromTop = container.scrollTop
-        if (distanceFromTop > 100) {
-          setUserScrolled(true)
-          setShouldAutoScroll(false)
-        }
-      }
-    }
-
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    container.addEventListener('wheel', handleWheel, { passive: true })
-    document.addEventListener('keydown', handleKeyDown)
-    
-    return () => {
-      container.removeEventListener('scroll', handleScroll)
-      container.removeEventListener('wheel', handleWheel)
-      document.removeEventListener('keydown', handleKeyDown)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  // Auto-scroll function with smooth animation
-  const scrollToBottom = useCallback((force = false) => {
+  // Throttled scroll functions
+  const throttledTryScrollToBottom = useCallback(() => {
+    if (scrollArrow === 'up' || !isThresholdBottom) return
     if (!messagesEndRef.current) return
     
     messagesEndRef.current.scrollIntoView({ 
       behavior: 'smooth',
       block: 'end'
     })
+  }, [scrollArrow, isThresholdBottom])
+  
+  const throttledForceScrollToBottom = useCallback(() => {
+    setScrollArrow('down')
+    if (!messagesEndRef.current) return
+    
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      })
+    }, 16)
   }, [])
 
+  // Handle scroll events with throttling
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const { scrollTop, clientHeight, scrollHeight } = container
+      const thresholdBottom = scrollHeight - Math.floor(scrollTop) - clientHeight <= SCROLL_THRESHOLD
+      const arrow = scrollTop > previousScrollTopRef.current ? 'down' : 'up'
+      
+      setIsThresholdBottom(thresholdBottom)
+      setScrollArrow(arrow)
+      setShowScrollButton(!thresholdBottom && messages.length > 0)
+      
+      previousScrollTopRef.current = scrollTop
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [messages.length])
+  
   // Manual scroll to bottom (for button click)
   const handleScrollToBottom = useCallback(() => {
-    // Reset all scroll-related states
-    setUserScrolled(false)
-    setHasNewMessages(false)
-    setShouldAutoScroll(true)
-    
-    // Scroll to bottom
-    scrollToBottom()
-    
-    // Clear any pending scroll timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-    }
-  }, [scrollToBottom])
+    throttledForceScrollToBottom()
+  }, [throttledForceScrollToBottom])
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
-    if (messages.length > 0) {
-      // New message handling - more respectful of user scroll behavior
-      if (shouldAutoScroll && !userScrolled) {
-        // Auto-scroll - user hasn't scrolled and auto-scroll is allowed
-        setTimeout(() => {
-          if (messagesEndRef.current && !userScrolled) {
-            messagesEndRef.current.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'end'
-            })
-          }
-        }, 100)
-      } else if (userScrolled) {
-        // User has scrolled, show new message indicator instead of forcing scroll
-        setHasNewMessages(true)
-        // Auto-hide indicator after 10 seconds
-        setTimeout(() => setHasNewMessages(false), 10000)
-      }
+    if (messages.length > 0 && isThresholdBottom) {
+      setTimeout(() => {
+        throttledTryScrollToBottom()
+      }, 100)
     }
-  }, [messages, userScrolled, shouldAutoScroll])
+  }, [messages.length, isThresholdBottom, throttledTryScrollToBottom])
 
   // Special scroll handling during AI response
   useEffect(() => {
-    if (loading && shouldAutoScroll && !userScrolled) {
-      // AI is responding and user hasn't scrolled, maintain auto-scroll
+    if (loading && isThresholdBottom) {
       const scrollInterval = setInterval(() => {
-        // Check if user still hasn't scrolled
-        if (messagesContainerRef.current && !userScrolled) {
-          const distanceFromBottom = messagesContainerRef.current.scrollHeight - messagesContainerRef.current.scrollTop - messagesContainerRef.current.clientHeight
-          const threshold = 150
-          
-          // Only auto-scroll when near bottom
-          if (distanceFromBottom <= threshold) {
-            if (messagesEndRef.current) {
-              messagesEndRef.current.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'end'
-              })
-            }
-          }
-        }
-      }, 2000) // Reduce check frequency to once every 2 seconds
+        throttledTryScrollToBottom()
+      }, 2000)
 
       return () => clearInterval(scrollInterval)
     }
-  }, [loading, shouldAutoScroll, userScrolled])
+  }, [loading, isThresholdBottom, throttledTryScrollToBottom])
 
-  // Cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-    }
-  }, [])
 
   // Load AI settings initially
   useEffect(() => {
@@ -602,23 +451,10 @@ const AIChatSidebar = () => {
     }
     setMessages(prev => [...prev, aiMessage])
     
-    // If user hasn't scrolled, allow auto-scroll for new AI response
-    if (!userScrolled) {
-      setShouldAutoScroll(true)
-      // Immediately scroll to bottom to show user message
-      setTimeout(() => {
-        if (messagesEndRef.current && !userScrolled) {
-          messagesEndRef.current.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'end'
-          })
-        }
-      }, 50)
-    } else {
-      // User has scrolled, show new message indicator
-      setHasNewMessages(true)
-      setTimeout(() => setHasNewMessages(false), 10000)
-    }
+    // Scroll to bottom when submitting
+    setTimeout(() => {
+      throttledTryScrollToBottom()
+    }, 50)
     
     // prepare steps container for this message
     setStepsByMessageId(prev => ({ ...prev, [aiMessageId]: [] }))
@@ -655,7 +491,7 @@ const AIChatSidebar = () => {
         inputRef.current?.focus()
       }, 100)
     }
-  }, [messages, loading, buildContext])
+  }, [messages, loading, buildContext, throttledTryScrollToBottom])
 
   // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
@@ -675,19 +511,10 @@ const AIChatSidebar = () => {
     setMessages([])
     setLoading(false)
     setInputValue('')
-    
-    // Reset all scroll-related states
-    setUserScrolled(false)
-    setIsAtBottom(true)
+    setIsThresholdBottom(true)
+    setScrollArrow('down')
     setShowScrollButton(false)
-    setHasNewMessages(false)
-    setShouldAutoScroll(true)
     setStepsByMessageId({})
-    
-    // Clear scroll timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-    }
   }, [])
 
 
@@ -1104,51 +931,11 @@ const AIChatSidebar = () => {
             {showScrollButton && (
               <button
                 onClick={handleScrollToBottom}
-                className={`absolute bottom-6 right-6 w-12 h-12 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 hover:scale-105 ${
-                  hasNewMessages 
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 animate-pulse' 
-                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-                }`}
-                title={hasNewMessages ? "New messages - scroll to bottom" : "Scroll to bottom"}
+                className="absolute bottom-6 right-6 w-12 h-12 text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 hover:scale-105"
+                title="Scroll to bottom"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-                {hasNewMessages && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-white font-bold">!</span>
-                  </div>
-                )}
-              </button>
-            )}
-            
-            {/* New message indicator when user is scrolled up */}
-            {userScrolled && hasNewMessages && (
-              <div className="absolute bottom-20 right-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-bounce flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                New Messages
-              </div>
-            )}
-            
-            {/* Scroll status indicator */}
-            {userScrolled && !hasNewMessages && (
-              <button
-                onClick={() => {
-                  setUserScrolled(false)
-                  setShouldAutoScroll(true)
-                  handleScrollToBottom()
-                }}
-                className="absolute bottom-20 right-6 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all duration-200 flex items-center gap-2 cursor-pointer"
-                title="Click to resume auto-scroll"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Auto-scroll Paused
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
             )}
