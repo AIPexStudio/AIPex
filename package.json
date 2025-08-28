@@ -50,9 +50,6 @@
     "host_permissions": [
       "https://*/*"
     ],
-    "chrome_url_overrides": {
-      "newtab": "newtab.html"
-    },
     "commands": {
       "open-aipex": {
         "suggested_key": {

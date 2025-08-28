@@ -57,13 +57,27 @@ export async function extractPageText(): Promise<{
   const results = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      // Remove script and style elements
-      const scripts = document.querySelectorAll('script, style, nav, header, footer, aside')
-      scripts.forEach(el => el.remove())
+      // Use a completely read-only approach to avoid any DOM modification
+      const getTextContent = (element: Element): string => {
+        let text = ''
+        for (const node of element.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            text += node.textContent || ''
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as Element
+            // Skip script, style, nav, header, footer, aside elements
+            if (['SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'ASIDE'].includes(el.tagName)) {
+              continue
+            }
+            text += getTextContent(el)
+          }
+        }
+        return text
+      }
 
-      // Get main content areas
+      // Get main content areas without modifying DOM
       const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
-      const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
+      const text = getTextContent(mainContent)
       
       // Clean up text
       const cleanedText = text
@@ -481,13 +495,27 @@ export async function summarizePage(): Promise<{
   const results = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      // Remove script and style elements
-      const scripts = document.querySelectorAll('script, style, nav, header, footer, aside')
-      scripts.forEach(el => el.remove())
+      // Use a completely read-only approach to avoid any DOM modification
+      const getTextContent = (element: Element): string => {
+        let text = ''
+        for (const node of element.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            text += node.textContent || ''
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as Element
+            // Skip script, style, nav, header, footer, aside elements
+            if (['SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'ASIDE'].includes(el.tagName)) {
+              continue
+            }
+            text += getTextContent(el)
+          }
+        }
+        return text
+      }
 
-      // Get main content areas
+      // Get main content areas without modifying DOM
       const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
-      const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
+      const text = getTextContent(mainContent)
       
       // Clean up text
       const cleanedText = text
@@ -498,17 +526,34 @@ export async function summarizePage(): Promise<{
       const wordCount = cleanedText.split(/\s+/).length
       const readingTime = Math.ceil(wordCount / 200) // Average reading speed
 
-      // Extract key points (headings and important text)
-      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
-        .map(h => h.textContent?.trim())
-        .filter(h => h && h.length > 0)
-        .slice(0, 10)
+      // Extract key points (headings and important text) - read-only approach
+      const getHeadings = (element: Element): string[] => {
+        const headings: string[] = []
+        const headingElements = element.querySelectorAll('h1, h2, h3, h4, h5, h6')
+        for (const h of headingElements) {
+          const text = h.textContent?.trim()
+          if (text && text.length > 0) {
+            headings.push(text)
+          }
+        }
+        return headings.slice(0, 10)
+      }
 
-      // Extract important content (first few paragraphs)
-      const paragraphs = Array.from(document.querySelectorAll('p'))
-        .map(p => p.textContent?.trim())
-        .filter(p => p && p.length > 50)
-        .slice(0, 5)
+      // Extract important content (first few paragraphs) - read-only approach
+      const getParagraphs = (element: Element): string[] => {
+        const paragraphs: string[] = []
+        const paragraphElements = element.querySelectorAll('p')
+        for (const p of paragraphElements) {
+          const text = p.textContent?.trim()
+          if (text && text.length > 50) {
+            paragraphs.push(text)
+          }
+        }
+        return paragraphs.slice(0, 5)
+      }
+
+      const headings = getHeadings(mainContent)
+      const paragraphs = getParagraphs(mainContent)
 
       const keyPoints = [...headings, ...paragraphs].slice(0, 8)
 
