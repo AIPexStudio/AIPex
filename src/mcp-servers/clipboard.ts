@@ -167,13 +167,27 @@ export async function copyPageAsText(): Promise<{ success: boolean; text?: strin
         const title = document.title || ""
         const url = location.href
         
-        // Remove script and style elements
-        const scripts = document.querySelectorAll('script, style, nav, header, footer, aside')
-        scripts.forEach(el => el.remove())
+        // Use a completely read-only approach to avoid any DOM modification
+        const getTextContent = (element: Element): string => {
+          let text = ''
+          for (const node of element.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+              text += node.textContent || ''
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element
+              // Skip script, style, nav, header, footer, aside elements
+              if (['SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'ASIDE'].includes(el.tagName)) {
+                continue
+              }
+              text += getTextContent(el)
+            }
+          }
+          return text
+        }
 
-        // Get main content
+        // Get main content areas without modifying DOM
         const mainContent = document.querySelector('main, article, .content, .post, .entry') || document.body
-        const text = (mainContent as HTMLElement).innerText || mainContent.textContent || ""
+        const text = getTextContent(mainContent)
         
         // Clean up text
         const cleanedText = text
