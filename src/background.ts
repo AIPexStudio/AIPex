@@ -505,7 +505,13 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        // Stream is complete - send completion message
+        if (messageId) {
+          chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
+        }
+        break
+      }
       
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -515,12 +521,11 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
         if (line.trim() === '') continue
         if (line.startsWith('data: ')) {
           const data = line.slice(6)
+          // Note: We don't rely on [DONE] for completion detection
+          // Completion is determined by the stream reader's done state
           if (data === '[DONE]') {
-            // Send completion message
-            if (messageId) {
-              chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
-            }
-            return { content, toolCalls }
+            // Optional: still handle [DONE] if provided, but don't rely on it
+            continue
           }
           
           try {
@@ -1720,7 +1725,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             try {
               while (true) {
                 const { done, value } = await reader.read()
-                if (done) break
+                if (done) {
+                  // Stream is complete - send completion message
+                  chrome.runtime.sendMessage({
+                    request: "ai-chat-complete",
+                    messageId: messageId
+                  }).catch(err => {
+                    console.log('Failed to send completion message:', err)
+                  })
+                  break
+                }
                 
                 buffer += decoder.decode(value, { stream: true })
                 const lines = buffer.split('\n')
@@ -1730,15 +1744,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   if (line.trim() === '') continue
                   if (line.startsWith('data: ')) {
                     const data = line.slice(6)
+                    // Note: We don't rely on [DONE] for completion detection
+                    // Completion is determined by the stream reader's done state
                     if (data === '[DONE]') {
-                      // Send completion message
-                      chrome.runtime.sendMessage({
-                        request: "ai-chat-complete",
-                        messageId: messageId
-                      }).catch(err => {
-                        console.log('Failed to send completion message:', err)
-                      })
-                      return
+                      // Optional: still handle [DONE] if provided, but don't rely on it
+                      continue
                     }
                     
                     try {

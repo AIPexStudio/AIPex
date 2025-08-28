@@ -79,6 +79,13 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 
 ![Google Search Enhancement](gif/google.gif)
 
+### 🤖 Advanced Browser Automation
+- **Natural Language Commands**: Control your browser with simple text commands
+- **Multi-Step Workflows**: Automate complex sequences of browser actions
+- **Data Extraction**: Extract and organize information from any website
+- **Form Automation**: Fill forms, submit data, and interact with web elements
+- **Cross-Site Operations**: Perform tasks across multiple websites simultaneously
+
 ## 🚀 Getting Started
 
 ### Quick Start
@@ -217,9 +224,64 @@ Thanks to all our amazing contributors!
 - [ ] **Mobile Extension** - Mobile browser support
 - [ ] **API Integration** - Connect with external services
 
-## 🆕 Latest Features
+## 🤖 Browser Automation Use Cases
 
-### 📝 Form & Input Management
+AIPex excels at automating complex browser tasks through natural language commands. Here are some powerful use cases:
+
+### 🔍 Research & Information Gathering
+- **"Please use Google to research topic 'MCP'"** - Automatically search and gather information about any topic
+- **"Find the latest news about AI developments"** - Search for recent news and articles
+- **"Research the best practices for React development"** - Gather comprehensive information from multiple sources
+- **"Find tutorials for learning TypeScript"** - Discover educational resources and guides
+
+### 📊 Data Collection & Analysis
+- **"Please help me find the first star for https://github.com/AIPexStudio/aipex"** - Extract specific information from web pages
+- **"Get the current price of Bitcoin from multiple sources"** - Collect real-time data from various websites
+- **"Find all the contributors to this GitHub repository"** - Extract and organize data from GitHub pages
+- **"Compare prices of laptops across different e-commerce sites"** - Gather pricing information for comparison
+
+### 📧 Email & Communication Automation
+- **"Draft an email to schedule a meeting next week"** - Automatically compose emails with AI assistance
+- **"Send a follow-up email to my last contact"** - Automate email sequences and follow-ups
+- **"Find contact information for tech companies in San Francisco"** - Research and collect contact details
+
+### 🛒 E-commerce & Shopping
+- **"Find the best deals on wireless headphones"** - Search across multiple shopping sites
+- **"Track price changes for this product"** - Monitor price fluctuations
+- **"Find customer reviews for this item"** - Gather user feedback and ratings
+- **"Compare specifications between different smartphone models"** - Extract and compare product details
+
+### 📝 Content Creation & Management
+- **"Summarize this article and save it to my notes"** - Extract and summarize web content
+- **"Find similar articles to this one"** - Discover related content across the web
+- **"Create a reading list about machine learning"** - Compile resources on specific topics
+- **"Save all images from this page to my downloads"** - Batch download content
+
+### 🔧 Development & Technical Tasks
+- **"Find the documentation for this API"** - Locate technical documentation
+- **"Check if this npm package is still maintained"** - Research package status and maintenance
+- **"Find code examples for this programming concept"** - Gather coding tutorials and examples
+- **"Monitor GitHub issues for this repository"** - Track project updates and issues
+
+### 📈 Business Intelligence
+- **"Research competitors in the AI space"** - Gather competitive intelligence
+- **"Find market trends for renewable energy"** - Collect market research data
+- **"Track social media mentions of our brand"** - Monitor brand presence online
+- **"Analyze customer reviews for our product"** - Gather and analyze user feedback
+
+### 🎓 Learning & Education
+- **"Create a study plan for learning Python"** - Organize educational resources
+- **"Find practice exercises for JavaScript"** - Discover learning materials
+- **"Research the latest developments in quantum computing"** - Stay updated on cutting-edge topics
+- **"Find online courses for data science"** - Discover educational opportunities
+
+### 🏠 Personal Productivity
+- **"Find the best restaurants near my location"** - Discover local businesses
+- **"Research travel options for my vacation"** - Plan trips and find deals
+- **"Track my favorite sports team's schedule"** - Get sports information and updates
+- **"Find recipes for dinner tonight"** - Discover cooking inspiration
+
+## 🆕 Latest Features
 - **Smart Form Filling**: Automatically fill out web forms using AI
 - **Input Field Operations**: Clear, read, and modify input fields
 - **Form Discovery**: Find and analyze all forms on web pages

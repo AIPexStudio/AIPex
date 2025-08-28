@@ -43,7 +43,10 @@ export class StreamingParser {
       
       if (line.startsWith('data: ')) {
         const data = line.slice(6)
+        // Note: We don't rely on [DONE] for completion detection
+        // Completion is determined by the stream reader's done state
         if (data === '[DONE]') {
+          // Optional: still handle [DONE] if provided, but don't rely on it
           newChunks.push({
             type: 'complete',
             timestamp: Date.now(),
@@ -230,7 +233,18 @@ export async function parseStreamingResponse(
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        // Stream is complete - this is the reliable way to detect completion
+        const completionChunk: StreamChunk = {
+          type: 'complete',
+          timestamp: Date.now(),
+          messageId: messageId
+        }
+        if (onChunk) {
+          onChunk(completionChunk)
+        }
+        break
+      }
       
       const chunks = parser.parseChunk(value)
       
