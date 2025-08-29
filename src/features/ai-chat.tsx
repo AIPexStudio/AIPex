@@ -26,6 +26,12 @@ const AIChatSidebar = () => {
   const [isSaving, setIsSaving] = useState(false)
     const [stepsByMessageId, setStepsByMessageId] = useState<Record<string, ToolStep[]>>({})
   const [showToolsInfo, setShowToolsInfo] = useState(false)
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(() => {
+    // Initialize with all categories collapsed by default
+    const allIndices = new Set<number>()
+    // We'll initialize this after availableTools is defined
+    return allIndices
+  })
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -206,6 +212,15 @@ const AIChatSidebar = () => {
   ]
 
   const totalToolsCount = availableTools.reduce((sum, category) => sum + category.tools.length, 0)
+
+  // Initialize collapsed categories with all categories collapsed by default
+  useEffect(() => {
+    const allIndices = new Set<number>()
+    for (let i = 0; i < availableTools.length; i++) {
+      allIndices.add(i)
+    }
+    setCollapsedCategories(allIndices)
+  }, [])
 
   // Check for selected text when component mounts
   useEffect(() => {
@@ -779,26 +794,82 @@ const AIChatSidebar = () => {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Available AI Tools</h3>
               <p className="text-gray-600">AIpex provides {totalToolsCount} tools to enhance AI capabilities</p>
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    const allCollapsed = collapsedCategories.size === availableTools.length
+                    if (allCollapsed) {
+                      // Expand all
+                      setCollapsedCategories(new Set())
+                    } else {
+                      // Collapse all
+                      const allIndices = new Set<number>()
+                      for (let i = 0; i < availableTools.length; i++) {
+                        allIndices.add(i)
+                      }
+                      setCollapsedCategories(allIndices)
+                    }
+                  }}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  {collapsedCategories.size === availableTools.length ? 'Expand All' : 'Collapse All'}
+                </button>
+              </div>
             </div>
 
             {/* Tools Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {availableTools.map((category, index) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900">{category.category}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                  </div>
-                  <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
-                    {category.tools.map((tool, toolIndex) => (
-                      <div key={toolIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
-                        <div className="font-mono text-sm text-blue-600 font-semibold mb-1">{tool.name}</div>
-                        <div className="text-sm text-gray-700 leading-relaxed">{tool.description}</div>
+              {availableTools.map((category, index) => {
+                const isCollapsed = collapsedCategories.has(index)
+                return (
+                  <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div 
+                      className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 cursor-pointer hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                      onClick={() => {
+                        const newCollapsed = new Set(collapsedCategories)
+                        if (isCollapsed) {
+                          newCollapsed.delete(index)
+                        } else {
+                          newCollapsed.add(index)
+                        }
+                        setCollapsedCategories(newCollapsed)
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-lg font-semibold text-gray-900">{category.category}</h4>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                              {category.tools.length} tools
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                        </div>
+                        <div className="ml-2">
+                          <svg 
+                            className={`w-5 h-5 text-gray-600 transition-transform ${isCollapsed ? 'rotate-90' : 'rotate-0'}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                    {!isCollapsed && (
+                      <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+                        {category.tools.map((tool, toolIndex) => (
+                          <div key={toolIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                            <div className="font-mono text-sm text-blue-600 font-semibold mb-1">{tool.name}</div>
+                            <div className="text-sm text-gray-700 leading-relaxed">{tool.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Footer */}
