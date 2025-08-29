@@ -309,16 +309,29 @@ const AIChatSidebar = () => {
     }
   }, [messages.length, isThresholdBottom, throttledTryScrollToBottom])
 
+  // Auto-scroll during streaming content updates
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Check if any message is currently streaming
+      const hasStreamingMessage = messages.some(msg => msg.streaming)
+      if (hasStreamingMessage) {
+        setTimeout(() => {
+          throttledForceScrollToBottom()
+        }, 50)
+      }
+    }
+  }, [messages, throttledForceScrollToBottom])
+
   // Special scroll handling during AI response
   useEffect(() => {
-    if (loading && isThresholdBottom) {
+    if (loading) {
       const scrollInterval = setInterval(() => {
-        throttledTryScrollToBottom()
-      }, 2000)
+        throttledForceScrollToBottom()
+      }, 1000)
 
       return () => clearInterval(scrollInterval)
     }
-  }, [loading, isThresholdBottom, throttledTryScrollToBottom])
+  }, [loading, throttledForceScrollToBottom])
 
 
   // Load AI settings initially
@@ -354,6 +367,11 @@ const AIChatSidebar = () => {
             ? { ...msg, content: msg.content + message.chunk }
             : msg
         ))
+        
+        // Trigger scroll during streaming
+        setTimeout(() => {
+          throttledForceScrollToBottom()
+        }, 10)
       } else if (message.request === "ai-chat-complete") {
         console.log('Stream completed')
         // Mark streaming as complete and re-enable input
@@ -363,8 +381,9 @@ const AIChatSidebar = () => {
             : msg
         ))
         setLoading(false)
-        // Focus back to input after AI response is complete
+        // Scroll to bottom and focus back to input after AI response is complete
         setTimeout(() => {
+          throttledForceScrollToBottom()
           inputRef.current?.focus()
         }, 100)
       } else if (message.request === "ai-chat-error") {
@@ -376,8 +395,9 @@ const AIChatSidebar = () => {
             : msg
         ))
         setLoading(false)
-        // Focus back to input after error
+        // Scroll to bottom and focus back to input after error
         setTimeout(() => {
+          throttledForceScrollToBottom()
           inputRef.current?.focus()
         }, 100)
       } else if (message.request === "organize-tabs-complete") {
@@ -406,6 +426,11 @@ const AIChatSidebar = () => {
           const prevSteps = prev[messageId] || []
           return { ...prev, [messageId]: [...prevSteps, step] }
         })
+        
+        // Scroll to bottom when new tool step is added
+        setTimeout(() => {
+          throttledForceScrollToBottom()
+        }, 50)
       } else if (message.request === 'ai-chat-tools-final') {
         const { messageId, content } = message as { messageId: string; content: string }
         // flush final content to the assistant message and mark done
@@ -415,7 +440,10 @@ const AIChatSidebar = () => {
             : msg
         ))
         setLoading(false)
+        
+        // Scroll to bottom when tools complete
         setTimeout(() => {
+          throttledForceScrollToBottom()
           inputRef.current?.focus()
         }, 100)
       }
@@ -468,7 +496,7 @@ const AIChatSidebar = () => {
     
     // Scroll to bottom when submitting
     setTimeout(() => {
-      throttledTryScrollToBottom()
+      throttledForceScrollToBottom()
     }, 50)
     
     // prepare steps container for this message
@@ -491,6 +519,7 @@ const AIChatSidebar = () => {
         ))
         setLoading(false)
         setTimeout(() => {
+          throttledForceScrollToBottom()
           inputRef.current?.focus()
         }, 100)
       }
@@ -503,10 +532,11 @@ const AIChatSidebar = () => {
       ))
       setLoading(false)
       setTimeout(() => {
+        throttledForceScrollToBottom()
         inputRef.current?.focus()
       }, 100)
     }
-  }, [messages, loading, buildContext, throttledTryScrollToBottom])
+  }, [messages, loading, buildContext, throttledForceScrollToBottom])
 
   // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
