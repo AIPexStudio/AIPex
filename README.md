@@ -41,50 +41,48 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 ### 🔬 Research Topic
 - **AI-Powered Research**: Intelligent topic research and analysis
 - **Smart Content Discovery**: Find relevant information and resources
-- **Research Organization**: Organize and track your research topics
-- **Enhanced Learning**: Get deeper insights into any subject
 
 ![Research Topic](gif/research.gif)
-
-> 📺 **Watch the demo**: [Research Topic Feature Demo](https://youtu.be/vrp7OCxGy_Y)
 
 ### 🗂️ Smart Tab Management
 - **AI-Powered Organization**: Automatically group related tabs using AI
 - **Quick Tab Switching**: Find and switch between tabs instantly
-- **Tab Actions**: Pin, mute, reload, and manage tabs efficiently
-- **Tab Search**: Search through all your open tabs with smart filtering
 
 ![Smart Tab Organization](gif/organize-tabs.gif)
+
+### 💰 Price Comparison
+- **Cross-Website Comparison**: Compare prices across different e-commerce sites
+- **Smart Price Tracking**: Monitor price changes and find the best deals
+
+![Price Comparison](gif/compare.gif)
 
 ### 🤖 AI Assistant Sidebar
 - **Intelligent Chat**: Have conversations with AI directly in your browser
 - **Context-Aware**: AI understands your current page and browsing context
-- **Multi-Modal**: Text chat with potential for image processing
-- **Web Search Integration**: Get real-time information and answers
 
 ![AI Chatbot Sidebar](gif/AI.gif)
+
+### 📝 Highlight and Summarize
+- **Smart Text Highlighting**: Select and highlight important content
+- **AI-Powered Summarization**: Get instant summaries of highlighted text
+
+![Highlight and Summarize](gif/summariz.gif)
 
 ### 🔍 Enhanced Search & History
 - **Smart History Search**: Find previously visited pages quickly
 - **Bookmark Management**: Organize and search through bookmarks
-- **Advanced Filtering**: Use special commands for precise searches
-- **Browsing Analytics**: Track your browsing patterns
 
 ![Management Interface](gif/preview.gif)
 
 ### 🌐 Google Search Enhancement
 - **AI-Powered Insights**: Get additional context for search results
 - **Smart Suggestions**: Enhanced search recommendations
-- **Quick Actions**: Perform actions directly from search results
 
 ![Google Search Enhancement](gif/google.gif)
 
 ### 🤖 Advanced Browser Automation
 - **Natural Language Commands**: Control your browser with simple text commands
 - **Multi-Step Workflows**: Automate complex sequences of browser actions
-- **Data Extraction**: Extract and organize information from any website
-- **Form Automation**: Fill forms, submit data, and interact with web elements
-- **Cross-Site Operations**: Perform tasks across multiple websites simultaneously
 
 ## 🚀 Getting Started
 
@@ -115,108 +113,17 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 
 We love contributions! Here's how you can help make AIPex even better:
 
-### 🏗️ Local Development Setup
+📖 **For detailed development setup, build instructions, and contribution guidelines, please see [DEVELOPMENT.md](DEVELOPMENT.md)**
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/buttercannfly/AIPex.git
-   cd AIPex
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
-
-3. **Start development server**
-   ```bash
-   pnpm dev
-   ```
-
-4. **Load in Chrome**
-   - Go to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked" and select the `build/chrome-mv3-dev` folder
-
-### 🧪 Building for Production
-```bash
-pnpm build
-```
-
-### 📁 Project Structure
-```
-src/
-├── background.ts          # Extension background script
-├── content.tsx           # Content script for web pages
-├── newtab.tsx           # New tab page
-├── sidepanel.tsx        # Sidebar panel
-├── features/            # Feature components
-│   ├── ai-chat.tsx     # AI chat functionality
-│   └── count-button.tsx # Utility components
-├── lib/                 # Shared libraries
-│   └── components/      # Reusable UI components
-└── mcp/                 # MCP (Model Context Protocol) integration
-```
-
-## 🤝 How to Contribute
-
-We welcome all types of contributions! Here's how you can help:
-
-### 🐛 Report Bugs
-- [Create an issue](https://github.com/buttercannfly/AIPex/issues/new) with a clear description
-- Include steps to reproduce the bug
-- Add screenshots if applicable
-
-### 💡 Suggest Features
-- [Open a feature request](https://github.com/buttercannfly/AIPex/issues/new)
-- Describe the feature and its benefits
-- Consider implementation complexity
-
-### 🔧 Submit Code
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests if applicable
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. [Open a Pull Request](https://github.com/buttercannfly/AIPex/compare)
-
-### 📚 Improve Documentation
-- Fix typos and grammar
-- Add missing information
-- Improve code comments
-- Create tutorials or guides
-
-### 🎨 Design & UI
-- Suggest UI improvements
-- Create new icons or assets
-- Improve accessibility
-- Optimize for different screen sizes
+### Quick Start for Contributors
+- 🏗️ **Local Development**: See [DEVELOPMENT.md#local-development-setup](DEVELOPMENT.md#local-development-setup)
+- 🔧 **Building**: See [DEVELOPMENT.md#building-for-production](DEVELOPMENT.md#building-for-production)
+- 🤝 **Contributing**: See [DEVELOPMENT.md#how-to-contribute](DEVELOPMENT.md#how-to-contribute)
+- 📊 **Project Status**: See [DEVELOPMENT.md#development-status](DEVELOPMENT.md#development-status)
 
 
 
-## 📊 Development Status
 
-### ✅ Completed Features
-- [x] **Tab Manager** - Switch, organize, and manage tabs
-- [x] **History Manager** - Search and browse history
-- [x] **Bookmark Manager** - Organize bookmarks efficiently
-- [x] **AI Chatbot Sidebar** - Intelligent conversations
-- [x] **Keyboard Shortcuts** - Quick access commands
-- [x] **Dark Mode Support** - Beautiful dark theme
-- [x] **Google Search Enhancement** - AI-powered insights
-- [x] **Form & Input Management** - Fill forms, manage inputs, and interact with web elements
-
-### 🚧 In Progress
-- [ ] **Enhanced AI Toolbar** - Real-time translation and summarization
-- [ ] **Advanced Chatbot Features** - Image processing and web search
-- [ ] **Tab Analytics** - Browsing pattern insights
-- [ ] **Custom Themes** - User-defined color schemes
-
-### 🎯 Roadmap
-- [ ] **Firefox Support** - Cross-browser compatibility
-- [ ] **Mobile Extension** - Mobile browser support
-- [ ] **API Integration** - Connect with external services
 
 ## 🤖 Browser Automation Use Cases
 
@@ -292,11 +199,7 @@ AIPex excels at automating complex browser tasks through natural language comman
 - `get_interactive_elements` - Find clickable elements
 - [ ] **Advanced AI Models** - Support for multiple AI providers
 
-## 🐛 Known Issues
 
-- Some websites may have compatibility issues with the AI chat feature
-- Tab grouping works best with AI token configured
-- Performance may vary on older devices
 
 ## 📄 License
 
