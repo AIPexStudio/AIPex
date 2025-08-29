@@ -44,23 +44,11 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 
 ![Research Topic](gif/research.gif)
 
-### 🗂️ Smart Tab Management
-- **AI-Powered Organization**: Automatically group related tabs using AI
-- **Quick Tab Switching**: Find and switch between tabs instantly
-
-![Smart Tab Organization](gif/organize-tabs.gif)
-
 ### 💰 Price Comparison
 - **Cross-Website Comparison**: Compare prices across different e-commerce sites
 - **Smart Price Tracking**: Monitor price changes and find the best deals
 
 ![Price Comparison](gif/compare.gif)
-
-### 🤖 AI Assistant Sidebar
-- **Intelligent Chat**: Have conversations with AI directly in your browser
-- **Context-Aware**: AI understands your current page and browsing context
-
-![AI Chatbot Sidebar](gif/AI.gif)
 
 ### 📝 Highlight and Summarize
 - **Smart Text Highlighting**: Select and highlight important content
@@ -68,21 +56,15 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
 
 ![Highlight and Summarize](gif/summariz.gif)
 
-### 🔍 Enhanced Search & History
-- **Smart History Search**: Find previously visited pages quickly
-- **Bookmark Management**: Organize and search through bookmarks
-
-![Management Interface](gif/preview.gif)
-
-### 🌐 Google Search Enhancement
-- **AI-Powered Insights**: Get additional context for search results
-- **Smart Suggestions**: Enhanced search recommendations
-
-![Google Search Enhancement](gif/google.gif)
-
 ### 🤖 Advanced Browser Automation
 - **Natural Language Commands**: Control your browser with simple text commands
 - **Multi-Step Workflows**: Automate complex sequences of browser actions
+
+### 🗂️ Smart Tab Management
+- **AI-Powered Organization**: Automatically group related tabs using AI
+- **Quick Tab Switching**: Find and switch between tabs instantly
+
+![Smart Tab Organization](gif/organize-tabs.gif)
 
 ## 🚀 Getting Started
 
