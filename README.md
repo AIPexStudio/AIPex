@@ -193,13 +193,7 @@ We welcome all types of contributions! Here's how you can help:
 - Improve accessibility
 - Optimize for different screen sizes
 
-## 🏆 Contributors
 
-Thanks to all our amazing contributors! 
-
-<a href="https://github.com/buttercannfly/AIPex/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=buttercannfly/AIPex" />
-</a>
 
 ## 📊 Development Status
 
@@ -331,6 +325,15 @@ Support the development of AIPex by becoming a sponsor:
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20on%20GitHub-red?logo=github&logoColor=white)](https://github.com/sponsors/buttercannfly)
 
 ---
+
+## 🏆 Contributors
+
+<!-- 使用多种方式展示贡献者，确保完整性 -->
+<a href="https://github.com/buttercannfly/AIPex/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=buttercannfly/AIPex" alt="Contributors" />
+</a>
+
+
 
 <div align="center">
   <strong>Made with ❤️ by the AIPex Community</strong>
