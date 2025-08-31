@@ -995,32 +995,32 @@ const AIChatSidebar = () => {
                         <div className="text-xs text-gray-600">Extract content, summarize, and copy to clipboard</div>
                       </button>
                       <button
-                        onClick={() => handleSubmit('Find all my GitHub tabs and organize them into a group')}
-                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                        onClick={() => handleSubmit('Please use Google to research topic \'MCP\'')}
+                        className="w-full text-left p-6 rounded-2xl border border-purple-200 hover:border-purple-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
                         <div className="flex items-center mb-3">
                           <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
                             <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                           </div>
-                          <div className="text-sm font-semibold text-gray-900">Smart Grouping</div>
+                          <div className="text-sm font-semibold text-gray-900">Research topics</div>
                         </div>
-                        <div className="text-xs text-gray-600">Find specific tabs and create targeted groups</div>
+                        <div className="text-xs text-gray-600">Use Google to research and gather information</div>
                       </button>
                       <button
-                        onClick={() => handleSubmit('What tabs do I have open? Show me a detailed overview')}
-                        className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                        onClick={() => handleSubmit('Compare the price of Airpods 3')}
+                        className="w-full text-left p-6 rounded-2xl border border-orange-200 hover:border-orange-300 hover:bg-white hover:shadow-md transition-all duration-200 bg-white/70 backdrop-blur-sm"
                       >
                         <div className="flex items-center mb-3">
                           <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
                             <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                             </svg>
                           </div>
-                          <div className="text-sm font-semibold text-gray-900">Tab Overview</div>
+                          <div className="text-sm font-semibold text-gray-900">Compare prices</div>
                         </div>
-                        <div className="text-xs text-gray-600">Get detailed analysis of all open tabs</div>
+                        <div className="text-xs text-gray-600">Compare product prices across different sources</div>
                       </button>
                     </div>
                   </div>

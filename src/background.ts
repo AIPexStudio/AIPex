@@ -501,6 +501,7 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
   let content = ''
   let toolCalls: any[] = []
   let currentToolCall: any = null
+  const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
   
   try {
     while (true) {
@@ -561,20 +562,25 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
                     }
                     toolCalls[toolCall.index] = currentToolCall
                     
-                    // Send tool call notification
+                    // Send tool call notification (only if not already announced)
                     if (messageId && currentToolCall.function.name) {
                       try {
                         const args = currentToolCall.function.arguments ? 
                           JSON.parse(currentToolCall.function.arguments) : {}
-                        chrome.runtime.sendMessage({
-                          request: 'ai-chat-tools-step',
-                          messageId,
-                          step: { 
-                            type: 'call_tool', 
-                            name: currentToolCall.function.name, 
-                            args 
-                          }
-                        }).catch(() => {})
+                        const toolCallKey = `${currentToolCall.function.name}:${JSON.stringify(args)}`
+                        
+                        if (!announcedToolCalls.has(toolCallKey)) {
+                          announcedToolCalls.add(toolCallKey)
+                          chrome.runtime.sendMessage({
+                            request: 'ai-chat-tools-step',
+                            messageId,
+                            step: { 
+                              type: 'call_tool', 
+                              name: currentToolCall.function.name, 
+                              args 
+                            }
+                          }).catch(() => {})
+                        }
                       } catch (e) {
                         console.warn('Failed to parse tool call arguments:', e)
                       }
@@ -902,22 +908,23 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
   // OpenAI responses may put tool calls under choices[0].message.tool_calls
   // Repeat until there are no further tool calls
   const executedCalls = new Set<string>()
+  const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
   while (true) {
     if (!toolCalls || toolCalls.length === 0) {
       // Final assistant turn — stream it for better UX when possible
       if (messageId) {
         try {
-          // Add planning completion step
-          chrome.runtime.sendMessage({
-            request: "ai-chat-planning-step",
-            messageId,
-            step: {
-              type: "complete",
-              content: "Task completed successfully",
-              timestamp: Date.now(),
-              status: "completed"
-            }
-          })
+          // Add planning completion step (optional - can be removed if not needed)
+          // chrome.runtime.sendMessage({
+          //   request: "ai-chat-planning-step",
+          //   messageId,
+          //   step: {
+          //     type: "complete",
+          //     content: "Task completed successfully",
+          //     timestamp: Date.now(),
+          //     status: "completed"
+          //   }
+          // })
           
           // Final streaming response
           const finalResponse = await chatCompletion(messages, true)
@@ -946,18 +953,35 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     // Check if this is a planning phase (before tool calls)
     if (content && content.includes("📋 TASK ANALYSIS") && messageId) {
       try {
-        // Extract planning information from the thought
-        const planningStep: PlanningStep = {
-          type: "analysis",
-          content: content,
-          timestamp: Date.now(),
-          status: "completed"
+        // Extract only the task analysis part, not the full planning text
+        const lines = content.split('\n');
+        const analysisLines = [];
+        let inAnalysis = false;
+        
+        for (const line of lines) {
+          if (line.includes("📋 TASK ANALYSIS")) {
+            inAnalysis = true;
+            analysisLines.push(line);
+          } else if (inAnalysis && line.includes("📝 EXECUTION PLAN")) {
+            break;
+          } else if (inAnalysis && line.trim()) {
+            analysisLines.push(line);
+          }
         }
-        chrome.runtime.sendMessage({
-          request: "ai-chat-planning-step",
-          messageId,
-          step: planningStep
-        })
+        
+        if (analysisLines.length > 0) {
+          const planningStep: PlanningStep = {
+            type: "analysis",
+            content: analysisLines.join('\n'),
+            timestamp: Date.now(),
+            status: "completed"
+          }
+          chrome.runtime.sendMessage({
+            request: "ai-chat-planning-step",
+            messageId,
+            step: planningStep
+          })
+        }
       } catch {}
     }
 
@@ -1012,8 +1036,10 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
         if (["switch_to_tab", "organize_tabs", "ungroup_tabs"].includes(name)) {
           executedMutating = true
         }
-        // announce tool call
-        if (messageId) {
+        // announce tool call (only if not already announced during streaming)
+        const toolCallKey = `${name}:${JSON.stringify(args)}`
+        if (messageId && !announcedToolCalls.has(toolCallKey)) {
+          announcedToolCalls.add(toolCallKey)
           try {
             chrome.runtime.sendMessage({
               request: "ai-chat-tools-step",

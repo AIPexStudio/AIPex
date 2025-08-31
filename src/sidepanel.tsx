@@ -1,5 +1,5 @@
 import React from "react"
-import AIChatSidebar from "~features/ai-chat"
+import AIChatSidebar from "~features/ai-chat-assistant-ui"
 import cssText from "data-text:~style.css"
 
 // Inject Tailwind only into the sidepanel document (does not affect host pages)
