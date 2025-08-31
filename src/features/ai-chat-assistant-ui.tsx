@@ -11,6 +11,7 @@ const AIChatSidebarAssistantUI = () => {
   const [aiToken, setAiToken] = useState("")
   const [aiModel, setAiModel] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState("")
 
   // Listen for settings open event from Thread component
   useEffect(() => {
@@ -53,9 +54,15 @@ const AIChatSidebarAssistantUI = () => {
         storage.set("aiToken", aiToken),
         storage.set("aiModel", aiModel)
       ])
+      // Show success feedback
+      setSaveStatus("Settings saved successfully!")
+      setTimeout(() => setSaveStatus(""), 1500)
       console.log("AI settings saved")
     } catch (e) {
       console.error("Error saving AI settings:", e)
+      // Show error feedback
+      setSaveStatus("Error saving settings")
+      setTimeout(() => setSaveStatus(""), 3000)
     } finally {
       setIsSaving(false)
     }
@@ -142,6 +149,11 @@ const AIChatSidebarAssistantUI = () => {
                     className={`px-4 py-2 rounded-lg text-white font-semibold ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >{isSaving ? 'Saving...' : 'Save Settings'}</button>
                 </div>
+                {saveStatus && (
+                  <div className={`text-sm mt-2 ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                    {saveStatus}
+                  </div>
+                )}
               </div>
             </div>
           </div>

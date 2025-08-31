@@ -24,6 +24,14 @@ export class StreamingParser {
   private currentToolCall: any = null
   private messageId?: string
 
+  // Custom tool call parsing state
+  private inToolCallsSection = false
+  private inToolCall = false
+  private inToolCallArguments = false
+  private currentToolCallId = ''
+  private currentToolCallName = ''
+  private currentToolCallArgs = ''
+
   constructor(messageId?: string) {
     this.messageId = messageId
   }
@@ -62,16 +70,104 @@ export class StreamingParser {
           if (delta?.content) {
             // Handle text content streaming
             this.content += delta.content
-            newChunks.push({
-              type: 'text',
-              content: delta.content,
-              timestamp: Date.now(),
-              messageId: this.messageId
-            })
+            
+            // Check for custom tool call format markers
+            if (delta.content.includes('<|tool_calls_section_begin|>')) {
+              this.inToolCallsSection = true
+              console.log('Detected custom tool calls section begin')
+            } else if (delta.content.includes('<|tool_calls_section_end|>')) {
+              this.inToolCallsSection = false
+              console.log('Detected custom tool calls section end')
+            } else if (delta.content.includes('<|tool_call_begin|>')) {
+              this.inToolCall = true
+              this.currentToolCallId = ''
+              this.currentToolCallName = ''
+              this.currentToolCallArgs = ''
+              console.log('Detected custom tool call begin')
+            } else if (delta.content.includes('<|tool_call_end|>')) {
+              this.inToolCall = false
+              // Finalize the current tool call
+              // Try to extract tool name from arguments if not already set
+              if (!this.currentToolCallName && this.currentToolCallArgs) {
+                try {
+                  const args = JSON.parse(this.currentToolCallArgs)
+                  // Look for common tool name patterns in the arguments
+                  if (args.tabId && !args.url) {
+                    this.currentToolCallName = 'get_tab_info'
+                  } else if (args.tabId && args.url) {
+                    this.currentToolCallName = 'switch_to_tab'
+                  } else if (args.url && !args.tabId) {
+                    this.currentToolCallName = 'create_new_tab'
+                  } else if (args.query) {
+                    this.currentToolCallName = 'search_history'
+                  } else if (Object.keys(args).length === 0) {
+                    // No arguments, likely a simple tool
+                    this.currentToolCallName = 'get_all_tabs'
+                  }
+                } catch (e) {
+                  console.warn('Failed to extract tool name from arguments:', e)
+                }
+              }
+              
+              if (this.currentToolCallName) {
+                const toolCall = {
+                  index: this.toolCalls.length,
+                  id: this.currentToolCallId || `call_${Date.now()}_${this.toolCalls.length}`,
+                  type: 'function',
+                  function: {
+                    name: this.currentToolCallName,
+                    arguments: this.currentToolCallArgs
+                  }
+                }
+                this.toolCalls.push(toolCall)
+                
+                newChunks.push({
+                  type: 'tool_call',
+                  name: this.currentToolCallName,
+                  args: this.currentToolCallArgs ? 
+                    JSON.parse(this.currentToolCallArgs) : {},
+                  timestamp: Date.now(),
+                  messageId: this.messageId
+                })
+              }
+              console.log('Detected custom tool call end')
+            } else if (delta.content.includes('<|tool_call_argument_begin|>')) {
+              this.inToolCallArguments = true
+              console.log('Detected custom tool call arguments begin')
+            } else if (delta.content.includes('<|tool_call_argument_end|>')) {
+              this.inToolCallArguments = false
+              console.log('Detected custom tool call arguments end')
+            } else if (this.inToolCall && !this.inToolCallArguments) {
+              // Parse tool call ID and name from content
+              const content = delta.content
+              if (content.startsWith('call_')) {
+                // Extract tool call ID and name
+                const parts = content.split('_')
+                if (parts.length >= 2) {
+                  this.currentToolCallId = content
+                  // Try to extract function name from the ID
+                  const nameMatch = content.match(/call_[a-f0-9]+_([a-zA-Z_]+)/)
+                  if (nameMatch) {
+                    this.currentToolCallName = nameMatch[1]
+                  }
+                }
+              }
+            } else if (this.inToolCallArguments) {
+              // Accumulate tool call arguments
+              this.currentToolCallArgs += delta.content
+            } else if (!this.inToolCallsSection) {
+              // Only add text chunks for non-tool-call content
+              newChunks.push({
+                type: 'text',
+                content: delta.content,
+                timestamp: Date.now(),
+                messageId: this.messageId
+              })
+            }
           }
           
           if (delta?.tool_calls) {
-            // Handle tool call streaming
+            // Handle standard tool call streaming
             for (const toolCall of delta.tool_calls) {
               if (toolCall.index !== undefined) {
                 // Start new tool call
@@ -194,6 +290,14 @@ export class StreamingParser {
     this.toolCalls = []
     this.chunks = []
     this.currentToolCall = null
+    
+    // Reset custom tool call parsing state
+    this.inToolCallsSection = false
+    this.inToolCall = false
+    this.inToolCallArguments = false
+    this.currentToolCallId = ''
+    this.currentToolCallName = ''
+    this.currentToolCallArgs = ''
   }
 
   // Get all chunks

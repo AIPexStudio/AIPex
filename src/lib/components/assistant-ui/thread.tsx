@@ -103,7 +103,7 @@ export const Thread: FC = () => {
           msg.id === message.messageId 
             ? { 
                 ...msg, 
-                content: msg.content + message.chunk,
+                // Only update parts, not content to avoid duplication
                 parts: (() => {
                   const existingParts = msg.parts || [];
                   const lastPart = existingParts[existingParts.length - 1];
@@ -123,14 +123,16 @@ export const Thread: FC = () => {
                       ...existingParts,
                       {
                         id: `text-${Date.now()}`,
-                        type: 'text',
+                        type: 'text' as const,
                         content: message.chunk,
                         status: 'completed',
                         timestamp: Date.now()
                       }
                     ];
                   }
-                })()
+                })(),
+                // Ensure content field is not updated during streaming to prevent duplication
+                content: msg.content || ''
               }
             : msg
         ));
@@ -168,7 +170,9 @@ export const Thread: FC = () => {
                         timestamp: Date.now()
                       }
                     ];
-                  })()
+                  })(),
+                  // Ensure content field is not updated during tool calls to prevent duplication
+                  content: msg.content || ''
                 }
               : msg
           ));
@@ -191,7 +195,9 @@ export const Thread: FC = () => {
                       };
                     }
                     return part;
-                  })
+                  }),
+                  // Ensure content field is not updated during tool results to prevent duplication
+                  content: msg.content || ''
                 }
               : msg
           ));
@@ -203,14 +209,16 @@ export const Thread: FC = () => {
                   ...msg,
                   parts: [
                     ...(msg.parts || []),
-                    {
-                      id: `thinking-${Date.now()}`,
-                      type: 'thinking',
-                      content: message.step.content,
-                      status: 'completed',
-                      timestamp: Date.now()
-                    }
-                  ]
+                                          {
+                        id: `thinking-${Date.now()}`,
+                        type: 'thinking' as const,
+                        content: message.step.content,
+                        status: 'completed',
+                        timestamp: Date.now()
+                      }
+                  ],
+                  // Ensure content field is not updated during thinking to prevent duplication
+                  content: msg.content || ''
                 }
               : msg
           ));
@@ -232,12 +240,14 @@ export const Thread: FC = () => {
                       ...(msg.parts || []),
                       {
                         id: `planning-${Date.now()}`,
-                        type: 'planning',
+                        type: 'planning' as const,
                         content: message.step.content,
                         status: message.step.status || 'completed',
                         timestamp: Date.now()
                       }
-                    ]
+                    ],
+                    // Ensure content field is not updated during planning to prevent duplication
+                    content: msg.content || ''
                   }
                 : msg
             ));
@@ -521,7 +531,7 @@ export const Thread: FC = () => {
                       : 'bg-gray-100 text-gray-900 mr-12'
                   }`}
                 >
-                  {/* Render message parts in order */}
+                  {/* Render message content - prioritize parts over content to avoid duplication */}
                   {message.parts && message.parts.length > 0 ? (
                     <div className="space-y-2">
                       {message.parts.map((part) => {
@@ -549,17 +559,9 @@ export const Thread: FC = () => {
                             </div>
                           );
                         } else if (part.type === 'thinking') {
-                          return (
-                            <div key={part.id} className="text-sm text-purple-600 bg-purple-50 p-2 rounded italic">
-                              💭 {part.content}
-                            </div>
-                          );
+                          return null;
                         } else if (part.type === 'planning') {
-                          return (
-                            <div key={part.id} className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                              📋 {part.content}
-                            </div>
-                          );
+                          return null;
                         }
                         return null;
                       })}

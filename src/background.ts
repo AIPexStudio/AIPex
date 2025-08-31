@@ -40,6 +40,103 @@ async function isAIGroupingAvailable() {
   return !!aiToken
 }
 
+// Todo List management functions
+interface TodoItem {
+  id: string
+  text: string
+  completed: boolean
+  timestamp: number
+}
+
+interface TodoList {
+  items: TodoItem[]
+  taskId: string
+  createdAt: number
+  lastUpdated: number
+}
+
+// Parse TODO list from AI response
+function parseTodoList(content: string): TodoItem[] {
+  const todos: TodoItem[] = []
+  const lines = content.split('\n')
+  let inTodoSection = false
+  
+  for (const line of lines) {
+    if (line.includes('📝 TODO LIST:') || line.includes('TODO LIST:')) {
+      inTodoSection = true
+      continue
+    }
+    
+    if (inTodoSection) {
+      // Check if we've moved to next section
+      if (line.includes('🔄 REACT CYCLE:') || line.includes('===')) {
+        break
+      }
+      
+      // Parse todo items
+      const todoMatch = line.match(/^[-*]\s*\[([ xX])\]\s*(.+)$/)
+      if (todoMatch) {
+        const completed = todoMatch[1].toLowerCase() === 'x'
+        const text = todoMatch[2].trim()
+        todos.push({
+          id: `todo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          text,
+          completed,
+          timestamp: Date.now()
+        })
+      }
+    }
+  }
+  
+  return todos
+}
+
+// Check if all todos are completed
+function areAllTodosCompleted(todos: TodoItem[]): boolean {
+  return todos.length > 0 && todos.every(todo => todo.completed)
+}
+
+// Check if content contains task completion marker
+function hasTaskCompleteMarker(content: string): boolean {
+  return content.includes('TASK_COMPLETE') || 
+         content.includes('✅ TASK FINISHED') ||
+         content.includes('🎉 TASK COMPLETED')
+}
+
+// Update todo list with new items and mark completed ones
+function updateTodoList(currentTodos: TodoItem[], newContent: string): TodoItem[] {
+  const newTodos = parseTodoList(newContent)
+  
+  // If no new todos found, return current list
+  if (newTodos.length === 0) {
+    return currentTodos
+  }
+  
+  // Merge and update existing todos
+  const updatedTodos = [...currentTodos]
+  
+  for (const newTodo of newTodos) {
+    // Try to find matching existing todo by text
+    const existingIndex = updatedTodos.findIndex(todo => 
+      todo.text.toLowerCase() === newTodo.text.toLowerCase()
+    )
+    
+    if (existingIndex >= 0) {
+      // Update existing todo
+      updatedTodos[existingIndex] = {
+        ...updatedTodos[existingIndex],
+        completed: newTodo.completed,
+        timestamp: Date.now()
+      }
+    } else {
+      // Add new todo
+      updatedTodos.push(newTodo)
+    }
+  }
+  
+  return updatedTodos
+}
+
 // Get current tab
 const getCurrentTab = async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
@@ -503,6 +600,14 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
   let currentToolCall: any = null
   const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
   
+  // Custom tool call parsing state
+  let inToolCallsSection = false
+  let inToolCall = false
+  let inToolCallArguments = false
+  let currentToolCallId = ''
+  let currentToolCallName = ''
+  let currentToolCallArgs = ''
+  
   try {
     while (true) {
       const { done, value } = await reader.read()
@@ -536,7 +641,104 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
             // Handle content streaming
             if (delta?.content) {
               content += delta.content
-              if (messageId) {
+              
+              // Check for custom tool call format markers
+              if (delta.content.includes('<|tool_calls_section_begin|>')) {
+                inToolCallsSection = true
+                console.log('Detected custom tool calls section begin')
+              } else if (delta.content.includes('<|tool_calls_section_end|>')) {
+                inToolCallsSection = false
+                console.log('Detected custom tool calls section end')
+              } else if (delta.content.includes('<|tool_call_begin|>')) {
+                inToolCall = true
+                currentToolCallId = ''
+                currentToolCallName = ''
+                currentToolCallArgs = ''
+                console.log('Detected custom tool call begin')
+              } else if (delta.content.includes('<|tool_call_end|>')) {
+                inToolCall = false
+                // Finalize the current tool call
+                // Try to extract tool name from arguments if not already set
+                if (!currentToolCallName && currentToolCallArgs) {
+                  try {
+                    const args = JSON.parse(currentToolCallArgs)
+                    // Look for common tool name patterns in the arguments
+                    if (args.tabId && !args.url) {
+                      currentToolCallName = 'get_tab_info'
+                    } else if (args.tabId && args.url) {
+                      currentToolCallName = 'switch_to_tab'
+                    } else if (args.url && !args.tabId) {
+                      currentToolCallName = 'create_new_tab'
+                    } else if (args.query) {
+                      currentToolCallName = 'search_history'
+                    } else if (Object.keys(args).length === 0) {
+                      // No arguments, likely a simple tool
+                      currentToolCallName = 'get_all_tabs'
+                    }
+                  } catch (e) {
+                    console.warn('Failed to extract tool name from arguments:', e)
+                  }
+                }
+                
+                if (currentToolCallName) {
+                  const toolCall = {
+                    index: toolCalls.length,
+                    id: currentToolCallId || `call_${Date.now()}_${toolCalls.length}`,
+                    type: 'function',
+                    function: {
+                      name: currentToolCallName,
+                      arguments: currentToolCallArgs
+                    }
+                  }
+                  toolCalls.push(toolCall)
+                  
+                  // Send tool call notification
+                  if (messageId) {
+                    try {
+                      const args = currentToolCallArgs ? JSON.parse(currentToolCallArgs) : {}
+                      const toolCallKey = `${currentToolCallName}:${JSON.stringify(args)}`
+                      
+                      if (!announcedToolCalls.has(toolCallKey)) {
+                        announcedToolCalls.add(toolCallKey)
+                        chrome.runtime.sendMessage({
+                          request: 'ai-chat-tools-step',
+                          messageId,
+                          step: { 
+                            type: 'call_tool', 
+                            name: currentToolCallName, 
+                            args 
+                          }
+                        }).catch(() => {})
+                      }
+                    } catch (e) {
+                      console.warn('Failed to parse custom tool call arguments:', e)
+                    }
+                  }
+                }
+                console.log('Detected custom tool call end')
+              } else if (delta.content.includes('<|tool_call_argument_begin|>')) {
+                inToolCallArguments = true
+                console.log('Detected custom tool call arguments begin')
+              } else if (delta.content.includes('<|tool_call_argument_end|>')) {
+                inToolCallArguments = false
+                console.log('Detected custom tool call arguments end')
+              } else if (inToolCall && !inToolCallArguments) {
+                // Parse tool call ID from content
+                const content = delta.content
+                if (content.startsWith('call_')) {
+                  // Extract tool call ID
+                  currentToolCallId = content
+                  // For now, we'll need to extract the tool name from the arguments
+                  // since the ID format doesn't include the tool name
+                  console.log('Tool call ID detected:', content)
+                }
+              } else if (inToolCallArguments) {
+                // Accumulate tool call arguments
+                currentToolCallArgs += delta.content
+              }
+              
+              // Send streaming chunk for non-tool-call content
+              if (!inToolCallsSection && messageId) {
                 chrome.runtime.sendMessage({ 
                   request: 'ai-chat-stream', 
                   chunk: delta.content, 
@@ -545,8 +747,9 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
               }
             }
             
-            // Handle tool call streaming
+            // Handle standard tool call streaming
             if (delta?.tool_calls) {
+              console.log('Received standard tool_calls in delta:', delta.tool_calls)
               for (const toolCall of delta.tool_calls) {
                 if (toolCall.index !== undefined) {
                   // Start new tool call
@@ -613,6 +816,12 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
 const SYSTEM_PROMPT = [
   "You are the AIPex browser assistant with enhanced planning capabilities. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
   
+  "\n=== TOOL CALLS FORMAT REQUIREMENT ===",
+  "IMPORTANT: When using tools, you can use either:",
+  "1. Standard OpenAI tool_calls format (preferred)",
+  "2. Custom format with markers: <|tool_calls_section_begin|>, <|tool_call_begin|>, etc.",
+  "The system will automatically handle tool execution for both formats.",
+  
   "\n=== ENHANCED PLANNING FRAMEWORK ===",
   "You follow a structured Planning Agent approach with ReAct (Reasoning + Acting) pattern:",
   
@@ -646,14 +855,28 @@ const SYSTEM_PROMPT = [
   "- Required Tools: [List of needed tools]",
   "- Dependencies: [What needs to happen first]",
   
-  "📝 EXECUTION PLAN:",
-  "1. [First step with tool call]",
-  "2. [Second step with tool call]",
-  "3. [Continue as needed...]",
+  "📝 TODO LIST:",
+  "- [ ] [First task to complete]",
+  "- [ ] [Second task to complete]",
+  "- [ ] [Continue as needed...]",
   
   "🔄 REACT CYCLE:",
   "THINK → ACT → OBSERVE → REASON → [Repeat]",
   "```",
+  
+  "\n=== TODO LIST MANAGEMENT ===",
+  "1. Always start complex tasks with a TODO list",
+  "2. Update TODO list after each action:",
+  "   - Mark completed tasks with ✅ or [x]",
+  "   - Add new tasks if discovered during execution",
+  "   - Remove tasks that become irrelevant",
+  "3. Continue ReAct loop until all TODO items are completed",
+  "4. Use 'TASK_COMPLETE' marker when all todos are done",
+  "5. Example todo format:",
+  "   - [ ] Research topic X",
+  "   - [x] Collect data from source Y",
+  "   - [ ] Analyze results",
+  "   - [ ] Generate final report",
   
   "\n=== CAPABILITIES ===",
   "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
@@ -847,7 +1070,15 @@ const SYSTEM_PROMPT = [
   "Example 6 - Input Management Task:",
   "User: 'Clear the search box and enter a new query'",
   "Plan: 1. Get interactive elements → 2. Find search input → 3. Clear input → 4. Fill with new query → 5. Submit or click search button",
-  "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page"
+  "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page",
+  
+  "\n=== CRITICAL FORMAT REQUIREMENTS ===",
+  "1. ALWAYS use standard OpenAI tool_calls format when calling tools",
+  "2. NEVER use custom text markers like <|tool_call_begin|> or similar",
+  "3. NEVER use custom function IDs - use actual function names",
+  "4. Tool calls must be valid JSON objects in the standard format",
+  "5. The system expects tool_calls to be in the delta.tool_calls format, not in content text",
+  "6. If you need to call a tool, use the proper tool_calls structure, not text-based markers"
 ].join("\n")
 
 // Import MCP client to get all available tools
@@ -906,29 +1137,58 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
 
   // Loop over tool calls if present
   // OpenAI responses may put tool calls under choices[0].message.tool_calls
-  // Repeat until there are no further tool calls
+  // Repeat until there are no further tool calls or all todos are completed
   const executedCalls = new Set<string>()
   const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
+  let todoList: TodoItem[] = []
+  let consecutiveNoToolCalls = 0
+  const MAX_CONSECUTIVE_NO_TOOL_CALLS = 3 // Safety limit
+  
   while (true) {
-    if (!toolCalls || toolCalls.length === 0) {
+    // Check for task completion conditions
+    const hasCompletionMarker = hasTaskCompleteMarker(content || '')
+    const allTodosCompleted = areAllTodosCompleted(todoList)
+    const noToolCallsThisTurn = !toolCalls || toolCalls.length === 0
+    
+    if (noToolCallsThisTurn) {
+      consecutiveNoToolCalls++
+    } else {
+      consecutiveNoToolCalls = 0
+    }
+    
+    // Update todo list from current content
+    if (content) {
+      todoList = updateTodoList(todoList, content)
+    }
+    
+    // Check completion conditions
+    const shouldComplete = hasCompletionMarker || 
+                          allTodosCompleted || 
+                          consecutiveNoToolCalls >= MAX_CONSECUTIVE_NO_TOOL_CALLS
+    
+    if (shouldComplete) {
       // Final assistant turn — stream it for better UX when possible
       if (messageId) {
         try {
-          // Add planning completion step (optional - can be removed if not needed)
-          // chrome.runtime.sendMessage({
-          //   request: "ai-chat-planning-step",
-          //   messageId,
-          //   step: {
-          //     type: "complete",
-          //     content: "Task completed successfully",
-          //     timestamp: Date.now(),
-          //     status: "completed"
-          //   }
-          // })
+          // Send todo list status
+          if (todoList.length > 0) {
+            const completedCount = todoList.filter(t => t.completed).length
+            const totalCount = todoList.length
+            chrome.runtime.sendMessage({
+              request: "ai-chat-tools-step",
+              messageId,
+              step: { 
+                type: "todo_status", 
+                completed: completedCount,
+                total: totalCount,
+                todos: todoList
+              }
+            })
+          }
           
-          // Final streaming response
-          const finalResponse = await chatCompletion(messages, true)
-          await parseStreamingResponse(finalResponse, messageId)
+          // Don't call parseStreamingResponse again since content is already available
+          // Just send completion message
+          chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
         } catch (e) {
           // Fallback: send final once if streaming fails
           try {
@@ -942,6 +1202,25 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     // If there is assistant content alongside tool calls, surface it as think
     if (content && messageId) {
       try {
+        // Send todo list updates if present
+        if (content.includes('📝 TODO LIST:') || content.includes('TODO LIST:')) {
+          const currentTodos = parseTodoList(content)
+          if (currentTodos.length > 0) {
+            const completedCount = currentTodos.filter(t => t.completed).length
+            const totalCount = currentTodos.length
+            chrome.runtime.sendMessage({
+              request: "ai-chat-tools-step",
+              messageId,
+              step: { 
+                type: "todo_update", 
+                completed: completedCount,
+                total: totalCount,
+                todos: currentTodos
+              }
+            })
+          }
+        }
+        
         chrome.runtime.sendMessage({
           request: "ai-chat-tools-step",
           messageId,
@@ -1721,106 +2000,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       selectedTextForSidepanel = ""
       sendResponse({ selectedText: text })
       return true
-        case "ai-chat":
-      sendResponse({ success: true, message: "AI chat started" })
-      
-      try {
-        const { prompt, context, messageId } = message
-        
-        // Build conversation messages with context
-        let conversationMessages = []
-        
-        // Add conversation history if provided
-        if (context && Array.isArray(context) && context.length > 0) {
-          conversationMessages = [...context]
-        }
-        
-        // Add the current prompt as the latest user message
-        conversationMessages.push({ role: "user", content: prompt })
-        
-        chatCompletion(conversationMessages, true) // Pass full conversation and enable streaming
-          .then(async (response) => {
-            if (!response.body) {
-              throw new Error('No response body for streaming')
-            }
-            
-            const reader = response.body.getReader()
-            const decoder = new TextDecoder()
-            let buffer = ''
-            
-            try {
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
-                  // Stream is complete - send completion message
-                  chrome.runtime.sendMessage({
-                    request: "ai-chat-complete",
-                    messageId: messageId
-                  }).catch(err => {
-                    console.log('Failed to send completion message:', err)
-                  })
-                  break
-                }
-                
-                buffer += decoder.decode(value, { stream: true })
-                const lines = buffer.split('\n')
-                buffer = lines.pop() || ''
-                
-                for (const line of lines) {
-                  if (line.trim() === '') continue
-                  if (line.startsWith('data: ')) {
-                    const data = line.slice(6)
-                    // Note: We don't rely on [DONE] for completion detection
-                    // Completion is determined by the stream reader's done state
-                    if (data === '[DONE]') {
-                      // Optional: still handle [DONE] if provided, but don't rely on it
-                      continue
-                    }
-                    
-                    try {
-                      const parsed = JSON.parse(data)
-                      const delta = parsed.choices?.[0]?.delta
-                      if (delta?.content) {
-                        // Send streaming chunk
-                        console.log('Sending streaming chunk:', delta.content)
-                        
-                        chrome.runtime.sendMessage({
-                          request: "ai-chat-stream",
-                          chunk: delta.content,
-                          messageId: messageId
-                        }).catch(err => {
-                          console.log('Failed to send streaming message:', err)
-                        })
-                      }
-                    } catch (e) {
-                      // Skip invalid JSON
-                    }
-                  }
-                }
-              }
-            } finally {
-              reader.releaseLock()
-            }
-          })
-          .catch((error) => {
-            chrome.runtime.sendMessage({
-              request: "ai-chat-error",
-              error: error.message,
-              messageId: messageId
-            }).catch(err => {
-              console.log('Failed to send error message:', err)
-            })
-          })
-      } catch (error) {
-        chrome.runtime.sendMessage({
-          request: "ai-chat-error",
-          error: error.message,
-          messageId: message.messageId
-        }).catch(err => {
-          console.log('Failed to send error message:', err)
-        })
-      }
-      return true // Keep the message channel open for async response
+    
     case "ai-chat-tools":
       ;(async () => {
         try {
