@@ -51,6 +51,7 @@ export type McpToolName =
   | "get_form_elements"
   | "scroll_to_element"
   | "highlight_element"
+  | "highlight_text_inline"
   // Clipboard
   | "copy_to_clipboard"
   | "read_from_clipboard"
@@ -175,6 +176,7 @@ export type McpRequest =
   | { tool: "get_form_elements" }
   | { tool: "scroll_to_element"; args: { selector: string } }
   | { tool: "highlight_element"; args: { selector: string; color?: string; duration?: number; style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'; intensity?: 'subtle' | 'normal' | 'strong'; animation?: boolean; persist?: boolean; customCSS?: string } }
+  | { tool: "highlight_text_inline"; args: { selector: string; searchText: string; caseSensitive?: boolean; wholeWords?: boolean; highlightColor?: string; backgroundColor?: string; fontWeight?: string; persist?: boolean } }
   // Clipboard
   | { tool: "copy_to_clipboard"; args: { text: string } }
   | { tool: "read_from_clipboard" }
@@ -266,6 +268,7 @@ import {
   getFormElements,
   scrollToElement,
   highlightElement,
+  highlightTextInline,
   // Bookmark management
   getAllBookmarks,
   getBookmarkFolders,
@@ -632,6 +635,13 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         const { selector, color, duration, style, intensity, animation, persist, customCSS } = request.args
         if (!selector) return { success: false, error: "Selector is required" }
         const result = await highlightElement(selector, { color, duration, style, intensity, animation, persist, customCSS })
+        return { success: true, data: result }
+      }
+      case "highlight_text_inline": {
+        const { selector, searchText, caseSensitive, wholeWords, highlightColor, backgroundColor, fontWeight, persist } = request.args
+        if (!selector) return { success: false, error: "Selector is required" }
+        if (!searchText) return { success: false, error: "Search text is required" }
+        const result = await highlightTextInline(selector, searchText, { caseSensitive, wholeWords, highlightColor, backgroundColor, fontWeight, persist })
         return { success: true, data: result }
       }
       // Clipboard

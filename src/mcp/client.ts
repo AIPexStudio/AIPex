@@ -563,7 +563,7 @@ export class BrowserMcpClient {
     },
     {
       name: "highlight_element",
-      description: "Highlight a DOM element with stunning visual effects and animations",
+      description: "Permanently highlight DOM elements with intelligent auto-color detection for maximum contrast, featuring stunning visual effects including overlay borders, virtual mouse arrows, spotlights and other advanced styles",
       inputSchema: {
         type: "object",
         properties: {
@@ -573,16 +573,16 @@ export class BrowserMcpClient {
           },
           color: {
             type: "string",
-            description: "Highlight color (e.g., '#00d4ff', '#ff0066', '#00ff88'). Default: '#00d4ff' (cyan blue)"
+            description: "Highlight color (e.g., '#00d4ff', '#ff0066', '#00ff88'). If not specified, automatically selects the highest contrast color based on element's background and text colors for optimal visibility"
           },
           duration: {
             type: "number",
-            description: "Duration in milliseconds to show highlight. Default: 3000"
+            description: "Duration in milliseconds to show highlight. Default: 0 (permanent highlight)"
           },
           style: {
             type: "string",
-            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon"],
-            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect)"
+            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon", "overlay", "cursor", "spotlight", "frame", "pointer"],
+            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect), 'overlay' (overlay border), 'cursor' (virtual mouse arrow), 'spotlight' (spotlight effect), 'frame' (colored frame), 'pointer' (pointing arrow)"
           },
           intensity: {
             type: "string",
@@ -595,7 +595,7 @@ export class BrowserMcpClient {
           },
           persist: {
             type: "boolean",
-            description: "Whether to keep the highlight permanently. Default: false"
+            description: "Whether to keep the highlight permanently. Default: true (permanent highlight)"
           },
           customCSS: {
             type: "string",
@@ -603,6 +603,48 @@ export class BrowserMcpClient {
           }
         },
         required: ["selector"]
+      }
+    },
+    {
+      name: "highlight_text_inline",
+      description: "Highlight specific words or phrases within text content using inline styling (bold + red color)",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: {
+            type: "string",
+            description: "CSS selector of the element(s) containing the text to search (e.g., 'p', '.content', 'article')"
+          },
+          searchText: {
+            type: "string",
+            description: "The text or phrase to highlight within the selected elements"
+          },
+          caseSensitive: {
+            type: "boolean",
+            description: "Whether the search should be case sensitive. Default: false"
+          },
+          wholeWords: {
+            type: "boolean",
+            description: "Whether to match whole words only. Default: false"
+          },
+          highlightColor: {
+            type: "string",
+            description: "Color for the highlighted text. Default: '#DC143C' (crimson red)"
+          },
+          backgroundColor: {
+            type: "string",
+            description: "Background color for the highlighted text. Default: 'transparent'"
+          },
+          fontWeight: {
+            type: "string",
+            description: "Font weight for the highlighted text. Default: 'bold'"
+          },
+          persist: {
+            type: "boolean",
+            description: "Whether to keep the highlights permanently. Default: true"
+          }
+        },
+        required: ["selector", "searchText"]
       }
     },
 
