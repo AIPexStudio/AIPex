@@ -12,7 +12,7 @@ interface Message {
 
 interface MessagePart {
   id: string;
-  type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'planning';
+  type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'planning' | 'image';
   content?: string;
   toolName?: string;
   args?: any;
@@ -20,6 +20,9 @@ interface MessagePart {
   status: 'pending' | 'in-progress' | 'completed' | 'failed';
   error?: string;
   timestamp: number;
+  // Image specific properties
+  imageData?: string;
+  imageTitle?: string;
 }
 
 interface ToolCall {
@@ -278,6 +281,32 @@ export const Thread: FC = () => {
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
+      } else if (message.request === "ai-chat-image-data") {
+
+        
+        // Add image part to the message
+        setMessages(prev => prev.map(msg => 
+          msg.id === message.messageId 
+            ? {
+                ...msg,
+                parts: [
+                  ...(msg.parts || []),
+                  {
+                    id: `image-${Date.now()}-${Math.random()}`,
+                    type: 'image',
+                    status: 'completed',
+                    timestamp: Date.now(),
+                    imageData: message.imageData,
+                    imageTitle: message.toolName === 'capture_screenshot' ? 'Current Page Screenshot' :
+                              message.toolName === 'capture_tab_screenshot' ? 'Tab Screenshot' :
+                              message.toolName === 'read_clipboard_image' ? 'Clipboard Image' : 'Image'
+                  }
+                ]
+              }
+            : msg
+        ));
+        
+
       }
     };
 
@@ -562,6 +591,41 @@ export const Thread: FC = () => {
                           return null;
                         } else if (part.type === 'planning') {
                           return null;
+                        } else if (part.type === 'image') {
+                          return (
+                            <div key={part.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                              <div className="text-sm text-gray-600 mb-2 font-medium">
+                                📸 {part.imageTitle || 'Image'}
+                              </div>
+                              <img 
+                                src={part.imageData} 
+                                alt="Screenshot" 
+                                className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                                style={{ maxHeight: '400px' }}
+                                loading="lazy"
+                                onClick={() => {
+                                  // Open image in new tab for full view
+                                  if (part.imageData) {
+                                    const newTab = window.open()
+                                    if (newTab) {
+                                      newTab.document.write(`<img src="${part.imageData}" style="max-width: 100%; height: auto;" />`)
+                                    }
+                                  }
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const errorDiv = target.parentElement?.querySelector('.error-message')
+                                  if (!errorDiv) {
+                                    const error = document.createElement('div')
+                                    error.className = 'error-message text-red-500 text-sm'
+                                    error.textContent = 'Image loading failed'
+                                    target.parentElement?.appendChild(error)
+                                  }
+                                }}
+                              />
+                            </div>
+                          );
                         }
                         return null;
                       })}

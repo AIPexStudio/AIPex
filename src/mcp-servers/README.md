@@ -4,11 +4,11 @@ This directory contains all the MCP (Model Context Protocol) server tools for th
 
 ## Tool Categories
 
-**Total: 106 MCP Tools** (organized into 13 categories)
+**Total: 111 MCP Tools** (organized into 14 categories)
 
 > ✅ **All tools are now fully integrated with the MCP client and can be called by AI!**
 > 
-> **🎯 AI Integration Status**: All 106 tools are now available to the AI assistant. When users chat with the AI, it can access and use any of these tools based on the user's request, allowing for comprehensive browser automation and management.
+> **🎯 AI Integration Status**: All 111 tools are now available to the AI assistant. When users chat with the AI, it can access and use any of these tools based on the user's request, allowing for comprehensive browser automation and management.
 > 
 > **🔧 Permission Requirements**: Some tools require specific Chrome extension permissions. If you encounter permission errors, use the `check_permissions` tool to diagnose issues. The extension needs these permissions in `package.json`:
 > - `management` - for extension management tools
@@ -176,6 +176,15 @@ Tools for managing context menus.
 - `removeAllContextMenuItems()` - Remove all context menu items
 - `getContextMenuItems()` - Get context menu items
 
+### 14. Screenshot (`screenshot.ts`)
+Tools for capturing screenshots and managing clipboard images.
+
+- `captureScreenshot()` - Capture screenshot of current visible tab and return as base64 data URL
+- `captureTabScreenshot(tabId)` - Capture screenshot of a specific tab by ID
+- `captureScreenshotToClipboard()` - Capture screenshot and save directly to clipboard
+- `readClipboardImage()` - Read image from clipboard and return as base64 data URL for display
+- `getClipboardImageInfo()` - Check if clipboard contains image and get basic info
+
 ## Data Types
 
 ### SimplifiedTab
@@ -285,6 +294,43 @@ console.log(`Word count: ${content.wordCount}`)
 const links = await getPageLinks()
 console.log(`Found ${links.links.length} links`)
 ```
+
+### Screenshot Operations
+```typescript
+import { captureScreenshot, readClipboardImage, captureScreenshotToClipboard } from "~mcp-servers"
+
+// Capture current tab screenshot
+const screenshot = await captureScreenshot()
+if (screenshot.success) {
+  console.log("Screenshot captured:", screenshot.imageData)
+}
+
+// Capture specific tab screenshot
+const tabScreenshot = await captureTabScreenshot(123)
+
+// Capture and save to clipboard
+await captureScreenshotToClipboard()
+
+// Read image from clipboard
+const clipboardImage = await readClipboardImage()
+if (clipboardImage.success) {
+  console.log("Image found in clipboard:", clipboardImage.imageData)
+}
+
+// Check if clipboard has image
+const imageInfo = await getClipboardImageInfo()
+if (imageInfo.hasImage) {
+  console.log("Clipboard has image:", imageInfo.imageType)
+}
+```
+
+⚠️ **Important Note on Token Management**: 
+Screenshot tools return base64 image data which can be very large (tens of thousands of tokens). To prevent AI context overflow, the system automatically:
+- Replaces base64 data with summary text in AI conversation context
+- Stores actual image data separately for UI display
+- Shows images in the chat interface without sending them to the AI model
+
+This ensures optimal performance while maintaining full functionality.
 
 ### Clipboard Operations
 ```typescript

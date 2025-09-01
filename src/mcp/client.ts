@@ -1136,6 +1136,57 @@ export class BrowserMcpClient {
         properties: {},
         required: []
       }
+    },
+    // Screenshot tools
+    {
+      name: "capture_screenshot",
+      description: "Capture screenshot of current visible tab and return as base64 data URL",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
+    {
+      name: "capture_tab_screenshot",
+      description: "Capture screenshot of a specific tab by ID",
+      inputSchema: {
+        type: "object",
+        properties: {
+          tabId: {
+            type: "number",
+            description: "The ID of the tab to capture"
+          }
+        },
+        required: ["tabId"]
+      }
+    },
+    {
+      name: "capture_screenshot_to_clipboard",
+      description: "Capture screenshot of current tab and save directly to clipboard",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
+    {
+      name: "read_clipboard_image",
+      description: "Read image from clipboard and return as base64 data URL for display",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
+    {
+      name: "get_clipboard_image_info",
+      description: "Check if clipboard contains an image and get basic info without reading full data",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
     }
   ]
 

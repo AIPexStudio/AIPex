@@ -1290,7 +1290,11 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
       }
       try {
         // deduplicate identical tool calls in the same conversation turn chain
-        const callKey = `${name}:${JSON.stringify(args)}`
+        // But allow certain tools to be called multiple times (like screenshots)
+        const allowRepeatedCalls = ['capture_screenshot', 'capture_tab_screenshot', 'capture_screenshot_to_clipboard', 'read_clipboard_image']
+        const callKey = allowRepeatedCalls.includes(name) 
+          ? `${name}:${JSON.stringify(args)}:${Date.now()}:${Math.random()}` // Make unique for repeatable tools
+          : `${name}:${JSON.stringify(args)}`
         if (executedCalls.has(callKey)) {
           // Notify duplicate and skip executing to avoid loops
           if (messageId) {
@@ -1316,7 +1320,9 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
           executedMutating = true
         }
         // announce tool call (only if not already announced during streaming)
-        const toolCallKey = `${name}:${JSON.stringify(args)}`
+        const toolCallKey = allowRepeatedCalls.includes(name)
+          ? `${name}:${JSON.stringify(args)}:${Date.now()}:${Math.random()}` // Make unique for repeatable tools
+          : `${name}:${JSON.stringify(args)}`
         if (messageId && !announcedToolCalls.has(toolCallKey)) {
           announcedToolCalls.add(toolCallKey)
           try {
@@ -1358,20 +1364,88 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
           } catch {}
         }
         const toolResult = await executeToolCall(name, args)
+        
+        // Special handling for image-related tools to avoid token overflow
+        let processedToolResult = toolResult
+        if (name === 'capture_screenshot' || name === 'capture_tab_screenshot' || name === 'read_clipboard_image') {
+          if (toolResult.success && toolResult.data?.imageData) {
+            // Validate image data format
+            const imageData = toolResult.data.imageData
+            const isValidImage = typeof imageData === 'string' && imageData.startsWith('data:image/')
+            
+            if (isValidImage) {
+              // Replace large base64 data with a summary for AI context
+              processedToolResult = {
+                ...toolResult,
+                data: {
+                  ...toolResult.data,
+                  imageData: '[Image captured successfully - base64 data available for display]',
+                  imageSize: imageData.length,
+                  imageFormat: imageData.substring(5, imageData.indexOf(';')) // e.g., "image/png"
+                }
+              }
+              
+              // Store the actual image data for UI display
+              if (messageId) {
+
+                
+                try {
+                  // Send image data to sidepanel via runtime message
+
+                  await chrome.runtime.sendMessage({
+                    request: "ai-chat-image-data",
+                    messageId,
+                    imageData: imageData,
+                    toolName: name
+                  })
+
+                } catch (error) {
+                  console.error('❌ [DEBUG] Failed to send image data to sidepanel:', error)
+                  // Fallback: try sending to current tab as well
+                  try {
+                    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+                    if (activeTab && activeTab.id) {
+                      await chrome.tabs.sendMessage(activeTab.id, {
+                        request: "ai-chat-image-data",
+                        messageId,
+                        imageData: imageData,
+                        toolName: name
+                      })
+
+                    }
+                  } catch {
+                    console.error('❌ [DEBUG] All message sending methods failed')
+                  }
+                }
+              } else {
+                console.warn('⚠️ [DEBUG] No messageId provided for image display')
+              }
+            } else {
+              // Invalid image data
+              processedToolResult = {
+                ...toolResult,
+                success: false,
+                error: 'Invalid image data format - expected data:image/ URL'
+              }
+            }
+          }
+        }
+        
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
           name,
-          content: JSON.stringify(toolResult)
+          content: JSON.stringify(processedToolResult)
         })
-        // stream tool result (truncated)
+        // stream tool result (truncated and processed for display)
         if (messageId) {
           const resultString = (() => {
             try {
-              const s = JSON.stringify(toolResult)
+              // Use processed result (without base64 data) for display
+              const s = JSON.stringify(processedToolResult)
               return s.length > 1200 ? s.slice(0, 1200) + "…" : s
             } catch {
-              const s = String(toolResult)
+              const s = String(processedToolResult)
               return s.length > 1200 ? s.slice(0, 1200) + "…" : s
             }
           })()
@@ -2018,6 +2092,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })()
       return true
     case "ai-chat-with-tools":
+
       ;(async () => {
         try {
           const { prompt, context, tools, messageId } = message

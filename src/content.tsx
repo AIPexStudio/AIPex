@@ -866,7 +866,7 @@ const PlasmoOverlay = () => {
     return () => chrome.runtime.onMessage.removeListener(onMessage)
   }, [])
 
-  // 悬停右侧2秒显示icon逻辑已移除
+  // Hover right side for 2 seconds to show icon logic removed
 
   // const handleOpenOmni = () => {
   //   setIsOmniOpen(true)
@@ -877,14 +877,14 @@ const PlasmoOverlay = () => {
   // }
 
   // const handleCloseBotAndShowReopen = () => {
-  //   // 逻辑已移除
+  //   // Logic removed
   // }
 
   // Return UI directly, no ReactDOM.createPortal needed
   return (
     <>
       {/* <SelectionPopup /> */}
-      {/* FloatingBot 已移除 */}
+      {/* FloatingBot removed */}
       {isOmniOpen && (
         <Omni 
           isOpen={isOmniOpen}

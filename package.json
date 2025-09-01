@@ -51,7 +51,9 @@
       }
     ],
     "host_permissions": [
-      "https://*/*"
+      "https://*/*",
+      "http://*/*",
+      "<all_urls>"
     ],
     "commands": {
       "open-aipex": {
@@ -79,7 +81,8 @@
       "sessions",
       "sidePanel",
       "management",
-      "downloads"
+      "downloads",
+      "tabCapture"
     ]
   }
 }

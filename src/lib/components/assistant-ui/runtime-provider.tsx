@@ -6,6 +6,6 @@ interface AIPexRuntimeProviderProps {
 }
 
 export const AIPexRuntimeProvider: FC<AIPexRuntimeProviderProps> = ({ children }) => {
-  // 暂时直接渲染children，稍后我们会集成完整的runtime
+  // Temporarily render children directly, will integrate full runtime later
   return <>{children}</>;
 };
