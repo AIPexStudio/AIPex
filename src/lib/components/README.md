@@ -1,19 +1,17 @@
 # Chatbot Components
 
-这个目录包含了聊天机器人的基础组件，使用 Tailwind CSS 构建，提供了良好的可读性和可维护性。
+This directory contains basic chatbot components built with Tailwind CSS, providing good readability and maintainability.
 
-## 组件列表
+## Component List
 
 ### 1. Thread
-聊天消息列表组件，用于显示用户和助手的对话。
+Chat message list component for displaying user and assistant conversations.
 
 ```tsx
-import { Thread, Message } from "~/lib/components"
-
-<Thread messages={messages}>
+<Thread>
   {(message) => (
     <div>
-      {/* 自定义消息渲染逻辑 */}
+      {/* Custom message rendering logic */}
       {message.content}
     </div>
   )}
@@ -21,113 +19,97 @@ import { Thread, Message } from "~/lib/components"
 ```
 
 ### 2. MarkdownRenderer
-Markdown 渲染组件，支持语法高亮和流式显示。
+Markdown rendering component with syntax highlighting and streaming display support.
 
 ```tsx
-import { MarkdownRenderer } from "~/lib/components"
-
 <MarkdownRenderer 
-  content="# Hello World" 
-  streaming={true} 
+  content={message.content} 
+  streaming={message.streaming} 
 />
 ```
 
 ### 3. CodeBlock
-代码语法高亮组件，基于 react-syntax-highlighter。
+Code syntax highlighting component based on react-syntax-highlighter.
 
 ```tsx
-import { CodeBlock } from "~/lib/components"
-
-<CodeBlock className="language-javascript">
-  console.log("Hello World");
-</CodeBlock>
+<CodeBlock language="javascript" code={codeString} />
 ```
 
 ### 4. CallTool
-工具调用步骤显示组件，用于展示 AI 的推理过程。
+Tool call step display component for showing AI reasoning process.
 
 ```tsx
-import { CallTool, ToolStep } from "~/lib/components"
+<CallTool steps={steps} />
 
 const steps: ToolStep[] = [
-  { type: 'think', content: '分析用户需求...' },
+  { type: 'think', content: 'Analyzing user requirements...' },
   { type: 'call_tool', name: 'get_tabs', args: {} },
-  { type: 'tool_result', result: '获取到 5 个标签页' }
+  { type: 'tool_result', result: 'Retrieved 5 tabs' }
 ]
-
-<CallTool steps={steps} />
 ```
 
 ### 5. Thinking
-AI 思考状态显示组件，带有动画效果。
+AI thinking status display component with animation effects.
 
 ```tsx
-import { Thinking } from "~/lib/components"
-
 <Thinking isThinking={true}>
-  AI 正在分析您的请求...
+  AI is analyzing your request...
 </Thinking>
 ```
 
-## 类型定义
+## Type Definitions
 
 ```tsx
 interface Message {
-  id: string
-  content: string
-  role: 'user' | 'assistant'
-  streaming?: boolean
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  streaming?: boolean;
 }
 
 interface ToolStep {
-  type: 'think' | 'call_tool' | 'tool_result'
-  content?: string
-  name?: string
-  args?: any
-  result?: string
+  type: 'think' | 'call_tool' | 'tool_result';
+  content?: string;
+  name?: string;
+  args?: any;
+  result?: any;
 }
 ```
 
-## 使用示例
+## Usage Example
 
-完整的聊天界面示例：
+Complete chat interface example:
 
 ```tsx
-import { Thread, MarkdownRenderer, CallTool, Thinking } from "~/lib/components"
+function ChatInterface() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
 
-const ChatInterface = () => {
   return (
-    <div>
-      <Thread messages={messages}>
-        {(message) => (
-          <div className="flex flex-col gap-2">
-            {message.role === 'assistant' && (
-              <>
-                {stepsByMessageId[message.id]?.length && (
-                  <CallTool steps={stepsByMessageId[message.id]} />
-                )}
-                <MarkdownRenderer 
-                  content={message.content} 
-                  streaming={message.streaming} 
-                />
-              </>
-            )}
+    <div className="chat-container">
+      <Thread>
+        {messages.map(message => (
+          <div key={message.id}>
+            <MarkdownRenderer 
+              content={message.content} 
+              streaming={message.streaming} 
+            />
           </div>
-        )}
+        ))}
       </Thread>
       
       <Thinking isThinking={loading}>
-        AI 正在处理您的请求...
+        AI is processing your request...
       </Thinking>
     </div>
-  )
+  );
 }
 ```
 
-## 样式特点
+## Style Features
 
-- 使用 Tailwind CSS 进行样式设计
-- 响应式设计，适配不同屏幕尺寸
-- 统一的颜色主题和间距
-- 支持深色模式（通过 CSS 变量）
-- 流畅的动画和过渡效果
+- Designed with Tailwind CSS
+- Responsive design for different screen sizes
+- Unified color theme and spacing
+- Dark mode support (via CSS variables)
+- Smooth animations and transitions

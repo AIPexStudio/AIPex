@@ -74,16 +74,16 @@ export class StreamingParser {
             // Check for custom tool call format markers
             if (delta.content.includes('<|tool_calls_section_begin|>')) {
               this.inToolCallsSection = true
-              console.log('Detected custom tool calls section begin')
+
             } else if (delta.content.includes('<|tool_calls_section_end|>')) {
               this.inToolCallsSection = false
-              console.log('Detected custom tool calls section end')
+
             } else if (delta.content.includes('<|tool_call_begin|>')) {
               this.inToolCall = true
               this.currentToolCallId = ''
               this.currentToolCallName = ''
               this.currentToolCallArgs = ''
-              console.log('Detected custom tool call begin')
+
             } else if (delta.content.includes('<|tool_call_end|>')) {
               this.inToolCall = false
               // Finalize the current tool call
@@ -130,13 +130,13 @@ export class StreamingParser {
                   messageId: this.messageId
                 })
               }
-              console.log('Detected custom tool call end')
+
             } else if (delta.content.includes('<|tool_call_argument_begin|>')) {
               this.inToolCallArguments = true
-              console.log('Detected custom tool call arguments begin')
+
             } else if (delta.content.includes('<|tool_call_argument_end|>')) {
               this.inToolCallArguments = false
-              console.log('Detected custom tool call arguments end')
+
             } else if (this.inToolCall && !this.inToolCallArguments) {
               // Parse tool call ID and name from content
               const content = delta.content

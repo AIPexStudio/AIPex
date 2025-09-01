@@ -115,6 +115,12 @@ export type McpToolName =
   | "remove_context_menu_item"
   | "remove_all_context_menu_items"
   | "get_context_menu_items"
+  // Screenshot
+  | "capture_screenshot"
+  | "capture_tab_screenshot" 
+  | "capture_screenshot_to_clipboard"
+  | "read_clipboard_image"
+  | "get_clipboard_image_info"
 
 export type McpRequest =
   | { tool: "get_all_tabs" }
@@ -233,6 +239,12 @@ export type McpRequest =
   | { tool: "remove_context_menu_item"; args: { id: string } }
   | { tool: "remove_all_context_menu_items" }
   | { tool: "get_context_menu_items" }
+  // Screenshot
+  | { tool: "capture_screenshot" }
+  | { tool: "capture_tab_screenshot"; args: { tabId: number } }
+  | { tool: "capture_screenshot_to_clipboard" }
+  | { tool: "read_clipboard_image" }
+  | { tool: "get_clipboard_image_info" }
 
 export type McpResponse =
   | { success: true; data?: any }
@@ -355,7 +367,13 @@ import {
   updateContextMenuItem,
   removeContextMenuItem,
   removeAllContextMenuItems,
-  getContextMenuItems
+  getContextMenuItems,
+  // Screenshot
+  captureScreenshot,
+  captureTabScreenshot,
+  captureScreenshotToClipboard,
+  readClipboardImage,
+  getClipboardImageInfo
 } from "~mcp-servers"
 
 export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
@@ -911,6 +929,29 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       case "get_context_menu_items": {
         const result = await getContextMenuItems()
         return result.success ? { success: true, data: result.items } : { success: false, error: result.error || "Failed to get context menu items" }
+      }
+      // Screenshot tools
+      case "capture_screenshot": {
+        const result = await captureScreenshot()
+        return result.success ? { success: true, data: { imageData: result.imageData } } : { success: false, error: result.error || "Failed to capture screenshot" }
+      }
+      case "capture_tab_screenshot": {
+        const tabId = request.args?.tabId
+        if (!Number.isFinite(tabId)) return { success: false, error: "Invalid tabId" }
+        const result = await captureTabScreenshot(tabId)
+        return result.success ? { success: true, data: { imageData: result.imageData } } : { success: false, error: result.error || "Failed to capture tab screenshot" }
+      }
+      case "capture_screenshot_to_clipboard": {
+        const result = await captureScreenshotToClipboard()
+        return result.success ? { success: true } : { success: false, error: result.error || "Failed to capture screenshot to clipboard" }
+      }
+      case "read_clipboard_image": {
+        const result = await readClipboardImage()
+        return result.success ? { success: true, data: { imageData: result.imageData } } : { success: false, error: result.error || "Failed to read clipboard image" }
+      }
+      case "get_clipboard_image_info": {
+        const result = await getClipboardImageInfo()
+        return result.success ? { success: true, data: { hasImage: result.hasImage, imageType: result.imageType } } : { success: false, error: result.error || "Failed to get clipboard image info" }
       }
       default:
         return { success: false, error: "Unsupported tool" }

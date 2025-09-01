@@ -37,6 +37,9 @@ export * from "./sessions"
 // Context Menus
 export * from "./context-menus"
 
+// Screenshot
+export * from "./screenshot"
+
 // Legacy exports from tools.ts (for backward compatibility)
 export {
   getAllTabs,
