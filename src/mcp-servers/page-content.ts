@@ -1005,7 +1005,7 @@ export async function scrollToElement(selector: string): Promise<{
 export async function highlightElement(selector: string, options?: {
   color?: string
   duration?: number
-  style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'
+  style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'spotlight' | 'frame' | 'pointer'
   intensity?: 'subtle' | 'normal' | 'strong'
   animation?: boolean
   persist?: boolean
@@ -1031,7 +1031,7 @@ export async function highlightElement(selector: string, options?: {
     func: (selector: string, options: {
       color?: string
       duration?: number
-      style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon'
+      style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'spotlight' | 'frame' | 'pointer'
       intensity?: 'subtle' | 'normal' | 'strong'
       animation?: boolean
       persist?: boolean
@@ -1048,17 +1048,16 @@ export async function highlightElement(selector: string, options?: {
           }
         }
 
-        // Default options
-        const highlightColor = options.color || '#00d4ff'
-        const highlightDuration = options.duration || 3000
+        // Default options - changed to permanent highlighting by default
+        const highlightDuration = options.duration || 0
         const highlightStyle = options.style || 'glow'
         const intensity = options.intensity || 'normal'
         const enableAnimation = options.animation !== false
-        const persistHighlight = options.persist || false
+        const persistHighlight = options.persist !== false // changed to default true
         const customCSS = options.customCSS || ''
 
         // Helper function to convert hex to rgb
-        function hexToRgb(hex: string): {r: number, g: number, b: number} | null {
+        const hexToRgb = (hex: string): {r: number, g: number, b: number} | null => {
           const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
           return result ? {
             r: parseInt(result[1], 16),
@@ -1067,12 +1066,233 @@ export async function highlightElement(selector: string, options?: {
           } : null
         }
 
+        // Convert RGB to hex
+        const rgbToHex = (r: number, g: number, b: number): string => {
+          return '#' + [r, g, b].map(x => {
+            const hex = Math.round(x).toString(16)
+            return hex.length === 1 ? '0' + hex : hex
+          }).join('')
+        }
+
+        // Parse CSS color string to RGB
+        const parseColor = (colorStr: string): {r: number, g: number, b: number} | null => {
+          if (!colorStr || colorStr === 'transparent') return null
+          
+          // Handle hex colors
+          if (colorStr.startsWith('#')) {
+            return hexToRgb(colorStr)
+          }
+          
+          // Handle rgb/rgba colors
+          const rgbMatch = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+          if (rgbMatch) {
+            return {
+              r: parseInt(rgbMatch[1]),
+              g: parseInt(rgbMatch[2]), 
+              b: parseInt(rgbMatch[3])
+            }
+          }
+          
+          return null
+        }
+
+        // Calculate relative luminance of a color
+        const getLuminance = (r: number, g: number, b: number): number => {
+          const [rs, gs, bs] = [r, g, b].map(c => {
+            c = c / 255
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+          })
+          return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
+        }
+
+        // Calculate contrast ratio between two colors
+        const getContrastRatio = (color1: {r: number, g: number, b: number}, color2: {r: number, g: number, b: number}): number => {
+          const lum1 = getLuminance(color1.r, color1.g, color1.b)
+          const lum2 = getLuminance(color2.r, color2.g, color2.b)
+          const brightest = Math.max(lum1, lum2)
+          const darkest = Math.min(lum1, lum2)
+          return (brightest + 0.05) / (darkest + 0.05)
+        }
+
+        // Get the dominant colors of an element
+        const getElementColors = (el: HTMLElement): {background: {r: number, g: number, b: number} | null, text: {r: number, g: number, b: number} | null} => {
+          const computedStyle = window.getComputedStyle(el)
+          
+          // Get background color, walk up the DOM tree if transparent
+          let bgColor = null
+          let currentEl = el
+          while (currentEl && currentEl !== document.body && !bgColor) {
+            const bg = window.getComputedStyle(currentEl).backgroundColor
+            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+              bgColor = parseColor(bg)
+              break
+            }
+            currentEl = currentEl.parentElement as HTMLElement
+          }
+          
+          // Default to white background if none found
+          if (!bgColor) {
+            bgColor = {r: 255, g: 255, b: 255}
+          }
+          
+          // Get text color
+          let textColor = parseColor(computedStyle.color)
+          if (!textColor) {
+            textColor = {r: 0, g: 0, b: 0} // Default to black text
+          }
+          
+          return {background: bgColor, text: textColor}
+        }
+
+        // Generate high contrast color candidates
+        const getHighContrastColors = (baseColor: {r: number, g: number, b: number}): string[] => {
+          const candidates = [
+            '#FF0000', // Bright Red
+            '#00FF00', // Bright Green  
+            '#0000FF', // Bright Blue
+            '#FFFF00', // Bright Yellow
+            '#FF00FF', // Bright Magenta
+            '#00FFFF', // Bright Cyan
+            '#FF4500', // Orange Red
+            '#8A2BE2', // Blue Violet
+            '#32CD32', // Lime Green
+            '#FF1493', // Deep Pink
+            '#FF6347', // Tomato
+            '#4169E1', // Royal Blue
+            '#FFD700', // Gold
+            '#DC143C', // Crimson
+            '#00CED1', // Dark Turquoise
+            '#FF8C00', // Dark Orange
+            '#9932CC', // Dark Orchid
+            '#228B22', // Forest Green
+            '#FF69B4', // Hot Pink
+            '#1E90FF', // Dodger Blue
+            '#FFFFFF', // White
+            '#000000', // Black
+          ]
+          
+          return candidates.map(hex => {
+            const rgb = hexToRgb(hex)!
+            const contrast = getContrastRatio(baseColor, rgb)
+            return { color: hex, contrast }
+          })
+          .filter(item => item.contrast >= 3.0) // Only include colors with good contrast
+          .sort((a, b) => b.contrast - a.contrast) // Sort by highest contrast first
+          .map(item => item.color)
+        }
+
+        // Auto-select the best highlight color
+        const getOptimalHighlightColor = (element: HTMLElement): string => {
+          const colors = getElementColors(element)
+          const baseColor = colors.background || {r: 255, g: 255, b: 255}
+          
+          const candidates = getHighContrastColors(baseColor)
+          
+          if (candidates.length === 0) {
+            // Fallback if no good contrast found
+            return '#FF0000'
+          }
+          
+          // Prefer vibrant colors with very high contrast (>7.0 for AAA level)
+          const highContrastCandidates = candidates.filter(color => {
+            const rgb = hexToRgb(color)!
+            return getContrastRatio(baseColor, rgb) >= 7.0
+          })
+          
+          if (highContrastCandidates.length > 0) {
+            // Among high contrast colors, avoid pure black/white unless necessary
+            for (const candidate of highContrastCandidates) {
+              if (candidate !== '#FFFFFF' && candidate !== '#000000') {
+                return candidate
+              }
+            }
+            return highContrastCandidates[0]
+          }
+          
+          // Use the best available contrast (minimum 3.0)
+          return candidates[0] || '#FF0000'
+        }
+
+        // Create or get top-level overlay container
+        const getOverlayContainer = (): HTMLElement => {
+          let container = document.getElementById('aipex-overlay-container')
+          if (!container) {
+            container = document.createElement('div')
+            container.id = 'aipex-overlay-container'
+            container.className = 'aipex-overlay-container'
+            document.body.appendChild(container)
+          }
+          return container
+        }
+
+        // Create independent overlay element with position tracking
+        const createOverlayElement = (
+          elementRect: DOMRect,
+          className: string,
+          content: string = '',
+          offsetX: number = 0,
+          offsetY: number = 0,
+          width?: number,
+          height?: number
+        ): HTMLElement => {
+          const container = getOverlayContainer()
+          const overlayEl = document.createElement('div')
+          overlayEl.className = className
+          overlayEl.setAttribute('data-highlight-id', highlightId)
+          
+          if (content) overlayEl.textContent = content
+
+          // Calculate position relative to viewport
+          const left = elementRect.left + offsetX
+          const top = elementRect.top + offsetY
+          
+          overlayEl.style.left = left + 'px'
+          overlayEl.style.top = top + 'px'
+          
+          if (width !== undefined) overlayEl.style.width = width + 'px'
+          if (height !== undefined) overlayEl.style.height = height + 'px'
+          
+          container.appendChild(overlayEl)
+          return overlayEl
+        }
+
+        // Update overlay positions on scroll/resize
+        const updateOverlayPositions = () => {
+          const currentRect = element.getBoundingClientRect()
+          const overlays = document.querySelectorAll(`[data-highlight-id="${highlightId}"]`)
+          
+          overlays.forEach((overlay) => {
+            const overlayEl = overlay as HTMLElement
+            const offsetX = parseFloat(overlayEl.dataset.offsetX || '0')
+            const offsetY = parseFloat(overlayEl.dataset.offsetY || '0')
+            overlayEl.style.left = (currentRect.left + offsetX) + 'px'
+            overlayEl.style.top = (currentRect.top + offsetY) + 'px'
+          })
+        }
+
         // Store original styles to restore later
         const originalStyles: { [key: string]: string } = {}
+
+        // Auto-select optimal color if none specified
+        const autoColor = getOptimalHighlightColor(element)
+        const highlightColor = options.color || autoColor // Use auto-detected color if none specified
+
+        // Debug info for color selection
+        const elementColors = getElementColors(element)
+        console.log('AIPex Color Detection:', {
+          element: element.tagName + (element.className ? '.' + element.className : ''),
+          detectedBackground: elementColors.background,
+          detectedText: elementColors.text,
+          selectedHighlight: highlightColor,
+          userSpecified: !!options.color
+        })
 
         // Create unique highlight ID
         const highlightId = `aipex-highlight-${Date.now()}`
         element.setAttribute('data-highlight-id', highlightId)
+
+        // Get element position for overlay calculations
+        const elementRect = element.getBoundingClientRect()
 
         // Insert CSS styles if not already present
         if (!document.getElementById('aipex-highlight-styles')) {
@@ -1200,6 +1420,109 @@ export async function highlightElement(selector: string, options?: {
               backdrop-filter: blur(2px);
               transition: all 0.3s ease;
             }
+            
+            /* New overlay styles - independent elements */
+            .aipex-overlay-container {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+              pointer-events: none;
+              z-index: 2147483647;
+            }
+            
+            .aipex-overlay-border {
+              position: absolute;
+              border: 3px solid #00d4ff;
+              border-radius: 8px;
+              pointer-events: none;
+              animation: aipex-overlay-pulse 2s ease-in-out infinite;
+            }
+            
+            .aipex-cursor-arrow {
+              position: absolute;
+              color: #00d4ff;
+              font-size: 20px;
+              font-weight: bold;
+              pointer-events: none;
+              animation: aipex-cursor-bounce 1.5s ease-in-out infinite;
+              text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+            }
+            
+            .aipex-pointer-arrow {
+              position: absolute;
+              width: 0;
+              height: 0;
+              border-left: 15px solid transparent;
+              border-right: 15px solid transparent;
+              border-top: 25px solid #00d4ff;
+              pointer-events: none;
+              animation: aipex-pointer-wiggle 1s ease-in-out infinite;
+              filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
+            }
+            
+            .aipex-spotlight-bg {
+              position: absolute;
+              background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.7) 70%);
+              border-radius: 50%;
+              pointer-events: none;
+            }
+            
+            .aipex-spotlight-ring {
+              position: absolute;
+              border: 2px solid #00d4ff;
+              border-radius: 50%;
+              pointer-events: none;
+              animation: aipex-spotlight-rotate 3s linear infinite;
+            }
+            
+            .aipex-frame-border {
+              position: absolute;
+              border: 4px solid transparent;
+              background: linear-gradient(45deg, #00d4ff, #ff00d4, #d4ff00, #00d4ff) border-box;
+              border-radius: 12px;
+              pointer-events: none;
+              animation: aipex-frame-glow 2s ease-in-out infinite;
+            }
+            
+            @keyframes aipex-overlay-pulse {
+              0%, 100% { 
+                border-color: rgba(0, 212, 255, 0.8);
+                box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+              }
+              50% { 
+                border-color: rgba(0, 212, 255, 1);
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+              }
+            }
+            
+            @keyframes aipex-cursor-bounce {
+              0%, 100% { transform: translateY(0px); }
+              50% { transform: translateY(-5px); }
+            }
+            
+            @keyframes aipex-spotlight-rotate {
+              0% { transform: rotate(0deg) scale(1); }
+              50% { transform: rotate(180deg) scale(1.1); }
+              100% { transform: rotate(360deg) scale(1); }
+            }
+            
+            @keyframes aipex-frame-glow {
+              0%, 100% { 
+                filter: brightness(1) drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+              }
+              50% { 
+                filter: brightness(1.3) drop-shadow(0 0 20px rgba(0, 212, 255, 0.8));
+              }
+            }
+            
+            @keyframes aipex-pointer-wiggle {
+              0%, 100% { transform: rotate(0deg); }
+              25% { transform: rotate(-5deg); }
+              75% { transform: rotate(5deg); }
+            }
+
           `
           document.head.appendChild(styleSheet)
         }
@@ -1315,7 +1638,127 @@ export async function highlightElement(selector: string, options?: {
                 element.style.background = `linear-gradient(135deg, rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2), rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)) !important`
               }
               break
+              
+            case 'overlay':
+              // Create independent overlay border
+              const overlayBorder = createOverlayElement(
+                elementRect,
+                'aipex-overlay-border',
+                '',
+                -4, // offsetX
+                -4, // offsetY  
+                elementRect.width + 8, // width
+                elementRect.height + 8  // height
+              )
+              overlayBorder.dataset.offsetX = '-4'
+              overlayBorder.dataset.offsetY = '-4'
+              
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                overlayBorder.style.borderColor = highlightColor
+                overlayBorder.style.boxShadow = `0 0 10px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`
+              }
+              break
+              
+            case 'cursor':
+              // Create independent cursor arrow
+              const cursorArrow = createOverlayElement(
+                elementRect,
+                'aipex-cursor-arrow',
+                '→',
+                elementRect.width / 2 - 10, // center horizontally
+                -25 // above element
+              )
+              cursorArrow.dataset.offsetX = (elementRect.width / 2 - 10).toString()
+              cursorArrow.dataset.offsetY = '-25'
+              
+              if (highlightColor !== '#00d4ff') {
+                cursorArrow.style.color = highlightColor
+                cursorArrow.style.textShadow = `0 0 10px ${highlightColor}`
+              }
+              break
+              
+            case 'spotlight':
+              // Create spotlight background
+              const spotlightBg = createOverlayElement(
+                elementRect,
+                'aipex-spotlight-bg',
+                '',
+                -20, // offsetX
+                -20, // offsetY
+                elementRect.width + 40, // width
+                elementRect.height + 40  // height
+              )
+              spotlightBg.dataset.offsetX = '-20'
+              spotlightBg.dataset.offsetY = '-20'
+              
+              // Create spotlight ring
+              const spotlightRing = createOverlayElement(
+                elementRect,
+                'aipex-spotlight-ring',
+                '',
+                -10, // offsetX
+                -10, // offsetY
+                elementRect.width + 20, // width
+                elementRect.height + 20  // height
+              )
+              spotlightRing.dataset.offsetX = '-10'
+              spotlightRing.dataset.offsetY = '-10'
+              
+              if (highlightColor !== '#00d4ff') {
+                spotlightRing.style.borderColor = highlightColor
+              }
+              break
+              
+            case 'frame':
+              // Create frame border
+              const frameBorder = createOverlayElement(
+                elementRect,
+                'aipex-frame-border',
+                '',
+                -8, // offsetX
+                -8, // offsetY
+                elementRect.width + 16, // width
+                elementRect.height + 16  // height
+              )
+              frameBorder.dataset.offsetX = '-8'
+              frameBorder.dataset.offsetY = '-8'
+              
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                frameBorder.style.background = `linear-gradient(45deg, ${highlightColor}, #ff00d4, #d4ff00, ${highlightColor}) border-box`
+                frameBorder.style.filter = `brightness(1) drop-shadow(0 0 10px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5))`
+              }
+              break
+              
+            case 'pointer':
+              // Create pointer arrow
+              const pointerArrow = createOverlayElement(
+                elementRect,
+                'aipex-pointer-arrow',
+                '',
+                elementRect.width / 2 - 15, // center horizontally
+                -30 // above element
+              )
+              pointerArrow.dataset.offsetX = (elementRect.width / 2 - 15).toString()
+              pointerArrow.dataset.offsetY = '-30'
+              
+              if (highlightColor !== '#00d4ff') {
+                const rgb = hexToRgb(highlightColor) || {r: 0, g: 212, b: 255}
+                pointerArrow.style.borderTopColor = highlightColor
+                pointerArrow.style.filter = `drop-shadow(0 0 10px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8))`
+              }
+              break
           }
+        }
+
+        // Add scroll and resize listeners for position updates
+        if (['overlay', 'cursor', 'spotlight', 'frame', 'pointer'].includes(highlightStyle)) {
+          window.addEventListener('scroll', updateOverlayPositions, true)
+          window.addEventListener('resize', updateOverlayPositions)
+          
+          // Store listeners for cleanup
+          element.setAttribute('data-has-overlay-listeners', 'true')
         }
 
         // Remove highlight after duration (unless persist is true)
@@ -1327,7 +1770,23 @@ export async function highlightElement(selector: string, options?: {
             })
             
             // Remove all highlight classes
-            element.classList.remove('aipex-highlighted', 'aipex-highlight-glow', 'aipex-highlight-pulse', 'aipex-highlight-shine', 'aipex-highlight-bounce', 'aipex-highlight-neon', 'aipex-highlight-gradient', 'aipex-highlight-shadow', 'aipex-highlight-outline', 'aipex-highlight-border', 'aipex-highlight-background', 'subtle', 'normal', 'strong')
+            element.classList.remove('aipex-highlighted', 'aipex-highlight-glow', 'aipex-highlight-pulse', 'aipex-highlight-shine', 'aipex-highlight-bounce', 'aipex-highlight-neon', 'aipex-highlight-gradient', 'aipex-highlight-shadow', 'aipex-highlight-outline', 'aipex-highlight-border', 'aipex-highlight-background', 'aipex-highlight-overlay', 'aipex-highlight-cursor', 'aipex-highlight-spotlight', 'aipex-highlight-frame', 'aipex-highlight-pointer', 'subtle', 'normal', 'strong')
+            
+            // Remove independent overlay elements
+            const overlayElements = document.querySelectorAll(`[data-highlight-id="${highlightId}"]`)
+            overlayElements.forEach(overlay => {
+              if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay)
+              }
+            })
+            
+            // Remove event listeners if they were added
+            if (element.hasAttribute('data-has-overlay-listeners')) {
+              window.removeEventListener('scroll', updateOverlayPositions, true)
+              window.removeEventListener('resize', updateOverlayPositions)
+              element.removeAttribute('data-has-overlay-listeners')
+            }
+            
             element.removeAttribute('data-highlight-id')
             
             // Remove custom keyframe styles
@@ -1354,9 +1813,10 @@ export async function highlightElement(selector: string, options?: {
         }
 
         const persistMessage = persistHighlight ? ' (persistent)' : ` for ${highlightDuration}ms`
+        const colorInfo = options.color ? `using custom color ${highlightColor}` : `using auto-detected color ${highlightColor} (contrast optimized)`
         return {
           success: true,
-          message: `Successfully highlighted element "${selector}" with ${highlightStyle} style (${intensity} intensity)${persistMessage}`,
+          message: `Successfully highlighted element "${selector}" with ${highlightStyle} style (${intensity} intensity)${persistMessage}, ${colorInfo}`,
           title: document.title || "",
           url: location.href,
           elementInfo
@@ -1365,6 +1825,195 @@ export async function highlightElement(selector: string, options?: {
         return {
           success: false,
           message: `Error highlighting element: ${error}`,
+          title: document.title || "",
+          url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Highlight specific text within elements with inline styling (bold + red)
+ */
+export async function highlightTextInline(selector: string, searchText: string, options?: {
+  caseSensitive?: boolean
+  wholeWords?: boolean
+  highlightColor?: string
+  backgroundColor?: string
+  fontWeight?: string
+  persist?: boolean
+}): Promise<{
+  success: boolean
+  message: string
+  title: string
+  url: string
+  matchCount?: number
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [selector, searchText, options || {}],
+    func: (selector: string, searchText: string, options: {
+      caseSensitive?: boolean
+      wholeWords?: boolean
+      highlightColor?: string
+      backgroundColor?: string
+      fontWeight?: string
+      persist?: boolean
+    }) => {
+      try {
+        const elements = document.querySelectorAll(selector)
+        if (elements.length === 0) {
+          return {
+            success: false,
+            message: `No elements found with selector "${selector}"`,
+            title: document.title || "",
+            url: location.href
+          }
+        }
+
+        // Default options
+        const caseSensitive = options.caseSensitive || false
+        const wholeWords = options.wholeWords || false
+        const highlightColor = options.highlightColor || '#DC143C' // Crimson red
+        const backgroundColor = options.backgroundColor || 'transparent'
+        const fontWeight = options.fontWeight || 'bold'
+        const persist = options.persist !== false
+
+        let totalMatches = 0
+
+        // Create highlight styles if not already present
+        if (!document.getElementById('aipex-text-highlight-styles')) {
+          const styleSheet = document.createElement('style')
+          styleSheet.id = 'aipex-text-highlight-styles'
+          styleSheet.textContent = `
+            .aipex-text-highlight {
+              color: ${highlightColor} !important;
+              background-color: ${backgroundColor} !important;
+              font-weight: ${fontWeight} !important;
+              padding: 1px 2px;
+              border-radius: 2px;
+              transition: all 0.2s ease;
+            }
+            
+            .aipex-text-highlight:hover {
+              background-color: rgba(220, 20, 60, 0.1) !important;
+            }
+          `
+          document.head.appendChild(styleSheet)
+        }
+
+        // Function to highlight text in a text node
+        const highlightInTextNode = (textNode: Text): number => {
+          const text = textNode.textContent || ''
+          if (!text.trim()) return 0
+
+          // Create search pattern
+          let pattern: RegExp
+          if (wholeWords) {
+            const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            pattern = new RegExp(`\\b${escapedText}\\b`, caseSensitive ? 'g' : 'gi')
+          } else {
+            const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            pattern = new RegExp(escapedText, caseSensitive ? 'g' : 'gi')
+          }
+
+          const matches = text.match(pattern)
+          if (!matches) return 0
+
+          // Create replacement HTML
+          const highlightedText = text.replace(pattern, (match) => {
+            return `<span class="aipex-text-highlight" data-highlight-text="${searchText}">${match}</span>`
+          })
+
+          // Replace the text node with highlighted HTML
+          const wrapper = document.createElement('span')
+          wrapper.innerHTML = highlightedText
+          
+          if (textNode.parentNode) {
+            textNode.parentNode.insertBefore(wrapper, textNode)
+            textNode.parentNode.removeChild(textNode)
+          }
+
+          return matches.length
+        }
+
+        // Function to process all text nodes in an element
+        const processElement = (element: Element): number => {
+          let matchCount = 0
+          const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            {
+              acceptNode: (node) => {
+                // Skip script, style, and already highlighted content
+                const parent = node.parentElement
+                if (!parent) return NodeFilter.FILTER_REJECT
+                
+                const tagName = parent.tagName.toLowerCase()
+                if (['script', 'style', 'noscript'].includes(tagName)) {
+                  return NodeFilter.FILTER_REJECT
+                }
+                
+                if (parent.classList.contains('aipex-text-highlight')) {
+                  return NodeFilter.FILTER_REJECT
+                }
+                
+                return NodeFilter.FILTER_ACCEPT
+              }
+            }
+          )
+
+          const textNodes: Text[] = []
+          let node: Node | null
+          while (node = walker.nextNode()) {
+            textNodes.push(node as Text)
+          }
+
+          // Process text nodes
+          for (const textNode of textNodes) {
+            matchCount += highlightInTextNode(textNode)
+          }
+
+          return matchCount
+        }
+
+        // Process all matching elements
+        elements.forEach(element => {
+          totalMatches += processElement(element)
+        })
+
+        // Clean up function if not persistent
+        if (!persist) {
+          setTimeout(() => {
+            const highlights = document.querySelectorAll('.aipex-text-highlight')
+            highlights.forEach(highlight => {
+              const parent = highlight.parentNode
+              if (parent) {
+                parent.insertBefore(document.createTextNode(highlight.textContent || ''), highlight)
+                parent.removeChild(highlight)
+              }
+            })
+          }, 5000) // Remove after 5 seconds
+        }
+
+        return {
+          success: true,
+          message: `Successfully highlighted ${totalMatches} instances of "${searchText}" in ${elements.length} element(s)`,
+          title: document.title || "",
+          url: location.href,
+          matchCount: totalMatches
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Error highlighting text: ${error}`,
           title: document.title || "",
           url: location.href
         }
