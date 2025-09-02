@@ -42,6 +42,7 @@ export type McpToolName =
   | "get_page_performance"
   | "get_page_accessibility"
   | "get_interactive_elements"
+  | "get_interactive_elements_optimized"
   | "click_element"
   | "summarize_page"
   | "fill_input"
@@ -167,6 +168,7 @@ export type McpRequest =
   | { tool: "get_page_performance" }
   | { tool: "get_page_accessibility" }
   | { tool: "get_interactive_elements" }
+  | { tool: "get_interactive_elements_optimized" }
   | { tool: "click_element"; args: { selector: string } }
   | { tool: "summarize_page" }
   | { tool: "fill_input"; args: { selector: string; text: string } }
@@ -584,6 +586,10 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         return { success: true, data: accessibility }
       }
       case "get_interactive_elements": {
+        const elements = await getInteractiveElements()
+        return { success: true, data: elements }
+      }
+      case "get_interactive_elements_optimized": {
         const elements = await getInteractiveElements()
         return { success: true, data: elements }
       }

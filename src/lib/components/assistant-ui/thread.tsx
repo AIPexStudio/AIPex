@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { FC } from "react";
 import { ToolFallback } from "./tool-fallback";
+import { MarkdownText } from "./markdown-text";
 
 interface Message {
   id: string;
@@ -297,9 +298,10 @@ export const Thread: FC = () => {
                     status: 'completed',
                     timestamp: Date.now(),
                     imageData: message.imageData,
-                    imageTitle: message.toolName === 'capture_screenshot' ? 'Current Page Screenshot' :
+                    imageTitle: message.title || 
+                              (message.toolName === 'capture_screenshot' ? 'Current Page Screenshot' :
                               message.toolName === 'capture_tab_screenshot' ? 'Tab Screenshot' :
-                              message.toolName === 'read_clipboard_image' ? 'Clipboard Image' : 'Image'
+                              message.toolName === 'read_clipboard_image' ? 'Clipboard Image' : 'Image')
                   }
                 ]
               }
@@ -556,7 +558,7 @@ export const Thread: FC = () => {
                   key={message.id}
                   className={`p-4 rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-blue-500 text-white ml-12'
+                      ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-gray-800 ml-12 border border-emerald-200'
                       : 'bg-gray-100 text-gray-900 mr-12'
                   }`}
                 >
@@ -566,8 +568,8 @@ export const Thread: FC = () => {
                       {message.parts.map((part) => {
                         if (part.type === 'text') {
                           return (
-                            <div key={part.id} className="whitespace-pre-wrap">
-                              {part.content}
+                            <div key={part.id}>
+                              <MarkdownText>{part.content || ''}</MarkdownText>
                             </div>
                           );
                         } else if (part.type === 'tool_call') {
@@ -631,7 +633,7 @@ export const Thread: FC = () => {
                       })}
                     </div>
                   ) : (
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <MarkdownText>{message.content}</MarkdownText>
                   )}
                   
                   {message.streaming && (

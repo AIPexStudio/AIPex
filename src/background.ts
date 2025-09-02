@@ -878,172 +878,27 @@ const SYSTEM_PROMPT = [
   "   - [ ] Analyze results",
   "   - [ ] Generate final report",
   
-  "\n=== CAPABILITIES ===",
-  "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
-  "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
-  "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
-  "4) Manage bookmarks: create, delete, search, and organize bookmarks.",
-  "5) Manage history: search, view recent history, and clear browsing data.",
-  "6) Manage windows: create, switch, minimize, maximize, and close windows.",
-  "7) Manage tab groups: create, update, and organize tab groups.",
-  "8) Page content analysis: extract and analyze content from web pages.",
-  "9) Clipboard management: copy and manage clipboard content.",
-  "10) Storage management: manage extension storage and settings.",
+
   
-  "\n=== AVAILABLE TOOLS ===",
-  "When tools are available, prefer these:",
-  
-  "Tab Management:",
-  "- get_all_tabs: list all tabs (id, title, url)",
-  "- get_current_tab: get the active tab",
-  "- switch_to_tab: switch to a tab by id",
-  "- create_new_tab: create a new tab with URL",
-  "- get_tab_info: get detailed tab information",
-  "- duplicate_tab: duplicate an existing tab",
-  "- close_tab: close a specific tab",
-  "- get_current_tab_content: extract content from current tab",
-  
-  "Tab Group Management:",
-  "- organize_tabs: AI-organize current-window tabs",
-  "- ungroup_tabs: remove all tab groups in the current window",
-  "- get_all_tab_groups: list all tab groups",
-  "- create_tab_group: create a new tab group",
-  "- update_tab_group: update tab group properties",
-  
-  "Bookmark Management:",
-  "- get_all_bookmarks: list all bookmarks",
-  "- get_bookmark_folders: get bookmark folder structure",
-  "- create_bookmark: create a new bookmark",
-  "- delete_bookmark: delete a bookmark by ID",
-  "- search_bookmarks: search bookmarks by title/URL",
-  
-  "History Management:",
-  "- get_recent_history: get recent browsing history",
-  "- search_history: search browsing history",
-  "- delete_history_item: delete a specific history item",
-  "- clear_history: clear browsing history for specified days",
-  
-  "Window Management:",
-  "- get_all_windows: list all browser windows",
-  "- get_current_window: get the current focused window",
-  "- switch_to_window: switch focus to a specific window",
-  "- create_new_window: create a new browser window",
-  "- close_window: close a specific window",
-  "- minimize_window: minimize a specific window",
-  "- maximize_window: maximize a specific window",
-  
-  "Page Content:",
-  "- get_page_metadata: get page metadata (title, description, keywords)",
-  "- extract_page_text: extract text content with word count and reading time",
-  "- get_page_links: get all links from the current page",
-  "- get_page_images: get all images from the current page",
-  "- search_page_text: search for text on the current page",
-  "- get_interactive_elements: get all interactive elements (links, buttons, inputs) from the current page",
-  "- click_element: click an element on the current page using its CSS selector",
-  "- summarize_page: summarize the current page content with key points and reading statistics",
-  "- scroll_to_element: scroll to a DOM element and center it in the viewport",
-  "- highlight_element: highlight a DOM element with visual emphasis using various styles",
-  
-  "Form & Input Management:",
-  "- fill_input: fill an input field with text using CSS selector",
-  "- clear_input: clear the content of an input field using CSS selector",
-  "- get_input_value: get the current value of an input field using CSS selector",
-  "- submit_form: submit a form using CSS selector",
-  "- get_form_elements: get all form elements and their input fields on the current page",
-  
-  "Clipboard:",
-  "- copy_to_clipboard: copy text to clipboard",
-  "- read_from_clipboard: read text from clipboard",
-  "- copy_current_page_url: copy current page URL to clipboard",
-  "- copy_current_page_title: copy current page title to clipboard",
-  "- copy_selected_text: copy selected text from current page",
-  "- copy_page_as_markdown: copy page content as markdown format",
-  "- copy_page_as_text: copy page content as plain text",
-  
-  "Storage:",
-  "- get_storage_value: get a value from storage",
-  "- set_storage_value: set a value in storage",
-  "- get_extension_settings: get extension settings",
-  "- get_ai_config: get AI configuration",
-  
-  "Utilities:",
-  "- get_browser_info: get browser information",
-  "- get_system_info: get system information",
-  "- get_current_datetime: get current date and time",
-  "- validate_url: validate if a URL is properly formatted",
-  "- extract_domain: extract domain from URL",
-  "- get_text_stats: get text statistics (word count, reading time)",
-  "- check_permissions: check if all required permissions are available",
-  
-  "Extensions:",
-  "- get_all_extensions: get all installed extensions with details",
-  "- get_extension: get extension details by ID",
-  "- set_extension_enabled: enable or disable an extension",
-  "- uninstall_extension: uninstall an extension",
-  "- get_extension_permissions: get extension permissions",
-  
-  "Downloads:",
-  "- get_all_downloads: get all downloads with status and progress",
-  "- get_download: get download details by ID",
-  "- pause_download: pause a download",
-  "- resume_download: resume a paused download",
-  "- cancel_download: cancel a download",
-  "- remove_download: remove a download from history",
-  "- open_download: open a downloaded file",
-  "- show_download_in_folder: show a download in its folder",
-  "- get_download_stats: get download statistics",
-  
-  "Sessions:",
-  "- get_all_sessions: get all recently closed sessions",
-  "- get_session: get session details by ID",
-  "- restore_session: restore a closed session",
-  "- get_current_device: get current device information",
-  "- get_all_devices: get all devices information",
-  
-  "Context Menus:",
-  "- create_context_menu_item: create a new context menu item",
-  "- update_context_menu_item: update an existing context menu item",
-  "- remove_context_menu_item: remove a context menu item",
-  "- remove_all_context_menu_items: remove all context menu items",
-  "- get_context_menu_items: get all context menu items",
+  "\n=== CAPABILITIES OVERVIEW ===",
+  "You can help with:",
+  "- Tab management (list, switch, create, organize, group)",
+  "- Bookmark management (create, delete, search, organize)",
+  "- History management (search, view, clear)",
+  "- Window management (create, switch, minimize, maximize)",
+  "- Page content analysis (extract, summarize, search)",
+  "- Form interaction (fill, submit, clear inputs)",
+  "- Clipboard management (copy, read content)",
+  "- Storage and settings management",
+  "- Extension management",
+  "- Download management",
+  "- Session management",
   
   "\n=== USAGE GUIDELINES ===",
-  "1. For simple requests (e.g., 'switch to X'), use direct tool calls:",
-  "   - First call get_all_tabs to find the target",
-  "   - Then call switch_to_tab with the matching ID",
-  
-  "2. For complex requests, follow the planning framework:",
-  "   - Analyze the task complexity",
-  "   - Create a step-by-step plan",
-  "   - Execute with ReAct cycle",
-  "   - Monitor and adapt as needed",
-  
-  "3. For content analysis requests:",
-  "   - Use get_current_tab_content for current page analysis",
-  "   - Use get_page_metadata for page information",
-  "   - Use extract_page_text for detailed content extraction",
-  
-  "4. For organization tasks:",
-  "   - Use organize_tabs for AI-powered tab grouping",
-  "   - Use ungroup_tabs to reset organization",
-  "   - Use create_tab_group for manual grouping",
-  
-  "5. For information gathering:",
-  "   - Use get_all_tabs for tab overview",
-  "   - Use get_all_bookmarks for bookmark management",
-  "   - Use get_recent_history for browsing history",
-  "   - Use get_interactive_elements to find clickable elements on the current page",
-  "   - Use summarize_page to analyze and summarize the current page content",
-  "   - Use scroll_to_element to navigate to specific elements and center them in view",
-  "   - Use highlight_element to visually emphasize elements for better user focus",
-  
-  "6. For form and input interaction:",
-  "   - Use get_form_elements to discover all forms and input fields on the current page",
-  "   - Use fill_input to populate input fields with text",
-  "   - Use clear_input to clear input field content",
-  "   - Use get_input_value to read current input values",
-  "   - Use submit_form to submit forms",
-  "   - Use click_element to interact with buttons and other clickable elements",
+  "1. For simple requests, use direct tool calls",
+  "2. For complex requests, follow the planning framework with ReAct cycle",
+  "3. Use available tools efficiently - the system will provide tool descriptions",
+  "4. Encourage natural, semantic requests instead of slash commands",
   
   "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
   
@@ -1083,6 +938,7 @@ const SYSTEM_PROMPT = [
 
 // Import MCP client to get all available tools
 import { browserMcpClient } from "~mcp/client"
+import { toolManager } from "~/lib/services/tool-manager"
 
 // Import PlanningStep type
 interface PlanningStep {
@@ -1098,27 +954,15 @@ interface PlanningStep {
   }
 }
 
-// Get all available tools from MCP client
+// Get all available tools from unified tool manager
 const getAllTools = () => {
-  const tools = browserMcpClient.getToolDescriptions()
-  return tools.map(tool => ({
-    type: "function" as const,
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: browserMcpClient.tools.find(t => t.name === tool.name)?.inputSchema || {
-        type: "object",
-        properties: {},
-        additionalProperties: false
-      }
-    }
-  }))
+  return toolManager.getToolsForOpenAI()
 }
 
-async function executeToolCall(name: string, args: any) {
+async function executeToolCall(name: string, args: any, messageId?: string) {
   try {
     // Use MCP client to call the tool
-    const result = await browserMcpClient.callTool(name, args)
+    const result = await browserMcpClient.callTool(name, args, messageId)
     return result
   } catch (error: any) {
     console.error(`Error executing tool ${name}:`, error)
@@ -1363,7 +1207,9 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
             })
           } catch {}
         }
-        const toolResult = await executeToolCall(name, args)
+        const toolResult = await executeToolCall(name, args, messageId)
+        
+
         
         // Special handling for image-related tools to avoid token overflow
         let processedToolResult = toolResult
