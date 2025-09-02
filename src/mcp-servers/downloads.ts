@@ -213,3 +213,64 @@ export async function getDownloadStats(): Promise<{
     return { success: false, error: error?.message || String(error) }
   }
 }
+
+/**
+ * Download text content as markdown file
+ */
+export async function downloadTextAsMarkdown(
+  text: string,
+  filename?: string
+): Promise<{
+  success: boolean
+  downloadId?: number
+  error?: string
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        error: "Downloads permission not available. Please check extension permissions." 
+      }
+    }
+
+    // Validate input
+    if (!text || typeof text !== 'string') {
+      return {
+        success: false,
+        error: "Text content is required and must be a string"
+      }
+    }
+
+    // Generate filename if not provided
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+    const finalFilename = filename || `text-${timestamp}.md`
+    
+    // Ensure filename has .md extension
+    const mdFilename = finalFilename.endsWith('.md') ? finalFilename : `${finalFilename}.md`
+
+    // Create data URI with text content (compatible with Chrome extension background script)
+    const encoder = new TextEncoder()
+    const uint8Array = encoder.encode(text)
+    const base64String = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)))
+    const dataUri = `data:text/markdown;charset=utf-8;base64,${base64String}`
+
+    // Download the file
+    const downloadId = await chrome.downloads.download({
+      url: dataUri,
+      filename: mdFilename,
+      saveAs: true // This will show the save dialog
+    })
+
+    return { 
+      success: true, 
+      downloadId: downloadId 
+    }
+  } catch (error: any) {
+    console.error("Error in downloadTextAsMarkdown:", error)
+    return { 
+      success: false, 
+      error: error?.message || String(error) || "Failed to download markdown file"
+    }
+  }
+}

@@ -104,6 +104,7 @@ export type McpToolName =
   | "open_download"
   | "show_download_in_folder"
   | "get_download_stats"
+  | "download_text_as_markdown"
   // Sessions
   | "get_all_sessions"
   | "get_session"
@@ -229,6 +230,7 @@ export type McpRequest =
   | { tool: "open_download"; args: { downloadId: number } }
   | { tool: "show_download_in_folder"; args: { downloadId: number } }
   | { tool: "get_download_stats" }
+  | { tool: "download_text_as_markdown"; args: { text: string; filename?: string } }
   // Sessions
   | { tool: "get_all_sessions" }
   | { tool: "get_session"; args: { sessionId: string } }
@@ -359,6 +361,7 @@ import {
   openDownload,
   showDownloadInFolder,
   getDownloadStats,
+  downloadTextAsMarkdown,
   // Sessions
   getAllSessions,
   getSession,
@@ -887,6 +890,12 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       case "get_download_stats": {
         const result = await getDownloadStats()
         return result.success ? { success: true, data: result.stats } : { success: false, error: result.error || "Failed to get download stats" }
+      }
+      case "download_text_as_markdown": {
+        const { text, filename } = request.args
+        if (!text || typeof text !== "string") return { success: false, error: "Text is required and must be a string" }
+        const result = await downloadTextAsMarkdown(text, filename)
+        return result.success ? { success: true, data: { downloadId: result.downloadId } } : { success: false, error: result.error || "Failed to download text as markdown" }
       }
       // Sessions
       case "get_all_sessions": {

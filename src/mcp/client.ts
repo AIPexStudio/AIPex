@@ -1038,6 +1038,24 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    {
+      name: "download_text_as_markdown",
+      description: "Download text content as a markdown file to the user's local filesystem",
+      inputSchema: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "The text content to download as markdown"
+          },
+          filename: {
+            type: "string",
+            description: "Optional filename for the download (without .md extension). If not provided, a timestamped filename will be generated"
+          }
+        },
+        required: ["text"]
+      }
+    },
 
     // Sessions
     {
