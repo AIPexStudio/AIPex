@@ -872,12 +872,147 @@ const SYSTEM_PROMPT = [
   "   - Remove tasks that become irrelevant",
   "3. Continue ReAct loop until all TODO items are completed",
   "4. Use 'TASK_COMPLETE' marker when all todos are done",
-  "5. Example todo format:",
+  "5. For research/investigation tasks, AUTOMATICALLY add final summarization step:",
+  "   - [ ] Generate comprehensive research summary",
+  "   - [ ] Download summary as markdown file using download_text_as_markdown",
+  "6. Example todo format:",
   "   - [ ] Research topic X",
-  "   - [x] Collect data from source Y",
+  "   - [x] Collect data from source Y", 
   "   - [ ] Analyze results",
   "   - [ ] Generate final report",
+  "   - [ ] Download research summary (AUTO-ADDED for research tasks)",
   
+  "\n=== CAPABILITIES ===",
+  "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
+  "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
+  "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
+  "4) Manage bookmarks: create, delete, search, and organize bookmarks.",
+  "5) Manage history: search, view recent history, and clear browsing data.",
+  "6) Manage windows: create, switch, minimize, maximize, and close windows.",
+  "7) Manage tab groups: create, update, and organize tab groups.",
+  "8) Page content analysis: extract and analyze content from web pages.",
+  "9) Clipboard management: copy and manage clipboard content.",
+  "10) Storage management: manage extension storage and settings.",
+  "11) Image downloads: download images from AI chat conversations.",
+  
+  "\n=== AVAILABLE TOOLS ===",
+  "When tools are available, prefer these:",
+  
+  "Tab Management:",
+  "- get_all_tabs: list all tabs (id, title, url)",
+  "- get_current_tab: get the active tab",
+  "- switch_to_tab: switch to a tab by id",
+  "- create_new_tab: create a new tab with URL",
+  "- get_tab_info: get detailed tab information",
+  "- duplicate_tab: duplicate an existing tab",
+  "- close_tab: close a specific tab",
+  "- get_current_tab_content: extract content from current tab",
+  
+  "Tab Group Management:",
+  "- organize_tabs: AI-organize current-window tabs",
+  "- ungroup_tabs: remove all tab groups in the current window",
+  "- get_all_tab_groups: list all tab groups",
+  "- create_tab_group: create a new tab group",
+  "- update_tab_group: update tab group properties",
+  
+  "Bookmark Management:",
+  "- get_all_bookmarks: list all bookmarks",
+  "- get_bookmark_folders: get bookmark folder structure",
+  "- create_bookmark: create a new bookmark",
+  "- delete_bookmark: delete a bookmark by ID",
+  "- search_bookmarks: search bookmarks by title/URL",
+  
+  "History Management:",
+  "- get_recent_history: get recent browsing history",
+  "- search_history: search browsing history",
+  "- delete_history_item: delete a specific history item",
+  "- clear_history: clear browsing history for specified days",
+  
+  "Window Management:",
+  "- get_all_windows: list all browser windows",
+  "- get_current_window: get the current focused window",
+  "- switch_to_window: switch focus to a specific window",
+  "- create_new_window: create a new browser window",
+  "- close_window: close a specific window",
+  "- minimize_window: minimize a specific window",
+  "- maximize_window: maximize a specific window",
+  
+  "Page Content:",
+  "- get_page_metadata: get page metadata (title, description, keywords)",
+  "- extract_page_text: extract text content with word count and reading time",
+  "- get_page_links: get all links from the current page",
+  "- get_page_images: get all images from the current page",
+  "- search_page_text: search for text on the current page",
+  "- get_interactive_elements: get all interactive elements (links, buttons, inputs) from the current page",
+  "- click_element: click an element on the current page using its CSS selector",
+  "- summarize_page: summarize the current page content with key points and reading statistics",
+  "- scroll_to_element: scroll to a DOM element and center it in the viewport",
+  "- highlight_element: highlight a DOM element with visual emphasis using various styles",
+  
+  "Form & Input Management:",
+  "- fill_input: fill an input field with text using CSS selector",
+  "- clear_input: clear the content of an input field using CSS selector",
+  "- get_input_value: get the current value of an input field using CSS selector",
+  "- submit_form: submit a form using CSS selector",
+  "- get_form_elements: get all form elements and their input fields on the current page",
+  
+  "Clipboard:",
+  "- copy_to_clipboard: copy text to clipboard",
+  "- read_from_clipboard: read text from clipboard",
+  "- copy_current_page_url: copy current page URL to clipboard",
+  "- copy_current_page_title: copy current page title to clipboard",
+  "- copy_selected_text: copy selected text from current page",
+  "- copy_page_as_markdown: copy page content as markdown format",
+  "- copy_page_as_text: copy page content as plain text",
+  
+  "Storage:",
+  "- get_storage_value: get a value from storage",
+  "- set_storage_value: set a value in storage",
+  "- get_extension_settings: get extension settings",
+  "- get_ai_config: get AI configuration",
+  
+  "Utilities:",
+  "- get_browser_info: get browser information",
+  "- get_system_info: get system information",
+  "- get_current_datetime: get current date and time",
+  "- validate_url: validate if a URL is properly formatted",
+  "- extract_domain: extract domain from URL",
+  "- get_text_stats: get text statistics (word count, reading time)",
+  "- check_permissions: check if all required permissions are available",
+  
+  "Extensions:",
+  "- get_all_extensions: get all installed extensions with details",
+  "- get_extension: get extension details by ID",
+  "- set_extension_enabled: enable or disable an extension",
+  "- uninstall_extension: uninstall an extension",
+  "- get_extension_permissions: get extension permissions",
+  
+  "Downloads:",
+  "- get_all_downloads: get all downloads with status and progress",
+  "- get_download: get download details by ID",
+  "- pause_download: pause a download",
+  "- resume_download: resume a paused download",
+  "- cancel_download: cancel a download",
+  "- remove_download: remove a download from history",
+  "- open_download: open a downloaded file",
+  "- show_download_in_folder: show a download in its folder",
+  "- get_download_stats: get download statistics",
+  "- download_text_as_markdown: download text content as a markdown file (IMPORTANT: Use this for saving research summaries)",
+  "- download_current_chat_images: download all images from current AI chat conversation to local storage (USE THIS when user wants to save/download chat images)",
+  
+  "Sessions:",
+  "- get_all_sessions: get all recently closed sessions",
+  "- get_session: get session details by ID",
+  "- restore_session: restore a closed session",
+  "- get_current_device: get current device information",
+  "- get_all_devices: get all devices information",
+  
+  "Context Menus:",
+  "- create_context_menu_item: create a new context menu item",
+  "- update_context_menu_item: update an existing context menu item",
+  "- remove_context_menu_item: remove a context menu item",
+  "- remove_all_context_menu_items: remove all context menu items",
+  "- get_context_menu_items: get all context menu items",
 
   
   "\n=== CAPABILITIES OVERVIEW ===",
@@ -899,6 +1034,14 @@ const SYSTEM_PROMPT = [
   "2. For complex requests, follow the planning framework with ReAct cycle",
   "3. Use available tools efficiently - the system will provide tool descriptions",
   "4. Encourage natural, semantic requests instead of slash commands",
+  
+  "7. For research and investigation tasks:",
+  "   - AUTOMATICALLY detect when user requests involve research, learning, testing, investigation, or search activities",
+  "   - After completing ALL research/investigation tasks, AUTOMATICALLY generate a comprehensive summary",
+  "   - Use download_text_as_markdown to save the research summary as a markdown file",
+  "   - Research task indicators include: 'research', 'study', 'investigate', 'analyze', 'compare', 'evaluate', 'survey', 'explore', 'examine'",
+  "   - Summary should include: objectives, methodology, key findings, sources, conclusions, and recommendations",
+  "   - File naming format: 'research-summary-YYYY-MM-DD-HH-MM' or use specific topic name",
   
   "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
   
@@ -926,6 +1069,12 @@ const SYSTEM_PROMPT = [
   "User: 'Clear the search box and enter a new query'",
   "Plan: 1. Get interactive elements → 2. Find search input → 3. Clear input → 4. Fill with new query → 5. Submit or click search button",
   "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page",
+  
+  "Example 7 - Research Task (AUTOMATIC SUMMARY):",
+  "User: 'Help me research the latest AI technology developments'",
+  "Plan: 1. Identify as research task → 2. Search relevant pages → 3. Analyze multiple sources → 4. Extract key information → 5. **Auto-generate research summary** → 6. **Use download_text_as_markdown to save research report**",
+  "Summary Content: Research objectives, information sources, key findings, technology trends, conclusions and recommendations",
+  "Filename: 'AI-Technology-Development-Research-2024-01-01.md'",
   
   "\n=== CRITICAL FORMAT REQUIREMENTS ===",
   "1. ALWAYS use standard OpenAI tool_calls format when calling tools",
@@ -1975,8 +2124,379 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "get-tab-change-count":
       sendResponse({ count: 0, threshold: 0 })
       return true
+    case "download-chat-images":
+      ;(async () => {
+        try {
+          const { messages, folderPrefix } = message
+          
+          // Check if chrome.downloads is available
+          if (!chrome.downloads) {
+            sendResponse({ 
+              success: false, 
+              error: "Downloads permission not available" 
+            })
+            return
+          }
+          
+          const result = await downloadChatImagesInBackground(messages, folderPrefix)
+          
+          sendResponse({ 
+            success: result.success,
+            downloadedCount: result.downloadedCount,
+            error: result.errors?.join(', ')
+          })
+        } catch (error: any) {
+          sendResponse({ 
+            success: false, 
+            error: error?.message || String(error) 
+          })
+        }
+      })()
+      return true
+    case "get-current-chat-images-for-download":
+      ;(async () => {
+        try {
+          console.log('🎯 [DEBUG] Background received get-current-chat-images-for-download:', message)
+          const { folderPrefix } = message
+          
+          // Send message to sidepanel to get current chat images
+          try {
+            console.log('📤 [DEBUG] Sending message to sidepanel...')
+            const sidepanelResponse = await chrome.runtime.sendMessage({
+              request: "provide-current-chat-images",
+              folderPrefix: folderPrefix
+            })
+            console.log('📥 [DEBUG] Sidepanel response:', sidepanelResponse)
+            
+            if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
+              console.log('📸 [DEBUG] Found images, starting download...')
+              // Download the images
+              const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix)
+              console.log('⬇️ [DEBUG] Download result:', result)
+              sendResponse({
+                success: result.success,
+                downloadedCount: result.downloadedCount,
+                downloadIds: result.downloadIds,
+                error: result.errors?.join(', ')
+              })
+            } else {
+              console.log('❌ [DEBUG] No images found in sidepanel response')
+              sendResponse({
+                success: false,
+                error: "No images found in current chat"
+              })
+            }
+          } catch (error) {
+            console.log('⚠️ [DEBUG] Sidepanel failed, trying active tab fallback...')
+            // Fallback: try to get images from active tab
+            try {
+              const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+              if (activeTab && activeTab.id) {
+                console.log('📤 [DEBUG] Sending message to active tab:', activeTab.id)
+                const tabResponse = await chrome.tabs.sendMessage(activeTab.id, {
+                  request: "provide-current-chat-images",
+                  folderPrefix: folderPrefix
+                })
+                console.log('📥 [DEBUG] Tab response:', tabResponse)
+                
+                if (tabResponse?.images && tabResponse.images.length > 0) {
+                  console.log('📸 [DEBUG] Found images in tab, starting download...')
+                  const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix)
+                  console.log('⬇️ [DEBUG] Download result:', result)
+                  sendResponse({
+                    success: result.success,
+                    downloadedCount: result.downloadedCount,
+                    downloadIds: result.downloadIds,
+                    error: result.errors?.join(', ')
+                  })
+                } else {
+                  console.log('❌ [DEBUG] No images found in tab response')
+                  sendResponse({
+                    success: false,
+                    error: "No images found in current chat"
+                  })
+                }
+              } else {
+                console.log('❌ [DEBUG] No active tab found')
+                sendResponse({
+                  success: false,
+                  error: "Unable to access current chat"
+                })
+              }
+            } catch (tabError) {
+              console.error('❌ [DEBUG] Tab fallback failed:', tabError)
+              sendResponse({
+                success: false,
+                error: "Unable to access current chat images"
+              })
+            }
+          }
+        } catch (error: any) {
+          console.error('❌ [DEBUG] Background handler error:', error)
+          sendResponse({
+            success: false,
+            error: error?.message || String(error)
+          })
+        }
+      })()
+      return true
   }
 })
+
+// Download functions for background script
+async function downloadImageInBackground(
+  imageData: string,
+  filename?: string
+): Promise<{
+  success: boolean
+  downloadId?: number
+  error?: string
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        error: "Downloads permission not available. Please check extension permissions." 
+      }
+    }
+
+    // Validate input
+    if (!imageData || typeof imageData !== 'string') {
+      return {
+        success: false,
+        error: "Image data is required and must be a string"
+      }
+    }
+
+    // Validate that it's a proper data URI for an image
+    if (!imageData.startsWith('data:image/')) {
+      return {
+        success: false,
+        error: "Invalid image data format. Expected data:image/ URI"
+      }
+    }
+
+    // Extract image format from data URI
+    const mimeMatch = imageData.match(/data:image\/([^;]+)/)
+    const imageFormat = mimeMatch ? mimeMatch[1] : 'png'
+    
+    // Generate filename if not provided
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+    const finalFilename = filename || `image-${timestamp}.${imageFormat}`
+    
+    // Ensure filename has correct extension
+    const extension = imageFormat === 'jpeg' ? 'jpg' : imageFormat
+    const imageFilename = finalFilename.includes('.') ? finalFilename : `${finalFilename}.${extension}`
+
+    // Download the file using the data URI directly
+    const downloadId = await chrome.downloads.download({
+      url: imageData,
+      filename: imageFilename,
+      saveAs: true // This will show the save dialog
+    })
+
+    return { 
+      success: true, 
+      downloadId: downloadId 
+    }
+  } catch (error: any) {
+    console.error("Error in downloadImageInBackground:", error)
+    return { 
+      success: false, 
+      error: error?.message || String(error) || "Failed to download image"
+    }
+  }
+}
+
+async function downloadChatImagesInBackground(
+  messages: Array<{
+    id: string
+    parts?: Array<{
+      type: string
+      imageData?: string
+      imageTitle?: string
+    }>
+  }>,
+  folderPrefix?: string,
+  imageNames?: string[]
+): Promise<{
+  success: boolean
+  downloadedCount?: number
+  downloadIds?: number[]
+  errors?: string[]
+  filesList?: string[]
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        errors: ["Downloads permission not available. Please check extension permissions."]
+      }
+    }
+
+    const downloadIds: number[] = []
+    const errors: string[] = []
+    const filesList: string[] = []
+    let downloadedCount = 0
+    let imageIndex = 0
+
+    // Extract all images from messages
+    for (const message of messages) {
+      if (!message.parts) continue
+
+      for (const part of message.parts) {
+        if (part.type === 'image' && part.imageData) {
+          try {
+            // 简单直接地使用传入的图片名字
+            let filename: string
+            
+            if (imageNames && imageNames[imageIndex]) {
+              // 使用传入的名字，直接像folderPrefix一样简单
+              filename = imageNames[imageIndex]
+                .replace(/[^a-zA-Z0-9\u4e00-\u9fa5\s-]/g, '') // 只保留安全字符
+                .trim()
+            } else {
+              // fallback到默认命名
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+              const titleSlug = part.imageTitle 
+                ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                : 'image'
+              filename = `${titleSlug}-${timestamp}`
+            }
+            
+            // 添加文件夹前缀
+            const fullFilename = folderPrefix 
+              ? `${folderPrefix}/${filename}`
+              : filename
+
+            const result = await downloadImageInBackground(part.imageData, fullFilename)
+            
+            if (result.success && result.downloadId) {
+              downloadIds.push(result.downloadId)
+              downloadedCount++
+              filesList.push(`${fullFilename}.png`)
+            } else {
+              errors.push(`Failed to download image: ${result.error || 'Unknown error'}`)
+            }
+            
+            imageIndex++
+          } catch (error: any) {
+            errors.push(`Error processing image: ${error?.message || String(error)}`)
+          }
+        }
+      }
+    }
+
+    return {
+      success: downloadedCount > 0 || errors.length === 0,
+      downloadedCount,
+      downloadIds,
+      filesList,
+      errors: errors.length > 0 ? errors : undefined
+    }
+  } catch (error: any) {
+    return { 
+      success: false, 
+      errors: [error?.message || String(error) || "Failed to download chat images"]
+    }
+  }
+}
+
+// Global function to download current chat images from background context
+(globalThis as any).downloadCurrentChatImagesFromBackground = async function(
+  folderPrefix: string, 
+  imageNames?: string[],
+  filenamingStrategy: string = 'descriptive', 
+  displayResults: boolean = true
+) {
+  console.log('🎯 [DEBUG] downloadCurrentChatImagesFromBackground called with:', { folderPrefix, imageNames, filenamingStrategy, displayResults })
+  
+  try {
+    // Try to get images from sidepanel first
+    try {
+      console.log('📤 [DEBUG] Sending message to sidepanel...')
+      const sidepanelResponse = await chrome.runtime.sendMessage({
+        request: "provide-current-chat-images",
+        folderPrefix: folderPrefix,
+        imageNames: imageNames,
+        filenamingStrategy: filenamingStrategy,
+        displayResults: displayResults
+      })
+      console.log('📥 [DEBUG] Sidepanel response:', sidepanelResponse)
+      
+      if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
+        console.log('📸 [DEBUG] Found images in sidepanel, starting download...')
+        const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix, imageNames)
+        console.log('⬇️ [DEBUG] Download result:', result)
+        
+        // 使用实际生成的文件名列表
+        const filesList = result.filesList || []
+        
+        return {
+          success: result.success,
+          downloadedCount: result.downloadedCount,
+          downloadIds: result.downloadIds,
+          folderPath: folderPrefix,
+          filesList: filesList,
+          error: result.errors?.join(', ')
+        }
+      }
+    } catch (sidepanelError) {
+      console.log('⚠️ [DEBUG] Sidepanel failed:', sidepanelError)
+    }
+    
+    // Fallback: try to get images from active tab
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (activeTab && activeTab.id) {
+        console.log('📤 [DEBUG] Sending message to active tab:', activeTab.id)
+        const tabResponse = await chrome.tabs.sendMessage(activeTab.id, {
+          request: "provide-current-chat-images",
+          folderPrefix: folderPrefix,
+          imageNames: imageNames,
+          filenamingStrategy: filenamingStrategy,
+          displayResults: displayResults
+        })
+        console.log('📥 [DEBUG] Tab response:', tabResponse)
+        
+        if (tabResponse?.images && tabResponse.images.length > 0) {
+          console.log('📸 [DEBUG] Found images in tab, starting download...')
+          const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix, imageNames)
+          console.log('⬇️ [DEBUG] Download result:', result)
+          
+          // 使用实际生成的文件名列表
+          const filesList = result.filesList || []
+          
+          return {
+            success: result.success,
+            downloadedCount: result.downloadedCount,
+            downloadIds: result.downloadIds,
+            folderPath: folderPrefix,
+            filesList: filesList,
+            error: result.errors?.join(', ')
+          }
+        }
+      }
+    } catch (tabError) {
+      console.error('❌ [DEBUG] Tab fallback failed:', tabError)
+    }
+    
+    // If we get here, no images were found
+    console.log('❌ [DEBUG] No images found in any context')
+    return {
+      success: false,
+      error: "No images found in current chat"
+    }
+  } catch (error: any) {
+    console.error('❌ [DEBUG] Global download function error:', error)
+    return {
+      success: false,
+      error: error?.message || String(error)
+    }
+  }
+}
 
 // Initialize actions
 resetOmni()

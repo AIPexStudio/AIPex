@@ -4,12 +4,11 @@ This directory contains all the MCP (Model Context Protocol) server tools for th
 
 ## Tool Categories
 
-**Total: 111 MCP Tools** (organized into 14 categories)
+**Total: 112 MCP Tools** (organized into 14 categories)
 
 > ✅ **All tools are now fully integrated with the MCP client and can be called by AI!**
 > 
-> **🎯 AI Integration Status**: All 111 tools are now available to the AI assistant. When users chat with the AI, it can access and use any of these tools based on the user's request, allowing for comprehensive browser automation and management.
-> 
+> **🎯 AI Integration Status**: All 112 tools are now available to the AI assistant. When users chat with the AI, it can access and use any of these tools based on the user's request, allowing for comprehensive browser automation and management.
 > **🔧 Permission Requirements**: Some tools require specific Chrome extension permissions. If you encounter permission errors, use the `check_permissions` tool to diagnose issues. The extension needs these permissions in `package.json`:
 > - `management` - for extension management tools
 > - `downloads` - for download management tools
@@ -157,6 +156,7 @@ Tools for managing downloads.
 - `openDownload(downloadId)` - Open download file
 - `showDownloadInFolder(downloadId)` - Show download in folder
 - `getDownloadStats()` - Get download statistics
+- `downloadTextAsMarkdown(text, filename?)` - Download text content as markdown file
 
 ### 12. Sessions (`sessions.ts`)
 Tools for managing browser sessions.
@@ -331,6 +331,31 @@ Screenshot tools return base64 image data which can be very large (tens of thous
 - Shows images in the chat interface without sending them to the AI model
 
 This ensures optimal performance while maintaining full functionality.
+
+### Download Text as Markdown
+```typescript
+import { downloadTextAsMarkdown } from "~mcp-servers"
+
+// Download text content as markdown with auto-generated filename
+const markdownContent = "# My Document\n\nThis is some **markdown** content."
+const result = await downloadTextAsMarkdown(markdownContent)
+if (result.success) {
+  console.log("Download started with ID:", result.downloadId)
+}
+
+// Download text content with custom filename
+await downloadTextAsMarkdown(
+  "# Custom Document\n\nCustom content here.",
+  "my-custom-document"
+)
+
+// Example with current page content as markdown
+const pageContent = await extractPageText()
+if (pageContent.success) {
+  const markdownFormat = `# ${pageContent.title}\n\n${pageContent.text}`
+  await downloadTextAsMarkdown(markdownFormat, `page-${Date.now()}`)
+}
+```
 
 ### Clipboard Operations
 ```typescript
