@@ -110,7 +110,8 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Tab Groups
+    // Tab Groups - 注释掉不太重要的工具
+    /*
     {
       name: "organize_tabs",
       description: "Use AI to automatically group tabs by topic/purpose",
@@ -127,10 +128,11 @@ export class BrowserMcpClient {
       action: true,
       inputSchema: {
         type: "object",
-        properties: {},
-        required: []
+        properties: {}
       }
     },
+    */
+    /*
     {
       name: "get_all_tab_groups",
       description: "Get all tab groups across all windows",
@@ -176,7 +178,9 @@ export class BrowserMcpClient {
         required: ["groupId"]
       }
     },
-    // Bookmarks
+    */
+    // Bookmarks - 注释掉不太重要的工具
+    /*
     {
       name: "get_all_bookmarks",
       description: "Get all bookmarks in a flattened list",
@@ -246,7 +250,9 @@ export class BrowserMcpClient {
         required: ["query"]
       }
     },
-    // History
+    */
+    // History - 注释掉不太重要的工具
+    /*
     {
       name: "get_recent_history",
       description: "Get recent browsing history",
@@ -307,7 +313,9 @@ export class BrowserMcpClient {
         required: ["days"]
       }
     },
-    // Windows
+    */
+    // Windows - 注释掉不太重要的工具
+    /*
     {
       name: "get_all_windows",
       description: "Get all browser windows",
@@ -403,6 +411,7 @@ export class BrowserMcpClient {
         required: ["windowId"]
       }
     },
+    */
     // Page Content
     {
       name: "get_page_metadata",
@@ -434,16 +443,16 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    {
-      name: "get_page_images",
-      description: "Get all images from the current page",
-      action: false,
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
+    // {
+    //   name: "get_page_images",
+    //   description: "Get all images from the current page",
+    //   action: false,
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
     {
       name: "search_page_text",
       description: "Search for text on the current page",
@@ -680,7 +689,8 @@ export class BrowserMcpClient {
       }
     },
 
-    // Clipboard
+    // Clipboard - 注释掉不太重要的工具
+    /*
     {
       name: "copy_to_clipboard",
       description: "Copy text to clipboard",
@@ -756,7 +766,9 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Storage
+    */
+    // Storage - 注释掉不太重要的工具
+    /*
     {
       name: "get_storage_data",
       description: "Get data from extension storage",
@@ -836,7 +848,9 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Extensions
+    */
+    // Extensions - 注释掉不太重要的工具
+    /*
     {
       name: "get_installed_extensions",
       description: "Get all installed browser extensions",
@@ -892,7 +906,9 @@ export class BrowserMcpClient {
         required: ["extensionId"]
       }
     },
-    // Downloads
+    */
+    // Downloads - 注释掉不太重要的工具
+    /*
     {
       name: "get_downloads",
       description: "Get all downloads and their status",
@@ -938,6 +954,7 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    */
     {
       name: "download_text_as_markdown",
       description: "Download text content as a markdown file to the user's local filesystem. Generate a descriptive filename and folder structure based on the content type and purpose.",
@@ -1044,7 +1061,8 @@ export class BrowserMcpClient {
       }
     },
 
-    // Sessions
+    // Sessions - 注释掉不太重要的工具
+    /*
     {
       name: "get_sessions",
       description: "Get all saved browser sessions",
@@ -1100,7 +1118,9 @@ export class BrowserMcpClient {
         required: ["name"]
       }
     },
-    // Context Menus
+    */
+    // Context Menus - 注释掉不太重要的工具
+    /*
     {
       name: "create_context_menu_item",
       description: "Create a new context menu item",
@@ -1187,6 +1207,7 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    */
     // Screenshot tools
     {
       name: "capture_screenshot",
@@ -1220,24 +1241,24 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    {
-      name: "read_clipboard_image",
-      description: "Read image from clipboard and return as base64 data URL for display. Summarize your actions or describe the highlighted sections and generate an image name to display.",
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
-    {
-      name: "get_clipboard_image_info",
-      description: "Check if clipboard contains an image and get basic info without reading full data. Summarize your actions or describe the highlighted sections and generate an image name to display.",
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
+    // {
+    //   name: "read_clipboard_image",
+    //   description: "Read image from clipboard and return as base64 data URL for display. Summarize your actions or describe the highlighted sections and generate an image name to display.",
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
+    // {
+    //   name: "get_clipboard_image_info",
+    //   description: "Check if clipboard contains an image and get basic info without reading full data. Summarize your actions or describe the highlighted sections and generate an image name to display.",
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
     {
       name: "download_current_chat_images",
       description: "Download all images from current AI chat conversation to local storage. You can specify custom names for each image or use automatic naming strategies.",
