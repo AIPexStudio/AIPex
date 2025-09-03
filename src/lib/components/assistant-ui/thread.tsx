@@ -41,6 +41,7 @@ export const Thread: FC = () => {
   const [loading, setLoading] = useState(false);
   const [aiConfigured, setAiConfigured] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
+  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -99,6 +100,8 @@ export const Thread: FC = () => {
   useEffect(() => {
     const handleStreamMessage = (message: any) => {
       console.log('Received message:', message);
+      console.log('Current state - loading:', loading, 'currentMessageId:', message.messageId);
+      console.log('Message type:', message.request);
       
       if (message.request === "ai-chat-stream") {
         console.log('Processing streaming chunk:', message.chunk);
@@ -181,6 +184,7 @@ export const Thread: FC = () => {
               : msg
           ));
         } else if (message.step.type === 'tool_result') {
+          console.log('Tool result received, maintaining loading state');
           // Update tool call part with result
           setMessages(prev => prev.map(msg => 
             msg.id === message.messageId 
@@ -213,13 +217,13 @@ export const Thread: FC = () => {
                   ...msg,
                   parts: [
                     ...(msg.parts || []),
-                                          {
-                        id: `thinking-${Date.now()}`,
-                        type: 'thinking' as const,
-                        content: message.step.content,
-                        status: 'completed',
-                        timestamp: Date.now()
-                      }
+                    {
+                      id: `thinking-${Date.now()}`,
+                      type: 'thinking' as const,
+                      content: message.step.content,
+                      status: 'completed',
+                      timestamp: Date.now()
+                    }
                   ],
                   // Ensure content field is not updated during thinking to prevent duplication
                   content: msg.content || ''
@@ -227,63 +231,63 @@ export const Thread: FC = () => {
               : msg
           ));
         }
-              } else if (message.request === "ai-chat-planning-step") {
-          console.log('Processing planning step:', message.step);
-          // Only add planning steps that are meaningful to the user
-          // Filter out internal ReAct steps like "think", "act", "observe", "reason"
-          const stepType = message.step.type;
-          const isInternalStep = ['think', 'act', 'observe', 'reason'].includes(stepType);
-          
-          if (!isInternalStep) {
-            // Add planning step
-            setMessages(prev => prev.map(msg => 
-              msg.id === message.messageId 
-                ? {
-                    ...msg,
-                    parts: [
-                      ...(msg.parts || []),
-                      {
-                        id: `planning-${Date.now()}`,
-                        type: 'planning' as const,
-                        content: message.step.content,
-                        status: message.step.status || 'completed',
-                        timestamp: Date.now()
-                      }
-                    ],
-                    // Ensure content field is not updated during planning to prevent duplication
-                    content: msg.content || ''
-                  }
-                : msg
-            ));
-          }
-        } else if (message.request === "ai-chat-complete") {
-        console.log('Stream completed');
-        // Mark streaming as complete and re-enable input
+      } else if (message.request === "ai-chat-planning-step") {
+        console.log('Processing planning step:', message.step);
+        // Only add planning steps that are meaningful to the user
+        // Filter out internal ReAct steps like "think", "act", "observe", "reason"
+        const stepType = message.step.type;
+        const isInternalStep = ['think', 'act', 'observe', 'reason'].includes(stepType);
+        
+        if (!isInternalStep) {
+          // Add planning step
+          setMessages(prev => prev.map(msg => 
+            msg.id === message.messageId 
+              ? {
+                  ...msg,
+                  parts: [
+                    ...(msg.parts || []),
+                    {
+                      id: `planning-${Date.now()}`,
+                      type: 'planning' as const,
+                      content: message.step.content,
+                      status: message.step.status || 'completed',
+                      timestamp: Date.now()
+                    }
+                  ],
+                  // Ensure content field is not updated during planning to prevent duplication
+                  content: msg.content || ''
+                }
+              : msg
+          ));
+        }
+      } else if (message.request === "ai-chat-complete") {
+        console.log('Task completed - ending loading state');
+        // Task is complete - end loading state
         setMessages(prev => prev.map(msg => 
           msg.id === message.messageId 
             ? { ...msg, streaming: false }
             : msg
         ));
         setLoading(false);
-        // Focus back to input after AI response is complete
+        setCurrentMessageId(null);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
       } else if (message.request === "ai-chat-error") {
-        console.log('Stream error:', message.error);
-        // Handle error response and re-enable input
+        console.log('Task error - ending loading state');
+        // Task encountered error - end loading state
         setMessages(prev => prev.map(msg => 
           msg.id === message.messageId 
             ? { ...msg, content: `Error: ${message.error}`, streaming: false }
             : msg
         ));
         setLoading(false);
-        // Focus back to input after error
+        setCurrentMessageId(null);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
       } else if (message.request === "ai-chat-image-data") {
-
+        console.log('Processing image data');
         
         // Add image part to the message
         setMessages(prev => prev.map(msg => 
@@ -307,8 +311,8 @@ export const Thread: FC = () => {
               }
             : msg
         ));
-        
-
+      } else {
+        console.log('Unknown message type:', message.request);
       }
     };
 
@@ -316,7 +320,7 @@ export const Thread: FC = () => {
     return () => {
       chrome.runtime.onMessage.removeListener(handleStreamMessage);
     };
-  }, []);
+  }, [currentMessageId]);
 
   // Handle providing current chat images for AI tools
   useEffect(() => {
@@ -343,37 +347,42 @@ export const Thread: FC = () => {
     }
   }, [messages])
 
-  // Download images from chat messages
-  const handleDownloadImages = useCallback(async () => {
-    const imagesInChat = messages.filter(msg => 
-      msg.parts?.some(part => part.type === 'image' && part.imageData)
-    )
+  // Stop AI response
+  const handleStopAI = useCallback(async () => {
+    console.log('🛑 [DEBUG] handleStopAI called with:', { currentMessageId, loading })
+    if (!currentMessageId || !loading) {
+      console.log('🛑 [DEBUG] Early return - no currentMessageId or not loading')
+      return;
+    }
     
-    if (imagesInChat.length === 0) {
-      alert('No downloadable images found')
-      return
-    }
-
     try {
+      console.log('🛑 [DEBUG] Sending stop-ai-chat message to background...')
       const response = await chrome.runtime.sendMessage({
-        request: "download-chat-images",
-        messages: imagesInChat.map(msg => ({
-          id: msg.id,
-          parts: msg.parts?.filter(part => part.type === 'image' && part.imageData)
-        })),
-        folderPrefix: "AIPex-Chat-Images"
-      })
-
-      if (response?.success) {
-        alert(`Successfully downloaded ${response.downloadedCount || 0} images`)
-      } else {
-        alert(`Download failed: ${response?.error || 'Unknown error'}`)
-      }
+        request: "stop-ai-chat",
+        messageId: currentMessageId
+      });
+      console.log('🛑 [DEBUG] Background response:', response)
+      
+      // Update UI to show stopped state
+      setMessages(prev => prev.map(msg => 
+        msg.id === currentMessageId 
+          ? { ...msg, streaming: false, content: msg.content + '\n\n[AI response stopped by user]' }
+          : msg
+      ));
+      
+      setLoading(false);
+      setCurrentMessageId(null);
+      
+      console.log('🛑 [DEBUG] UI updated, loading set to false')
+      
+      // Focus back to input
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     } catch (error: any) {
-      console.error('Image download failed:', error)
-      alert(`Download failed: ${error?.message || 'Unknown error'}`)
+      console.error('🛑 [DEBUG] Failed to stop AI:', error);
     }
-  }, [messages])
+  }, [currentMessageId, loading]);
 
   const handleSubmit = useCallback(async (message: string) => {
     if (!message.trim() || loading) return;
@@ -419,6 +428,7 @@ export const Thread: FC = () => {
 
       // Create AI message placeholder for streaming
       const aiMessageId = (Date.now() + 1).toString();
+      setCurrentMessageId(aiMessageId); // Set current message ID for stop functionality
       const aiMessage: Message = {
         id: aiMessageId,
         content: '',
@@ -450,10 +460,8 @@ export const Thread: FC = () => {
             ? { ...msg, content: `Error: Failed to start AI chat`, streaming: false }
             : msg
         ));
-        setLoading(false);
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 100);
+        // Don't set loading to false here - let the error message handler do it
+        console.log('Failed to start AI chat, waiting for error message');
       }
     } catch (error: any) {
       console.error('AI response failed:', error);
@@ -462,10 +470,8 @@ export const Thread: FC = () => {
           ? { ...msg, content: `Error: ${error?.message || 'Unknown error'}`, streaming: false }
           : msg
       ));
-      setLoading(false);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+      // Don't set loading to false here - let the error message handler do it
+      console.log('AI response failed, waiting for error message');
     }
   }, [loading, messages, aiConfigured]);
 
@@ -725,17 +731,27 @@ export const Thread: FC = () => {
               disabled={loading || !aiConfigured}
               rows={1}
             />
-            <button
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                loading || !inputValue.trim() || !aiConfigured
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-              onClick={() => handleSubmit(inputValue)}
-              disabled={loading || !inputValue.trim() || !aiConfigured}
-            >
-              {loading ? 'Sending...' : aiConfigured ? 'Send' : 'Configure AI'}
-            </button>
+            {loading && currentMessageId ? (
+              <button
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                onClick={handleStopAI}
+                title="Stop AI response"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  !inputValue.trim() || !aiConfigured
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                onClick={() => handleSubmit(inputValue)}
+                disabled={!inputValue.trim() || !aiConfigured}
+              >
+                {aiConfigured ? 'Send' : 'Configure AI'}
+              </button>
+            )}
           </div>
         </div>
       </div>

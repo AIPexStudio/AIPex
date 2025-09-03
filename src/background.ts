@@ -33,6 +33,9 @@ console.log(logoNotion)
 let actions: any[] = []
 let newtaburl = ""
 
+// Track active streaming requests for stop functionality
+const activeStreams = new Map<string, AbortController>()
+
 // Check if AI grouping is available
 async function isAIGroupingAvailable() {
   const storage = new Storage()
@@ -548,7 +551,7 @@ const ungroupAllTabs = async () => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(messages, stream = true, options = {}) {
+async function chatCompletion(messages, stream = true, options = {}, messageId?: string) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
@@ -572,18 +575,38 @@ async function chatCompletion(messages, stream = true, options = {}) {
     ...options
   }
   
-  const res = await fetch(aiHost, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${aiToken}`
-    },
-    body: JSON.stringify(requestBody)
-  })
-  if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
+  // Create AbortController for this request if messageId is provided
+  let controller: AbortController | undefined
+  if (messageId) {
+    controller = new AbortController()
+    activeStreams.set(messageId, controller)
+    console.log('🎯 [DEBUG] Created AbortController for messageId:', messageId)
+    console.log('🎯 [DEBUG] activeStreams after setting:', Array.from(activeStreams.keys()))
+  }
   
-  // Always return response object for streaming
-  return res
+  try {
+    const res = await fetch(aiHost, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${aiToken}`
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller?.signal
+    })
+    
+    if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
+    
+    // Always return response object for streaming
+    // Note: Don't delete from activeStreams here - let parseStreamingResponse handle cleanup
+    return res
+  } catch (error) {
+    // Only clean up on error, not on successful response
+    if (messageId && controller) {
+      activeStreams.delete(messageId)
+    }
+    throw error
+  }
 }
 
 // Helper function to parse streaming response and extract tool calls
@@ -600,6 +623,15 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
   let currentToolCall: any = null
   const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
   
+  // Clean up activeStreams when streaming is complete
+  const cleanup = () => {
+    if (messageId) {
+      console.log('🧹 [DEBUG] Cleaning up activeStreams for messageId:', messageId)
+      activeStreams.delete(messageId)
+      console.log('🧹 [DEBUG] activeStreams after cleanup:', Array.from(activeStreams.keys()))
+    }
+  }
+  
   // Custom tool call parsing state
   let inToolCallsSection = false
   let inToolCall = false
@@ -612,10 +644,9 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
     while (true) {
       const { done, value } = await reader.read()
       if (done) {
-        // Stream is complete - send completion message
-        if (messageId) {
-          chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
-        }
+        // Stream is complete - but don't send completion message here
+        // The completion message should be sent by runChatWithTools when the task is truly complete
+        console.log('Stream parsing completed, but waiting for task completion');
         break
       }
       
@@ -807,6 +838,8 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
     }
   } finally {
     reader.releaseLock()
+    // Always clean up activeStreams
+    cleanup()
   }
   
   return { content, toolCalls }
@@ -1010,7 +1043,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
 
   let messages = [systemPrompt, ...userMessages]
   // First call allowing tool use with streaming
-  let response = await chatCompletion(messages, true, { tools: getAllTools(), tool_choice: "auto" })
+  let response = await chatCompletion(messages, true, { tools: getAllTools(), tool_choice: "auto" }, messageId)
   let { content, toolCalls } = await parseStreamingResponse(response, messageId)
 
   // Loop over tool calls if present
@@ -1411,7 +1444,8 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     const nextOptions = executedMutating
       ? {} // Don't include tool_choice or tools when tools are not needed
       : { tools: getAllTools(), tool_choice: "auto" as const }
-    response = await chatCompletion(messages, true, nextOptions)
+    
+    response = await chatCompletion(messages, true, nextOptions, messageId)
     const result = await parseStreamingResponse(response, messageId)
     content = result.content
     toolCalls = result.toolCalls
@@ -1469,7 +1503,7 @@ async function classifyAndGroupSingleTab(tab) {
       const content = `Classify this tab based on URL (${latestTab.url}) and title (${latestTab.title}) into one of these existing categories: ${existingCategories.join(", ")}. If none fit well, respond with "Other". Response with the category only, without any comments.`;
 
       try {
-        const aiResponse = await chatCompletion(content, true);
+        const aiResponse = await chatCompletion(content, true, {});
         const result = await parseStreamingResponse(aiResponse);
         const suggestedCategory = result.content.trim();
         
@@ -1989,6 +2023,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const finalText = await runChatWithTools(conversationMessages, messageId)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {
+          sendResponse({ success: false, error: error?.message || String(error) })
+        }
+      })()
+      return true
+    case "stop-ai-chat":
+      ;(async () => {
+        try {
+          const { messageId } = message
+          console.log('🛑 [DEBUG] Received stop-ai-chat request for messageId:', messageId)
+          console.log('🛑 [DEBUG] Current activeStreams keys:', Array.from(activeStreams.keys()))
+          
+          // Stop the ongoing AI chat by aborting any active streams
+          if (activeStreams.has(messageId)) {
+            const controller = activeStreams.get(messageId)
+            if (controller) {
+              console.log('🛑 [DEBUG] Found controller, aborting stream...')
+              controller.abort()
+              activeStreams.delete(messageId)
+              console.log('🛑 [DEBUG] Stream aborted and removed from activeStreams')
+            }
+          } else {
+            console.log('🛑 [DEBUG] No active stream found for messageId:', messageId)
+          }
+          
+          sendResponse({ success: true, message: "AI chat stopped" })
+        } catch (error: any) {
+          console.error('🛑 [DEBUG] Error in stop-ai-chat:', error)
           sendResponse({ success: false, error: error?.message || String(error) })
         }
       })()
