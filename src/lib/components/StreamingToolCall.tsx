@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { MarkdownRenderer } from './index'
 
 export interface StreamingToolCallStep {
   type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'planning'
@@ -284,8 +285,8 @@ const StreamingToolCall: React.FC<StreamingToolCallProps> = ({
                   </div>
                   
                   {step.content && (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {step.content}
+                    <div className="text-sm text-gray-700">
+                      <MarkdownRenderer content={step.content} />
                     </div>
                   )}
 

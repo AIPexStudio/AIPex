@@ -1462,7 +1462,6 @@ export async function highlightElement(selector: string, options?: {
               filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
             }
             
-
             
             .aipex-frame-border {
               position: absolute;
@@ -1489,7 +1488,6 @@ export async function highlightElement(selector: string, options?: {
               50% { transform: translateY(-5px); }
             }
             
-
             
             @keyframes aipex-frame-glow {
               0%, 100% { 
@@ -1661,7 +1659,6 @@ export async function highlightElement(selector: string, options?: {
               }
               break
               
-
             case 'frame':
               // Create frame border
               const frameBorder = createOverlayElement(
@@ -1968,6 +1965,84 @@ export async function highlightTextInline(selector: string, searchText: string, 
           message: `Error highlighting text: ${error}`,
           title: document.title || "",
           url: location.href
+        }
+      }
+    }
+  })
+
+  const [{ result }] = results
+  return result || null
+}
+
+/**
+ * Performance test tool for comparing different interactive elements functions
+ */
+export async function benchmarkInteractiveElements(): Promise<{
+  standard: { executionTime: number; elementCount: number }
+  optimized: { executionTime: number; elementCount: number }
+  improvement: { timeReduction: number; percentage: number }
+} | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || typeof tab.id !== "number") return null
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const benchmark = (fn: () => any) => {
+        const start = performance.now()
+        const result = fn()
+        const end = performance.now()
+        return { result, executionTime: end - start }
+      }
+
+      // Test standard version
+      const standardResult = benchmark(() => {
+        const elements = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [onclick], [tabindex]')
+        return Array.from(elements).slice(0, 50)
+      })
+
+      // Test optimized version
+      const optimizedResult = benchmark(() => {
+        const selectors = [
+          'a[href]',
+          'button:not([disabled])',
+          'input:not([disabled])',
+          'select:not([disabled])',
+          'textarea:not([disabled])',
+          '[role="button"]:not([disabled])',
+          '[onclick]',
+          '[tabindex]:not([tabindex="-1"])'
+        ]
+        
+        let allElements: Element[] = []
+        for (const selector of selectors) {
+          try {
+            const elements = document.querySelectorAll(selector)
+            allElements.push(...Array.from(elements))
+          } catch (e) {
+            continue
+          }
+        }
+        
+        const uniqueElements = [...new Set(allElements)].slice(0, 100)
+        return uniqueElements.slice(0, 50)
+      })
+
+      const timeReduction = standardResult.executionTime - optimizedResult.executionTime
+      const percentage = (timeReduction / standardResult.executionTime) * 100
+
+      return {
+        standard: {
+          executionTime: standardResult.executionTime,
+          elementCount: standardResult.result.length
+        },
+        optimized: {
+          executionTime: optimizedResult.executionTime,
+          elementCount: optimizedResult.result.length
+        },
+        improvement: {
+          timeReduction,
+          percentage: Math.round(percentage * 100) / 100
         }
       }
     }

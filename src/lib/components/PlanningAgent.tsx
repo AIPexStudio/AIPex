@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState } from "react"
+import { MarkdownRenderer } from "./index"
 
 export interface PlanningStep {
   type: 'analysis' | 'plan' | 'think' | 'act' | 'observe' | 'reason' | 'complete' | 'retry' | 'error'
@@ -161,8 +162,8 @@ const PlanningAgent: React.FC<PlanningAgentProps> = ({ steps, isActive, onStepCo
                   )}
                 </div>
                 
-                <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {step.content}
+                <div className="text-sm text-gray-700">
+                  <MarkdownRenderer content={step.content} />
                 </div>
 
                 {step.toolCall && (

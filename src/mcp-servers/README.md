@@ -9,7 +9,6 @@ This directory contains all the MCP (Model Context Protocol) server tools for th
 > ✅ **All tools are now fully integrated with the MCP client and can be called by AI!**
 > 
 > **🎯 AI Integration Status**: All 112 tools are now available to the AI assistant. When users chat with the AI, it can access and use any of these tools based on the user's request, allowing for comprehensive browser automation and management.
-> 
 > **🔧 Permission Requirements**: Some tools require specific Chrome extension permissions. If you encounter permission errors, use the `check_permissions` tool to diagnose issues. The extension needs these permissions in `package.json`:
 > - `management` - for extension management tools
 > - `downloads` - for download management tools

@@ -1013,44 +1013,27 @@ const SYSTEM_PROMPT = [
   "- remove_context_menu_item: remove a context menu item",
   "- remove_all_context_menu_items: remove all context menu items",
   "- get_context_menu_items: get all context menu items",
+
+  
+  "\n=== CAPABILITIES OVERVIEW ===",
+  "You can help with:",
+  "- Tab management (list, switch, create, organize, group)",
+  "- Bookmark management (create, delete, search, organize)",
+  "- History management (search, view, clear)",
+  "- Window management (create, switch, minimize, maximize)",
+  "- Page content analysis (extract, summarize, search)",
+  "- Form interaction (fill, submit, clear inputs)",
+  "- Clipboard management (copy, read content)",
+  "- Storage and settings management",
+  "- Extension management",
+  "- Download management",
+  "- Session management",
   
   "\n=== USAGE GUIDELINES ===",
-  "1. For simple requests (e.g., 'switch to X'), use direct tool calls:",
-  "   - First call get_all_tabs to find the target",
-  "   - Then call switch_to_tab with the matching ID",
-  
-  "2. For complex requests, follow the planning framework:",
-  "   - Analyze the task complexity",
-  "   - Create a step-by-step plan",
-  "   - Execute with ReAct cycle",
-  "   - Monitor and adapt as needed",
-  
-  "3. For content analysis requests:",
-  "   - Use get_current_tab_content for current page analysis",
-  "   - Use get_page_metadata for page information",
-  "   - Use extract_page_text for detailed content extraction",
-  
-  "4. For organization tasks:",
-  "   - Use organize_tabs for AI-powered tab grouping",
-  "   - Use ungroup_tabs to reset organization",
-  "   - Use create_tab_group for manual grouping",
-  
-  "5. For information gathering:",
-  "   - Use get_all_tabs for tab overview",
-  "   - Use get_all_bookmarks for bookmark management",
-  "   - Use get_recent_history for browsing history",
-  "   - Use get_interactive_elements to find clickable elements on the current page",
-  "   - Use summarize_page to analyze and summarize the current page content",
-  "   - Use scroll_to_element to navigate to specific elements and center them in view",
-  "   - Use highlight_element to visually emphasize elements for better user focus",
-  
-  "6. For form and input interaction:",
-  "   - Use get_form_elements to discover all forms and input fields on the current page",
-  "   - Use fill_input to populate input fields with text",
-  "   - Use clear_input to clear input field content",
-  "   - Use get_input_value to read current input values",
-  "   - Use submit_form to submit forms",
-  "   - Use click_element to interact with buttons and other clickable elements",
+  "1. For simple requests, use direct tool calls",
+  "2. For complex requests, follow the planning framework with ReAct cycle",
+  "3. Use available tools efficiently - the system will provide tool descriptions",
+  "4. Encourage natural, semantic requests instead of slash commands",
   
   "7. For research and investigation tasks:",
   "   - AUTOMATICALLY detect when user requests involve research, learning, testing, investigation, or search activities",
@@ -1104,6 +1087,7 @@ const SYSTEM_PROMPT = [
 
 // Import MCP client to get all available tools
 import { browserMcpClient } from "~mcp/client"
+import { toolManager } from "~/lib/services/tool-manager"
 
 // Import PlanningStep type
 interface PlanningStep {
@@ -1119,30 +1103,15 @@ interface PlanningStep {
   }
 }
 
-// Get all available tools from MCP client
+// Get all available tools from unified tool manager
 const getAllTools = () => {
-  const tools = browserMcpClient.getToolDescriptions()
-  console.log('🧰 [DEBUG] getAllTools called, returning tools:', tools.map(t => t.name))
-  const hasDownloadTool = tools.some(t => t.name === 'download_current_chat_images')
-  console.log('🔍 [DEBUG] download_current_chat_images tool available:', hasDownloadTool)
-  return tools.map(tool => ({
-    type: "function" as const,
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: browserMcpClient.tools.find(t => t.name === tool.name)?.inputSchema || {
-        type: "object",
-        properties: {},
-        additionalProperties: false
-      }
-    }
-  }))
+  return toolManager.getToolsForOpenAI()
 }
 
-async function executeToolCall(name: string, args: any) {
+async function executeToolCall(name: string, args: any, messageId?: string) {
   try {
     // Use MCP client to call the tool
-    const result = await browserMcpClient.callTool(name, args)
+    const result = await browserMcpClient.callTool(name, args, messageId)
     return result
   } catch (error: any) {
     console.error(`Error executing tool ${name}:`, error)
@@ -1387,9 +1356,9 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
             })
           } catch {}
         }
-        console.log('🛠️ [DEBUG] About to execute tool call:', name, 'with args:', args)
-        const toolResult = await executeToolCall(name, args)
-        console.log('✅ [DEBUG] Tool call result:', { name, success: toolResult?.success, error: toolResult?.success === false ? (toolResult as any)?.error : undefined })
+        const toolResult = await executeToolCall(name, args, messageId)
+        
+
         
         // Special handling for image-related tools to avoid token overflow
         let processedToolResult = toolResult
