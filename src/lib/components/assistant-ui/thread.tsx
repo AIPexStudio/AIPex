@@ -316,6 +316,63 @@ export const Thread: FC = () => {
     };
   }, []);
 
+  // Handle providing current chat images for AI tools
+  useEffect(() => {
+    const handleProvideImages = (message: any, sender: any, sendResponse: (response: any) => void) => {
+      if (message.request === "provide-current-chat-images") {
+        const imagesInChat = messages.filter(msg => 
+          msg.parts?.some(part => part.type === 'image' && part.imageData)
+        ).map(msg => ({
+          id: msg.id,
+          parts: msg.parts?.filter(part => part.type === 'image' && part.imageData)
+        }))
+        
+        sendResponse({
+          images: imagesInChat,
+          count: imagesInChat.length
+        })
+        return true
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(handleProvideImages)
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleProvideImages)
+    }
+  }, [messages])
+
+  // Download images from chat messages
+  const handleDownloadImages = useCallback(async () => {
+    const imagesInChat = messages.filter(msg => 
+      msg.parts?.some(part => part.type === 'image' && part.imageData)
+    )
+    
+    if (imagesInChat.length === 0) {
+      alert('No downloadable images found')
+      return
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        request: "download-chat-images",
+        messages: imagesInChat.map(msg => ({
+          id: msg.id,
+          parts: msg.parts?.filter(part => part.type === 'image' && part.imageData)
+        })),
+        folderPrefix: "AIPex-Chat-Images"
+      })
+
+      if (response?.success) {
+        alert(`Successfully downloaded ${response.downloadedCount || 0} images`)
+      } else {
+        alert(`Download failed: ${response?.error || 'Unknown error'}`)
+      }
+    } catch (error: any) {
+      console.error('Image download failed:', error)
+      alert(`Download failed: ${error?.message || 'Unknown error'}`)
+    }
+  }, [messages])
+
   const handleSubmit = useCallback(async (message: string) => {
     if (!message.trim() || loading) return;
 
@@ -653,6 +710,8 @@ export const Thread: FC = () => {
         className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-4 bg-white shadow-lg backdrop-blur-sm z-10"
       >
         <div className="max-w-2xl mx-auto">
+
+          
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}

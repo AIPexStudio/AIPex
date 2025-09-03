@@ -1247,14 +1247,30 @@ export class BrowserMcpClient {
         properties: {},
         required: []
       }
+    },
+    {
+      name: "download_current_chat_images",
+      description: "Download all images from current AI chat conversation to local storage",
+      inputSchema: {
+        type: "object",
+        properties: {
+          folderPrefix: {
+            type: "string",
+            description: "Optional folder prefix for organizing downloads (default: 'AIPex-Chat-Images')"
+          }
+        },
+        required: []
+      }
     }
   ]
 
   async listTools() {
+    console.log('📋 [DEBUG] MCP Client listing tools:', this.tools.map(t => t.name))
     return { tools: this.tools }
   }
 
   async callTool(name: string, args: any) {
+    console.log('🔧 [DEBUG] MCP Client calling tool:', name, 'with args:', args)
     return await callMcpTool({ tool: name as any, args })
   }
 

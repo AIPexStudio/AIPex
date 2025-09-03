@@ -184,7 +184,8 @@ const AIChatSidebar = () => {
         { name: "remove_download", description: "Remove a download from history" },
         { name: "open_download", description: "Open a downloaded file" },
         { name: "show_download_in_folder", description: "Show a download in its folder" },
-        { name: "get_download_stats", description: "Get download statistics" }
+        { name: "get_download_stats", description: "Get download statistics" },
+        { name: "download_current_chat_images", description: "Download all images from current AI chat conversation" }
       ]
     },
     {

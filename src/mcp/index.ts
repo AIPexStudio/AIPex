@@ -105,6 +105,9 @@ export type McpToolName =
   | "show_download_in_folder"
   | "get_download_stats"
   | "download_text_as_markdown"
+  | "download_image"
+  | "download_chat_images"
+  | "download_current_chat_images"
   // Sessions
   | "get_all_sessions"
   | "get_session"
@@ -231,6 +234,9 @@ export type McpRequest =
   | { tool: "show_download_in_folder"; args: { downloadId: number } }
   | { tool: "get_download_stats" }
   | { tool: "download_text_as_markdown"; args: { text: string; filename?: string } }
+  | { tool: "download_image"; args: { imageData: string; filename?: string } }
+  | { tool: "download_chat_images"; args: { messages: Array<{ id: string; parts?: Array<{ type: string; imageData?: string; imageTitle?: string }> }>; folderPrefix?: string } }
+  | { tool: "download_current_chat_images"; args: { folderPrefix?: string } }
   // Sessions
   | { tool: "get_all_sessions" }
   | { tool: "get_session"; args: { sessionId: string } }
@@ -362,6 +368,8 @@ import {
   showDownloadInFolder,
   getDownloadStats,
   downloadTextAsMarkdown,
+  downloadImage,
+  downloadChatImages,
   // Sessions
   getAllSessions,
   getSession,
@@ -896,6 +904,60 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         if (!text || typeof text !== "string") return { success: false, error: "Text is required and must be a string" }
         const result = await downloadTextAsMarkdown(text, filename)
         return result.success ? { success: true, data: { downloadId: result.downloadId } } : { success: false, error: result.error || "Failed to download text as markdown" }
+      }
+      case "download_image": {
+        const { imageData, filename } = request.args
+        if (!imageData || typeof imageData !== "string") return { success: false, error: "Image data is required and must be a string" }
+        const result = await downloadImage(imageData, filename)
+        return result.success ? { success: true, data: { downloadId: result.downloadId } } : { success: false, error: result.error || "Failed to download image" }
+      }
+      case "download_chat_images": {
+        const { messages, folderPrefix } = request.args
+        if (!messages || !Array.isArray(messages)) return { success: false, error: "Messages array is required" }
+        const result = await downloadChatImages(messages, folderPrefix)
+        return result.success ? { 
+          success: true, 
+          data: { 
+            downloadedCount: result.downloadedCount, 
+            downloadIds: result.downloadIds,
+            errors: result.errors
+          } 
+        } : { success: false, error: result.errors?.join(', ') || "Failed to download chat images" }
+      }
+      case "download_current_chat_images": {
+        console.log('🎯 [DEBUG] MCP Tool download_current_chat_images called:', request.args)
+        const { folderPrefix } = request.args
+        
+        // Since this is called from background script, we need to directly access the chat images
+        // We'll use a global function that will be available in background script context
+        try {
+          console.log('📤 [DEBUG] Calling background download function directly...')
+          
+          // Import and call the background download function directly
+          if (typeof (globalThis as any).downloadCurrentChatImagesFromBackground === 'function') {
+            const result = await (globalThis as any).downloadCurrentChatImagesFromBackground(folderPrefix || "AIPex-Chat-Images")
+            console.log('📥 [DEBUG] Background function result:', result)
+            
+            if (result.success) {
+              return { 
+                success: true, 
+                data: { 
+                  downloadedCount: result.downloadedCount, 
+                  downloadIds: result.downloadIds,
+                  message: `Successfully downloaded ${result.downloadedCount || 0} images from current chat`
+                } 
+              }
+            } else {
+              return { success: false, error: result.error || "Failed to download current chat images" }
+            }
+          } else {
+            console.error('❌ [DEBUG] Background download function not available')
+            return { success: false, error: "Download function not available in background context" }
+          }
+        } catch (error: any) {
+          console.error('❌ [DEBUG] MCP Tool error:', error)
+          return { success: false, error: error?.message || String(error) || "Failed to access current chat images" }
+        }
       }
       // Sessions
       case "get_all_sessions": {

@@ -274,3 +274,163 @@ export async function downloadTextAsMarkdown(
     }
   }
 }
+
+/**
+ * Download image from base64 data
+ */
+export async function downloadImage(
+  imageData: string,
+  filename?: string
+): Promise<{
+  success: boolean
+  downloadId?: number
+  error?: string
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        error: "Downloads permission not available. Please check extension permissions." 
+      }
+    }
+
+    // Validate input
+    if (!imageData || typeof imageData !== 'string') {
+      return {
+        success: false,
+        error: "Image data is required and must be a string"
+      }
+    }
+
+    // Validate that it's a proper data URI for an image
+    if (!imageData.startsWith('data:image/')) {
+      return {
+        success: false,
+        error: "Invalid image data format. Expected data:image/ URI"
+      }
+    }
+
+    // Extract image format from data URI
+    const mimeMatch = imageData.match(/data:image\/([^;]+)/)
+    const imageFormat = mimeMatch ? mimeMatch[1] : 'png'
+    
+    // Generate filename if not provided
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+    const finalFilename = filename || `image-${timestamp}.${imageFormat}`
+    
+    // Ensure filename has correct extension
+    const extension = imageFormat === 'jpeg' ? 'jpg' : imageFormat
+    const imageFilename = finalFilename.includes('.') ? finalFilename : `${finalFilename}.${extension}`
+
+    // Download the file using the data URI directly
+    const downloadId = await chrome.downloads.download({
+      url: imageData,
+      filename: imageFilename,
+      saveAs: true // This will show the save dialog
+    })
+
+    return { 
+      success: true, 
+      downloadId: downloadId 
+    }
+  } catch (error: any) {
+    console.error("Error in downloadImage:", error)
+    return { 
+      success: false, 
+      error: error?.message || String(error) || "Failed to download image"
+    }
+  }
+}
+
+/**
+ * Download all images from AI chat messages
+ */
+export async function downloadChatImages(
+  messages: Array<{
+    id: string
+    parts?: Array<{
+      type: string
+      imageData?: string
+      imageTitle?: string
+    }>
+  }>,
+  folderPrefix?: string
+): Promise<{
+  success: boolean
+  downloadedCount?: number
+  downloadIds?: number[]
+  errors?: string[]
+}> {
+  try {
+    console.log('💾 [DEBUG] downloadChatImages starting execution:', { messagesCount: messages.length, folderPrefix })
+    
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      console.error('❌ [DEBUG] chrome.downloads API not available')
+      return { 
+        success: false, 
+        errors: ["Downloads permission not available. Please check extension permissions."]
+      }
+    }
+
+    const downloadIds: number[] = []
+    const errors: string[] = []
+    let downloadedCount = 0
+
+    // Extract all images from messages
+    for (const message of messages) {
+      console.log('🔄 [DEBUG] Processing message:', { messageId: message.id, partsCount: message.parts?.length })
+      if (!message.parts) continue
+
+      for (const part of message.parts) {
+        console.log('🖼️ [DEBUG] Processing part:', { type: part.type, hasImageData: !!part.imageData, title: part.imageTitle })
+        
+        if (part.type === 'image' && part.imageData) {
+          try {
+            // Generate filename based on image title and timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+            const titleSlug = part.imageTitle 
+              ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+              : 'image'
+            
+            const filename = folderPrefix 
+              ? `${folderPrefix}/${titleSlug}-${timestamp}`
+              : `${titleSlug}-${timestamp}`
+
+            console.log('📝 [DEBUG] Preparing download:', { filename, imageDataLength: part.imageData.length })
+
+            const result = await downloadImage(part.imageData, filename)
+            console.log('⬇️ [DEBUG] Download result:', result)
+            
+            if (result.success && result.downloadId) {
+              downloadIds.push(result.downloadId)
+              downloadedCount++
+            } else {
+              errors.push(`Failed to download image: ${result.error || 'Unknown error'}`)
+            }
+          } catch (error: any) {
+            console.error('❌ [DEBUG] Image processing error:', error)
+            errors.push(`Error processing image: ${error?.message || String(error)}`)
+          }
+        }
+      }
+    }
+
+    const finalResult = {
+      success: downloadedCount > 0 || errors.length === 0,
+      downloadedCount,
+      downloadIds,
+      errors: errors.length > 0 ? errors : undefined
+    }
+    
+    console.log('📊 [DEBUG] Final result:', finalResult)
+    return finalResult
+  } catch (error: any) {
+    console.error("❌ [DEBUG] downloadChatImages error:", error)
+    return { 
+      success: false, 
+      errors: [error?.message || String(error) || "Failed to download chat images"]
+    }
+  }
+}
