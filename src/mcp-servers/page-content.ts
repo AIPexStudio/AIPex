@@ -1005,7 +1005,7 @@ export async function scrollToElement(selector: string): Promise<{
 export async function highlightElement(selector: string, options?: {
   color?: string
   duration?: number
-  style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'spotlight' | 'frame' | 'pointer'
+  style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'frame' | 'pointer'
   intensity?: 'subtle' | 'normal' | 'strong'
   animation?: boolean
   persist?: boolean
@@ -1031,7 +1031,7 @@ export async function highlightElement(selector: string, options?: {
     func: (selector: string, options: {
       color?: string
       duration?: number
-      style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'spotlight' | 'frame' | 'pointer'
+      style?: 'glow' | 'pulse' | 'shine' | 'bounce' | 'outline' | 'background' | 'border' | 'shadow' | 'gradient' | 'neon' | 'overlay' | 'cursor' | 'frame' | 'pointer'
       intensity?: 'subtle' | 'normal' | 'strong'
       animation?: boolean
       persist?: boolean
@@ -1462,20 +1462,7 @@ export async function highlightElement(selector: string, options?: {
               filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
             }
             
-            .aipex-spotlight-bg {
-              position: absolute;
-              background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.7) 70%);
-              border-radius: 50%;
-              pointer-events: none;
-            }
-            
-            .aipex-spotlight-ring {
-              position: absolute;
-              border: 2px solid #00d4ff;
-              border-radius: 50%;
-              pointer-events: none;
-              animation: aipex-spotlight-rotate 3s linear infinite;
-            }
+
             
             .aipex-frame-border {
               position: absolute;
@@ -1502,11 +1489,7 @@ export async function highlightElement(selector: string, options?: {
               50% { transform: translateY(-5px); }
             }
             
-            @keyframes aipex-spotlight-rotate {
-              0% { transform: rotate(0deg) scale(1); }
-              50% { transform: rotate(180deg) scale(1.1); }
-              100% { transform: rotate(360deg) scale(1); }
-            }
+
             
             @keyframes aipex-frame-glow {
               0%, 100% { 
@@ -1678,38 +1661,7 @@ export async function highlightElement(selector: string, options?: {
               }
               break
               
-            case 'spotlight':
-              // Create spotlight background
-              const spotlightBg = createOverlayElement(
-                elementRect,
-                'aipex-spotlight-bg',
-                '',
-                -20, // offsetX
-                -20, // offsetY
-                elementRect.width + 40, // width
-                elementRect.height + 40  // height
-              )
-              spotlightBg.dataset.offsetX = '-20'
-              spotlightBg.dataset.offsetY = '-20'
-              
-              // Create spotlight ring
-              const spotlightRing = createOverlayElement(
-                elementRect,
-                'aipex-spotlight-ring',
-                '',
-                -10, // offsetX
-                -10, // offsetY
-                elementRect.width + 20, // width
-                elementRect.height + 20  // height
-              )
-              spotlightRing.dataset.offsetX = '-10'
-              spotlightRing.dataset.offsetY = '-10'
-              
-              if (highlightColor !== '#00d4ff') {
-                spotlightRing.style.borderColor = highlightColor
-              }
-              break
-              
+
             case 'frame':
               // Create frame border
               const frameBorder = createOverlayElement(
@@ -1753,7 +1705,7 @@ export async function highlightElement(selector: string, options?: {
         }
 
         // Add scroll and resize listeners for position updates
-        if (['overlay', 'cursor', 'spotlight', 'frame', 'pointer'].includes(highlightStyle)) {
+        if (['overlay', 'cursor', 'frame', 'pointer'].includes(highlightStyle)) {
           window.addEventListener('scroll', updateOverlayPositions, true)
           window.addEventListener('resize', updateOverlayPositions)
           
@@ -1770,7 +1722,7 @@ export async function highlightElement(selector: string, options?: {
             })
             
             // Remove all highlight classes
-            element.classList.remove('aipex-highlighted', 'aipex-highlight-glow', 'aipex-highlight-pulse', 'aipex-highlight-shine', 'aipex-highlight-bounce', 'aipex-highlight-neon', 'aipex-highlight-gradient', 'aipex-highlight-shadow', 'aipex-highlight-outline', 'aipex-highlight-border', 'aipex-highlight-background', 'aipex-highlight-overlay', 'aipex-highlight-cursor', 'aipex-highlight-spotlight', 'aipex-highlight-frame', 'aipex-highlight-pointer', 'subtle', 'normal', 'strong')
+            element.classList.remove('aipex-highlighted', 'aipex-highlight-glow', 'aipex-highlight-pulse', 'aipex-highlight-shine', 'aipex-highlight-bounce', 'aipex-highlight-neon', 'aipex-highlight-gradient', 'aipex-highlight-shadow', 'aipex-highlight-outline', 'aipex-highlight-border', 'aipex-highlight-background', 'aipex-highlight-overlay', 'aipex-highlight-cursor', 'aipex-highlight-frame', 'aipex-highlight-pointer', 'subtle', 'normal', 'strong')
             
             // Remove independent overlay elements
             const overlayElements = document.querySelectorAll(`[data-highlight-id="${highlightId}"]`)

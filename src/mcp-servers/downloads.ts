@@ -219,11 +219,13 @@ export async function getDownloadStats(): Promise<{
  */
 export async function downloadTextAsMarkdown(
   text: string,
-  filename?: string
+  filename?: string,
+  folderPath?: string
 ): Promise<{
   success: boolean
   downloadId?: number
   error?: string
+  finalPath?: string
 }> {
   try {
     // Check if downloads permission is available
@@ -244,10 +246,13 @@ export async function downloadTextAsMarkdown(
 
     // Generate filename if not provided
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-    const finalFilename = filename || `text-${timestamp}.md`
+    const baseFilename = filename || `text-${timestamp}`
     
     // Ensure filename has .md extension
-    const mdFilename = finalFilename.endsWith('.md') ? finalFilename : `${finalFilename}.md`
+    const mdFilename = baseFilename.endsWith('.md') ? baseFilename : `${baseFilename}.md`
+    
+    // Construct full path with folder if provided
+    const finalPath = folderPath ? `${folderPath}/${mdFilename}` : mdFilename
 
     // Create data URI with text content (compatible with Chrome extension background script)
     const encoder = new TextEncoder()
@@ -258,13 +263,14 @@ export async function downloadTextAsMarkdown(
     // Download the file
     const downloadId = await chrome.downloads.download({
       url: dataUri,
-      filename: mdFilename,
+      filename: finalPath,
       saveAs: true // This will show the save dialog
     })
 
     return { 
       success: true, 
-      downloadId: downloadId 
+      downloadId: downloadId,
+      finalPath: finalPath
     }
   } catch (error: any) {
     console.error("Error in downloadTextAsMarkdown:", error)
@@ -280,11 +286,13 @@ export async function downloadTextAsMarkdown(
  */
 export async function downloadImage(
   imageData: string,
-  filename?: string
+  filename?: string,
+  folderPath?: string
 ): Promise<{
   success: boolean
   downloadId?: number
   error?: string
+  finalPath?: string
 }> {
   try {
     // Check if downloads permission is available
@@ -317,22 +325,26 @@ export async function downloadImage(
     
     // Generate filename if not provided
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-    const finalFilename = filename || `image-${timestamp}.${imageFormat}`
+    const baseFilename = filename || `image-${timestamp}`
     
     // Ensure filename has correct extension
     const extension = imageFormat === 'jpeg' ? 'jpg' : imageFormat
-    const imageFilename = finalFilename.includes('.') ? finalFilename : `${finalFilename}.${extension}`
+    const imageFilename = baseFilename.includes('.') ? baseFilename : `${baseFilename}.${extension}`
+    
+    // Construct full path with folder if provided
+    const finalPath = folderPath ? `${folderPath}/${imageFilename}` : imageFilename
 
     // Download the file using the data URI directly
     const downloadId = await chrome.downloads.download({
       url: imageData,
-      filename: imageFilename,
+      filename: finalPath,
       saveAs: true // This will show the save dialog
     })
 
     return { 
       success: true, 
-      downloadId: downloadId 
+      downloadId: downloadId,
+      finalPath: finalPath
     }
   } catch (error: any) {
     console.error("Error in downloadImage:", error)
@@ -355,15 +367,18 @@ export async function downloadChatImages(
       imageTitle?: string
     }>
   }>,
-  folderPrefix?: string
+  folderPrefix?: string,
+  filenamingStrategy: string = 'descriptive'
 ): Promise<{
   success: boolean
   downloadedCount?: number
   downloadIds?: number[]
   errors?: string[]
+  folderPath?: string
+  filesList?: string[]
 }> {
   try {
-    console.log('💾 [DEBUG] downloadChatImages starting execution:', { messagesCount: messages.length, folderPrefix })
+    console.log('💾 [DEBUG] downloadChatImages starting execution:', { messagesCount: messages.length, folderPrefix, filenamingStrategy })
     
     // Check if downloads permission is available
     if (!chrome.downloads) {
@@ -376,7 +391,9 @@ export async function downloadChatImages(
 
     const downloadIds: number[] = []
     const errors: string[] = []
+    const filesList: string[] = []
     let downloadedCount = 0
+    let imageIndex = 0
 
     // Extract all images from messages
     for (const message of messages) {
@@ -388,17 +405,33 @@ export async function downloadChatImages(
         
         if (part.type === 'image' && part.imageData) {
           try {
-            // Generate filename based on image title and timestamp
+            imageIndex++
+            
+            // Generate filename based on strategy
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
             const titleSlug = part.imageTitle 
               ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-              : 'image'
+              : `image-${imageIndex}`
+            
+            let baseFilename: string
+            switch (filenamingStrategy) {
+              case 'sequential':
+                baseFilename = `image-${String(imageIndex).padStart(3, '0')}`
+                break
+              case 'timestamp':
+                baseFilename = `image-${timestamp}`
+                break
+              case 'descriptive':
+              default:
+                baseFilename = `${titleSlug}-${timestamp}`
+                break
+            }
             
             const filename = folderPrefix 
-              ? `${folderPrefix}/${titleSlug}-${timestamp}`
-              : `${titleSlug}-${timestamp}`
+              ? `${folderPrefix}/${baseFilename}`
+              : baseFilename
 
-            console.log('📝 [DEBUG] Preparing download:', { filename, imageDataLength: part.imageData.length })
+            console.log('📝 [DEBUG] Preparing download:', { filename, imageDataLength: part.imageData.length, strategy: filenamingStrategy })
 
             const result = await downloadImage(part.imageData, filename)
             console.log('⬇️ [DEBUG] Download result:', result)
@@ -406,6 +439,9 @@ export async function downloadChatImages(
             if (result.success && result.downloadId) {
               downloadIds.push(result.downloadId)
               downloadedCount++
+              // Extract just the filename for display
+              const displayFilename = result.finalPath?.split('/').pop() || `${baseFilename}.png`
+              filesList.push(displayFilename)
             } else {
               errors.push(`Failed to download image: ${result.error || 'Unknown error'}`)
             }
@@ -421,7 +457,9 @@ export async function downloadChatImages(
       success: downloadedCount > 0 || errors.length === 0,
       downloadedCount,
       downloadIds,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
+      folderPath: folderPrefix,
+      filesList: filesList.length > 0 ? filesList : undefined
     }
     
     console.log('📊 [DEBUG] Final result:', finalResult)

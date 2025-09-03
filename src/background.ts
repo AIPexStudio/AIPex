@@ -1389,7 +1389,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
         }
         console.log('🛠️ [DEBUG] About to execute tool call:', name, 'with args:', args)
         const toolResult = await executeToolCall(name, args)
-        console.log('✅ [DEBUG] Tool call result:', { name, success: toolResult?.success, error: toolResult?.error })
+        console.log('✅ [DEBUG] Tool call result:', { name, success: toolResult?.success, error: toolResult?.success === false ? (toolResult as any)?.error : undefined })
         
         // Special handling for image-related tools to avoid token overflow
         let processedToolResult = toolResult
@@ -2349,12 +2349,14 @@ async function downloadChatImagesInBackground(
       imageTitle?: string
     }>
   }>,
-  folderPrefix?: string
+  folderPrefix?: string,
+  imageNames?: string[]
 ): Promise<{
   success: boolean
   downloadedCount?: number
   downloadIds?: number[]
   errors?: string[]
+  filesList?: string[]
 }> {
   try {
     // Check if downloads permission is available
@@ -2367,7 +2369,9 @@ async function downloadChatImagesInBackground(
 
     const downloadIds: number[] = []
     const errors: string[] = []
+    const filesList: string[] = []
     let downloadedCount = 0
+    let imageIndex = 0
 
     // Extract all images from messages
     for (const message of messages) {
@@ -2376,24 +2380,39 @@ async function downloadChatImagesInBackground(
       for (const part of message.parts) {
         if (part.type === 'image' && part.imageData) {
           try {
-            // Generate filename based on image title and timestamp
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-            const titleSlug = part.imageTitle 
-              ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-              : 'image'
+            // 简单直接地使用传入的图片名字
+            let filename: string
             
-            const filename = folderPrefix 
-              ? `${folderPrefix}/${titleSlug}-${timestamp}`
-              : `${titleSlug}-${timestamp}`
+            if (imageNames && imageNames[imageIndex]) {
+              // 使用传入的名字，直接像folderPrefix一样简单
+              filename = imageNames[imageIndex]
+                .replace(/[^a-zA-Z0-9\u4e00-\u9fa5\s-]/g, '') // 只保留安全字符
+                .trim()
+            } else {
+              // fallback到默认命名
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+              const titleSlug = part.imageTitle 
+                ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                : 'image'
+              filename = `${titleSlug}-${timestamp}`
+            }
+            
+            // 添加文件夹前缀
+            const fullFilename = folderPrefix 
+              ? `${folderPrefix}/${filename}`
+              : filename
 
-            const result = await downloadImageInBackground(part.imageData, filename)
+            const result = await downloadImageInBackground(part.imageData, fullFilename)
             
             if (result.success && result.downloadId) {
               downloadIds.push(result.downloadId)
               downloadedCount++
+              filesList.push(`${fullFilename}.png`)
             } else {
               errors.push(`Failed to download image: ${result.error || 'Unknown error'}`)
             }
+            
+            imageIndex++
           } catch (error: any) {
             errors.push(`Error processing image: ${error?.message || String(error)}`)
           }
@@ -2405,6 +2424,7 @@ async function downloadChatImagesInBackground(
       success: downloadedCount > 0 || errors.length === 0,
       downloadedCount,
       downloadIds,
+      filesList,
       errors: errors.length > 0 ? errors : undefined
     }
   } catch (error: any) {
@@ -2416,8 +2436,13 @@ async function downloadChatImagesInBackground(
 }
 
 // Global function to download current chat images from background context
-(globalThis as any).downloadCurrentChatImagesFromBackground = async function(folderPrefix: string) {
-  console.log('🎯 [DEBUG] downloadCurrentChatImagesFromBackground called with folderPrefix:', folderPrefix)
+(globalThis as any).downloadCurrentChatImagesFromBackground = async function(
+  folderPrefix: string, 
+  imageNames?: string[],
+  filenamingStrategy: string = 'descriptive', 
+  displayResults: boolean = true
+) {
+  console.log('🎯 [DEBUG] downloadCurrentChatImagesFromBackground called with:', { folderPrefix, imageNames, filenamingStrategy, displayResults })
   
   try {
     // Try to get images from sidepanel first
@@ -2425,18 +2450,27 @@ async function downloadChatImagesInBackground(
       console.log('📤 [DEBUG] Sending message to sidepanel...')
       const sidepanelResponse = await chrome.runtime.sendMessage({
         request: "provide-current-chat-images",
-        folderPrefix: folderPrefix
+        folderPrefix: folderPrefix,
+        imageNames: imageNames,
+        filenamingStrategy: filenamingStrategy,
+        displayResults: displayResults
       })
       console.log('📥 [DEBUG] Sidepanel response:', sidepanelResponse)
       
       if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
         console.log('📸 [DEBUG] Found images in sidepanel, starting download...')
-        const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix)
+        const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix, imageNames)
         console.log('⬇️ [DEBUG] Download result:', result)
+        
+        // 使用实际生成的文件名列表
+        const filesList = result.filesList || []
+        
         return {
           success: result.success,
           downloadedCount: result.downloadedCount,
           downloadIds: result.downloadIds,
+          folderPath: folderPrefix,
+          filesList: filesList,
           error: result.errors?.join(', ')
         }
       }
@@ -2451,18 +2485,27 @@ async function downloadChatImagesInBackground(
         console.log('📤 [DEBUG] Sending message to active tab:', activeTab.id)
         const tabResponse = await chrome.tabs.sendMessage(activeTab.id, {
           request: "provide-current-chat-images",
-          folderPrefix: folderPrefix
+          folderPrefix: folderPrefix,
+          imageNames: imageNames,
+          filenamingStrategy: filenamingStrategy,
+          displayResults: displayResults
         })
         console.log('📥 [DEBUG] Tab response:', tabResponse)
         
         if (tabResponse?.images && tabResponse.images.length > 0) {
           console.log('📸 [DEBUG] Found images in tab, starting download...')
-          const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix)
+          const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix, imageNames)
           console.log('⬇️ [DEBUG] Download result:', result)
+          
+          // 使用实际生成的文件名列表
+          const filesList = result.filesList || []
+          
           return {
             success: result.success,
             downloadedCount: result.downloadedCount,
             downloadIds: result.downloadIds,
+            folderPath: folderPrefix,
+            filesList: filesList,
             error: result.errors?.join(', ')
           }
         }
