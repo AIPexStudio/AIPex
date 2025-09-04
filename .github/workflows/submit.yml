@@ -1,12 +1,15 @@
 name: "Submit to Web Store"
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'  # 当推送版本标签时自动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache pnpm modules
         uses: actions/cache@v3
         with:
@@ -18,13 +21,18 @@ jobs:
         with:
           version: latest
           run_install: true
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3.4.1
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: 18.x
           cache: "pnpm"
       - name: Build the extension
         run: pnpm build
+        env:
+          # AI 配置环境变量（可选）
+          AI_HOST: ${{ secrets.AI_HOST }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          AI_TOKEN: ${{ secrets.AI_TOKEN }}
       - name: Package the extension into a zip artifact
         run: pnpm package
       - name: Browser Platform Publish
@@ -32,3 +40,5 @@ jobs:
         with:
           keys: ${{ secrets.SUBMIT_KEYS }}
           artifact: build/chrome-mv3-prod.zip
+          # 可选：指定要发布的浏览器
+          # browsers: chrome,firefox,edge

@@ -93,8 +93,8 @@ export async function getExtensionSettings(): Promise<{
         aiModel: settings.aiModel,
         theme: settings.theme,
         language: settings.language,
-        autoOrganize: settings.autoOrganize,
-        notifications: settings.notifications
+        autoOrganize: Boolean(settings.autoOrganize === 'true' || settings.autoOrganize),
+        notifications: Boolean(settings.notifications === 'true' || settings.notifications)
       }
     }
   } catch (error: any) {
@@ -131,6 +131,7 @@ export async function updateExtensionSettings(updates: {
 
 /**
  * Get AI configuration
+ * 优先级：环境变量 > 存储配置 > 默认值
  */
 export async function getAiConfig(): Promise<{
   success: boolean
@@ -143,9 +144,18 @@ export async function getAiConfig(): Promise<{
 }> {
   try {
     const storage = new Storage()
-    const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
-    const aiToken = await storage.get("aiToken")
-    const aiModel = (await storage.get("aiModel")) || "gpt-3.5-turbo"
+    
+    // 优先使用环境变量，如果环境变量不存在则使用存储配置，最后使用默认值
+    const aiHost = process.env.AI_HOST || 
+                   (await storage.get("aiHost")) || 
+                   "https://api.openai.com/v1/chat/completions"
+    
+    const aiToken = process.env.AI_TOKEN || 
+                    (await storage.get("aiToken"))
+    
+    const aiModel = process.env.AI_MODEL || 
+                    (await storage.get("aiModel")) || 
+                    "gpt-3.5-turbo"
     
     return {
       success: true,

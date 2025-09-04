@@ -553,9 +553,18 @@ const ungroupAllTabs = async () => {
 // OpenAI chat completion helper
 async function chatCompletion(messages, stream = true, options = {}, messageId?: string) {
   const storage = new Storage()
-  const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
-  const aiToken = await storage.get("aiToken")
-  const aiModel = (await storage.get("aiModel")) || "gpt-3.5-turbo"
+  
+  // 优先使用环境变量，如果环境变量不存在则使用存储配置，最后使用默认值
+  const aiHost = process.env.AI_HOST || 
+                 (await storage.get("aiHost")) || 
+                 "https://api.openai.com/v1/chat/completions"
+  
+  const aiToken = process.env.AI_TOKEN || 
+                  (await storage.get("aiToken"))
+  
+  const aiModel = process.env.AI_MODEL || 
+                  (await storage.get("aiModel")) || 
+                  "gpt-3.5-turbo"
   if (!aiToken) throw new Error("No OpenAI API token set")
   
   // If messages is a string (legacy support), convert to new format
