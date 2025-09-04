@@ -33,6 +33,9 @@ console.log(logoNotion)
 let actions: any[] = []
 let newtaburl = ""
 
+// Track active streaming requests for stop functionality
+const activeStreams = new Map<string, AbortController>()
+
 // Check if AI grouping is available
 async function isAIGroupingAvailable() {
   const storage = new Storage()
@@ -548,7 +551,7 @@ const ungroupAllTabs = async () => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(messages, stream = true, options = {}) {
+async function chatCompletion(messages, stream = true, options = {}, messageId?: string) {
   const storage = new Storage()
   const aiHost = (await storage.get("aiHost")) || "https://api.openai.com/v1/chat/completions"
   const aiToken = await storage.get("aiToken")
@@ -572,18 +575,38 @@ async function chatCompletion(messages, stream = true, options = {}) {
     ...options
   }
   
-  const res = await fetch(aiHost, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${aiToken}`
-    },
-    body: JSON.stringify(requestBody)
-  })
-  if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
+  // Create AbortController for this request if messageId is provided
+  let controller: AbortController | undefined
+  if (messageId) {
+    controller = new AbortController()
+    activeStreams.set(messageId, controller)
+    console.log('🎯 [DEBUG] Created AbortController for messageId:', messageId)
+    console.log('🎯 [DEBUG] activeStreams after setting:', Array.from(activeStreams.keys()))
+  }
   
-  // Always return response object for streaming
-  return res
+  try {
+    const res = await fetch(aiHost, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${aiToken}`
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller?.signal
+    })
+    
+    if (!res.ok) throw new Error("OpenAI API error: " + (await res.text()))
+    
+    // Always return response object for streaming
+    // Note: Don't delete from activeStreams here - let parseStreamingResponse handle cleanup
+    return res
+  } catch (error) {
+    // Only clean up on error, not on successful response
+    if (messageId && controller) {
+      activeStreams.delete(messageId)
+    }
+    throw error
+  }
 }
 
 // Helper function to parse streaming response and extract tool calls
@@ -600,6 +623,15 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
   let currentToolCall: any = null
   const announcedToolCalls = new Set<string>() // Track announced tool calls to avoid duplicates
   
+  // Clean up activeStreams when streaming is complete
+  const cleanup = () => {
+    if (messageId) {
+      console.log('🧹 [DEBUG] Cleaning up activeStreams for messageId:', messageId)
+      activeStreams.delete(messageId)
+      console.log('🧹 [DEBUG] activeStreams after cleanup:', Array.from(activeStreams.keys()))
+    }
+  }
+  
   // Custom tool call parsing state
   let inToolCallsSection = false
   let inToolCall = false
@@ -612,10 +644,9 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
     while (true) {
       const { done, value } = await reader.read()
       if (done) {
-        // Stream is complete - send completion message
-        if (messageId) {
-          chrome.runtime.sendMessage({ request: 'ai-chat-complete', messageId }).catch(() => {})
-        }
+        // Stream is complete - but don't send completion message here
+        // The completion message should be sent by runChatWithTools when the task is truly complete
+        console.log('Stream parsing completed, but waiting for task completion');
         break
       }
       
@@ -807,6 +838,8 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
     }
   } finally {
     reader.releaseLock()
+    // Always clean up activeStreams
+    cleanup()
   }
   
   return { content, toolCalls }
@@ -872,12 +905,32 @@ const SYSTEM_PROMPT = [
   "   - Remove tasks that become irrelevant",
   "3. Continue ReAct loop until all TODO items are completed",
   "4. Use 'TASK_COMPLETE' marker when all todos are done",
-  "5. Example todo format:",
+  "5. For research/investigation tasks, AUTOMATICALLY add final summarization step:",
+  "   - [ ] Generate comprehensive research summary",
+  "   - [ ] Download summary as markdown file using download_text_as_markdown",
+  "6. Example todo format:",
   "   - [ ] Research topic X",
-  "   - [x] Collect data from source Y",
+  "   - [x] Collect data from source Y", 
   "   - [ ] Analyze results",
   "   - [ ] Generate final report",
+  "   - [ ] Download research summary (AUTO-ADDED for research tasks)",
   
+  "\n=== CAPABILITIES ===",
+  "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
+  "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
+  "3) Organize tabs: use AI to group current-window tabs by topic/purpose, or ungroup all in one click.",
+  "4) Manage bookmarks: create, delete, search, and organize bookmarks.",
+  "5) Manage history: search, view recent history, and clear browsing data.",
+  "6) Manage windows: create, switch, minimize, maximize, and close windows.",
+  "7) Manage tab groups: create, update, and organize tab groups.",
+  "8) Page content analysis: extract and analyze content from web pages.",
+  "9) Clipboard management: copy and manage clipboard content.",
+  "10) Storage management: manage extension storage and settings.",
+  "11) Image downloads: download images from AI chat conversations.",
+  
+  "\n=== TOOL USAGE ===",
+  "When tools are available, the system will provide tool descriptions and schemas.",
+  "Use the available tools efficiently based on the user's request.",
 
   
   "\n=== CAPABILITIES OVERVIEW ===",
@@ -899,6 +952,14 @@ const SYSTEM_PROMPT = [
   "2. For complex requests, follow the planning framework with ReAct cycle",
   "3. Use available tools efficiently - the system will provide tool descriptions",
   "4. Encourage natural, semantic requests instead of slash commands",
+  
+  "7. For research and investigation tasks:",
+  "   - AUTOMATICALLY detect when user requests involve research, learning, testing, investigation, or search activities",
+  "   - After completing ALL research/investigation tasks, AUTOMATICALLY generate a comprehensive summary",
+  "   - Use download_text_as_markdown to save the research summary as a markdown file",
+  "   - Research task indicators include: 'research', 'study', 'investigate', 'analyze', 'compare', 'evaluate', 'survey', 'explore', 'examine'",
+  "   - Summary should include: objectives, methodology, key findings, sources, conclusions, and recommendations",
+  "   - File naming format: 'research-summary-YYYY-MM-DD-HH-MM' or use specific topic name",
   
   "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
   
@@ -926,6 +987,12 @@ const SYSTEM_PROMPT = [
   "User: 'Clear the search box and enter a new query'",
   "Plan: 1. Get interactive elements → 2. Find search input → 3. Clear input → 4. Fill with new query → 5. Submit or click search button",
   "Plan: 1. Create new tab with Google → 2. Get interactive elements → 3. Click search box → 4. Click search button → 5. Get search results → 6. Click first result → 7. Summarize the page",
+  
+  "Example 7 - Research Task (AUTOMATIC SUMMARY):",
+  "User: 'Help me research the latest AI technology developments'",
+  "Plan: 1. Identify as research task → 2. Search relevant pages → 3. Analyze multiple sources → 4. Extract key information → 5. **Auto-generate research summary** → 6. **Use download_text_as_markdown to save research report**",
+  "Summary Content: Research objectives, information sources, key findings, technology trends, conclusions and recommendations",
+  "Filename: 'AI-Technology-Development-Research-2024-01-01.md'",
   
   "\n=== CRITICAL FORMAT REQUIREMENTS ===",
   "1. ALWAYS use standard OpenAI tool_calls format when calling tools",
@@ -976,7 +1043,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
 
   let messages = [systemPrompt, ...userMessages]
   // First call allowing tool use with streaming
-  let response = await chatCompletion(messages, true, { tools: getAllTools(), tool_choice: "auto" })
+  let response = await chatCompletion(messages, true, { tools: getAllTools(), tool_choice: "auto" }, messageId)
   let { content, toolCalls } = await parseStreamingResponse(response, messageId)
 
   // Loop over tool calls if present
@@ -1377,7 +1444,8 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     const nextOptions = executedMutating
       ? {} // Don't include tool_choice or tools when tools are not needed
       : { tools: getAllTools(), tool_choice: "auto" as const }
-    response = await chatCompletion(messages, true, nextOptions)
+    
+    response = await chatCompletion(messages, true, nextOptions, messageId)
     const result = await parseStreamingResponse(response, messageId)
     content = result.content
     toolCalls = result.toolCalls
@@ -1435,7 +1503,7 @@ async function classifyAndGroupSingleTab(tab) {
       const content = `Classify this tab based on URL (${latestTab.url}) and title (${latestTab.title}) into one of these existing categories: ${existingCategories.join(", ")}. If none fit well, respond with "Other". Response with the category only, without any comments.`;
 
       try {
-        const aiResponse = await chatCompletion(content, true);
+        const aiResponse = await chatCompletion(content, true, {});
         const result = await parseStreamingResponse(aiResponse);
         const suggestedCategory = result.content.trim();
         
@@ -1959,6 +2027,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       })()
       return true
+    case "stop-ai-chat":
+      ;(async () => {
+        try {
+          const { messageId } = message
+          console.log('🛑 [DEBUG] Received stop-ai-chat request for messageId:', messageId)
+          console.log('🛑 [DEBUG] Current activeStreams keys:', Array.from(activeStreams.keys()))
+          
+          // Stop the ongoing AI chat by aborting any active streams
+          if (activeStreams.has(messageId)) {
+            const controller = activeStreams.get(messageId)
+            if (controller) {
+              console.log('🛑 [DEBUG] Found controller, aborting stream...')
+              controller.abort()
+              activeStreams.delete(messageId)
+              console.log('🛑 [DEBUG] Stream aborted and removed from activeStreams')
+            }
+          } else {
+            console.log('🛑 [DEBUG] No active stream found for messageId:', messageId)
+          }
+          
+          sendResponse({ success: true, message: "AI chat stopped" })
+        } catch (error: any) {
+          console.error('🛑 [DEBUG] Error in stop-ai-chat:', error)
+          sendResponse({ success: false, error: error?.message || String(error) })
+        }
+      })()
+      return true
     case "organize-tabs":
       groupTabsByAI()
       break
@@ -1975,8 +2070,379 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "get-tab-change-count":
       sendResponse({ count: 0, threshold: 0 })
       return true
+    case "download-chat-images":
+      ;(async () => {
+        try {
+          const { messages, folderPrefix } = message
+          
+          // Check if chrome.downloads is available
+          if (!chrome.downloads) {
+            sendResponse({ 
+              success: false, 
+              error: "Downloads permission not available" 
+            })
+            return
+          }
+          
+          const result = await downloadChatImagesInBackground(messages, folderPrefix)
+          
+          sendResponse({ 
+            success: result.success,
+            downloadedCount: result.downloadedCount,
+            error: result.errors?.join(', ')
+          })
+        } catch (error: any) {
+          sendResponse({ 
+            success: false, 
+            error: error?.message || String(error) 
+          })
+        }
+      })()
+      return true
+    case "get-current-chat-images-for-download":
+      ;(async () => {
+        try {
+          console.log('🎯 [DEBUG] Background received get-current-chat-images-for-download:', message)
+          const { folderPrefix } = message
+          
+          // Send message to sidepanel to get current chat images
+          try {
+            console.log('📤 [DEBUG] Sending message to sidepanel...')
+            const sidepanelResponse = await chrome.runtime.sendMessage({
+              request: "provide-current-chat-images",
+              folderPrefix: folderPrefix
+            })
+            console.log('📥 [DEBUG] Sidepanel response:', sidepanelResponse)
+            
+            if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
+              console.log('📸 [DEBUG] Found images, starting download...')
+              // Download the images
+              const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix)
+              console.log('⬇️ [DEBUG] Download result:', result)
+              sendResponse({
+                success: result.success,
+                downloadedCount: result.downloadedCount,
+                downloadIds: result.downloadIds,
+                error: result.errors?.join(', ')
+              })
+            } else {
+              console.log('❌ [DEBUG] No images found in sidepanel response')
+              sendResponse({
+                success: false,
+                error: "No images found in current chat"
+              })
+            }
+          } catch (error) {
+            console.log('⚠️ [DEBUG] Sidepanel failed, trying active tab fallback...')
+            // Fallback: try to get images from active tab
+            try {
+              const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+              if (activeTab && activeTab.id) {
+                console.log('📤 [DEBUG] Sending message to active tab:', activeTab.id)
+                const tabResponse = await chrome.tabs.sendMessage(activeTab.id, {
+                  request: "provide-current-chat-images",
+                  folderPrefix: folderPrefix
+                })
+                console.log('📥 [DEBUG] Tab response:', tabResponse)
+                
+                if (tabResponse?.images && tabResponse.images.length > 0) {
+                  console.log('📸 [DEBUG] Found images in tab, starting download...')
+                  const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix)
+                  console.log('⬇️ [DEBUG] Download result:', result)
+                  sendResponse({
+                    success: result.success,
+                    downloadedCount: result.downloadedCount,
+                    downloadIds: result.downloadIds,
+                    error: result.errors?.join(', ')
+                  })
+                } else {
+                  console.log('❌ [DEBUG] No images found in tab response')
+                  sendResponse({
+                    success: false,
+                    error: "No images found in current chat"
+                  })
+                }
+              } else {
+                console.log('❌ [DEBUG] No active tab found')
+                sendResponse({
+                  success: false,
+                  error: "Unable to access current chat"
+                })
+              }
+            } catch (tabError) {
+              console.error('❌ [DEBUG] Tab fallback failed:', tabError)
+              sendResponse({
+                success: false,
+                error: "Unable to access current chat images"
+              })
+            }
+          }
+        } catch (error: any) {
+          console.error('❌ [DEBUG] Background handler error:', error)
+          sendResponse({
+            success: false,
+            error: error?.message || String(error)
+          })
+        }
+      })()
+      return true
   }
 })
+
+// Download functions for background script
+async function downloadImageInBackground(
+  imageData: string,
+  filename?: string
+): Promise<{
+  success: boolean
+  downloadId?: number
+  error?: string
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        error: "Downloads permission not available. Please check extension permissions." 
+      }
+    }
+
+    // Validate input
+    if (!imageData || typeof imageData !== 'string') {
+      return {
+        success: false,
+        error: "Image data is required and must be a string"
+      }
+    }
+
+    // Validate that it's a proper data URI for an image
+    if (!imageData.startsWith('data:image/')) {
+      return {
+        success: false,
+        error: "Invalid image data format. Expected data:image/ URI"
+      }
+    }
+
+    // Extract image format from data URI
+    const mimeMatch = imageData.match(/data:image\/([^;]+)/)
+    const imageFormat = mimeMatch ? mimeMatch[1] : 'png'
+    
+    // Generate filename if not provided
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+    const finalFilename = filename || `image-${timestamp}.${imageFormat}`
+    
+    // Ensure filename has correct extension
+    const extension = imageFormat === 'jpeg' ? 'jpg' : imageFormat
+    const imageFilename = finalFilename.includes('.') ? finalFilename : `${finalFilename}.${extension}`
+
+    // Download the file using the data URI directly
+    const downloadId = await chrome.downloads.download({
+      url: imageData,
+      filename: imageFilename,
+      saveAs: true // This will show the save dialog
+    })
+
+    return { 
+      success: true, 
+      downloadId: downloadId 
+    }
+  } catch (error: any) {
+    console.error("Error in downloadImageInBackground:", error)
+    return { 
+      success: false, 
+      error: error?.message || String(error) || "Failed to download image"
+    }
+  }
+}
+
+async function downloadChatImagesInBackground(
+  messages: Array<{
+    id: string
+    parts?: Array<{
+      type: string
+      imageData?: string
+      imageTitle?: string
+    }>
+  }>,
+  folderPrefix?: string,
+  imageNames?: string[]
+): Promise<{
+  success: boolean
+  downloadedCount?: number
+  downloadIds?: number[]
+  errors?: string[]
+  filesList?: string[]
+}> {
+  try {
+    // Check if downloads permission is available
+    if (!chrome.downloads) {
+      return { 
+        success: false, 
+        errors: ["Downloads permission not available. Please check extension permissions."]
+      }
+    }
+
+    const downloadIds: number[] = []
+    const errors: string[] = []
+    const filesList: string[] = []
+    let downloadedCount = 0
+    let imageIndex = 0
+
+    // Extract all images from messages
+    for (const message of messages) {
+      if (!message.parts) continue
+
+      for (const part of message.parts) {
+        if (part.type === 'image' && part.imageData) {
+          try {
+            // 简单直接地使用传入的图片名字
+            let filename: string
+            
+            if (imageNames && imageNames[imageIndex]) {
+              // 使用传入的名字，直接像folderPrefix一样简单
+              filename = imageNames[imageIndex]
+                .replace(/[^a-zA-Z0-9\u4e00-\u9fa5\s-]/g, '') // 只保留安全字符
+                .trim()
+            } else {
+              // fallback到默认命名
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+              const titleSlug = part.imageTitle 
+                ? part.imageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                : 'image'
+              filename = `${titleSlug}-${timestamp}`
+            }
+            
+            // 添加文件夹前缀
+            const fullFilename = folderPrefix 
+              ? `${folderPrefix}/${filename}`
+              : filename
+
+            const result = await downloadImageInBackground(part.imageData, fullFilename)
+            
+            if (result.success && result.downloadId) {
+              downloadIds.push(result.downloadId)
+              downloadedCount++
+              filesList.push(`${fullFilename}.png`)
+            } else {
+              errors.push(`Failed to download image: ${result.error || 'Unknown error'}`)
+            }
+            
+            imageIndex++
+          } catch (error: any) {
+            errors.push(`Error processing image: ${error?.message || String(error)}`)
+          }
+        }
+      }
+    }
+
+    return {
+      success: downloadedCount > 0 || errors.length === 0,
+      downloadedCount,
+      downloadIds,
+      filesList,
+      errors: errors.length > 0 ? errors : undefined
+    }
+  } catch (error: any) {
+    return { 
+      success: false, 
+      errors: [error?.message || String(error) || "Failed to download chat images"]
+    }
+  }
+}
+
+// Global function to download current chat images from background context
+(globalThis as any).downloadCurrentChatImagesFromBackground = async function(
+  folderPrefix: string, 
+  imageNames?: string[],
+  filenamingStrategy: string = 'descriptive', 
+  displayResults: boolean = true
+) {
+  console.log('🎯 [DEBUG] downloadCurrentChatImagesFromBackground called with:', { folderPrefix, imageNames, filenamingStrategy, displayResults })
+  
+  try {
+    // Try to get images from sidepanel first
+    try {
+      console.log('📤 [DEBUG] Sending message to sidepanel...')
+      const sidepanelResponse = await chrome.runtime.sendMessage({
+        request: "provide-current-chat-images",
+        folderPrefix: folderPrefix,
+        imageNames: imageNames,
+        filenamingStrategy: filenamingStrategy,
+        displayResults: displayResults
+      })
+      console.log('📥 [DEBUG] Sidepanel response:', sidepanelResponse)
+      
+      if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
+        console.log('📸 [DEBUG] Found images in sidepanel, starting download...')
+        const result = await downloadChatImagesInBackground(sidepanelResponse.images, folderPrefix, imageNames)
+        console.log('⬇️ [DEBUG] Download result:', result)
+        
+        // 使用实际生成的文件名列表
+        const filesList = result.filesList || []
+        
+        return {
+          success: result.success,
+          downloadedCount: result.downloadedCount,
+          downloadIds: result.downloadIds,
+          folderPath: folderPrefix,
+          filesList: filesList,
+          error: result.errors?.join(', ')
+        }
+      }
+    } catch (sidepanelError) {
+      console.log('⚠️ [DEBUG] Sidepanel failed:', sidepanelError)
+    }
+    
+    // Fallback: try to get images from active tab
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (activeTab && activeTab.id) {
+        console.log('📤 [DEBUG] Sending message to active tab:', activeTab.id)
+        const tabResponse = await chrome.tabs.sendMessage(activeTab.id, {
+          request: "provide-current-chat-images",
+          folderPrefix: folderPrefix,
+          imageNames: imageNames,
+          filenamingStrategy: filenamingStrategy,
+          displayResults: displayResults
+        })
+        console.log('📥 [DEBUG] Tab response:', tabResponse)
+        
+        if (tabResponse?.images && tabResponse.images.length > 0) {
+          console.log('📸 [DEBUG] Found images in tab, starting download...')
+          const result = await downloadChatImagesInBackground(tabResponse.images, folderPrefix, imageNames)
+          console.log('⬇️ [DEBUG] Download result:', result)
+          
+          // 使用实际生成的文件名列表
+          const filesList = result.filesList || []
+          
+          return {
+            success: result.success,
+            downloadedCount: result.downloadedCount,
+            downloadIds: result.downloadIds,
+            folderPath: folderPrefix,
+            filesList: filesList,
+            error: result.errors?.join(', ')
+          }
+        }
+      }
+    } catch (tabError) {
+      console.error('❌ [DEBUG] Tab fallback failed:', tabError)
+    }
+    
+    // If we get here, no images were found
+    console.log('❌ [DEBUG] No images found in any context')
+    return {
+      success: false,
+      error: "No images found in current chat"
+    }
+  } catch (error: any) {
+    console.error('❌ [DEBUG] Global download function error:', error)
+    return {
+      success: false,
+      error: error?.message || String(error)
+    }
+  }
+}
 
 // Initialize actions
 resetOmni()

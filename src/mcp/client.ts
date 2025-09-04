@@ -110,7 +110,8 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Tab Groups
+    // Tab Groups - 注释掉不太重要的工具
+    /*
     {
       name: "organize_tabs",
       description: "Use AI to automatically group tabs by topic/purpose",
@@ -127,10 +128,11 @@ export class BrowserMcpClient {
       action: true,
       inputSchema: {
         type: "object",
-        properties: {},
-        required: []
+        properties: {}
       }
     },
+    */
+    /*
     {
       name: "get_all_tab_groups",
       description: "Get all tab groups across all windows",
@@ -176,7 +178,9 @@ export class BrowserMcpClient {
         required: ["groupId"]
       }
     },
-    // Bookmarks
+    */
+    // Bookmarks - 注释掉不太重要的工具
+    /*
     {
       name: "get_all_bookmarks",
       description: "Get all bookmarks in a flattened list",
@@ -246,7 +250,9 @@ export class BrowserMcpClient {
         required: ["query"]
       }
     },
-    // History
+    */
+    // History - 注释掉不太重要的工具
+    /*
     {
       name: "get_recent_history",
       description: "Get recent browsing history",
@@ -307,7 +313,9 @@ export class BrowserMcpClient {
         required: ["days"]
       }
     },
-    // Windows
+    */
+    // Windows - 注释掉不太重要的工具
+    /*
     {
       name: "get_all_windows",
       description: "Get all browser windows",
@@ -403,6 +411,7 @@ export class BrowserMcpClient {
         required: ["windowId"]
       }
     },
+    */
     // Page Content
     {
       name: "get_page_metadata",
@@ -434,16 +443,16 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    {
-      name: "get_page_images",
-      description: "Get all images from the current page",
-      action: false,
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
+    // {
+    //   name: "get_page_images",
+    //   description: "Get all images from the current page",
+    //   action: false,
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
     {
       name: "search_page_text",
       description: "Search for text on the current page",
@@ -595,7 +604,7 @@ export class BrowserMcpClient {
     },
     {
       name: "highlight_element",
-      description: "Permanently highlight DOM elements with intelligent auto-color detection for maximum contrast, featuring stunning visual effects including overlay borders, virtual mouse arrows, spotlights and other advanced styles",
+      description: "Permanently highlight DOM elements with intelligent auto-color detection for maximum contrast, featuring stunning visual effects including overlay borders, virtual mouse arrows and other advanced styles",
       inputSchema: {
         type: "object",
         properties: {
@@ -613,8 +622,8 @@ export class BrowserMcpClient {
           },
           style: {
             type: "string",
-            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon", "overlay", "cursor", "spotlight", "frame", "pointer"],
-            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect), 'overlay' (overlay border), 'cursor' (virtual mouse arrow), 'spotlight' (spotlight effect), 'frame' (colored frame), 'pointer' (pointing arrow)"
+            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon", "overlay", "cursor", "frame", "pointer"],
+            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect), 'overlay' (overlay border), 'cursor' (virtual mouse arrow), 'frame' (colored frame), 'pointer' (pointing arrow)"
           },
           intensity: {
             type: "string",
@@ -680,7 +689,8 @@ export class BrowserMcpClient {
       }
     },
 
-    // Clipboard
+    // Clipboard - 注释掉不太重要的工具
+    /*
     {
       name: "copy_to_clipboard",
       description: "Copy text to clipboard",
@@ -756,7 +766,9 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Storage
+    */
+    // Storage - 注释掉不太重要的工具
+    /*
     {
       name: "get_storage_data",
       description: "Get data from extension storage",
@@ -836,7 +848,9 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Extensions
+    */
+    // Extensions - 注释掉不太重要的工具
+    /*
     {
       name: "get_installed_extensions",
       description: "Get all installed browser extensions",
@@ -892,7 +906,9 @@ export class BrowserMcpClient {
         required: ["extensionId"]
       }
     },
-    // Downloads
+    */
+    // Downloads - 注释掉不太重要的工具
+    /*
     {
       name: "get_downloads",
       description: "Get all downloads and their status",
@@ -938,7 +954,115 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Sessions
+    */
+    {
+      name: "download_text_as_markdown",
+      description: "Download text content as a markdown file to the user's local filesystem. Generate a descriptive filename and folder structure based on the content type and purpose.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "The text content to download as markdown"
+          },
+          filename: {
+            type: "string",
+            description: "Descriptive filename for the download (without .md extension). Generate this based on the content type, purpose, or topic. Examples: 'meeting-notes-2024-01-15', 'api-documentation', 'project-summary'. If not provided, a timestamped filename will be generated."
+          },
+          folderPath: {
+            type: "string",
+            description: "Optional folder path for organizing downloads based on content type or project (e.g., 'Meeting-Notes/2024', 'Documentation/API', 'Reports/Weekly'). Creates nested folder structure for better organization."
+          },
+          displayResults: {
+            type: "boolean",
+            description: "Whether to display the download results with file path and organization summary. Default: true"
+          }
+        },
+        required: ["text"]
+      }
+    },
+    {
+      name: "download_image",
+      description: "Download an image from base64 data to the user's local filesystem. Generate a descriptive filename and folder structure based on the image content.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          imageData: {
+            type: "string",
+            description: "The base64 image data URL (data:image/...)"
+          },
+          filename: {
+            type: "string",
+            description: "Descriptive filename for the download (without extension). Generate this based on the image content or purpose. If not provided, a timestamped filename will be generated."
+          },
+          folderPath: {
+            type: "string",
+            description: "Optional folder path for organizing downloads (e.g., 'Screenshots/Website-Analysis', 'AI-Generated/Diagrams'). Creates nested folder structure."
+          }
+        },
+        required: ["imageData"]
+      }
+    },
+    {
+      name: "download_chat_images",
+      description: "Download multiple images from chat messages to the user's local filesystem. Generate descriptive filenames and folder structure based on the images content and conversation context. Display the download results including file paths and organization.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          messages: {
+            type: "array",
+            description: "Array of chat messages containing images",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  description: "Message ID"
+                },
+                parts: {
+                  type: "array",
+                  description: "Message parts that may contain images",
+                  items: {
+                    type: "object",
+                    properties: {
+                      type: {
+                        type: "string",
+                        description: "Part type (should be 'image' for image parts)"
+                      },
+                      imageData: {
+                        type: "string",
+                        description: "Base64 image data URL"
+                      },
+                      imageTitle: {
+                        type: "string",
+                        description: "Descriptive title for the image"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          folderPrefix: {
+            type: "string",
+            description: "Descriptive folder name for organizing downloads based on conversation context (e.g., 'Website-Analysis-2024', 'AI-Diagrams-Session', 'Screenshots-Research'). If not provided, will generate based on conversation content."
+          },
+          filenamingStrategy: {
+            type: "string",
+            description: "Strategy for naming files: 'descriptive' (based on content), 'sequential' (numbered), or 'timestamp' (time-based). Default: 'descriptive'",
+            enum: ["descriptive", "sequential", "timestamp"]
+          },
+          displayResults: {
+            type: "boolean",
+            description: "Whether to display the download results with file paths and organization summary. Default: true"
+          }
+        },
+        required: ["messages"]
+      }
+    },
+
+    // Sessions - 注释掉不太重要的工具
+    /*
     {
       name: "get_sessions",
       description: "Get all saved browser sessions",
@@ -994,7 +1118,9 @@ export class BrowserMcpClient {
         required: ["name"]
       }
     },
-    // Context Menus
+    */
+    // Context Menus - 注释掉不太重要的工具
+    /*
     {
       name: "create_context_menu_item",
       description: "Create a new context menu item",
@@ -1081,10 +1207,11 @@ export class BrowserMcpClient {
         required: []
       }
     },
+    */
     // Screenshot tools
     {
       name: "capture_screenshot",
-      description: "Capture screenshot of current visible tab and return as base64 data URL",
+      description: "Capture screenshot of current visible tab and return as base64 data URL. Summarize your actions or describe the highlighted sections and generate an image name to display.",
       inputSchema: {
         type: "object",
         properties: {},
@@ -1093,7 +1220,7 @@ export class BrowserMcpClient {
     },
     {
       name: "capture_tab_screenshot",
-      description: "Capture screenshot of a specific tab by ID",
+      description: "Capture screenshot of a specific tab by ID. Summarize your actions or describe the highlighted sections and generate an image name to display.",
       inputSchema: {
         type: "object",
         properties: {
@@ -1107,28 +1234,56 @@ export class BrowserMcpClient {
     },
     {
       name: "capture_screenshot_to_clipboard",
-      description: "Capture screenshot of current tab and save directly to clipboard",
+      description: "Capture screenshot of current tab and save directly to clipboard. Summarize your actions or describe the highlighted sections and generate an image name to display.",
       inputSchema: {
         type: "object",
         properties: {},
         required: []
       }
     },
+    // {
+    //   name: "read_clipboard_image",
+    //   description: "Read image from clipboard and return as base64 data URL for display. Summarize your actions or describe the highlighted sections and generate an image name to display.",
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
+    // {
+    //   name: "get_clipboard_image_info",
+    //   description: "Check if clipboard contains an image and get basic info without reading full data. Summarize your actions or describe the highlighted sections and generate an image name to display.",
+    //   inputSchema: {
+    //     type: "object",
+    //     properties: {},
+    //     required: []
+    //   }
+    // },
     {
-      name: "read_clipboard_image",
-      description: "Read image from clipboard and return as base64 data URL for display",
+      name: "download_current_chat_images",
+      description: "Download all images from current AI chat conversation to local storage. You can specify custom names for each image or use automatic naming strategies.",
       inputSchema: {
         type: "object",
-        properties: {},
-        required: []
-      }
-    },
-    {
-      name: "get_clipboard_image_info",
-      description: "Check if clipboard contains an image and get basic info without reading full data",
-      inputSchema: {
-        type: "object",
-        properties: {},
+        properties: {
+          folderPrefix: {
+            type: "string",
+            description: "Descriptive folder name for organizing downloads (e.g., 'Website-Analysis-2024', 'AI-Diagrams-Session', 'Screenshots-Research')."
+          },
+          imageNames: {
+            type: "array",
+            items: { type: "string" },
+            description: "Custom names for each image in order. If provided, will use these names directly (e.g., ['网站首页截图', '用户登录界面', '错误页面'])."
+          },
+          filenamingStrategy: {
+            type: "string",
+            description: "Strategy for naming files when imageNames not provided: 'descriptive', 'sequential', or 'timestamp'. Default: 'descriptive'",
+            enum: ["descriptive", "sequential", "timestamp"]
+          },
+          displayResults: {
+            type: "boolean",
+            description: "Whether to display the download results with file paths and organization summary. Default: true"
+          }
+        },
         required: []
       }
     }
@@ -1139,6 +1294,7 @@ export class BrowserMcpClient {
   }
 
   async listTools() {
+    console.log('📋 [DEBUG] MCP Client listing tools:', this.tools.map(t => t.name))
     return { tools: this.tools }
   }
 

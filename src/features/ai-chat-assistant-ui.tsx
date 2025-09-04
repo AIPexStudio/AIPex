@@ -98,22 +98,38 @@ const AIChatSidebarAssistantUI = () => {
         </button>
       </div>
       
-      {showSettings ? (
-        // Settings view
-        <div className="flex-1 overflow-y-auto min-h-0 p-4 bg-slate-50">
-          <div className="max-w-4xl mx-auto space-y-4">
-            <div className="text-center mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
-              <p className="text-sm text-gray-600">AI configuration</p>
+      {/* Main chat interface - always visible */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <AIPexRuntimeProvider>
+          <Thread />
+        </AIPexRuntimeProvider>
+      </div>
+
+      {/* Settings Modal - floating overlay */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
+                <p className="text-sm text-gray-600">AI configuration</p>
+              </div>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                title="Close"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
 
-            {/* AI Configuration */}
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <div className="px-4 py-3 border-b border-gray-200">
-                <div className="text-base font-semibold text-gray-900">AI Configuration</div>
-                <div className="text-sm text-gray-600">Configure AI host, token and model</div>
-              </div>
-              <div className="p-4 space-y-4">
+            {/* Modal Content */}
+            <div className="px-6 py-4">
+              {/* AI Configuration */}
+              <div className="bg-slate-50 border border-gray-200 rounded-xl p-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">AI Host</label>
                   <input
@@ -148,6 +164,10 @@ const AIChatSidebarAssistantUI = () => {
                     disabled={isSaving}
                     className={`px-4 py-2 rounded-lg text-white font-semibold ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >{isSaving ? 'Saving...' : 'Save Settings'}</button>
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+                  >Cancel</button>
                 </div>
                 {saveStatus && (
                   <div className={`text-sm mt-2 ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
@@ -157,13 +177,6 @@ const AIChatSidebarAssistantUI = () => {
               </div>
             </div>
           </div>
-        </div>
-      ) : (
-        // Main chat interface using assistant-ui
-        <div className="flex-1 min-h-0 flex flex-col">
-          <AIPexRuntimeProvider>
-            <Thread />
-          </AIPexRuntimeProvider>
         </div>
       )}
     </div>
