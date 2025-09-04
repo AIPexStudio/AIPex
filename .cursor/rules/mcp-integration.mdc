@@ -1,0 +1,43 @@
+# MCP (Model Context Protocol) Integration
+
+## MCP Architecture
+- **Client**: [src/mcp/client.ts](mdc:src/mcp/client.ts) - MCP client implementation
+- **Servers**: [src/mcp-servers/](mdc:src/mcp-servers/) - Individual tool servers
+- **Registry**: [src/lib/services/tool-registry.ts](mdc:src/lib/services/tool-registry.ts) - Tool management
+- **Manager**: [src/lib/services/tool-manager.ts](mdc:src/lib/services/tool-manager.ts) - Tool execution
+
+## MCP Server Development
+- **Tool Definition**: Define tools with proper schemas and descriptions
+- **Error Handling**: Implement robust error handling for tool failures
+- **Async Operations**: Use async/await for all tool operations
+- **Validation**: Validate input parameters before execution
+
+## Available MCP Tools
+- **Browser Tools**: Tab management, window control, navigation
+- **Content Tools**: Page content extraction, screenshot capture
+- **Storage Tools**: Bookmarks, history, downloads management
+- **Automation Tools**: Context menus, session management
+- **Utility Tools**: Clipboard, storage, extensions management
+
+## Tool Implementation Patterns
+- **Single Responsibility**: Each tool should do one thing well
+- **Input Validation**: Always validate and sanitize inputs
+- **Error Messages**: Provide clear, actionable error messages
+- **Logging**: Implement proper logging for debugging
+- **Rate Limiting**: Respect API limits and implement backoff
+
+## Integration with AI
+- **Tool Calling**: Use [StreamingToolCall.tsx](mdc:src/lib/components/StreamingToolCall.tsx) for AI tool execution
+- **Streaming**: Implement streaming responses for better UX
+- **Fallbacks**: Provide fallback behavior when tools fail
+- **Context**: Pass relevant context to AI for better tool selection
+
+## Testing MCP Tools
+- **Unit Tests**: Test individual tool functions
+- **Integration Tests**: Test tool interactions
+- **Mock Data**: Use realistic test data
+- **Error Scenarios**: Test failure conditions
+description:
+globs:
+alwaysApply: true
+---

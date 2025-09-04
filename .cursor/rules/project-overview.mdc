@@ -1,0 +1,39 @@
+# AIPex Project Overview
+
+AIPex is a Chrome extension built with **Plasmo**, **React**, and **TypeScript** that provides AI-powered tab management and browser automation.
+
+## 🏗️ Architecture
+
+### Core Technologies
+- **Plasmo**: Chrome extension framework (v0.90.5)
+- **React 18**: UI framework with TypeScript
+- **Tailwind CSS**: Styling framework
+- **MCP (Model Context Protocol)**: AI tool integration system
+
+### Project Structure
+- **Entry Points**: [background.ts](mdc:src/background.ts) (service worker), [content.tsx](mdc:src/content.tsx) (content script), [sidepanel.tsx](mdc:src/sidepanel.tsx) (side panel)
+- **Configuration**: [plasmo.config.ts](mdc:plasmo.config.ts) (build config), [package.json](mdc:package.json) (dependencies)
+- **Core Libraries**: [src/lib/](mdc:src/lib/) (shared components and utilities)
+- **Features**: [src/features/](mdc:src/features/) (extension features)
+- **MCP Integration**: [src/mcp/](mdc:src/mcp/) and [src/mcp-servers/](mdc:src/mcp-servers/) (AI tool system)
+
+### Key Features
+- AI-powered tab management and organization
+- Browser automation with natural language commands
+- Research assistance and content summarization
+- Price comparison across websites
+- 80+ MCP tools for extended functionality
+
+### Build System
+- **Development**: `pnpm dev` - starts Plasmo dev server
+- **Build**: `pnpm build` - builds for multiple browsers (Chrome, Firefox, Edge, Safari)
+- **CSS**: `pnpm build:css` - compiles Tailwind CSS
+
+### Browser Support
+- Chrome/Edge: Manifest V3
+- Firefox: Manifest V2
+- Safari: Compatible build
+description:
+globs:
+alwaysApply: true
+---

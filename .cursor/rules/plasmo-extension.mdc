@@ -1,0 +1,42 @@
+# Plasmo Chrome Extension Development
+
+## Extension Architecture
+- **Background Script**: [src/background.ts](mdc:src/background.ts) - service worker for extension logic
+- **Content Script**: [src/content.tsx](mdc:src/content.tsx) - runs in web pages
+- **Side Panel**: [src/sidepanel.tsx](mdc:src/sidepanel.tsx) - extension UI panel
+- **Popup**: Use Plasmo's popup system for quick actions
+
+## Plasmo Best Practices
+- Use **Plasmo's built-in storage** (`@plasmohq/storage`) for data persistence
+- Implement **proper message passing** between background and content scripts
+- Use **Plasmo's routing system** for navigation within the extension
+- Follow **Manifest V3** patterns for Chrome compatibility
+
+## Chrome Extension APIs
+- **Tabs API**: Use for tab management and manipulation
+- **Windows API**: Handle window operations and positioning
+- **Storage API**: Persistent data storage with sync capabilities
+- **Scripting API**: Execute scripts in web pages
+- **Context Menus**: Right-click menu integration
+
+## Security Considerations
+- **Content Security Policy**: Follow CSP guidelines
+- **Permission Model**: Request minimal required permissions
+- **Cross-Origin**: Handle CORS properly for external API calls
+- **Data Validation**: Validate all user inputs and external data
+
+## Development Workflow
+- Use **`plasmo dev`** for development with hot reload
+- **Build for multiple browsers** using `plasmo build`
+- **Test in different browsers** (Chrome, Firefox, Edge)
+- **Use Plasmo's debugging tools** for troubleshooting
+
+## File Structure
+- **Entry points** should be in `src/` root
+- **Assets** go in `assets/` directory
+- **Build output** goes to `build/` directory
+- **Configuration** in [plasmo.config.ts](mdc:plasmo.config.ts)
+description:
+globs:
+alwaysApply: true
+---

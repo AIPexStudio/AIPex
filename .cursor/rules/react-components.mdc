@@ -1,0 +1,42 @@
+# React Component Development
+
+## Component Architecture
+- **Functional Components**: Use React hooks and functional components
+- **Custom Hooks**: Extract reusable logic into custom hooks
+- **Component Composition**: Prefer composition over inheritance
+- **Props Interface**: Define clear prop interfaces for all components
+
+## UI Components
+- **Assistant UI**: Use [@assistant-ui/react](mdc:src/lib/components/assistant-ui/) for AI chat interfaces
+- **Markdown Rendering**: Use [Markdown.tsx](mdc:src/lib/components/Markdown.tsx) for content display
+- **Syntax Highlighting**: Use [SyntaxHighlight.tsx](mdc:src/lib/components/SyntaxHighlight.tsx) for code
+- **Thread Management**: Use [Thread.tsx](mdc:src/lib/components/Thread.tsx) for conversation flows
+
+## Styling Guidelines
+- **Tailwind CSS**: Use Tailwind utility classes for styling
+- **CSS Modules**: Use CSS modules for component-specific styles
+- **Responsive Design**: Ensure components work on all screen sizes
+- **Dark Mode**: Support both light and dark themes
+- **Accessibility**: Follow WCAG guidelines for accessibility
+
+## State Management
+- **Local State**: Use `useState` for component-local state
+- **Global State**: Use React Context or external state management
+- **Form State**: Use controlled components for form inputs
+- **Async State**: Handle loading, success, and error states properly
+
+## Performance Optimization
+- **Memoization**: Use `React.memo` for expensive components
+- **Callback Optimization**: Use `useCallback` for event handlers
+- **Effect Dependencies**: Properly manage `useEffect` dependencies
+- **Lazy Loading**: Implement lazy loading for large components
+
+## Component Patterns
+- **Container/Presentational**: Separate logic from presentation
+- **Render Props**: Use render props for flexible component composition
+- **Higher-Order Components**: Create HOCs for cross-cutting concerns
+- **Compound Components**: Use compound components for complex UIs
+description:
+globs:
+alwaysApply: true
+---

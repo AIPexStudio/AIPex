@@ -1,0 +1,47 @@
+# Development Workflow & Best Practices
+
+## Development Setup
+- **Package Manager**: Use `pnpm` for dependency management
+- **Node Version**: Ensure compatibility with Node.js 18+
+- **Editor**: Use VS Code with recommended extensions
+- **Git Hooks**: Implement pre-commit hooks for code quality
+
+## Code Quality
+- **Prettier**: Use [.prettierrc.mjs](mdc:.prettierrc.mjs) for code formatting
+- **ESLint**: Implement linting rules for TypeScript and React
+- **Type Checking**: Run `tsc --noEmit` for type checking
+- **Import Sorting**: Use [@ianvs/prettier-plugin-sort-imports](mdc:package.json) for import organization
+
+## Testing Strategy
+- **Unit Tests**: Test individual functions and components
+- **Integration Tests**: Test component interactions
+- **E2E Tests**: Test extension functionality in browser
+- **Test Coverage**: Aim for >80% code coverage
+
+## Build & Deployment
+- **Development**: `pnpm dev` - starts development server
+- **Production Build**: `pnpm build` - creates production builds
+- **Browser Testing**: Test in Chrome, Firefox, Edge, Safari
+- **Chrome Web Store**: Follow Chrome Web Store guidelines
+
+## Git Workflow
+- **Branch Naming**: Use descriptive branch names (feature/, bugfix/, hotfix/)
+- **Commit Messages**: Use conventional commit format
+- **Pull Requests**: Require code review before merging
+- **Release Tags**: Tag releases with semantic versioning
+
+## Documentation
+- **README**: Keep [README.md](mdc:README.md) and [README.zh-CN.md](mdc:README.zh-CN.md) updated
+- **Code Comments**: Document complex logic and APIs
+- **API Documentation**: Document MCP tools and their usage
+- **Changelog**: Maintain changelog for releases
+
+## Performance & Monitoring
+- **Bundle Size**: Monitor extension bundle size
+- **Memory Usage**: Optimize memory usage in background scripts
+- **Error Tracking**: Implement error reporting and monitoring
+- **Analytics**: Track usage patterns (with user consent)
+description:
+globs:
+alwaysApply: true
+---

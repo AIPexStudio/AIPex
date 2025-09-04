@@ -1,0 +1,37 @@
+# TypeScript Coding Standards
+
+## Code Style
+- Use **TypeScript strict mode** - all files should have proper type annotations
+- Prefer **interface** over **type** for object shapes
+- Use **const assertions** (`as const`) for literal types
+- Always define return types for functions
+- Use **generic types** for reusable components and utilities
+
+## React Components
+- Use **functional components** with hooks
+- Prefer **named exports** over default exports
+- Use **React.FC** or proper prop interfaces for component typing
+- Implement **proper prop validation** with TypeScript interfaces
+- Use **custom hooks** for reusable logic
+
+## File Organization
+- **One component per file** for React components
+- **Barrel exports** in [src/lib/components/index.ts](mdc:src/lib/components/index.ts)
+- **Type definitions** should be co-located with their usage or in dedicated type files
+- **Utility functions** should be in [src/lib/](mdc:src/lib/) directory
+
+## Import/Export Patterns
+- Use **absolute imports** from `src/` when possible
+- Group imports: React, external libraries, internal modules, types
+- Use **destructuring** for cleaner imports
+- **Re-export** common types and utilities through index files
+
+## Error Handling
+- Use **Result types** or **Option types** for operations that can fail
+- Implement **proper error boundaries** in React components
+- Use **try-catch** with proper error typing
+- **Never use `any`** - use `unknown` for truly unknown types
+description:
+globs:
+alwaysApply: true
+---
