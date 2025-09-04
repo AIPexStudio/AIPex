@@ -604,7 +604,7 @@ export class BrowserMcpClient {
     },
     {
       name: "highlight_element",
-      description: "Permanently highlight DOM elements with intelligent auto-color detection for maximum contrast, featuring stunning visual effects including overlay borders, virtual mouse arrows and other advanced styles",
+      description: "Permanently highlight DOM elements with drop shadow effect and intelligent auto-color detection for maximum contrast",
       inputSchema: {
         type: "object",
         properties: {
@@ -614,33 +614,20 @@ export class BrowserMcpClient {
           },
           color: {
             type: "string",
-            description: "Highlight color (e.g., '#00d4ff', '#ff0066', '#00ff88'). If not specified, automatically selects the highest contrast color based on element's background and text colors for optimal visibility"
+            description: "Shadow color (e.g., '#00d4ff', '#ff0066', '#00ff88'). If not specified, automatically selects the highest contrast color based on element's background and text colors for optimal visibility"
           },
           duration: {
             type: "number",
             description: "Duration in milliseconds to show highlight. Default: 0 (permanent highlight)"
           },
-          style: {
-            type: "string",
-            enum: ["glow", "pulse", "shine", "bounce", "outline", "background", "border", "shadow", "gradient", "neon", "overlay", "cursor", "frame", "pointer"],
-            description: "Highlight style: 'glow' (glowing effect, default), 'pulse' (pulsing animation), 'shine' (shining sweep), 'bounce' (bouncing animation), 'outline' (outline border), 'background' (background color), 'border' (solid border), 'shadow' (drop shadow), 'gradient' (animated gradient), 'neon' (neon light effect), 'overlay' (overlay border), 'cursor' (virtual mouse arrow), 'frame' (colored frame), 'pointer' (pointing arrow)"
-          },
           intensity: {
             type: "string",
             enum: ["subtle", "normal", "strong"],
-            description: "Effect intensity: 'subtle' (gentle), 'normal' (default), 'strong' (dramatic)"
-          },
-          animation: {
-            type: "boolean",
-            description: "Whether to enable animations. Default: true"
+            description: "Shadow intensity: 'subtle' (gentle), 'normal' (default), 'strong' (dramatic)"
           },
           persist: {
             type: "boolean",
             description: "Whether to keep the highlight permanently. Default: true (permanent highlight)"
-          },
-          customCSS: {
-            type: "string",
-            description: "Custom CSS styles to apply instead of predefined styles"
           }
         },
         required: ["selector"]
@@ -1303,27 +1290,27 @@ export class BrowserMcpClient {
     const tool = this.tools.find(t => t.name === name)
     let screenshotData = null
     
-    if (tool && tool.action === true) {
-      try {
-        // 先执行截图并获取结果
-        const screenshotResult = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
+    // if (tool && tool.action === true) {
+    //   try {
+    //     // 先执行截图并获取结果
+    //     const screenshotResult = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
         
-        // 如果截图成功，保存截图数据
-        if (screenshotResult.success && screenshotResult.data?.imageData) {
-          screenshotData = {
-            toolName: 'capture_screenshot',
-            imageData: screenshotResult.data.imageData,
-            timestamp: new Date().toISOString()
-          }
-          console.log('Screenshot captured before action:', {
-            toolName: name,
-            imageData: screenshotResult.data.imageData.substring(0, 100) + '...' // 截取前100个字符用于日志
-          })
-        }
-      } catch (error) {
-        console.warn("Failed to capture screenshot before action:", error)
-      }
-    }
+    //     // 如果截图成功，保存截图数据
+    //     if (screenshotResult.success && screenshotResult.data?.imageData) {
+    //       screenshotData = {
+    //         toolName: 'capture_screenshot',
+    //         imageData: screenshotResult.data.imageData,
+    //         timestamp: new Date().toISOString()
+    //       }
+    //       console.log('Screenshot captured before action:', {
+    //         toolName: name,
+    //         imageData: screenshotResult.data.imageData.substring(0, 100) + '...' // 截取前100个字符用于日志
+    //       })
+    //     }
+    //   } catch (error) {
+    //     console.warn("Failed to capture screenshot before action:", error)
+    //   }
+    // }
     
     // 执行原始工具调用
     const result = await callMcpTool({ tool: name as any, args })

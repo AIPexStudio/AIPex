@@ -1,6 +1,6 @@
-# 🚀 AIPex - The Ultimate AI-Powered Browser Extension
+# 🤖 AIPex - AI-Powered Browser Automation Extension
 
-> **Transform your browsing experience with intelligent tab management, AI assistance, and productivity tools**
+> **Automate your browser with natural language commands - The open source browser-use solution**
 
 <div align="right">
   <a href="README.md">🇺🇸 English</a> | <a href="README.zh-CN.md">🇨🇳 中文</a>
@@ -21,50 +21,52 @@
   [![Chrome Web Store](https://img.shields.io/badge/Install%20on%20Chrome%20Web%20Store-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 </div>
 
-## 🌟 What is AIPex?
+## 🤖 What is AIPex?
 
-AIPex is a powerful Chrome extension that revolutionizes your browsing experience by combining **intelligent tab management** with **AI-powered assistance** and **advanced automation capabilities**. Think of it as your personal browser command center that helps you stay organized, productive, and efficient.
+AIPex is a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task - from complex multi-step workflows to simple repetitive actions.
 
-### 🎯 Why AIPex?
+### 🎯 Why Choose AIPex for Browser Automation?
 
-- 🤖 **AI-Powered**: Intelligent tab organization and AI chat assistance with 80+ MCP tools
-- 🔬 **Auto Research**: Automatic topic research and content discovery
-- 📧 **Email Automation**: Send emails automatically with AI assistance
-- 🤖 **Browser Automation**: Automate virtually all browser operations
-- ⚡ **Lightning Fast**: Quick access with keyboard shortcuts (⌘+M / Ctrl+M)
-- 🎨 **Beautiful UI**: Modern, responsive design with dark mode support
-- 🔧 **Highly Customizable**: Tailor the experience to your workflow
-- 🌐 **Universal**: Works with all major websites and tools
+- 🧠 **Natural Language Control**: Command your browser in plain English - no coding required
+- 🤖 **AI-Powered Intelligence**: 30+ MCP tools that understand context and adapt to your needs
+- ⚡ **Multi-Step Automation**: Execute complex workflows with single commands
+- 🔄 **Universal Compatibility**: Works with any website - no special setup needed
+- 📊 **Smart Data Extraction**: Automatically collect and organize information from web pages
+- 🎯 **Precision Actions**: Click, fill, scroll, and interact with elements using AI vision
+- 📝 **Form Automation**: Fill out forms, submit data, and handle complex interactions
+- 🖼️ **Visual Understanding**: AI can see and understand page content for intelligent automation
+- 🔧 **Developer Friendly**: Open source with extensive API for custom automation
+- 🚀 **Lightning Fast**: Execute automation tasks in seconds, not minutes
 
-## ✨ Key Features
+## ✨ Core Automation Features
 
-### 🔬 Research Topic
-- **AI-Powered Research**: Intelligent topic research and analysis
-- **Smart Content Discovery**: Find relevant information and resources
+### 📊 Intelligent Data Extraction
+- **Smart Content Analysis**: Extract structured data from any webpage
+- **Price Monitoring**: Track prices across multiple e-commerce sites
+- **Research Automation**: Gather information from multiple sources automatically
 
-![Research Topic](gif/research.gif)
+![Data Extraction](gif/research.gif)
 
-### 💰 Price Comparison
-- **Cross-Website Comparison**: Compare prices across different e-commerce sites
-- **Smart Price Tracking**: Monitor price changes and find the best deals
+### 🎯 Precision Element Interaction
+- **Visual Element Detection**: AI can see and interact with page elements
+- **Form Automation**: Fill out complex forms with intelligent field mapping
+- **Dynamic Content Handling**: Adapt to changing page layouts and content
 
-![Price Comparison](gif/compare.gif)
+![Element Interaction](gif/compare.gif)
 
-### 📝 Highlight and Summarize
-- **Smart Text Highlighting**: Select and highlight important content
-- **AI-Powered Summarization**: Get instant summaries of highlighted text
+### 📝 Content Processing & Analysis
+- **Text Highlighting & Summarization**: Automatically highlight and summarize important content
+- **Document Processing**: Extract and organize information from web documents
+- **Smart Note-Taking**: Capture and organize insights from web browsing
 
-![Highlight and Summarize](gif/summariz.gif)
+![Content Processing](gif/summariz.gif)
 
-### 🤖 Advanced Browser Automation
-- **Natural Language Commands**: Control your browser with simple text commands
-- **Multi-Step Workflows**: Automate complex sequences of browser actions
+### 🗂️ Advanced Tab & Window Management
+- **AI-Powered Organization**: Automatically group and organize tabs by topic
+- **Smart Tab Switching**: Find and switch between tabs using natural language
+- **Multi-Window Coordination**: Manage complex workflows across multiple browser windows
 
-### 🗂️ Smart Tab Management
-- **AI-Powered Organization**: Automatically group related tabs using AI
-- **Quick Tab Switching**: Find and switch between tabs instantly
-
-![Smart Tab Organization](gif/organize-tabs.gif)
+![Tab Management](gif/organize-tabs.gif)
 
 ## 🚀 Getting Started
 
@@ -76,20 +78,10 @@ AIPex is a powerful Chrome extension that revolutionizes your browsing experienc
    - Press `⌘+M` (Mac) or `Ctrl+M` (Windows/Linux)
    - Or click the AIPex icon in your toolbar
 
-3. **Start Using**
-   - Type `/tabs` to search tabs
-   - Type `/ai` to start AI chat
-   - Use the command palette for quick actions
-
-### Keyboard Shortcuts
-| Action | Mac | Windows/Linux |
-|--------|-----|---------------|
-| Open AIPex | `⌘+M` | `Ctrl+M` |
-| New Tab | `⌘+T` | `Ctrl+T` |
-| Pin Tab | `⌥+⇧+P` | `Alt+Shift+P` |
-| Mute Tab | `⌥+⇧+M` | `Alt+Shift+M` |
-| Fullscreen | `⌘+Ctrl+F` | `Ctrl+F` |
-| Reload | `⌘+⇧+R` | `Ctrl+Shift+R` |
+3. **Start Automating**
+   - Type `/ai` to start AI automation chat
+   - Use natural language: "Click the login button", "Fill out this form"
+   - Try complex workflows: "Research React best practices and save to notes"
 
 ## 🛠️ Development & Contributing
 
@@ -104,84 +96,76 @@ We love contributions! Here's how you can help make AIPex even better:
 - 📊 **Project Status**: See [DEVELOPMENT.md#development-status](DEVELOPMENT.md#development-status)
 
 
+### 📊 Tool Categories Overview
 
+<details>
+<summary>🗂️ <strong>Tab Management</strong> - 8 tools</summary>
 
+Complete tab control and navigation:
+- `get_all_tabs` - Get all open tabs across all windows
+- `get_current_tab` - Get information about the currently active tab  
+- `switch_to_tab` - Switch to a specific tab by ID
+- `create_new_tab` - Create a new tab with the specified URL
+- `get_tab_info` - Get detailed information about a specific tab
+- `duplicate_tab` - Duplicate an existing tab
+- `close_tab` - Close a specific tab
+- `get_current_tab_content` - Get the visible text content of the current tab
 
-## 🤖 Browser Automation Use Cases
+</details>
 
-AIPex excels at automating complex browser tasks through natural language commands. Here are some powerful use cases:
+<details>
+<summary>📄 <strong>Page Content & Interaction</strong> - 15 tools</summary>
 
-### 🔍 Research & Information Gathering
-- **"Please use Google to research topic 'MCP'"** - Automatically search and gather information about any topic
-- **"Find the latest news about AI developments"** - Search for recent news and articles
-- **"Research the best practices for React development"** - Gather comprehensive information from multiple sources
-- **"Find tutorials for learning TypeScript"** - Discover educational resources and guides
+Content extraction, analysis, and page interaction:
+- `get_page_metadata` - Get page metadata including title, description, keywords
+- `extract_page_text` - Extract text content with word count and reading time
+- `get_page_links` - Get all links from the current page
+- `search_page_text` - Search for text on the current page
+- `get_interactive_elements` - Get all interactive elements (links, buttons, inputs)
+- `get_interactive_elements_optimized` - Optimized version for complex pages
+- `click_element` - Click an element using CSS selector
+- `summarize_page` - Summarize page content with key points
+- `fill_input` - Fill an input field with text
+- `clear_input` - Clear the content of an input field
+- `get_input_value` - Get the current value of an input field
+- `submit_form` - Submit a form using CSS selector
+- `get_form_elements` - Get all form elements and input fields
+- `scroll_to_element` - Scroll to a DOM element and center it
+- `highlight_element` - Permanently highlight DOM elements
+- `highlight_text_inline` - Highlight specific words or phrases within text
 
-### 📊 Data Collection & Analysis
-- **"Please help me find the first star for https://github.com/AIPexStudio/aipex"** - Extract specific information from web pages
-- **"Get the current price of Bitcoin from multiple sources"** - Collect real-time data from various websites
-- **"Find all the contributors to this GitHub repository"** - Extract and organize data from GitHub pages
-- **"Compare prices of laptops across different e-commerce sites"** - Gather pricing information for comparison
+</details>
 
-### 📧 Email & Communication Automation
-- **"Draft an email to schedule a meeting next week"** - Automatically compose emails with AI assistance
-- **"Send a follow-up email to my last contact"** - Automate email sequences and follow-ups
-- **"Find contact information for tech companies in San Francisco"** - Research and collect contact details
+<details>
+<summary>⬇️ <strong>Downloads & Files</strong> - 4 tools</summary>
 
-### 🛒 E-commerce & Shopping
-- **"Find the best deals on wireless headphones"** - Search across multiple shopping sites
-- **"Track price changes for this product"** - Monitor price fluctuations
-- **"Find customer reviews for this item"** - Gather user feedback and ratings
-- **"Compare specifications between different smartphone models"** - Extract and compare product details
+Download control and file management:
+- `download_text_as_markdown` - Download text content as markdown file
+- `download_image` - Download an image from base64 data
+- `download_chat_images` - Download multiple images from chat messages
+- `download_current_chat_images` - Download all images from current AI chat
 
-### 📝 Content Creation & Management
-- **"Summarize this article and save it to my notes"** - Extract and summarize web content
-- **"Find similar articles to this one"** - Discover related content across the web
-- **"Create a reading list about machine learning"** - Compile resources on specific topics
-- **"Save all images from this page to my downloads"** - Batch download content
+</details>
 
-### 🔧 Development & Technical Tasks
-- **"Find the documentation for this API"** - Locate technical documentation
-- **"Check if this npm package is still maintained"** - Research package status and maintenance
-- **"Find code examples for this programming concept"** - Gather coding tutorials and examples
-- **"Monitor GitHub issues for this repository"** - Track project updates and issues
+<details>
+<summary>📸 <strong>Screenshots</strong> - 3 tools</summary>
 
-### 📈 Business Intelligence
-- **"Research competitors in the AI space"** - Gather competitive intelligence
-- **"Find market trends for renewable energy"** - Collect market research data
-- **"Track social media mentions of our brand"** - Monitor brand presence online
-- **"Analyze customer reviews for our product"** - Gather and analyze user feedback
+Visual capture and screenshot management:
+- `capture_screenshot` - Capture screenshot of current visible tab
+- `capture_tab_screenshot` - Capture screenshot of a specific tab by ID
+- `capture_screenshot_to_clipboard` - Capture screenshot and save to clipboard
 
-### 🎓 Learning & Education
-- **"Create a study plan for learning Python"** - Organize educational resources
-- **"Find practice exercises for JavaScript"** - Discover learning materials
-- **"Research the latest developments in quantum computing"** - Stay updated on cutting-edge topics
-- **"Find online courses for data science"** - Discover educational opportunities
+</details>
 
-### 🏠 Personal Productivity
-- **"Find the best restaurants near my location"** - Discover local businesses
-- **"Research travel options for my vacation"** - Plan trips and find deals
-- **"Track my favorite sports team's schedule"** - Get sports information and updates
-- **"Find recipes for dinner tonight"** - Discover cooking inspiration
+<details>
+<summary>🔧 <strong>Advanced Features</strong> - 3+ tools</summary>
 
-## 🆕 Latest Features
-- **Smart Form Filling**: Automatically fill out web forms using AI
-- **Input Field Operations**: Clear, read, and modify input fields
-- **Form Discovery**: Find and analyze all forms on web pages
-- **Interactive Elements**: Click buttons and interact with page elements
-- **Form Submission**: Submit forms automatically
+Advanced browser automation and utilities:
+- Additional specialized tools for enhanced browser control
+- AI-powered content analysis and processing
+- Custom automation workflows
 
-**New AI Tools Available:**
-- `fill_input` - Fill input fields with text
-- `clear_input` - Clear input field content
-- `get_input_value` - Read current input values
-- `submit_form` - Submit web forms
-- `get_form_elements` - Discover all forms and inputs
-- `click_element` - Click page elements
-- `get_interactive_elements` - Find clickable elements
-- [ ] **Advanced AI Models** - Support for multiple AI providers
-
-
+</details>
 
 ## 📄 License
 
@@ -189,45 +173,62 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Support & Community
 
-### 💬 Get Help
-- [GitHub Issues](https://github.com/buttercannfly/AIPex/issues) - Report bugs and request features
-- [GitHub Discussions](https://github.com/buttercannfly/AIPex/discussions) - Ask questions and share ideas
-- [Chrome Web Store Reviews](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar) - Leave a review
-
-### 🌟 Show Your Support
-If AIPex has improved your browsing experience, please consider:
-
-- ⭐ **Star this repository** - It helps others discover the project
-- 🐛 **Report issues** - Help us improve by reporting bugs
-- 💡 **Suggest features** - Share your ideas for new functionality
-- 📝 **Write reviews** - Leave a review on the Chrome Web Store
-- 🤝 **Contribute code** - Submit pull requests and improvements
-- 📢 **Spread the word** - Share with friends and colleagues
-
-### 🏆 Sponsors
-Support the development of AIPex by becoming a sponsor:
-
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20on%20GitHub-red?logo=github&logoColor=white)](https://github.com/sponsors/buttercannfly)
-
----
+- 🐛 **Found a bug?** [Open an issue](https://github.com/buttercannfly/AIPex/issues)
+- 💡 **Have a feature request?** [Start a discussion](https://github.com/buttercannfly/AIPex/discussions)
+- 🤝 **Want to contribute?** See our [Contributing Guide](DEVELOPMENT.md#how-to-contribute)
+- 💬 **Need help?** [Join our community discussions](https://github.com/buttercannfly/AIPex/discussions)
 
 ## 🏆 Contributors
 
-<!-- 使用多种方式展示贡献者，确保完整性 -->
-<a href="https://github.com/buttercannfly/AIPex/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=buttercannfly/AIPex" alt="Contributors" />
-</a>
+Thank you to all the amazing contributors who help make AIPex better:
 
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/buttercannfly">
+        <img src="https://github.com/buttercannfly.png?size=100" width="100px;" alt=""/>
+        <br />
+        <sub><b>ropzislaw</b></sub>
+      </a>
+      <br />
+      <sub>56 commits</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Codexiaoyi">
+        <img src="https://github.com/Codexiaoyi.png?size=100" width="100px;" alt=""/>
+        <br />
+        <sub><b>Codexiaoyi</b></sub>
+      </a>
+      <br />
+      <sub>10 commits</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/buttercannfly">
+        <img src="https://github.com/buttercannfly.png?size=100" width="100px;" alt=""/>
+        <br />
+        <sub><b>buttercannfly</b></sub>
+      </a>
+      <br />
+      <sub>5 commits</sub>
+    </td>
+  </tr>
+</table>
 
+**Total Contributors: 3** | **Total Commits: 71**
+
+---
+
+*Want to contribute? Check out our [Contributing Guide](DEVELOPMENT.md#how-to-contribute) and help make AIPex even better!*
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
+
+---
 
 <div align="center">
-  <strong>Made with ❤️ by the AIPex Community</strong>
+  <strong>Made with ❤️ by the AIPex Team</strong>
   
-  <p>If you find this project helpful, please give it a ⭐ star!</p>
-  
-  <a href="https://github.com/buttercannfly/AIPex">
-    <img src="https://img.shields.io/github/stars/buttercannfly/AIPex?style=for-the-badge&logo=github" alt="GitHub stars">
-  </a>
+  [![GitHub](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white)](https://github.com/buttercannfly/AIPex)
+  [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-4285F4?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 </div>
-
-

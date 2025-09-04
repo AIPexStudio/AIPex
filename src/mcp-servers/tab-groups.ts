@@ -21,9 +21,13 @@ async function chatCompletion(messages: any, stream = false, options: any = {}) 
 
   let conversationMessages
   if (typeof messages === "string") {
-    conversationMessages = [{ role: "user", content: messages }]
+    conversationMessages = [{ role: "user", content: messages.trim() }]
   } else if (Array.isArray(messages)) {
-    conversationMessages = messages
+    // Ensure all message content is trimmed to prevent trailing whitespace errors
+    conversationMessages = messages.map(msg => ({
+      ...msg,
+      content: msg.content ? msg.content.trim() : msg.content
+    }))
   } else {
     throw new Error("Invalid messages format")
   }

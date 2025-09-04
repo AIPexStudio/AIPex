@@ -561,9 +561,13 @@ async function chatCompletion(messages, stream = true, options = {}, messageId?:
   // If messages is a string (legacy support), convert to new format
   let conversationMessages
   if (typeof messages === 'string') {
-    conversationMessages = [{ role: "user", content: messages }]
+    conversationMessages = [{ role: "user", content: messages.trim() }]
   } else if (Array.isArray(messages)) {
-    conversationMessages = messages
+    // Ensure all message content is trimmed to prevent trailing whitespace errors
+    conversationMessages = messages.map(msg => ({
+      ...msg,
+      content: msg.content ? msg.content.trim() : msg.content
+    }))
   } else {
     throw new Error("Invalid messages format")
   }
@@ -1178,7 +1182,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
     // Add the assistant message with tool calls before processing tool results
     messages.push({
       role: "assistant",
-      content: content || null,
+      content: content ? content.trim() : null,
       tool_calls: toolCalls.map(tc => ({
         id: tc.id,
         type: "function",
@@ -1997,7 +2001,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
           }
-          conversationMessages.push({ role: "user", content: prompt })
+          conversationMessages.push({ role: "user", content: prompt.trim() })
           const finalText = await runChatWithTools(conversationMessages, messageId)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {
@@ -2017,7 +2021,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             conversationMessages = [...context]
           }
           
-          conversationMessages.push({ role: "user", content: prompt })
+          conversationMessages.push({ role: "user", content: prompt.trim() })
           
           // Use the tools-enabled chat completion
           const finalText = await runChatWithTools(conversationMessages, messageId)
