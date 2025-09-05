@@ -5,6 +5,7 @@ export type McpToolName =
   | "organize_tabs"
   | "ungroup_tabs"
   | "get_current_tab_content"
+  | "get_tab_content"
   | "create_new_tab"
   // Bookmark management
   | "get_all_bookmarks"
@@ -135,6 +136,7 @@ export type McpRequest =
   | { tool: "organize_tabs" }
   | { tool: "ungroup_tabs" }
   | { tool: "get_current_tab_content" }
+  | { tool: "get_tab_content"; args: { tabId: number } }
   | { tool: "create_new_tab"; args: { url: string } }
   // Bookmark management
   | { tool: "get_all_bookmarks" }
@@ -270,6 +272,7 @@ import {
   groupTabsByAI,
   ungroupAllTabs,
   getCurrentTabContent,
+  getTabContent,
   createNewTab,
   fillInput,
   clearInput,
@@ -419,6 +422,14 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       }
       case "get_current_tab_content": {
         const content = await getCurrentTabContent()
+        return { success: true, data: content }
+      }
+      case "get_tab_content": {
+        const tabId = request.args?.tabId
+        if (typeof tabId !== "number") {
+          return { success: false, error: "Invalid tabId" }
+        }
+        const content = await getTabContent(tabId)
         return { success: true, data: content }
       }
       case "create_new_tab": {

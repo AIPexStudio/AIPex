@@ -1050,20 +1050,16 @@ async function executeToolCall(name: string, args: any, messageId?: string) {
   }
 }
 
-async function runChatWithTools(userMessages: any[], messageId?: string) {
-  // Get current tab information to include in system prompt
-  let currentTabInfo = ""
-  try {
-    const currentTab = await getCurrentTab()
-    if (currentTab && currentTab.id) {
-      currentTabInfo = `\n\n=== CURRENT TAB CONTEXT ===\nCurrent Tab ID: ${currentTab.id}\nCurrent Tab Title: ${currentTab.title || 'Unknown'}\nCurrent Tab URL: ${currentTab.url || 'Unknown'}`
-    }
-  } catch (error) {
-    console.warn('Failed to get current tab info:', error)
+async function runChatWithTools(userMessages: any[], messageId?: string, referencedTabs?: any[]) {
+  // Add referenced tabs information to system prompt
+  // Note: Current tab is now automatically included in referencedTabs, so no need for separate currentTabInfo
+  let referencedTabsInfo = ""
+  if (referencedTabs && referencedTabs.length > 0) {
+    referencedTabsInfo = `\n\n=== REFERENCED TABS CONTEXT ===\nThe user has referenced the following tabs in their message:\n${referencedTabs.map(tab => `- Tab ID: ${tab.id}, Title: "${tab.title}", URL: ${tab.url}`).join('\n')}\n\nYou can use get_current_tab_content to extract content from them.`
   }
 
   // System instruction to encourage tool usage in Chinese as well
-  const systemPrompt = { role: "system", content: SYSTEM_PROMPT + currentTabInfo }
+  const systemPrompt = { role: "system", content: SYSTEM_PROMPT + referencedTabsInfo }
 
   let messages = [systemPrompt, ...userMessages]
   // First call allowing tool use with streaming
@@ -1890,6 +1886,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       })()
       return true
+    // MCP-style: get current tab
+    case "mcp-get-current-tab":
+      (async () => {
+        console.log("Background: Received mcp-get-current-tab request")
+        try {
+          const currentTab = await getCurrentTab()
+          if (currentTab) {
+            sendResponse({ success: true, tab: currentTab })
+          } else {
+            sendResponse({ success: false, error: "No current tab found" })
+          }
+        } catch (err: any) {
+          console.error("Background: Failed to get current tab:", err)
+          sendResponse({ success: false, error: err?.message || String(err) })
+        }
+      })()
+      return true
     // MCP-style: switch to a tab by id
     case "mcp-switch-to-tab":
       console.log("Background: Received mcp-switch-to-tab request")
@@ -2016,7 +2029,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "ai-chat-tools":
       ;(async () => {
         try {
-          const { prompt, context, messageId } = message
+          const { prompt, context, messageId, referencedTabs } = message
           let conversationMessages = []
           if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
@@ -2034,7 +2047,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           } else {
             console.log('🔄 [DEBUG] Duplicate user message detected in background (ai-chat-tools), skipping:', trimmedPrompt)
           }
-          const finalText = await runChatWithTools(conversationMessages, messageId)
+          const finalText = await runChatWithTools(conversationMessages, messageId, referencedTabs)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {
           sendResponse({ success: false, error: error?.message || String(error) })
@@ -2045,7 +2058,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       ;(async () => {
         try {
-          const { prompt, context, tools, messageId } = message
+          const { prompt, context, tools, messageId, referencedTabs } = message
           
           // Build conversation messages with context
           let conversationMessages = []
@@ -2067,7 +2080,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
           
           // Use the tools-enabled chat completion
-          const finalText = await runChatWithTools(conversationMessages, messageId)
+          const finalText = await runChatWithTools(conversationMessages, messageId, referencedTabs)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {
           sendResponse({ success: false, error: error?.message || String(error) })

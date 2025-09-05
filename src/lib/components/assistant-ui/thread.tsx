@@ -122,6 +122,13 @@ interface Message {
   role: 'user' | 'assistant';
   streaming?: boolean;
   parts: MessagePart[];
+  referencedTabs?: ReferencedTab[];
+}
+
+interface ReferencedTab {
+  id: number;
+  title: string;
+  url: string;
 }
 
 interface MessagePart {
@@ -160,8 +167,65 @@ export const Thread: FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   
+  // @标签页功能相关状态
+  const [showTabSelector, setShowTabSelector] = useState(false);
+  const [tabSelectorPosition, setTabSelectorPosition] = useState({ top: 0, left: 0 });
+  const [availableTabs, setAvailableTabs] = useState<ReferencedTab[]>([]);
+  const [selectedTabs, setSelectedTabs] = useState<ReferencedTab[]>([]);
+  const [atPosition, setAtPosition] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
   // Add a flag to track if this is the initial mount
   const isInitialMount = useRef(true);
+
+  // 获取所有标签页
+  const fetchAvailableTabs = async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({ request: "mcp-get-all-tabs" });
+      if (response.success && response.tabs) {
+        const tabs: ReferencedTab[] = response.tabs.map((tab: any) => ({
+          id: tab.id,
+          title: tab.title || 'Untitled',
+          url: tab.url || ''
+        }));
+        setAvailableTabs(tabs);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tabs:', error);
+    }
+  };
+
+  // 获取当前标签页并自动添加到 referenced tabs
+  const fetchCurrentTab = async () => {
+    try {
+      console.log('🔄 [DEBUG] Fetching current tab...');
+      const response = await chrome.runtime.sendMessage({ request: "mcp-get-current-tab" });
+      console.log('🔄 [DEBUG] Current tab response:', response);
+      if (response.success && response.tab) {
+        const currentTab: ReferencedTab = {
+          id: response.tab.id,
+          title: response.tab.title || 'Untitled',
+          url: response.tab.url || ''
+        };
+        console.log('🔄 [DEBUG] Adding current tab to selectedTabs:', currentTab);
+        // 如果当前标签页不在已选中的标签页中，则添加它
+        setSelectedTabs(prev => {
+          const exists = prev.some(tab => tab.id === currentTab.id);
+          if (!exists) {
+            console.log('🔄 [DEBUG] Current tab not exists, adding it');
+            return [currentTab, ...prev];
+          }
+          console.log('🔄 [DEBUG] Current tab already exists, skipping');
+          return prev;
+        });
+      } else {
+        console.log('🔄 [DEBUG] Failed to get current tab:', response);
+      }
+    } catch (error) {
+      console.error('Failed to fetch current tab:', error);
+    }
+  };
 
   // Helper function to validate and deduplicate messages
   const validateAndDeduplicateMessages = useCallback((messages: Message[]): Message[] => {
@@ -206,6 +270,11 @@ export const Thread: FC = () => {
       }
     };
     checkAIConfig();
+  }, []);
+
+  // Auto-fetch current tab on mount
+  useEffect(() => {
+    fetchCurrentTab();
   }, []);
 
   // Persist messages to storage to maintain conversation continuity
@@ -588,6 +657,7 @@ export const Thread: FC = () => {
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
+        referencedTabs: selectedTabs,
         role: 'user',
         parts: []
       };
@@ -620,11 +690,16 @@ export const Thread: FC = () => {
         id: Date.now().toString(),
         content: message,
         role: 'user',
-        parts: []
+        parts: [],
+        referencedTabs: selectedTabs
       };
       
       const updatedMessages = [...messages, userMessage];
       setMessages(updatedMessages);
+      
+      // 清空选中的标签页和输入框
+      setSelectedTabs([]);
+      setInputValue('');
 
       // Create AI message placeholder for streaming
       const aiMessageId = (Date.now() + 1).toString();
@@ -702,7 +777,8 @@ export const Thread: FC = () => {
         request: "ai-chat-with-tools",
         prompt: finalPrompt,
         context: conversationContext,
-        messageId: aiMessageId
+        messageId: aiMessageId,
+        referencedTabs: selectedTabs
       });
       
       if (!response || !response.success) {
@@ -724,7 +800,7 @@ export const Thread: FC = () => {
       // Don't set loading to false here - let the error message handler do it
       console.log('AI response failed, waiting for error message');
     }
-  }, [loading, messages, aiConfigured]);
+  }, [loading, messages, aiConfigured, selectedTabs]);
 
   // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
@@ -763,19 +839,214 @@ export const Thread: FC = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
+    const value = e.target.value;
+    setInputValue(value);
     adjustTextareaHeight();
+    
+    // 检测@符号
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      // 如果@后面没有空格，说明正在输入标签页引用
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        setAtPosition(lastAtIndex);
+        setSearchQuery(textAfterAt); // 设置搜索查询
+        setSelectedIndex(0); // 重置选中索引
+        setShowTabSelector(true);
+        fetchAvailableTabs();
+        
+        // 计算选择器位置
+        if (inputRef.current) {
+          const rect = inputRef.current.getBoundingClientRect();
+          setTabSelectorPosition({
+            top: rect.top - 120, // 更靠近输入框
+            left: rect.left + 20
+          });
+        }
+      } else {
+        setShowTabSelector(false);
+        setSearchQuery('');
+        setSelectedIndex(0);
+      }
+    } else {
+      setShowTabSelector(false);
+      setSearchQuery('');
+      setSelectedIndex(0);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showTabSelector) {
+      const filteredTabs = getFilteredTabs();
+      
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredTabs[selectedIndex]) {
+          handleTabSelect(filteredTabs[selectedIndex]);
+        }
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(inputValue);
     }
   };
 
+  // Handle backspace to cancel @ when only @ is present
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showTabSelector) {
+      const filteredTabs = getFilteredTabs();
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => {
+          const newIndex = Math.min(prev + 1, filteredTabs.length - 1);
+          // 自动滚动到选中项
+          setTimeout(() => {
+            const selectedElement = document.querySelector(`[data-tab-index="${newIndex}"]`);
+            selectedElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => {
+          const newIndex = Math.max(prev - 1, 0);
+          // 自动滚动到选中项
+          setTimeout(() => {
+            const selectedElement = document.querySelector(`[data-tab-index="${newIndex}"]`);
+            selectedElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowTabSelector(false);
+        setSearchQuery('');
+        setSelectedIndex(0);
+      }
+    }
+    
+    if (e.key === 'Backspace' && showTabSelector) {
+      const cursorPosition = e.currentTarget.selectionStart;
+      const textBeforeCursor = inputValue.substring(0, cursorPosition);
+      const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+      
+      // If we're at the @ position and there's nothing after it, cancel the @
+      if (lastAtIndex !== -1 && cursorPosition === lastAtIndex + 1) {
+        e.preventDefault();
+        setShowTabSelector(false);
+        setSearchQuery('');
+        setSelectedIndex(0);
+        
+        // Remove the @ from the input
+        const beforeAt = inputValue.substring(0, lastAtIndex);
+        const afterAt = inputValue.substring(lastAtIndex + 1);
+        setInputValue(beforeAt + afterAt);
+        
+        // Set cursor position after removing @
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(lastAtIndex, lastAtIndex);
+          }
+        }, 0);
+      }
+    }
+  };
+
+  // Handle mouse wheel on tab selector
+  const handleTabSelectorWheel = (e: React.WheelEvent) => {
+    if (showTabSelector) {
+      e.preventDefault();
+      const filteredTabs = getFilteredTabs();
+      
+      if (e.deltaY > 0) {
+        // Scroll down
+        setSelectedIndex(prev => {
+          const newIndex = Math.min(prev + 1, filteredTabs.length - 1);
+          setTimeout(() => {
+            const selectedElement = document.querySelector(`[data-tab-index="${newIndex}"]`);
+            selectedElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+      } else {
+        // Scroll up
+        setSelectedIndex(prev => {
+          const newIndex = Math.max(prev - 1, 0);
+          setTimeout(() => {
+            const selectedElement = document.querySelector(`[data-tab-index="${newIndex}"]`);
+            selectedElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }, 0);
+          return newIndex;
+        });
+      }
+    }
+  };
+
+  // 选择标签页
+  const handleTabSelect = (tab: ReferencedTab) => {
+    const newSelectedTabs = [...selectedTabs, tab];
+    setSelectedTabs(newSelectedTabs);
+    
+    // 在输入框中插入标签页引用
+    const beforeAt = inputValue.substring(0, atPosition);
+    const afterAt = inputValue.substring(atPosition);
+    const newValue = beforeAt + `@${tab.title} ` + afterAt;
+    setInputValue(newValue);
+    
+    setShowTabSelector(false);
+    
+    // 聚焦到输入框
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newCursorPos = beforeAt.length + tab.title.length + 2; // +2 for @ and space
+        inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  };
+
+  // 移除选中的标签页
+  const handleTabRemove = (tabId: number) => {
+    setSelectedTabs(selectedTabs.filter(tab => tab.id !== tabId));
+  };
+
+  // 筛选标签页
+  const getFilteredTabs = () => {
+    if (!searchQuery.trim()) {
+      return availableTabs; // 显示所有标签页，让滚动条处理
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return availableTabs.filter(tab => 
+      tab.title.toLowerCase().includes(query) || 
+      tab.url.toLowerCase().includes(query)
+    );
+  };
+
+
   return (
     <div className="flex h-full flex-col min-h-0 relative">
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .tab-selector-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .tab-selector-scroll::-webkit-scrollbar-track {
+          background: #f3f4f6;
+          border-radius: 3px;
+        }
+        .tab-selector-scroll::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 3px;
+        }
+        .tab-selector-scroll::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+      `}</style>
       {/* Messages area */}
       <div 
         className="flex-1 overflow-y-auto p-4 min-h-0"
@@ -997,6 +1268,53 @@ export const Thread: FC = () => {
         className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-4 bg-white shadow-lg backdrop-blur-sm z-10"
       >
         <div className="max-w-2xl mx-auto">
+          
+          {/* 选中的标签页显示区域 */}
+          {selectedTabs.length > 0 && (
+            <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Referenced Tabs:</span>
+                  {/* <span className="text-xs text-gray-500">(current tab auto-included)</span> */}
+                </div>
+                <button
+                  onClick={() => setSelectedTabs([])}
+                  className="text-xs text-gray-500 hover:text-red-500 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedTabs.map((tab) => (
+                  <div
+                    key={tab.id}
+                    className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:border-red-300 transition-colors group"
+                  >
+                    <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                      <svg className="w-2.5 h-2.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-900 font-medium max-w-40 truncate" title={tab.title}>
+                      {tab.title}
+                    </span>
+                    <button
+                      onClick={() => handleTabRemove(tab.id)}
+                      className="w-4 h-4 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-200 shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100 flex-shrink-0 border border-gray-300"
+                      title="Remove tab"
+                    >
+                      <svg className="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           
           <div className="flex items-start gap-3">
@@ -1008,6 +1326,7 @@ export const Thread: FC = () => {
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 disabled={loading || !aiConfigured}
                 style={{ 
                   height: `${textareaHeight}px`,
@@ -1028,6 +1347,65 @@ export const Thread: FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 标签页选择器 - 超紧凑版本 */}
+      {showTabSelector && getFilteredTabs().length > 0 && (
+        <div
+          className="fixed bg-white border border-gray-200 rounded-md shadow-lg w-56 max-h-32 overflow-hidden"
+          style={{
+            top: `${tabSelectorPosition.top}px`,
+            left: `${tabSelectorPosition.left}px`,
+            zIndex: 9999
+          }}
+          onWheel={handleTabSelectorWheel}
+        >
+          <div 
+            className="max-h-32 overflow-y-auto tab-selector-scroll"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#d1d5db #f3f4f6'
+            }}
+          >
+            <div className="py-0.5">
+              {getFilteredTabs().map((tab, index) => (
+                <button
+                  key={tab.id}
+                  data-tab-index={index}
+                  onClick={() => handleTabSelect(tab)}
+                  className={`w-full text-left px-2 py-1 rounded-sm transition-colors ${
+                    index === selectedIndex 
+                      ? 'bg-blue-500 text-white' 
+                      : 'hover:bg-blue-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                      <svg className="w-1 h-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium truncate leading-tight">
+                        {tab.title}
+                      </div>
+                      <div className="text-xs opacity-70 truncate leading-tight">
+                        {new URL(tab.url).hostname}
+                      </div>
+                    </div>
+                    {selectedTabs.some(selected => selected.id === tab.id) && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-1 h-1 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

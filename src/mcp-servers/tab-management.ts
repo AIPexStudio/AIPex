@@ -135,3 +135,42 @@ export async function getCurrentTabContent(): Promise<
   const [{ result }] = results
   return result || null
 }
+
+/**
+ * Get the visible text content of a specific tab by tabId
+ */
+export async function getTabContent(tabId: number): Promise<
+  | { title: string; url: string; content: string }
+  | null
+> {
+  try {
+    // First verify the tab exists
+    const tab = await chrome.tabs.get(tabId)
+    if (!tab || typeof tab.id !== "number") return null
+
+    // Execute in-page to extract content
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        try {
+          const title = document.title || ""
+          const url = location.href
+          // Prefer human-readable text; fall back to HTML if empty
+          const text = (document.body?.innerText || "").trim()
+          const content = text && text.length > 0 ? text : (document.body?.textContent || "")
+          // Truncate to avoid extremely large payloads
+          const MAX = 200_000
+          return { title, url, content: (content || "").slice(0, MAX) }
+        } catch (e) {
+          return { title: document.title || "", url: location.href, content: "" }
+        }
+      }
+    })
+
+    const [{ result }] = results
+    return result || null
+  } catch (error) {
+    // Tab might not exist or be accessible
+    return null
+  }
+}

@@ -49,6 +49,7 @@ export {
   ungroupAllTabs,
   chatCompletion,
   getCurrentTabContent,
+  getTabContent,
   createNewTab,
   // Bookmark management
   getAllBookmarks,

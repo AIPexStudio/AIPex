@@ -58,16 +58,7 @@ export async function chatCompletion(messages: any, stream = false, options: any
     throw new Error("Invalid messages format")
   }
 
-  // Get current tab information to include in system prompt
-  let currentTabInfo = ""
-  try {
-    const currentTab = await getCurrentTab()
-    if (currentTab && currentTab.id) {
-      currentTabInfo = `\n\n=== CURRENT TAB CONTEXT ===\nCurrent Tab ID: ${currentTab.id}\nCurrent Tab Title: ${currentTab.title || 'Unknown'}\nCurrent Tab URL: ${currentTab.url || 'Unknown'}`
-    }
-  } catch (error) {
-    console.warn('Failed to get current tab info:', error)
-  }
+  // Note: Current tab is now automatically included in referencedTabs, so no need for separate currentTabInfo
 
   const systemInstruction = [
     "You are the AIPex browser assistant. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
@@ -89,6 +80,7 @@ export async function chatCompletion(messages: any, stream = false, options: any
     "- duplicate_tab: duplicate an existing tab",
     "- close_tab: close a specific tab",
     "- get_current_tab_content: extract content from current tab",
+    "- get_tab_content: extract content from a specific tab by tabId",
     "\nTab Group Management:",
     "- organize_tabs: AI-organize current-window tabs",
     "- ungroup_tabs: remove all tab groups in the current window",
@@ -116,7 +108,7 @@ export async function chatCompletion(messages: any, stream = false, options: any
     "- maximize_window: maximize a specific window",
     "\nUsage guidance: For requests like 'switch to X', first call get_all_tabs, pick the best-matching id, then call switch_to_tab. Use get_current_tab to understand context. Use organize_tabs to group, and ungroup_tabs to reset.",
     "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github')."
-  ].join("\n") + currentTabInfo
+  ].join("\n")
 
   const requestBody = {
     model: aiModel,
@@ -248,6 +240,43 @@ export async function getCurrentTabContent(): Promise<
 
   const [{ result }] = results
   return result || null
+}
+
+// Get the visible text content of a specific tab by tabId (best-effort, truncated)
+export async function getTabContent(tabId: number): Promise<
+  | { title: string; url: string; content: string }
+  | null
+> {
+  try {
+    // First verify the tab exists
+    const tab = await chrome.tabs.get(tabId)
+    if (!tab || typeof tab.id !== "number") return null
+
+    // Execute in-page to extract content
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        try {
+          const title = document.title || ""
+          const url = location.href
+          // Prefer human-readable text; fall back to HTML if empty
+          const text = (document.body?.innerText || "").trim()
+          const content = text && text.length > 0 ? text : (document.body?.textContent || "")
+          // Truncate to avoid extremely large payloads
+          const MAX = 200_000
+          return { title, url, content: (content || "").slice(0, MAX) }
+        } catch (e) {
+          return { title: document.title || "", url: location.href, content: "" }
+        }
+      }
+    })
+
+    const [{ result }] = results
+    return result || null
+  } catch (error) {
+    // Tab might not exist or be accessible
+    return null
+  }
 }
 
 // Create a new tab with a given URL (adds https:// if protocol missing)
