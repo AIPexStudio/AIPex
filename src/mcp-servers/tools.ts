@@ -61,7 +61,7 @@ export async function chatCompletion(messages: any, stream = false, options: any
   // Note: Current tab is now automatically included in referencedTabs, so no need for separate currentTabInfo
 
   const systemInstruction = [
-    "You are the AIPex browser assistant. Reply concisely in English. Use tools when available and provide clear next steps when tools are not needed.",
+    "You are the AIPex browser assistant. Respond in the same language as the user's input. Default to English if language is unclear.. Use tools when available and provide clear next steps when tools are not needed.",
     "\nWhat you can do:",
     "1) Quick UI actions: guide users to open the AI Chat side panel and view/search available actions.",
     "2) Manage tabs: list all tabs, get the current active tab, switch to a tab by id, and focus the right window.",
