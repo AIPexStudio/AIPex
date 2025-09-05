@@ -1219,26 +1219,26 @@ async function runChatWithTools(userMessages: any[], messageId?: string) {
         const callKey = allowRepeatedCalls.includes(name) 
           ? `${name}:${JSON.stringify(args)}:${Date.now()}:${Math.random()}` // Make unique for repeatable tools
           : `${name}:${JSON.stringify(args)}`
-        if (executedCalls.has(callKey)) {
-          // Notify duplicate and skip executing to avoid loops
-          if (messageId) {
-            try {
-              chrome.runtime.sendMessage({
-                request: "ai-chat-tools-step",
-                messageId,
-                step: { type: "tool_result", name, result: "(duplicate call skipped)" }
-              })
-            } catch {}
-          }
-          // Still append a tool role so the model sees the effect
-          messages.push({
-            role: "tool",
-            tool_call_id: tc.id,
-            name,
-            content: JSON.stringify({ skipped: true, reason: "duplicate_call" })
-          })
-          continue
-        }
+        // if (executedCalls.has(callKey)) {
+        //   // Notify duplicate and skip executing to avoid loops
+        //   if (messageId) {
+        //     try {
+        //       chrome.runtime.sendMessage({
+        //         request: "ai-chat-tools-step",
+        //         messageId,
+        //         step: { type: "tool_result", name, result: "(duplicate call skipped)" }
+        //       })
+        //     } catch {}
+        //   }
+        //   // Still append a tool role so the model sees the effect
+        //   messages.push({
+        //     role: "tool",
+        //     tool_call_id: tc.id,
+        //     name,
+        //     content: JSON.stringify({ skipped: true, reason: "duplicate_call" })
+        //   })
+        //   continue
+        // }
         executedCalls.add(callKey)
         if (["switch_to_tab", "organize_tabs", "ungroup_tabs"].includes(name)) {
           executedMutating = true
@@ -2010,7 +2010,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
           }
-          conversationMessages.push({ role: "user", content: prompt.trim() })
+          
+          // Check for duplicate user messages before adding
+          const trimmedPrompt = prompt.trim()
+          const lastUserMessage = conversationMessages
+            .slice()
+            .reverse()
+            .find(msg => msg.role === 'user')
+          
+          if (!lastUserMessage || lastUserMessage.content !== trimmedPrompt) {
+            conversationMessages.push({ role: "user", content: trimmedPrompt })
+          } else {
+            console.log('🔄 [DEBUG] Duplicate user message detected in background (ai-chat-tools), skipping:', trimmedPrompt)
+          }
           const finalText = await runChatWithTools(conversationMessages, messageId)
           sendResponse({ success: true, content: finalText })
         } catch (error: any) {
@@ -2030,7 +2042,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             conversationMessages = [...context]
           }
           
-          conversationMessages.push({ role: "user", content: prompt.trim() })
+          // Check for duplicate user messages before adding
+          const trimmedPrompt = prompt.trim()
+          const lastUserMessage = conversationMessages
+            .slice()
+            .reverse()
+            .find(msg => msg.role === 'user')
+          
+          if (!lastUserMessage || lastUserMessage.content !== trimmedPrompt) {
+            conversationMessages.push({ role: "user", content: trimmedPrompt })
+          } else {
+            console.log('🔄 [DEBUG] Duplicate user message detected in background, skipping:', trimmedPrompt)
+          }
           
           // Use the tools-enabled chat completion
           const finalText = await runChatWithTools(conversationMessages, messageId)
@@ -2063,6 +2086,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true, message: "AI chat stopped" })
         } catch (error: any) {
           console.error('🛑 [DEBUG] Error in stop-ai-chat:', error)
+          sendResponse({ success: false, error: error?.message || String(error) })
+        }
+      })()
+      return true
+    case "stop-all-ai-chats":
+      ;(async () => {
+        try {
+          console.log('🛑 [DEBUG] Received stop-all-ai-chats request')
+          console.log('🛑 [DEBUG] Current activeStreams keys:', Array.from(activeStreams.keys()))
+          
+          // Stop all ongoing AI chats by aborting all active streams
+          const stoppedCount = activeStreams.size
+          for (const [messageId, controller] of activeStreams.entries()) {
+            console.log('🛑 [DEBUG] Aborting stream for messageId:', messageId)
+            controller.abort()
+          }
+          activeStreams.clear()
+          console.log('🛑 [DEBUG] All streams aborted and activeStreams cleared')
+          
+          sendResponse({ success: true, message: `Stopped ${stoppedCount} AI chats` })
+        } catch (error: any) {
+          console.error('🛑 [DEBUG] Error in stop-all-ai-chats:', error)
           sendResponse({ success: false, error: error?.message || String(error) })
         }
       })()

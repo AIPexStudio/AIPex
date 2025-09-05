@@ -107,8 +107,10 @@ const AIChatSidebarAssistantUI = () => {
 
       {/* Settings Modal - floating overlay */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out hover:shadow-3xl" style={{
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          }}>
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
@@ -127,22 +129,22 @@ const AIChatSidebarAssistantUI = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="px-6 py-4">
+            <div className="px-6 py-6">
               {/* AI Configuration */}
-              <div className="bg-slate-50 border border-gray-200 rounded-xl p-4 space-y-4">
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200 rounded-2xl p-6 space-y-5 shadow-sm">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">AI Host</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Host</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     value={aiHost}
                     onChange={(e) => setAiHost(e.target.value)}
                     placeholder="https://api.deepseek.com/chat/completions"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">AI Token</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Token</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     type="password"
                     value={aiToken}
                     onChange={(e) => setAiToken(e.target.value)}
@@ -150,23 +152,23 @@ const AIChatSidebarAssistantUI = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">AI Model</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Model</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     value={aiModel}
                     onChange={(e) => setAiModel(e.target.value)}
                     placeholder="deepseek-chat"
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-4">
                   <button
                     onClick={handleSaveAISettings}
                     disabled={isSaving}
-                    className={`px-4 py-2 rounded-lg text-white font-semibold ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`px-6 py-3 rounded-xl text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 hover:scale-105'}`}
                   >{isSaving ? 'Saving...' : 'Save Settings'}</button>
                   <button
                     onClick={() => setShowSettings(false)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+                    className="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
                   >Cancel</button>
                 </div>
                 {saveStatus && (

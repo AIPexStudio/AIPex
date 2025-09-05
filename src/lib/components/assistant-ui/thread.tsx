@@ -3,6 +3,119 @@ import type { FC } from "react";
 import { ToolFallback } from "./tool-fallback";
 import { MarkdownText } from "./markdown-text";
 
+// Custom Send/Stop Button Component
+interface SendStopButtonProps {
+  isLoading: boolean;
+  hasInput: boolean;
+  isAiConfigured: boolean;
+  height: number;
+  onSend: () => void;
+  onStop: () => void;
+}
+
+const SendStopButton: FC<SendStopButtonProps> = ({
+  isLoading,
+  hasInput,
+  isAiConfigured,
+  height,
+  onSend,
+  onStop
+}) => {
+  const isDisabled = !hasInput || !isAiConfigured;
+  
+  if (isLoading) {
+    // Stop Button
+    return (
+      <button
+        onClick={onStop}
+        className="flex items-center justify-center gap-2 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl font-semibold border-2"
+        style={{ 
+          height: `${height}px`,
+          minHeight: '44px',
+          width: '100px',
+          backgroundColor: '#f3f4f6',
+          borderColor: '#d1d5db',
+          color: '#374151'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#e5e7eb';
+          e.currentTarget.style.borderColor = '#9ca3af';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#f3f4f6';
+          e.currentTarget.style.borderColor = '#d1d5db';
+        }}
+        title="Stop AI response"
+      >
+        {/* Stop Icon - Simple square */}
+        <div 
+          style={{ 
+            width: '16px', 
+            height: '16px',
+            backgroundColor: '#6b7280',
+            borderRadius: '2px'
+          }}
+        />
+        <span style={{ 
+          color: '#374151 !important', 
+          fontSize: '14px', 
+          fontWeight: '500' 
+        }}>
+          Stop
+        </span>
+      </button>
+    );
+  }
+  
+  // Send Button
+  return (
+    <button
+      onClick={onSend}
+      disabled={isDisabled}
+      className={`flex items-center justify-center gap-2 rounded-2xl transition-all duration-200 font-semibold shadow-lg hover:shadow-xl border-2 ${
+        isDisabled
+          ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+          : 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 hover:scale-105 border-blue-500 hover:border-blue-600'
+      }`}
+      style={{ 
+        height: `${height}px`,
+        minHeight: '44px',
+        width: '100px'
+      }}
+    >
+      {/* Send Icon - Simple arrow */}
+      <div 
+        style={{ 
+          width: '16px', 
+          height: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <svg 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2.5"
+          style={{ color: isDisabled ? '#9CA3AF' : '#ffffff' }}
+        >
+          <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+      </div>
+      <span style={{ 
+        color: isDisabled ? '#9CA3AF' : '#ffffff', 
+        fontSize: '14px', 
+        fontWeight: '500' 
+      }}>
+        Send
+      </span>
+    </button>
+  );
+};
+
 interface Message {
   id: string;
   content: string;
@@ -42,9 +155,43 @@ export const Thread: FC = () => {
   const [aiConfigured, setAiConfigured] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+  const [textareaHeight, setTextareaHeight] = useState(44); // Default height for single line
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Add a flag to track if this is the initial mount
+  const isInitialMount = useRef(true);
+
+  // Helper function to validate and deduplicate messages
+  const validateAndDeduplicateMessages = useCallback((messages: Message[]): Message[] => {
+    const deduplicated: Message[] = [];
+    let lastUserMessage: Message | null = null;
+
+    for (const msg of messages) {
+      // Skip empty messages
+      if (!msg.content?.trim() && (!msg.parts || msg.parts.length === 0)) {
+        console.log('🔄 [DEBUG] Skipping empty message:', msg.id);
+        continue;
+      }
+
+      // For user messages, check for duplicates
+      if (msg.role === 'user') {
+        if (lastUserMessage && lastUserMessage.content === msg.content) {
+          console.log('🔄 [DEBUG] Skipping duplicate user message:', msg.content);
+          continue;
+        }
+        lastUserMessage = msg;
+      } else {
+        // Reset last user message when we encounter an assistant message
+        lastUserMessage = null;
+      }
+
+      deduplicated.push(msg);
+    }
+
+    return deduplicated;
+  }, []);
 
   // Check AI configuration on mount
   useEffect(() => {
@@ -61,12 +208,48 @@ export const Thread: FC = () => {
     checkAIConfig();
   }, []);
 
+  // Persist messages to storage to maintain conversation continuity
+  useEffect(() => {
+    if (messages.length > 0) {
+      const deduplicatedMessages = validateAndDeduplicateMessages(messages);
+      chrome.storage?.local?.set({ 'aipex_conversation_history': deduplicatedMessages });
+    }
+  }, [messages, validateAndDeduplicateMessages]);
+
+  // Restore messages from storage on mount
+  useEffect(() => {
+    chrome.storage?.local?.get(['aipex_conversation_history'], (result) => {
+      if (result?.aipex_conversation_history && Array.isArray(result.aipex_conversation_history)) {
+        console.log('🔄 [DEBUG] Restoring conversation history:', result.aipex_conversation_history.length, 'messages');
+        const deduplicatedMessages = validateAndDeduplicateMessages(result.aipex_conversation_history);
+        console.log('🔄 [DEBUG] After deduplication:', deduplicatedMessages.length, 'messages');
+        setMessages(deduplicatedMessages);
+      }
+    });
+  }, [validateAndDeduplicateMessages]);
+
   // Listen for clear messages event
   useEffect(() => {
-    const handleClearMessages = () => {
+    const handleClearMessages = async () => {
+      console.log('🔄 [DEBUG] Clearing all messages and conversation history');
+      
+      // Stop all ongoing AI chats before clearing messages
+      console.log('🛑 [DEBUG] Stopping all ongoing AI chats before clearing messages');
+      try {
+        await chrome.runtime.sendMessage({
+          request: "stop-all-ai-chats"
+        });
+        console.log('🛑 [DEBUG] All AI chats stopped successfully');
+      } catch (error) {
+        console.error('🛑 [DEBUG] Failed to stop AI chats:', error);
+      }
+      
       setMessages([]);
       setInputValue('');
       setLoading(false);
+      setCurrentMessageId(null);
+      // Also clear the stored conversation history
+      chrome.storage?.local?.remove(['aipex_conversation_history']);
     };
 
     window.addEventListener('clear-aipex-messages', handleClearMessages);
@@ -387,6 +570,18 @@ export const Thread: FC = () => {
   const handleSubmit = useCallback(async (message: string) => {
     if (!message.trim() || loading) return;
 
+    // Check for duplicate user messages
+    const trimmedMessage = message.trim();
+    const lastUserMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'user');
+    
+    if (lastUserMessage && lastUserMessage.content === trimmedMessage) {
+      console.log('🔄 [DEBUG] Duplicate user message detected, skipping:', trimmedMessage);
+      return;
+    }
+
     // Check if AI is configured
     if (!aiConfigured) {
       // Add a user message to show the error
@@ -411,6 +606,11 @@ export const Thread: FC = () => {
 
     // Clear input immediately after submission
     setInputValue('');
+    // Reset textarea height
+    setTextareaHeight(44);
+    if (inputRef.current) {
+      inputRef.current.style.height = '44px';
+    }
     
     // Set loading state immediately
     setLoading(true);
@@ -441,15 +641,66 @@ export const Thread: FC = () => {
     try {
       // Use MCP client for tool-enabled AI chat
       const conversationContext = updatedMessages
-        .filter(msg => !msg.streaming && msg.content.trim())
-        .map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }));
+        .filter(msg => !msg.streaming) // Only filter out streaming messages
+        .map(msg => {
+          // Extract content from either content field or parts array
+          let messageContent = msg.content || '';
+          
+          // If content is empty but we have parts, extract text content from parts
+          if (!messageContent.trim() && msg.parts && msg.parts.length > 0) {
+            const textParts = msg.parts
+              .filter(part => part.type === 'text' && part.content)
+              .map(part => part.content)
+              .join('');
+            messageContent = textParts;
+          }
+          
+          // Only include messages that have actual content
+          if (messageContent.trim()) {
+            return {
+              role: msg.role === 'user' ? 'user' : 'assistant',
+              content: messageContent.trim()
+            };
+          }
+          return null;
+        })
+        .filter(msg => msg !== null) // Remove null entries
+        .reduce((acc, msg, index, array) => {
+          // Remove consecutive duplicate user messages
+          if (index > 0 && msg.role === 'user') {
+            const prevMsg = array[index - 1];
+            if (prevMsg && prevMsg.role === 'user' && prevMsg.content === msg.content) {
+              console.log('🔄 [DEBUG] Removing duplicate user message from context:', msg.content);
+              return acc; // Skip this duplicate message
+            }
+          }
+          acc.push(msg);
+          return acc;
+        }, [] as any[]);
+
+      // Count user messages to determine if we should add "continue with the previous result"
+      const userMessageCount = conversationContext.filter(msg => msg.role === 'user').length;
+      console.log('🔄 [DEBUG] User message count:', userMessageCount);
+      
+      // If this is the second or later user message, automatically append "continue with the previous result"
+      let finalPrompt = message;
+      if (userMessageCount >= 2) {
+        finalPrompt = `${message}\n\ncontinue with the previous result`;
+        console.log(`🔄 [DEBUG] Added "continue with the previous result" to user message #${userMessageCount}`);
+      }
+
+      // Debug logging for conversation context
+      console.log('🔄 [DEBUG] Conversation context being sent:', {
+        messageCount: conversationContext.length,
+        context: conversationContext,
+        currentMessage: message,
+        finalPrompt: finalPrompt,
+        userMessageCount: userMessageCount
+      });
 
       const response = await chrome.runtime.sendMessage({
         request: "ai-chat-with-tools",
-        prompt: message,
+        prompt: finalPrompt,
         context: conversationContext,
         messageId: aiMessageId
       });
@@ -477,16 +728,44 @@ export const Thread: FC = () => {
 
   // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
+    // Only execute on initial mount to prevent re-execution issues
+    if (!isInitialMount.current) return;
+    isInitialMount.current = false;
+    
     chrome.storage?.local?.get(["aipex_user_input"], (result) => {
       if (result && result.aipex_user_input) {
+        console.log('🔄 [DEBUG] Auto-filling input from storage:', result.aipex_user_input);
         setInputValue(result.aipex_user_input);
+        // Use a more stable approach to prevent re-execution issues
         setTimeout(() => {
-          handleSubmit(result.aipex_user_input);
-          chrome.storage.local.remove("aipex_user_input");
-        }, 0);
+          if (!loading && aiConfigured) {
+            console.log('🔄 [DEBUG] Auto-submitting message:', result.aipex_user_input);
+            handleSubmit(result.aipex_user_input);
+            chrome.storage.local.remove("aipex_user_input");
+          }
+        }, 100); // Slightly longer delay to ensure state is stable
       }
     });
-  }, [handleSubmit]);
+  }, []); // Remove handleSubmit dependency to prevent re-execution
+
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = useCallback(() => {
+    if (inputRef.current) {
+      const textarea = inputRef.current;
+      textarea.style.height = 'auto';
+      const scrollHeight = textarea.scrollHeight;
+      const minHeight = 44; // Minimum height for single line
+      const maxHeight = 200; // Maximum height before scrolling
+      const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+      setTextareaHeight(newHeight);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    adjustTextareaHeight();
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -720,38 +999,32 @@ export const Thread: FC = () => {
         <div className="max-w-2xl mx-auto">
 
           
-          <div className="flex items-end gap-2">
-            <textarea
-              ref={inputRef}
-              className="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={loading ? "AI is responding..." : aiConfigured ? "Ask anything..." : "Configure AI settings first..."}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading || !aiConfigured}
-              rows={1}
+          <div className="flex items-start gap-3">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                className="w-full resize-none border-2 border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                placeholder={loading ? "AI is responding..." : aiConfigured ? "Ask anything... (Shift+Enter for new line)" : "Configure AI settings first..."}
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                disabled={loading || !aiConfigured}
+                style={{ 
+                  height: `${textareaHeight}px`,
+                  minHeight: '44px',
+                  maxHeight: '200px',
+                  lineHeight: '1.5'
+                }}
+              />
+            </div>
+            <SendStopButton
+              isLoading={loading && !!currentMessageId}
+              hasInput={!!inputValue.trim()}
+              isAiConfigured={aiConfigured}
+              height={textareaHeight}
+              onSend={() => handleSubmit(inputValue)}
+              onStop={handleStopAI}
             />
-            {loading && currentMessageId ? (
-              <button
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-                onClick={handleStopAI}
-                title="Stop AI response"
-              >
-                Stop
-              </button>
-            ) : (
-              <button
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  !inputValue.trim() || !aiConfigured
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-                onClick={() => handleSubmit(inputValue)}
-                disabled={!inputValue.trim() || !aiConfigured}
-              >
-                {aiConfigured ? 'Send' : 'Configure AI'}
-              </button>
-            )}
           </div>
         </div>
       </div>
