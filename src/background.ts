@@ -1051,8 +1051,19 @@ async function executeToolCall(name: string, args: any, messageId?: string) {
 }
 
 async function runChatWithTools(userMessages: any[], messageId?: string) {
+  // Get current tab information to include in system prompt
+  let currentTabInfo = ""
+  try {
+    const currentTab = await getCurrentTab()
+    if (currentTab && currentTab.id) {
+      currentTabInfo = `\n\n=== CURRENT TAB CONTEXT ===\nCurrent Tab ID: ${currentTab.id}\nCurrent Tab Title: ${currentTab.title || 'Unknown'}\nCurrent Tab URL: ${currentTab.url || 'Unknown'}`
+    }
+  } catch (error) {
+    console.warn('Failed to get current tab info:', error)
+  }
+
   // System instruction to encourage tool usage in Chinese as well
-  const systemPrompt = { role: "system", content: SYSTEM_PROMPT }
+  const systemPrompt = { role: "system", content: SYSTEM_PROMPT + currentTabInfo }
 
   let messages = [systemPrompt, ...userMessages]
   // First call allowing tool use with streaming
