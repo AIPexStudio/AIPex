@@ -52,10 +52,8 @@ export const getStyle = (): HTMLStyleElement => {
 
 const placeholderList = [
   "Search or Ask anything",
-  "try /bookmark、/history、/ai、/group command",
-  "try mention a tab with @tab",
-  "Write some code...",
-  "Write a draft.."
+  "Try mention a tab with @tab",
+  "Organize your tabs"
 ]
 
 // Add command suggestions list

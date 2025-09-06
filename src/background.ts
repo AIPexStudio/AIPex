@@ -801,7 +801,7 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
                   if (!currentToolCall || currentToolCall.index !== toolCall.index) {
                     currentToolCall = {
                       index: toolCall.index,
-                      id: toolCall.id || '',
+                      id: toolCall.id || `call_${Date.now()}_${toolCall.index}`,
                       type: 'function',
                       function: {
                         name: toolCall.function?.name || '',
@@ -1205,6 +1205,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string, referen
     }
 
     // Add the assistant message with tool calls before processing tool results
+    console.log('🔍 [DEBUG] Adding assistant message with tool calls:', toolCalls.map(tc => ({ id: tc.id, name: tc.function.name })));
     messages.push({
       role: "assistant",
       content: content ? content.trim() : null,
@@ -1374,6 +1375,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string, referen
           }
         }
         
+        console.log('🔍 [DEBUG] Adding tool result with ID:', tc.id, 'for tool:', name);
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -1451,6 +1453,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string, referen
           } catch {}
         }
       } catch (err: any) {
+        console.log('🔍 [DEBUG] Adding tool error result with ID:', tc.id, 'for tool:', name);
         messages.push({
           role: "tool",
           tool_call_id: tc.id,

@@ -178,6 +178,14 @@ export const Thread: FC = () => {
   
   // Add a flag to track if this is the initial mount
   const isInitialMount = useRef(true);
+  
+  // Dynamic placeholder functionality
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const placeholderList = [
+    "Search or Ask anything",
+    "Try mention a tab with @tab",
+    "Organize your tabs"
+  ];
 
   // 获取所有标签页
   const fetchAvailableTabs = async () => {
@@ -276,6 +284,18 @@ export const Thread: FC = () => {
   useEffect(() => {
     fetchCurrentTab();
   }, []);
+
+  // Dynamic placeholder carousel
+  useEffect(() => {
+    // Only rotate placeholder when input is empty, AI is configured, and not loading
+    if (!inputValue.trim() && aiConfigured && !loading) {
+      const interval = setInterval(() => {
+        setPlaceholderIndex(prev => (prev + 1) % placeholderList.length);
+      }, 3000); // Change every 3 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [inputValue, aiConfigured, loading, placeholderList.length]);
 
   // Persist messages to storage to maintain conversation continuity
   useEffect(() => {
@@ -1327,7 +1347,13 @@ export const Thread: FC = () => {
               <textarea
                 ref={inputRef}
                 className="w-full resize-none border-2 border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-                placeholder={loading ? "AI is responding..." : aiConfigured ? "Ask anything... (Shift+Enter for new line)" : "Configure AI settings first..."}
+                placeholder={
+                  loading 
+                    ? "AI is responding..." 
+                    : aiConfigured 
+                      ? `${placeholderList[placeholderIndex]} (Shift+Enter for new line)`
+                      : "Configure AI settings first..."
+                }
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
