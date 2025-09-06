@@ -397,6 +397,7 @@ export const Thread: FC = () => {
         ));
       } else if (message.request === "ai-chat-tools-step") {
         console.log('Processing tools step:', message.step);
+        console.log('🔍 [DEBUG] Tool call args received:', message.step.args);
         if (message.step.type === 'call_tool') {
           // Add tool call part to the message, but check for duplicates first
           setMessages(prev => prev.map(msg => 
@@ -1186,11 +1187,15 @@ export const Thread: FC = () => {
                             </div>
                           );
                         } else if (part.type === 'tool_call') {
+                          // Handle empty arguments properly
+                          const hasArgs = part.args && Object.keys(part.args).length > 0;
+                          const argsText = hasArgs ? JSON.stringify(part.args, null, 2) : 'No arguments';
+                          
                           return (
                             <ToolFallback
                               key={part.id}
                               toolName={part.toolName || ''}
-                              argsText={JSON.stringify(part.args, null, 2)}
+                              argsText={argsText}
                               result={part.result}
                               status={part.status}
                               error={part.error}

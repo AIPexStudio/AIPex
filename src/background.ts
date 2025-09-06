@@ -744,6 +744,7 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
                       
                       if (!announcedToolCalls.has(toolCallKey)) {
                         announcedToolCalls.add(toolCallKey)
+                        console.log('🔍 [DEBUG] Sending tool call from streaming parser:', { name: currentToolCallName, args });
                         chrome.runtime.sendMessage({
                           request: 'ai-chat-tools-step',
                           messageId,
@@ -809,29 +810,8 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
                     }
                     toolCalls[toolCall.index] = currentToolCall
                     
-                    // Send tool call notification (only if not already announced)
-                    if (messageId && currentToolCall.function.name) {
-                      try {
-                        const args = currentToolCall.function.arguments ? 
-                          JSON.parse(currentToolCall.function.arguments) : {}
-                        const toolCallKey = `${currentToolCall.function.name}:${JSON.stringify(args)}`
-                        
-                        if (!announcedToolCalls.has(toolCallKey)) {
-                          announcedToolCalls.add(toolCallKey)
-                          chrome.runtime.sendMessage({
-                            request: 'ai-chat-tools-step',
-                            messageId,
-                            step: { 
-                              type: 'call_tool', 
-                              name: currentToolCall.function.name, 
-                              args 
-                            }
-                          }).catch(() => {})
-                        }
-                      } catch (e) {
-                        console.warn('Failed to parse tool call arguments:', e)
-                      }
-                    }
+                    // Don't send notification immediately - wait for arguments to be complete
+                    // The notification will be sent when the tool call is fully parsed
                   }
                   
                   // Update existing tool call
@@ -853,6 +833,35 @@ async function parseStreamingResponse(response: Response, messageId?: string) {
     reader.releaseLock()
     // Always clean up activeStreams
     cleanup()
+  }
+  
+  // Send tool call notifications for any completed tool calls that weren't announced during streaming
+  if (messageId && toolCalls.length > 0) {
+    for (const toolCall of toolCalls) {
+      if (toolCall.function?.name) {
+        try {
+          const args = toolCall.function.arguments ? 
+            JSON.parse(toolCall.function.arguments) : {}
+          const toolCallKey = `${toolCall.function.name}:${JSON.stringify(args)}`
+          
+          if (!announcedToolCalls.has(toolCallKey)) {
+            announcedToolCalls.add(toolCallKey)
+            console.log('🔍 [DEBUG] Sending completed tool call from streaming parser:', { name: toolCall.function.name, args });
+            chrome.runtime.sendMessage({
+              request: 'ai-chat-tools-step',
+              messageId,
+              step: { 
+                type: 'call_tool', 
+                name: toolCall.function.name, 
+                args 
+              }
+            }).catch(() => {})
+          }
+        } catch (e) {
+          console.warn('Failed to parse completed tool call arguments:', e)
+        }
+      }
+    }
   }
   
   return { content, toolCalls }
@@ -1257,6 +1266,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string, referen
         if (messageId && !announcedToolCalls.has(toolCallKey)) {
           announcedToolCalls.add(toolCallKey)
           try {
+            console.log('🔍 [DEBUG] Sending tool call from execution:', { name, args });
             chrome.runtime.sendMessage({
               request: "ai-chat-tools-step",
               messageId,

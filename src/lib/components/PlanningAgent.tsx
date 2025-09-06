@@ -171,7 +171,7 @@ const PlanningAgent: React.FC<PlanningAgentProps> = ({ steps, isActive, onStepCo
                     <div className="text-xs font-mono text-gray-600 mb-1">
                       Tool: {step.toolCall.name}
                     </div>
-                    {step.toolCall.args && (
+                    {step.toolCall.args && Object.keys(step.toolCall.args).length > 0 && (
                       <div className="text-xs text-gray-500 mb-1">
                         Args: {JSON.stringify(step.toolCall.args, null, 2)}
                       </div>

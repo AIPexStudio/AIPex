@@ -290,7 +290,7 @@ const StreamingToolCall: React.FC<StreamingToolCallProps> = ({
                     </div>
                   )}
 
-                  {step.type === 'tool_call' && step.args && (
+                  {step.type === 'tool_call' && step.args && Object.keys(step.args).length > 0 && (
                     <div className="mt-2 p-2 bg-white/50 rounded border">
                       <div className="text-xs font-mono text-gray-600">
                         Args: {JSON.stringify(step.args, null, 2)}
