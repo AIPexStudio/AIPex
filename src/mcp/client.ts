@@ -1290,27 +1290,27 @@ export class BrowserMcpClient {
     const tool = this.tools.find(t => t.name === name)
     let screenshotData = null
     
-    // if (tool && tool.action === true) {
-    //   try {
-    //     // 先执行截图并获取结果
-    //     const screenshotResult = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
+    if (tool && tool.action === true) {
+      try {
+        // 先执行截图并获取结果
+        const screenshotResult = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
         
-    //     // 如果截图成功，保存截图数据
-    //     if (screenshotResult.success && screenshotResult.data?.imageData) {
-    //       screenshotData = {
-    //         toolName: 'capture_screenshot',
-    //         imageData: screenshotResult.data.imageData,
-    //         timestamp: new Date().toISOString()
-    //       }
-    //       console.log('Screenshot captured before action:', {
-    //         toolName: name,
-    //         imageData: screenshotResult.data.imageData.substring(0, 100) + '...' // 截取前100个字符用于日志
-    //       })
-    //     }
-    //   } catch (error) {
-    //     console.warn("Failed to capture screenshot before action:", error)
-    //   }
-    // }
+        // 如果截图成功，保存截图数据
+        if (screenshotResult.success && screenshotResult.data?.imageData) {
+          screenshotData = {
+            toolName: 'capture_screenshot',
+            imageData: screenshotResult.data.imageData,
+            timestamp: new Date().toISOString()
+          }
+          console.log('Screenshot captured before action:', {
+            toolName: name,
+            imageData: screenshotResult.data.imageData.substring(0, 100) + '...' // 截取前100个字符用于日志
+          })
+        }
+      } catch (error) {
+        console.warn("Failed to capture screenshot before action:", error)
+      }
+    }
     
     // 执行原始工具调用
     const result = await callMcpTool({ tool: name as any, args })
