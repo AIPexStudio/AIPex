@@ -2282,6 +2282,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })()
       return true
   }
+  
+  // Handle auth state changes
+  if (message.type === 'AUTH_STATE_CHANGED') {
+    console.log('Background: Received AUTH_STATE_CHANGED message')
+    // Forward the message to all content scripts and sidepanel
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, { type: 'AUTH_STATE_CHANGED' }).catch(() => {
+            // Ignore errors for tabs that don't have content scripts
+          })
+        }
+      })
+    })
+    
+    // Also send to sidepanel if it's open
+    chrome.runtime.sendMessage({ type: 'AUTH_STATE_CHANGED' }).catch(() => {
+      // Ignore errors if no listeners
+    })
+  }
 })
 
 // Download functions for background script
