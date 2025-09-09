@@ -7,7 +7,6 @@ import { MarkdownText } from "./markdown-text";
 interface SendStopButtonProps {
   isLoading: boolean;
   hasInput: boolean;
-  isAiConfigured: boolean;
   height: number;
   onSend: () => void;
   onStop: () => void;
@@ -16,12 +15,11 @@ interface SendStopButtonProps {
 const SendStopButton: FC<SendStopButtonProps> = ({
   isLoading,
   hasInput,
-  isAiConfigured,
   height,
   onSend,
   onStop
 }) => {
-  const isDisabled = !hasInput || !isAiConfigured;
+  const isDisabled = !hasInput;
   
   if (isLoading) {
     // Stop Button
@@ -159,7 +157,6 @@ export const Thread: FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [aiConfigured, setAiConfigured] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const [textareaHeight, setTextareaHeight] = useState(44); // Default height for single line
@@ -265,20 +262,6 @@ export const Thread: FC = () => {
     return deduplicated;
   }, []);
 
-  // Check AI configuration on mount
-  useEffect(() => {
-    const checkAIConfig = async () => {
-      try {
-        const storage = new (await import("@plasmohq/storage")).Storage();
-        const aiToken = await storage.get("aiToken");
-        setAiConfigured(!!aiToken);
-      } catch (e) {
-        console.error("Failed to check AI configuration", e);
-        setAiConfigured(false);
-      }
-    };
-    checkAIConfig();
-  }, []);
 
   // Auto-fetch current tab on mount
   useEffect(() => {
@@ -287,15 +270,15 @@ export const Thread: FC = () => {
 
   // Dynamic placeholder carousel
   useEffect(() => {
-    // Only rotate placeholder when input is empty, AI is configured, and not loading
-    if (!inputValue.trim() && aiConfigured && !loading) {
+    // Only rotate placeholder when input is empty and not loading
+    if (!inputValue.trim() && !loading) {
       const interval = setInterval(() => {
         setPlaceholderIndex(prev => (prev + 1) % placeholderList.length);
       }, 3000); // Change every 3 seconds
       
       return () => clearInterval(interval);
     }
-  }, [inputValue, aiConfigured, loading, placeholderList.length]);
+  }, [inputValue, loading, placeholderList.length]);
 
   // Persist messages to storage to maintain conversation continuity
   useEffect(() => {
@@ -673,27 +656,6 @@ export const Thread: FC = () => {
     }
 
     // Check if AI is configured
-    if (!aiConfigured) {
-      // Add a user message to show the error
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        content: message,
-        referencedTabs: selectedTabs,
-        role: 'user',
-        parts: []
-      };
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "❌ **AI Configuration Required**\n\nPlease configure your AI settings first:\n1. Click the settings icon (⚙️) in the top-left corner\n2. Enter your AI API token and configuration\n3. Save the settings\n4. Try sending your message again",
-        role: 'assistant',
-        parts: []
-      };
-      
-      setMessages(prev => [...prev, userMessage, errorMessage]);
-      // Don't clear input when AI is not configured, so user can see their message
-      return;
-    }
 
     // Clear input immediately after submission
     setInputValue('');
@@ -821,7 +783,7 @@ export const Thread: FC = () => {
       // Don't set loading to false here - let the error message handler do it
       console.log('AI response failed, waiting for error message');
     }
-  }, [loading, messages, aiConfigured, selectedTabs]);
+  }, [loading, messages, selectedTabs]);
 
   // When sidepanel mounts, automatically read chrome.storage.local['aipex_user_input'], if exists, auto-fill and send
   useEffect(() => {
@@ -835,7 +797,7 @@ export const Thread: FC = () => {
         setInputValue(result.aipex_user_input);
         // Use a more stable approach to prevent re-execution issues
         setTimeout(() => {
-          if (!loading && aiConfigured) {
+          if (!loading) {
             console.log('🔄 [DEBUG] Auto-submitting message:', result.aipex_user_input);
             handleSubmit(result.aipex_user_input);
             chrome.storage.local.remove("aipex_user_input");
@@ -1012,19 +974,24 @@ export const Thread: FC = () => {
     const newSelectedTabs = [...selectedTabs, tab];
     setSelectedTabs(newSelectedTabs);
     
-    // 在输入框中插入标签页引用
+    // 完全移除@符号和搜索内容
     const beforeAt = inputValue.substring(0, atPosition);
     const afterAt = inputValue.substring(atPosition);
-    const newValue = beforeAt + `@${tab.title} ` + afterAt;
+    // 找到@符号后的内容，直到遇到空格或换行
+    const atContent = afterAt.match(/^@[^\s\n]*/);
+    const remainingAfterAt = atContent ? afterAt.substring(atContent[0].length) : afterAt;
+    const newValue = beforeAt + remainingAfterAt;
     setInputValue(newValue);
     
     setShowTabSelector(false);
+    setSearchQuery('');
+    setSelectedIndex(0);
     
     // 聚焦到输入框
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
-        const newCursorPos = beforeAt.length + tab.title.length + 2; // +2 for @ and space
+        const newCursorPos = beforeAt.length;
         inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
       }
     }, 0);
@@ -1079,39 +1046,11 @@ export const Thread: FC = () => {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to AIpex</h3>
               <p className="text-gray-600">Choose a quick action or ask anything to get started</p>
               
-              {!aiConfigured && (
-                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                      <div className="text-sm text-yellow-800">
-                        <strong>AI Configuration Required:</strong> Please configure your AI settings to start chatting.
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        // Trigger settings panel - this will be handled by the parent component
-                        window.dispatchEvent(new CustomEvent('open-aipex-settings'));
-                      }}
-                      className="ml-4 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
-                    >
-                      Configure Now
-                    </button>
-                  </div>
-                </div>
-              )}
               
               <div className="grid gap-4 sm:grid-cols-2 mt-8">
                 <button
                   onClick={() => handleSubmit('Please organize my open tabs by topic and purpose')}
-                  disabled={!aiConfigured}
-                  className={`w-full text-left p-6 rounded-2xl border transition-all duration-200 ${
-                    aiConfigured 
-                      ? 'border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm' 
-                      : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                  }`}
+                  className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm transition-all duration-200"
                 >
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
@@ -1126,12 +1065,7 @@ export const Thread: FC = () => {
                 
                 <button
                   onClick={() => handleSubmit('Summarize this page and save key points to clipboard')}
-                  disabled={!aiConfigured}
-                  className={`w-full text-left p-6 rounded-2xl border transition-all duration-200 ${
-                    aiConfigured 
-                      ? 'border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm' 
-                      : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                  }`}
+                  className="w-full text-left p-6 rounded-2xl border border-blue-200 hover:border-blue-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm transition-all duration-200"
                 >
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
@@ -1146,12 +1080,7 @@ export const Thread: FC = () => {
                 
                 <button
                   onClick={() => handleSubmit('Please use Google to research topic \'MCP\'')}
-                  disabled={!aiConfigured}
-                  className={`w-full text-left p-6 rounded-2xl border transition-all duration-200 ${
-                    aiConfigured 
-                      ? 'border-purple-200 hover:border-purple-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm' 
-                      : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                  }`}
+                  className="w-full text-left p-6 rounded-2xl border border-purple-200 hover:border-purple-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm transition-all duration-200"
                 >
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
@@ -1166,12 +1095,7 @@ export const Thread: FC = () => {
                 
                 <button
                   onClick={() => handleSubmit('Compare the price of Airpods 3')}
-                  disabled={!aiConfigured}
-                  className={`w-full text-left p-6 rounded-2xl border transition-all duration-200 ${
-                    aiConfigured 
-                      ? 'border-orange-200 hover:border-orange-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm' 
-                      : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                  }`}
+                  className="w-full text-left p-6 rounded-2xl border border-orange-200 hover:border-orange-300 hover:bg-white hover:shadow-md bg-white/70 backdrop-blur-sm transition-all duration-200"
                 >
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
@@ -1350,15 +1274,13 @@ export const Thread: FC = () => {
                 placeholder={
                   loading 
                     ? "AI is responding..." 
-                    : aiConfigured 
-                      ? `${placeholderList[placeholderIndex]} (Shift+Enter for new line)`
-                      : "Configure AI settings first..."
+                    : `${placeholderList[placeholderIndex]} (Shift+Enter for new line)`
                 }
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 onKeyDown={handleKeyDown}
-                disabled={loading || !aiConfigured}
+                disabled={loading}
                 style={{ 
                   height: `${textareaHeight}px`,
                   minHeight: '44px',
@@ -1370,7 +1292,6 @@ export const Thread: FC = () => {
             <SendStopButton
               isLoading={loading && !!currentMessageId}
               hasInput={!!inputValue.trim()}
-              isAiConfigured={aiConfigured}
               height={textareaHeight}
               onSend={() => handleSubmit(inputValue)}
               onStop={handleStopAI}
