@@ -1,6 +1,15 @@
 name: "Submit to Web Store"
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to web store (true/false)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
   push:
     tags:
       - 'v*'  # 当推送版本标签时自动触发
@@ -35,7 +44,14 @@ jobs:
           AI_TOKEN: ${{ secrets.AI_TOKEN }}
       - name: Package the extension into a zip artifact
         run: pnpm package
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-package
+          path: build/
+          retention-days: 30
       - name: Browser Platform Publish
+        if: ${{ github.event.inputs.publish != 'false' }}
         uses: PlasmoHQ/bpp@v3
         with:
           keys: ${{ secrets.SUBMIT_KEYS }}

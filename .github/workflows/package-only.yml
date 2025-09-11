@@ -1,0 +1,41 @@
+name: "Package Extension Only"
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'package-*'  # 当推送以 package- 开头的标签时自动触发
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Cache pnpm modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+            
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: true
+          
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: "pnpm"
+          
+      - name: Package the extension
+        run: pnpm package
+        
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-package
+          path: build/
+          retention-days: 30
