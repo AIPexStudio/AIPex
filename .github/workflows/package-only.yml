@@ -51,6 +51,25 @@ jobs:
           path: build/
           retention-days: 30
           
+      - name: Auto-increment version
+        run: |
+          # 获取当前版本号
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # 自动递增补丁版本号
+          NEW_VERSION=$(node -p "
+            const version = '$CURRENT_VERSION';
+            const parts = version.split('.');
+            parts[2] = (parseInt(parts[2]) + 1).toString();
+            parts.join('.')
+          ")
+          echo "New version: $NEW_VERSION"
+          
+          # 更新 package.json 中的版本号
+          npm version $NEW_VERSION --no-git-tag-version
+          echo "Updated version to: $NEW_VERSION"
+          
       - name: Publish to GitHub Packages
         run: |
           echo "@aipexstudio:registry=https://npm.pkg.github.com" >> ~/.npmrc

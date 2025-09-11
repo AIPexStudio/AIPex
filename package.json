@@ -1,7 +1,7 @@
 {
   "name": "@aipexstudio/cool-aipex",
   "displayName": "AIPex",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Automate your browser with natural language commands - The open source browser-use solution",
   "author": "Plasmo Corp. <foss@plasmo.com>",
   "publishConfig": {
