@@ -17,6 +17,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - name: Cache pnpm modules
@@ -53,7 +56,7 @@ jobs:
           
       - name: Publish to GitHub Packages
         run: |
-          echo "@ropzislaw:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "@aipexstudio:registry=https://npm.pkg.github.com" >> ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
           pnpm publish:github
         env:

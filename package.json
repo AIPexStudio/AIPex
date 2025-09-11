@@ -1,5 +1,5 @@
 {
-  "name": "@ropzislaw/cool-aipex",
+  "name": "@aipexstudio/cool-aipex",
   "displayName": "AIPex",
   "version": "0.0.1",
   "description": "Automate your browser with natural language commands - The open source browser-use solution",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AIPexStudio/AIPex.git"
+    "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
   },
   "scripts": {
     "dev": "plasmo dev",
