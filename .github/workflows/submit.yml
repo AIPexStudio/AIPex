@@ -41,4 +41,4 @@ jobs:
           keys: ${{ secrets.SUBMIT_KEYS }}
           artifact: build/chrome-mv3-prod.zip
           # 可选：指定要发布的浏览器
-          browsers: firefox,edge
+          # browsers: firefox,edge
