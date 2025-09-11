@@ -554,16 +554,16 @@ const ungroupAllTabs = async () => {
 async function chatCompletion(messages, stream = true, options = {}, messageId?: string) {
   const storage = new Storage()
   
-  // 优先使用环境变量，如果环境变量不存在则使用存储配置，最后使用默认值
-  const aiHost = process.env.AI_HOST || 
-                 (await storage.get("aiHost")) || 
+  // 优先使用存储配置，如果存储配置不存在则使用环境变量，最后使用默认值
+  const aiHost = (await storage.get("aiHost")) || 
+                 process.env.AI_HOST || 
                  "https://api.openai.com/v1/chat/completions"
   
-  const aiToken = process.env.AI_TOKEN || 
-                  (await storage.get("aiToken"))
+  const aiToken = (await storage.get("aiToken")) || 
+                  process.env.AI_TOKEN
   
-  const aiModel = process.env.AI_MODEL || 
-                  (await storage.get("aiModel")) || 
+  const aiModel = (await storage.get("aiModel")) || 
+                  process.env.AI_MODEL || 
                   "gpt-3.5-turbo"
   if (!aiToken) throw new Error("No OpenAI API token set")
   
