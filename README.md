@@ -137,32 +137,11 @@ AIPex擅长通过自然语言命令自动化复杂的浏览器任务。以下是
    - 按 `⌘+M` (Mac) 或 `Ctrl+M` (Windows/Linux)
    - 或点击工具栏中的AIPex图标
 
-3. **开始自动化**
-   - 输入 `/ai` 开始AI自动化聊天
-   - 使用自然语言: "点击登录按钮", "填写这个表单"
-   - 尝试复杂工作流: "研究React最佳实践并保存到笔记"
-
-### 键盘快捷键
-| 操作 | Mac | Windows/Linux |
-|------|-----|---------------|
-| 打开AIPex | `⌘+M` | `Ctrl+M` |
-| 新标签页 | `⌘+T` | `Ctrl+T` |
-| 固定标签页 | `⌥+⇧+P` | `Alt+Shift+P` |
-| 静音标签页 | `⌥+⇧+M` | `Alt+Shift+M` |
-| 全屏 | `⌘+Ctrl+F` | `Ctrl+F` |
-| 重新加载 | `⌘+⇧+R` | `Ctrl+Shift+R` |
-
 ## 🛠️ 开发和贡献
 
 我们欢迎贡献！以下是您可以帮助AIPex变得更好的方式：
 
 📖 **有关详细的开发设置、构建说明和贡献指南，请参阅 [DEVELOPMENT.md](DEVELOPMENT.md)**
-
-### 贡献者快速开始
-- 🏗️ **本地开发**: 参见 [DEVELOPMENT.md#local-development-setup](DEVELOPMENT.md#local-development-setup)
-- 🔧 **构建**: 参见 [DEVELOPMENT.md#building-for-production](DEVELOPMENT.md#building-for-production)
-- 🤝 **贡献**: 参见 [DEVELOPMENT.md#how-to-contribute](DEVELOPMENT.md#how-to-contribute)
-- 📊 **项目状态**: 参见 [DEVELOPMENT.md#development-status](DEVELOPMENT.md#development-status)
 
 
 ### 📊 工具类别概述
