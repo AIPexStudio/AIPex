@@ -17,8 +17,14 @@
     "package": "plasmo package",
     "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify",
     "prepublishOnly": "pnpm build && pnpm package",
-    "publish:github": "npm publish"
+    "publish:github": "npm publish",
+    "publish:extension": "pnpm build && pnpm package && npm publish"
   },
+  "files": [
+    "build/",
+    "README.md",
+    "package.json"
+  ],
   "dependencies": {
     "@ant-design/x": "^1.4.0",
     "@assistant-ui/react": "^0.10.25",

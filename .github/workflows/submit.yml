@@ -58,7 +58,7 @@ jobs:
         run: |
           echo "@aipexstudio:registry=https://npm.pkg.github.com" >> ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-          pnpm publish:github
+          pnpm publish:extension
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
