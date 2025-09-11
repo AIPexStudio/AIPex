@@ -30,6 +30,14 @@ jobs:
           node-version: 18.x
           cache: "pnpm"
           
+      - name: Build the extension
+        run: pnpm build
+        env:
+          # AI 配置环境变量（可选）
+          AI_HOST: ${{ secrets.AI_HOST }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          AI_TOKEN: ${{ secrets.AI_TOKEN }}
+          
       - name: Package the extension
         run: pnpm package
         
