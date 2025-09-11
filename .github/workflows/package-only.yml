@@ -47,3 +47,11 @@ jobs:
           name: extension-package
           path: build/
           retention-days: 30
+          
+      - name: Publish to GitHub Packages
+        run: |
+          echo "@ropzislaw:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+          pnpm publish:github
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

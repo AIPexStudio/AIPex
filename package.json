@@ -1,14 +1,23 @@
 {
-  "name": "cool-aipex",
+  "name": "@ropzislaw/cool-aipex",
   "displayName": "AIPex",
   "version": "0.0.1",
-  "description": "best tab manager",
+  "description": "Automate your browser with natural language commands - The open source browser-use solution",
   "author": "Plasmo Corp. <foss@plasmo.com>",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AIPexStudio/AIPex.git"
+  },
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
     "package": "plasmo package",
-    "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify"
+    "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify",
+    "prepublishOnly": "pnpm build && pnpm package",
+    "publish:github": "npm publish"
   },
   "dependencies": {
     "@ant-design/x": "^1.4.0",
