@@ -183,15 +183,14 @@ AIPex擅长通过自然语言命令自动化复杂的浏览器任务。以下是
 </details>
 
 <details>
-<summary>📄 <strong>页面内容和交互</strong> - 15个工具</summary>
+<summary>📄 <strong>页面内容和交互</strong> - 14个工具</summary>
 
 内容提取、分析和页面交互:
 - `get_page_metadata` - 获取页面元数据，包括标题、描述、关键词
 - `extract_page_text` - 提取文本内容，包括字数统计和阅读时间
 - `get_page_links` - 获取当前页面的所有链接
 - `search_page_text` - 在当前页面搜索文本
-- `get_interactive_elements` - 获取所有交互元素（链接、按钮、输入框）
-- `get_interactive_elements_optimized` - 针对复杂页面的优化版本
+- `get_interactive_elements` - 获取所有交互元素（链接、按钮、输入框），具有优化性能
 - `click_element` - 使用CSS选择器点击元素
 - `summarize_page` - 总结页面内容和要点
 - `fill_input` - 在输入框中填写文本

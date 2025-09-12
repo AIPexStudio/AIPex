@@ -470,17 +470,7 @@ export class BrowserMcpClient {
     },
     {
       name: "get_interactive_elements",
-      description: "Get all interactive elements (links, buttons, inputs) from the current page",
-      action: false,
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
-    {
-      name: "get_interactive_elements_optimized",
-      description: "Get interactive elements with optimized performance (faster execution, better for complex pages)",
+      description: "Get all interactive elements (links, buttons, inputs) from the current page with optimized performance",
       action: false,
       inputSchema: {
         type: "object",

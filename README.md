@@ -103,15 +103,14 @@ Complete tab control and navigation:
 </details>
 
 <details>
-<summary>📄 <strong>Page Content & Interaction</strong> - 15 tools</summary>
+<summary>📄 <strong>Page Content & Interaction</strong> - 14 tools</summary>
 
 Content extraction, analysis, and page interaction:
 - `get_page_metadata` - Get page metadata including title, description, keywords
 - `extract_page_text` - Extract text content with word count and reading time
 - `get_page_links` - Get all links from the current page
 - `search_page_text` - Search for text on the current page
-- `get_interactive_elements` - Get all interactive elements (links, buttons, inputs)
-- `get_interactive_elements_optimized` - Optimized version for complex pages
+- `get_interactive_elements` - Get all interactive elements (links, buttons, inputs) with optimized performance
 - `click_element` - Click an element using CSS selector
 - `summarize_page` - Summarize page content with key points
 - `fill_input` - Fill an input field with text

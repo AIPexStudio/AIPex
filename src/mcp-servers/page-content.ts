@@ -319,7 +319,7 @@ export async function getPageAccessibility(): Promise<{
 }
 
 /**
- * Get interactive elements from the current page
+ * Get interactive elements from the current page (optimized version)
  */
 export async function getInteractiveElements(): Promise<{
   title: string
@@ -367,6 +367,31 @@ export async function getInteractiveElements(): Promise<{
                element.getAttribute('tabindex') !== null
       }
 
+      // Optimized approach: use specific selectors for better performance
+      const selectors = [
+        'a[href]',
+        'button:not([disabled])',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        '[role="button"]:not([disabled])',
+        '[onclick]',
+        '[tabindex]:not([tabindex="-1"])'
+      ]
+      
+      let allElements: Element[] = []
+      for (const selector of selectors) {
+        try {
+          const elements = document.querySelectorAll(selector)
+          allElements.push(...Array.from(elements))
+        } catch (e) {
+          continue
+        }
+      }
+      
+      // Remove duplicates and limit to reasonable number
+      const uniqueElements = [...new Set(allElements)].slice(0, 100)
+
       const interactiveElements: Array<{
         type: string
         text: string
@@ -378,10 +403,7 @@ export async function getInteractiveElements(): Promise<{
         isClickable: boolean
       }> = []
 
-      // Get all interactive elements
-      const elements = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [onclick], [tabindex]')
-      
-      elements.forEach((element, index) => {
+      uniqueElements.forEach((element) => {
         const tag = element.tagName.toLowerCase()
         const text = element.textContent?.trim() || 
                     (element as HTMLInputElement).placeholder ||

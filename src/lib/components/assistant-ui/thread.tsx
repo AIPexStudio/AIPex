@@ -163,6 +163,7 @@ export const Thread: FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // @标签页功能相关状态
   const [showTabSelector, setShowTabSelector] = useState(false);
@@ -266,6 +267,15 @@ export const Thread: FC = () => {
   // Auto-fetch current tab on mount
   useEffect(() => {
     fetchCurrentTab();
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Dynamic placeholder carousel
@@ -524,13 +534,25 @@ export const Thread: FC = () => {
             ? { ...msg, streaming: false }
             : msg
         ));
+        // Clear the safety timeout since task completed successfully
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        // Ensure loading state is always cleared, regardless of current state
         setLoading(false);
         setCurrentMessageId(null);
+        console.log('Loading state cleared, currentMessageId set to null');
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
       } else if (message.request === "ai-chat-error") {
         console.log('Task error - ending loading state');
+        // Clear the safety timeout since task errored
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
         // Task encountered error - end loading state
         setMessages(prev => prev.map(msg => 
           msg.id === message.messageId 
@@ -576,7 +598,7 @@ export const Thread: FC = () => {
     return () => {
       chrome.runtime.onMessage.removeListener(handleStreamMessage);
     };
-  }, [currentMessageId]);
+  }, []); // Remove currentMessageId dependency to prevent listener removal during task execution
 
   // Handle providing current chat images for AI tools
   useEffect(() => {
@@ -618,6 +640,12 @@ export const Thread: FC = () => {
         messageId: currentMessageId
       });
       console.log('🛑 [DEBUG] Background response:', response)
+      
+      // Clear the safety timeout since user manually stopped
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
       
       // Update UI to show stopped state
       setMessages(prev => prev.map(msg => 
@@ -667,6 +695,16 @@ export const Thread: FC = () => {
     
     // Set loading state immediately
     setLoading(true);
+    
+    // Set a safety timeout to prevent UI from getting stuck in loading state
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.warn('Loading timeout reached - forcing loading state to false');
+      setLoading(false);
+      setCurrentMessageId(null);
+    }, 300000); // 5 minutes timeout
 
           // Add user message
       const userMessage: Message = {
