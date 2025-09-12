@@ -78,25 +78,14 @@ AIPex is a revolutionary Chrome extension that transforms your browser into an i
    - Press `⌘+M` (Mac) or `Ctrl+M` (Windows/Linux)
    - Or click the AIPex icon in your toolbar
 
-3. **Start Automating**
-   - Type `/ai` to start AI automation chat
-   - Use natural language: "Click the login button", "Fill out this form"
-   - Try complex workflows: "Research React best practices and save to notes"
-
 ## 🛠️ Development & Contributing
 
 We love contributions! Here's how you can help make AIPex even better:
 
 📖 **For detailed development setup, build instructions, and contribution guidelines, please see [DEVELOPMENT.md](DEVELOPMENT.md)**
 
-### Quick Start for Contributors
-- 🏗️ **Local Development**: See [DEVELOPMENT.md#local-development-setup](DEVELOPMENT.md#local-development-setup)
-- 🔧 **Building**: See [DEVELOPMENT.md#building-for-production](DEVELOPMENT.md#building-for-production)
-- 🤝 **Contributing**: See [DEVELOPMENT.md#how-to-contribute](DEVELOPMENT.md#how-to-contribute)
-- 📊 **Project Status**: See [DEVELOPMENT.md#development-status](DEVELOPMENT.md#development-status)
 
-
-### 📊 Tool Categories Overview
+## 📊 Tool Categories Overview
 
 <details>
 <summary>🗂️ <strong>Tab Management</strong> - 8 tools</summary>
