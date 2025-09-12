@@ -1,4 +1,5 @@
 import React from "react"
+import { useTranslation } from "~/lib/i18n/hooks"
 
 interface ThinkingProps {
   isThinking: boolean
@@ -6,6 +7,7 @@ interface ThinkingProps {
 }
 
 const Thinking: React.FC<ThinkingProps> = ({ isThinking, children }) => {
+  const { t } = useTranslation()
   if (!isThinking) return null
 
   return (
@@ -24,7 +26,7 @@ const Thinking: React.FC<ThinkingProps> = ({ isThinking, children }) => {
           style={{ animationDelay: '400ms', animationDuration: '1.4s' }}
         />
       </div>
-      <span className="font-medium">{children || "AI is thinking..."}</span>
+      <span className="font-medium">{children || t("ai.thinking")}</span>
     </div>
   )
 }

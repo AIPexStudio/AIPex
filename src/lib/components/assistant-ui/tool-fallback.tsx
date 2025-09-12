@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useToolName } from "~/lib/i18n/tool-names";
+import { useTranslation } from "~/lib/i18n/hooks";
 
 // Simple icon components in case lucide-react is not available
 const CheckIcon = () => <span className="text-green-600">✓</span>;
@@ -21,6 +23,8 @@ export const ToolFallback: React.FC<ToolFallbackProps> = ({
   error
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const { t } = useTranslation();
+  const translatedToolName = useToolName(toolName);
 
   const getStatusIcon = () => {
     switch (status) {
@@ -57,7 +61,7 @@ export const ToolFallback: React.FC<ToolFallbackProps> = ({
       <div className="flex items-center gap-2 px-4">
         {getStatusIcon()}
         <p className="flex-grow text-sm">
-          Used tool: <b className="font-semibold">{toolName}</b>
+          Used tool: <b className="font-semibold">{translatedToolName}</b>
         </p>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}

@@ -3,8 +3,12 @@ import "~/style.css"
 
 import { Thread } from "~/lib/components/assistant-ui/thread"
 import { AIPexRuntimeProvider } from "~/lib/components/assistant-ui/runtime-provider"
+import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks"
+import type { Language } from "~/lib/i18n/types"
 
 const AIChatSidebarAssistantUI = () => {
+  const { t, language } = useTranslation()
+  const changeLanguage = useLanguageChanger()
   const [showSettings, setShowSettings] = useState(false)
   
   const [aiHost, setAiHost] = useState("")
@@ -55,13 +59,13 @@ const AIChatSidebarAssistantUI = () => {
         storage.set("aiModel", aiModel)
       ])
       // Show success feedback
-      setSaveStatus("Settings saved successfully!")
+      setSaveStatus(t("settings.saveSuccess"))
       setTimeout(() => setSaveStatus(""), 1500)
       console.log("AI settings saved")
     } catch (e) {
       console.error("Error saving AI settings:", e)
       // Show error feedback
-      setSaveStatus("Error saving settings")
+      setSaveStatus(t("settings.saveError"))
       setTimeout(() => setSaveStatus(""), 3000)
     } finally {
       setIsSaving(false)
@@ -73,7 +77,7 @@ const AIChatSidebarAssistantUI = () => {
       {/* Header */}
       <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900">AI Chat</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t("common.title")}</h2>
         </div>
         <button
           onClick={() => {
@@ -81,7 +85,7 @@ const AIChatSidebarAssistantUI = () => {
             window.dispatchEvent(new CustomEvent('clear-aipex-messages'));
           }}
           className="absolute right-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          title="New Chat"
+          title={t("tooltip.newChat")}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 5v14M5 12h14"/>
@@ -90,7 +94,7 @@ const AIChatSidebarAssistantUI = () => {
         <button
           onClick={() => setShowSettings(s => !s)}
           className="absolute left-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          title="Settings"
+          title={t("tooltip.settings")}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
             <path d="M11.983 1.588a1 1 0 00-1.966 0l-.078.46a7.97 7.97 0 00-1.357.563l-.42-.243a1 1 0 00-1.366.366l-.983 1.703a1 1 0 00.366 1.366l.42.243c-.124.44-.214.9-.264 1.372l-.46.078a1 1 0 000 1.966l.46.078c.05.472.14.932.264 1.372l-.42.243a1 1 0 00-.366 1.366l.983 1.703a1 1 0 001.366.366l.42-.243c.425.242.88.44 1.357.563l.078.46a1 1 0 001.966 0l.078-.46c.472-.05.932-.14 1.372-.264l.243.42a1 1 0 001.366.366l1.703-.983a1 1 0 00.366-1.366l-.243-.42c.242-.425.44-.88.563-1.357l.46-.078a1 1 0 000-1.966l-.46-.078a7.97 7.97 0 00-.563-1.357l.243-.42a1 1 0 00-.366-1.366l-1.703-.983a1 1 0 00-1.366.366l-.243.42a7.97 7.97 0 00-1.372-.264l-.078-.46zM10 13a3 3 0 110-6 3 3 0 010 6z" />
@@ -114,13 +118,13 @@ const AIChatSidebarAssistantUI = () => {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
-                <p className="text-sm text-gray-600">AI configuration</p>
+                <h3 className="text-lg font-semibold text-gray-900">{t("settings.title")}</h3>
+                <p className="text-sm text-gray-600">{t("settings.subtitle")}</p>
               </div>
               <button
                 onClick={() => setShowSettings(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                title="Close"
+                title={t("tooltip.close")}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -129,35 +133,50 @@ const AIChatSidebarAssistantUI = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="px-6 py-6">
+            <div className="px-6 py-6 space-y-6">
+              {/* Language Selection */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">{t("settings.language")}</label>
+                  <select 
+                    value={language} 
+                    onChange={(e) => changeLanguage(e.target.value as Language)}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  >
+                    <option value="en">{t("language.en")}</option>
+                    <option value="zh">{t("language.zh")}</option>
+                  </select>
+                </div>
+              </div>
+
               {/* AI Configuration */}
               <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200 rounded-2xl p-6 space-y-5 shadow-sm">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Host</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">{t("settings.aiHost")}</label>
                   <input
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     value={aiHost}
                     onChange={(e) => setAiHost(e.target.value)}
-                    placeholder="https://api.deepseek.com/chat/completions"
+                    placeholder={t("settings.hostPlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Token</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">{t("settings.aiToken")}</label>
                   <input
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     type="password"
                     value={aiToken}
                     onChange={(e) => setAiToken(e.target.value)}
-                    placeholder="Enter your API token"
+                    placeholder={t("settings.tokenPlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">AI Model</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">{t("settings.aiModel")}</label>
                   <input
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     value={aiModel}
                     onChange={(e) => setAiModel(e.target.value)}
-                    placeholder="deepseek-chat"
+                    placeholder={t("settings.modelPlaceholder")}
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -165,11 +184,11 @@ const AIChatSidebarAssistantUI = () => {
                     onClick={handleSaveAISettings}
                     disabled={isSaving}
                     className={`px-6 py-3 rounded-xl text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 hover:scale-105'}`}
-                  >{isSaving ? 'Saving...' : 'Save Settings'}</button>
+                  >{isSaving ? t("common.saving") : t("common.save")}</button>
                   <button
                     onClick={() => setShowSettings(false)}
                     className="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
-                  >Cancel</button>
+                  >{t("common.cancel")}</button>
                 </div>
                 {saveStatus && (
                   <div className={`text-sm mt-2 ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>

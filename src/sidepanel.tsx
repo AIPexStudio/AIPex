@@ -1,5 +1,6 @@
 import React from "react"
 import AIChatSidebar from "~features/ai-chat-assistant-ui"
+import { I18nProvider } from "~lib/i18n/context"
 import cssText from "data-text:~style.css"
 
 // Inject Tailwind only into the sidepanel document (does not affect host pages)
@@ -16,6 +17,10 @@ export const getStyle = (): HTMLStyleElement => {
   return styleElement
 }
 
-const PlasmoSidepanel = () => <AIChatSidebar />
+const PlasmoSidepanel = () => (
+  <I18nProvider>
+    <AIChatSidebar />
+  </I18nProvider>
+)
 
 export default PlasmoSidepanel 

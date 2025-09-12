@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { MarkdownRenderer } from './index'
+import { useTranslation } from "~/lib/i18n/hooks"
+import { useToolName } from "~/lib/i18n/tool-names"
 
 export interface StreamingToolCallStep {
   type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'planning'
@@ -24,6 +26,7 @@ const StreamingToolCall: React.FC<StreamingToolCallProps> = ({
   isActive, 
   onStepComplete 
 }) => {
+  const { t } = useTranslation()
   const [steps, setSteps] = useState<StreamingToolCallStep[]>([])
   const [currentStep, setCurrentStep] = useState<StreamingToolCallStep | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -201,8 +204,8 @@ const StreamingToolCall: React.FC<StreamingToolCallProps> = ({
             <span className="text-blue-600 text-lg">⚡</span>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Streaming AI Response</h3>
-            <p className="text-xs text-gray-600">Real-time tool execution and reasoning</p>
+            <h3 className="text-sm font-semibold text-gray-900">{t("ai.streamingResponse")}</h3>
+            <p className="text-xs text-gray-600">{t("ai.realtimeExecution")}</p>
           </div>
         </div>
         
@@ -267,7 +270,7 @@ const StreamingToolCall: React.FC<StreamingToolCallProps> = ({
                     <span className="text-lg mr-2">{getStepIcon(step.type)}</span>
                     <span className="text-sm font-medium text-gray-900">
                       {step.type === 'text' ? 'Text Response' :
-                       step.type === 'tool_call' ? `Tool: ${step.name}` :
+                       step.type === 'tool_call' ? `Tool: ${useToolName(step.name || '')}` :
                        step.type === 'tool_result' ? 'Tool Result' :
                        step.type === 'thinking' ? 'Thinking' :
                        step.type === 'planning' ? 'Planning' : 'Step'}

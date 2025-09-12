@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { useToolName } from "~/lib/i18n/tool-names"
 
 interface ToolStep {
   type: 'think' | 'call_tool' | 'tool_result'
@@ -94,7 +95,7 @@ const CallTool: React.FC<CallToolProps> = ({ steps }) => {
                       tool
                     </span>
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900 mb-1">{step.name}</div>
+                      <div className="font-semibold text-gray-900 mb-1">{useToolName(step.name || '')}</div>
                       {step.args && Object.keys(step.args).length > 0 && (
                         <div className="text-gray-600 text-xs bg-blue-50 rounded px-2 py-1 border border-blue-100">
                           <span className="font-medium">Args:</span> {Object.keys(step.args).map(k => `${k}: ${String((step.args as any)[k])}`).join(', ')}

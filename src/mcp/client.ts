@@ -110,8 +110,7 @@ export class BrowserMcpClient {
         required: []
       }
     },
-    // Tab Groups - 注释掉不太重要的工具
-    /*
+    // Tab Groups
     {
       name: "organize_tabs",
       description: "Use AI to automatically group tabs by topic/purpose",
@@ -128,10 +127,10 @@ export class BrowserMcpClient {
       action: true,
       inputSchema: {
         type: "object",
-        properties: {}
+        properties: {},
+        required: []
       }
     },
-    */
     /*
     {
       name: "get_all_tab_groups",

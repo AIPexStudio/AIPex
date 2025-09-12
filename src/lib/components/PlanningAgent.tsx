@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { MarkdownRenderer } from "./index"
+import { useTranslation } from "~/lib/i18n/hooks"
 
 export interface PlanningStep {
   type: 'analysis' | 'plan' | 'think' | 'act' | 'observe' | 'reason' | 'complete' | 'retry' | 'error'
@@ -31,6 +32,7 @@ export interface PlanningAgentProps {
 }
 
 const PlanningAgent: React.FC<PlanningAgentProps> = ({ steps, isActive, onStepComplete }) => {
+  const { t } = useTranslation()
   const getStepIcon = (type: PlanningStep['type']) => {
     switch (type) {
       case 'analysis':
@@ -117,8 +119,8 @@ const PlanningAgent: React.FC<PlanningAgentProps> = ({ steps, isActive, onStepCo
           <span className="text-blue-600 text-lg">🤖</span>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Planning Agent</h3>
-          <p className="text-xs text-gray-600">Enhanced AI Planning with ReAct Framework</p>
+          <h3 className="text-sm font-semibold text-gray-900">{t("ai.planningAgent")}</h3>
+          <p className="text-xs text-gray-600">{t("ai.enhancedPlanning")}</p>
         </div>
       </div>
 

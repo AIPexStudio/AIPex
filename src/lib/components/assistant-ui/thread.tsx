@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { FC } from "react";
 import { ToolFallback } from "./tool-fallback";
 import { MarkdownText } from "./markdown-text";
+import { useTranslation } from "~/lib/i18n/hooks"
+import { useToolName } from "~/lib/i18n/tool-names";
 
 // Custom Send/Stop Button Component
 interface SendStopButtonProps {
@@ -19,6 +21,7 @@ const SendStopButton: FC<SendStopButtonProps> = ({
   onSend,
   onStop
 }) => {
+  const { t } = useTranslation()
   const isDisabled = !hasInput;
   
   if (isLoading) {
@@ -43,7 +46,7 @@ const SendStopButton: FC<SendStopButtonProps> = ({
           e.currentTarget.style.backgroundColor = '#f3f4f6';
           e.currentTarget.style.borderColor = '#d1d5db';
         }}
-        title="Stop AI response"
+        title={t("tooltip.stopResponse")}
       >
         {/* Stop Icon - Simple square */}
         <div 
@@ -59,7 +62,7 @@ const SendStopButton: FC<SendStopButtonProps> = ({
           fontSize: '14px', 
           fontWeight: '500' 
         }}>
-          Stop
+          {t("common.stop")}
         </span>
       </button>
     );
@@ -108,7 +111,7 @@ const SendStopButton: FC<SendStopButtonProps> = ({
         fontSize: '14px', 
         fontWeight: '500' 
       }}>
-        Send
+        {t("common.send")}
       </span>
     </button>
   );
@@ -154,6 +157,7 @@ interface ToolCall {
 }
 
 export const Thread: FC = () => {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -180,9 +184,9 @@ export const Thread: FC = () => {
   // Dynamic placeholder functionality
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const placeholderList = [
-    "Search or Ask anything",
-    "Try mention a tab with @tab",
-    "Organize your tabs"
+    t("input.placeholder1"),
+    t("input.placeholder2"),
+    t("input.placeholder3")
   ];
 
   // 获取所有标签页
@@ -580,10 +584,7 @@ export const Thread: FC = () => {
                     status: 'completed',
                     timestamp: Date.now(),
                     imageData: message.imageData,
-                    imageTitle: message.title || 
-                              (message.toolName === 'capture_screenshot' ? 'Current Page Screenshot' :
-                              message.toolName === 'capture_tab_screenshot' ? 'Tab Screenshot' :
-                              message.toolName === 'read_clipboard_image' ? 'Clipboard Image' : 'Image')
+                    imageTitle: message.title || useToolName(message.toolName || '')
                   }
                 ]
               }

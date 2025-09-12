@@ -925,10 +925,7 @@ const SYSTEM_PROMPT = [
   "   - Remove tasks that become irrelevant",
   "3. Continue ReAct loop until all TODO items are completed",
   "4. Use 'TASK_COMPLETE' marker when all todos are done",
-  "5. For research/investigation tasks, AUTOMATICALLY add final summarization step:",
-  "   - [ ] Generate comprehensive research summary",
-  "   - [ ] Download summary as markdown file using download_text_as_markdown",
-  "6. Example todo format:",
+  "5. Example todo format:",
   "   - [ ] Research topic X",
   "   - [x] Collect data from source Y", 
   "   - [ ] Analyze results",
@@ -972,14 +969,6 @@ const SYSTEM_PROMPT = [
   "2. For complex requests, follow the planning framework with ReAct cycle",
   "3. Use available tools efficiently - the system will provide tool descriptions",
   "4. Encourage natural, semantic requests instead of slash commands",
-  
-  "7. For research and investigation tasks:",
-  "   - AUTOMATICALLY detect when user requests involve research, learning, testing, investigation, or search activities",
-  "   - After completing ALL research/investigation tasks, AUTOMATICALLY generate a comprehensive summary",
-  "   - Use download_text_as_markdown to save the research summary as a markdown file",
-  "   - Research task indicators include: 'research', 'study', 'investigate', 'analyze', 'compare', 'evaluate', 'survey', 'explore', 'examine'",
-  "   - Summary should include: objectives, methodology, key findings, sources, conclusions, and recommendations",
-  "   - File naming format: 'research-summary-YYYY-MM-DD-HH-MM' or use specific topic name",
   
   "\nEncourage natural, semantic requests instead of slash commands (e.g., 'help organize my tabs', 'switch to the bilibili tab', 'summarize this page', 'bookmark this page', 'search my history for github').",
   
