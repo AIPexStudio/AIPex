@@ -197,7 +197,15 @@ export class StreamingParser {
                 if (toolCall.id) this.currentToolCall.id = toolCall.id
                 if (toolCall.function?.name) this.currentToolCall.function.name = toolCall.function.name
                 if (toolCall.function?.arguments) {
-                  this.currentToolCall.function.arguments += toolCall.function.arguments
+                  // Check if arguments are already complete to avoid duplication
+                  const newArgs = toolCall.function.arguments
+                  const existingArgs = this.currentToolCall.function.arguments || ''
+                  
+                  // Only append if the new arguments are not already contained in existing arguments
+                  // This prevents duplication when streaming sends the same arguments multiple times
+                  if (!existingArgs.includes(newArgs)) {
+                    this.currentToolCall.function.arguments += newArgs
+                  }
                 }
               }
             }
