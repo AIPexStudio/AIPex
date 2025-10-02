@@ -33,7 +33,8 @@ const AIChatSidebarAssistantUI = () => {
   useEffect(() => {
     const loadAISettings = async () => {
       try {
-        const storage = new (await import("@plasmohq/storage")).Storage()
+        const { Storage } = await import("~/lib/storage")
+        const storage = new Storage()
         const [hostValue, tokenValue, modelValue] = await Promise.all([
           storage.get("aiHost"),
           storage.get("aiToken"),
@@ -52,7 +53,8 @@ const AIChatSidebarAssistantUI = () => {
   const handleSaveAISettings = async () => {
     setIsSaving(true)
     try {
-      const storage = new (await import("@plasmohq/storage")).Storage()
+      const { Storage } = await import("~/lib/storage")
+      const storage = new Storage()
       await Promise.all([
         storage.set("aiHost", aiHost),
         storage.set("aiToken", aiToken),

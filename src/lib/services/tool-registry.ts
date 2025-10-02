@@ -14,13 +14,22 @@ export interface ToolCategory {
   tools: ToolMetadata[]
 }
 
+export interface AITool {
+  type: "function"
+  function: {
+    name: string
+    description: string
+    parameters: any
+  }
+}
+
 export class ToolRegistry {
   private static instance: ToolRegistry
   private tools: Map<string, ToolMetadata> = new Map()
   private categories: Map<string, ToolCategory> = new Map()
   private initialized = false
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): ToolRegistry {
     if (!ToolRegistry.instance) {
@@ -31,11 +40,11 @@ export class ToolRegistry {
 
   private initializeTools(): void {
     if (this.initialized) return
-    
+
     try {
       // Get all tools from MCP client
       const mcpTools = browserMcpClient.tools
-      
+
       // Define tool categories and their descriptions
       const categoryDefinitions: Record<string, { description: string, tools: string[] }> = {
         "Tab Management": {
@@ -48,7 +57,7 @@ export class ToolRegistry {
         "Tab Groups": {
           description: "Organize tabs into groups and manage tab organization",
           tools: [
-            "organize_tabs", "ungroup_tabs", "get_all_tab_groups", 
+            "organize_tabs", "ungroup_tabs", "get_all_tab_groups",
             "create_tab_group", "update_tab_group"
           ]
         },
@@ -155,14 +164,14 @@ export class ToolRegistry {
         }
 
         this.tools.set(tool.name, toolMetadata)
-        
+
         // Add to category
         const category = this.categories.get(toolCategory)
         if (category) {
           category.tools.push(toolMetadata)
         }
       }
-      
+
       this.initialized = true
     } catch (error) {
       console.error("Error initializing tools:", error)
@@ -213,7 +222,7 @@ export class ToolRegistry {
     )
   }
 
-  public getToolsForOpenAI(): any[] {
+  public getToolsForOpenAI(): AITool[] {
     this.ensureInitialized()
     return this.getAllTools().map(tool => ({
       type: "function" as const,

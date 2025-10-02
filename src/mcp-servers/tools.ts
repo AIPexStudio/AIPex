@@ -1,4 +1,4 @@
-import { Storage } from "@plasmohq/storage"
+import { Storage } from "~/lib/storage"
 
 export type SimplifiedTab = {
   id: number
@@ -304,10 +304,10 @@ export type SimplifiedBookmark = {
 
 export async function getAllBookmarks(): Promise<SimplifiedBookmark[]> {
   const bookmarks = await chrome.bookmarks.getTree()
-  
+
   function flattenBookmarks(nodes: chrome.bookmarks.BookmarkTreeNode[]): SimplifiedBookmark[] {
     const result: SimplifiedBookmark[] = []
-    
+
     for (const node of nodes) {
       if (node.url) {
         // This is a bookmark
@@ -322,19 +322,19 @@ export async function getAllBookmarks(): Promise<SimplifiedBookmark[]> {
         result.push(...flattenBookmarks(node.children))
       }
     }
-    
+
     return result
   }
-  
+
   return flattenBookmarks(bookmarks)
 }
 
 export async function getBookmarkFolders(): Promise<SimplifiedBookmark[]> {
   const bookmarks = await chrome.bookmarks.getTree()
-  
+
   function getFolders(nodes: chrome.bookmarks.BookmarkTreeNode[]): SimplifiedBookmark[] {
     const result: SimplifiedBookmark[] = []
-    
+
     for (const node of nodes) {
       if (!node.url && node.children) {
         // This is a folder
@@ -346,10 +346,10 @@ export async function getBookmarkFolders(): Promise<SimplifiedBookmark[]> {
         })
       }
     }
-    
+
     return result
   }
-  
+
   return getFolders(bookmarks)
 }
 
@@ -398,14 +398,14 @@ export type HistoryItem = {
 export async function getRecentHistory(limit: number = 50): Promise<HistoryItem[]> {
   const endTime = Date.now()
   const startTime = endTime - (7 * 24 * 60 * 60 * 1000) // Last 7 days
-  
+
   const history = await chrome.history.search({
     text: "",
     startTime,
     endTime,
     maxResults: limit
   })
-  
+
   return history.map(item => ({
     id: item.id,
     url: item.url || "",
@@ -420,7 +420,7 @@ export async function searchHistory(query: string, limit: number = 50): Promise<
     text: query,
     maxResults: limit
   })
-  
+
   return history.map(item => ({
     id: item.id,
     url: item.url || "",
@@ -443,7 +443,7 @@ export async function clearHistory(days: number = 1): Promise<{ success: boolean
   try {
     const endTime = Date.now()
     const startTime = endTime - (days * 24 * 60 * 60 * 1000)
-    
+
     await chrome.history.deleteRange({ startTime, endTime })
     return { success: true }
   } catch (error: any) {
@@ -467,7 +467,7 @@ export type SimplifiedWindow = {
 
 export async function getAllWindows(): Promise<SimplifiedWindow[]> {
   const windows = await chrome.windows.getAll({ populate: true })
-  
+
   return windows.map(window => ({
     id: window.id,
     focused: window.focused || false,
@@ -483,7 +483,7 @@ export async function getAllWindows(): Promise<SimplifiedWindow[]> {
 
 export async function getCurrentWindow(): Promise<SimplifiedWindow | null> {
   const window = await chrome.windows.getCurrent({ populate: true })
-  
+
   return {
     id: window.id,
     focused: window.focused || false,
@@ -557,7 +557,7 @@ export type TabGroup = {
 
 export async function getAllTabGroups(): Promise<TabGroup[]> {
   const groups = await chrome.tabGroups.query({})
-  
+
   return Promise.all(groups.map(async (group) => {
     const tabs = await chrome.tabs.query({ groupId: group.id })
     return {
@@ -601,7 +601,7 @@ export async function getTabInfo(tabId: number): Promise<SimplifiedTab | null> {
   try {
     const tab = await chrome.tabs.get(tabId)
     if (!tab || typeof tab.id !== "number") return null
-    
+
     return {
       id: tab.id,
       index: tab.index || 0,

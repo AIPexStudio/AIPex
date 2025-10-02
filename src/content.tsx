@@ -1,53 +1,10 @@
-import cssText from "data-text:~style.css"
-import type { PlasmoCSConfig } from "plasmo"
 import React, { useEffect } from "react"
 import ReactDOM from "react-dom"
-import globeUrl from "url:~/assets/globe.svg"
-import iconUrl from "url:~/assets/icon.png"
+import "~/tailwind.css"
 
-import "url:~/assets/logo-notion.png"
-import "url:~/assets/logo-sheets.png"
-import "url:~/assets/logo-docs.png"
-import "url:~/assets/logo-slides.png"
-import "url:~/assets/logo-forms.png"
-import "url:~/assets/logo-medium.png"
-import "url:~/assets/logo-github.png"
-import "url:~/assets/logo-codepen.png"
-import "url:~/assets/logo-excel.png"
-import "url:~/assets/logo-powerpoint.png"
-import "url:~/assets/logo-word.png"
-import "url:~/assets/logo-figma.png"
-import "url:~/assets/logo-producthunt.png"
-import "url:~/assets/logo-twitter.png"
-import "url:~/assets/logo-spotify.png"
-import "url:~/assets/logo-canva.png"
-import "url:~/assets/logo-anchor.png"
-import "url:~/assets/logo-photoshop.png"
-import "url:~/assets/logo-qr.png"
-import "url:~/assets/logo-asana.png"
-import "url:~/assets/logo-linear.png"
-import "url:~/assets/logo-wip.png"
-import "url:~/assets/logo-calendar.png"
-import "url:~/assets/logo-keep.png"
-import "url:~/assets/logo-meet.png"
-
-export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"]
-}
-
-// Inject Tailwind only into the shadow host created by Plasmo (prevents leaking to host page)
-export const getStyle = (): HTMLStyleElement => {
-  const baseFontSize = 16
-  let updatedCssText = cssText
-  const remRegex = /([\d.]+)rem/g
-  updatedCssText = updatedCssText.replace(remRegex, (match, remValue) => {
-    const pixelsValue = parseFloat(remValue) * baseFontSize
-    return `${pixelsValue}px`
-  })
-  const styleElement = document.createElement("style")
-  styleElement.textContent = updatedCssText
-  return styleElement
-}
+// Get asset URLs
+const globeUrl = chrome.runtime.getURL("assets/globe.svg")
+const iconUrl = chrome.runtime.getURL("assets/icon.png")
 
 
 const placeholderList = [
@@ -893,4 +850,28 @@ const PlasmoOverlay = () => {
   )
 }
 
-export default PlasmoOverlay
+// Mount the content script
+const container = document.createElement("div")
+container.id = "aipex-content-root"
+document.body.appendChild(container)
+
+// Create shadow DOM to isolate styles
+const shadowRoot = container.attachShadow({ mode: "open" })
+const shadowContainer = document.createElement("div")
+shadowRoot.appendChild(shadowContainer)
+
+// Inject styles into shadow DOM
+const style = document.createElement("style")
+style.textContent = `
+  :host {
+    all: initial;
+  }
+`
+shadowRoot.appendChild(style)
+
+// Render the app
+ReactDOM.createRoot(shadowContainer).render(
+  <React.StrictMode>
+    <PlasmoOverlay />
+  </React.StrictMode>
+)
