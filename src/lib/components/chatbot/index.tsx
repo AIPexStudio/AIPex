@@ -219,6 +219,7 @@ const ChatBot = () => {
   const handleNewChat = () => {
     if (messageHandlerRef.current) {
       messageHandlerRef.current.abort();
+      messageHandlerRef.current.resetMessages();
     }
     setMessages([]);
     setInput("");

@@ -18,6 +18,7 @@ export interface MessageHandlerConfig {
 
 export class MessageHandler {
   // Core state
+  private initialMessages: UIMessage[] = [];
   private messages: UIMessage[] = [];
   private messageQueue: UIMessage[] = [];
   private status: ChatStatus = "idle";
@@ -37,6 +38,7 @@ export class MessageHandler {
   private rafIdRef: { current: number | null } = { current: null };
 
   constructor(config: MessageHandlerConfig) {
+    this.initialMessages = config.initialMessages || [];
     this.messages = config.initialMessages || [];
     this.model = config.initialModel || "deepseek-chat";
     this.tools = config.initialTools || [];
@@ -115,6 +117,9 @@ export class MessageHandler {
 
   // --- Configuration Updates ---
   public updateConfig(config: Partial<MessageHandlerConfig>): void {
+    if (config.initialMessages) {
+      this.initialMessages = config.initialMessages;
+    }
     if (config.initialModel) {
       this.model = config.initialModel;
     }
@@ -426,6 +431,11 @@ export class MessageHandler {
     // Reset state
     this.isProcessing = false;
     this.setStatus("idle");
+  }
+
+  resetMessages(): void {
+    this.setMessages(this.initialMessages);
+    this.setMessageQueue([]);
   }
 
   // Start streaming assistant response
