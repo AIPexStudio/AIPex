@@ -324,14 +324,14 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.commands.onCommand.addListener((command) => {
   if (command === "open-aipex") {
     getCurrentTab().then((response) => {
-      if (!response.url.includes("chrome://") && !response.url.includes("chrome.google.com")) {
+      if (!response?.url?.includes("chrome://") && !response?.url?.includes("chrome.google.com")) {
         console.log("open-aipex")
         chrome.tabs.sendMessage(response.id!, { request: "open-aipex" })
       } else {
         // Open a new tab with our custom new tab page
         chrome.tabs.create({ url: "chrome://newtab" }).then((tab) => {
           console.log("open-aipex-new-tab")
-          newtaburl = response.url
+          newtaburl = response?.url || ""
           chrome.tabs.remove(response.id!)
         })
       }
@@ -2016,7 +2016,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break
     case "open-sidepanel":
       // Open the sidepanel for all pages, including newtab
-      chrome.sidePanel.open({ tabId: sender.tab?.id })
+      chrome.sidePanel.open({ tabId: sender.tab?.id || 0 })
 
       // If there's selected text, store it temporarily
       if (message.selectedText) {

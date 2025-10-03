@@ -384,17 +384,15 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     }
   }, [input, actions])
 
-  // Message listener
+  // Close-omni message listener (open-aipex is handled by ContentApp parent)
   React.useEffect(() => {
-    const onMessage = (message: any) => {
-      if (message.request === "open-aipex") {
-        // This will be handled by the parent component
-      } else if (message.request === "close-omni") {
+    const handleMessage = (message: any) => {
+      if (message.request === "close-omni") {
         onClose()
       }
     }
-    chrome.runtime.onMessage.addListener(onMessage)
-    return () => chrome.runtime.onMessage.removeListener(onMessage)
+    chrome.runtime.onMessage.addListener(handleMessage)
+    return () => chrome.runtime.onMessage.removeListener(handleMessage)
   }, [onClose])
 
   // Global shortcut listener (Esc to close)
@@ -802,24 +800,31 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 }
 
 
-const PlasmoOverlay = () => {
+const ContentApp = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false)
-  // For resetting FloatingBot's y coordinate
-  // const [resetBotY, setResetBotY] = React.useState(0)
-  // const hoverTimer = React.useRef<NodeJS.Timeout | null>(null)
-  // const isHoveringEdge = React.useRef(false)
 
-  // Message listener for external triggers
+  // Message listener for external triggers (keyboard shortcuts from background)
   React.useEffect(() => {
-    const onMessage = (message: any) => {
+    const handleMessage = (message: any, _sender: any, sendResponse: any) => {
+      
       if (message.request === "open-aipex") {
         setIsOmniOpen(true)
+        sendResponse({ success: true })
+        return true // Keep message channel open
       } else if (message.request === "close-omni") {
         setIsOmniOpen(false)
+        sendResponse({ success: true })
+        return true
       }
+      
+      return false
     }
-    chrome.runtime.onMessage.addListener(onMessage)
-    return () => chrome.runtime.onMessage.removeListener(onMessage)
+    
+    chrome.runtime.onMessage.addListener(handleMessage)
+    
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage)
+    }
   }, [])
 
   // Hover right side for 2 seconds to show icon logic removed
@@ -836,11 +841,9 @@ const PlasmoOverlay = () => {
   //   // Logic removed
   // }
 
-  // Return UI directly, no ReactDOM.createPortal needed
+  // Return UI
   return (
     <>
-      {/* <SelectionPopup /> */}
-      {/* FloatingBot removed */}
       {isOmniOpen && (
         <Omni 
           isOpen={isOmniOpen}
@@ -851,29 +854,40 @@ const PlasmoOverlay = () => {
   )
 }
 
-// Mount the content script
-const container = document.createElement("div")
-container.id = "aipex-content-root"
-document.body.appendChild(container)
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initContentScript)
+} else {
+  initContentScript()
+}
 
-// Create shadow DOM to isolate styles
-const shadowRoot = container.attachShadow({ mode: "open" })
-const shadowContainer = document.createElement("div")
-shadowRoot.appendChild(shadowContainer)
+function initContentScript() {
+  
+  // Mount the content script
+  const container = document.createElement("div")
+  container.id = "aipex-content-root"
+  document.body.appendChild(container)
 
-// Inject Tailwind CSS into shadow DOM
-const style = document.createElement("style")
-style.textContent = `
-  :host {
-    all: initial;
-  }
-  ${tailwindCss}
-`
-shadowRoot.appendChild(style)
+  // Create shadow DOM to isolate styles
+  const shadowRoot = container.attachShadow({ mode: "open" })
+  const shadowContainer = document.createElement("div")
+  shadowRoot.appendChild(shadowContainer)
 
-// Render the app
-ReactDOM.createRoot(shadowContainer).render(
-  <React.StrictMode>
-    <PlasmoOverlay />
-  </React.StrictMode>
-)
+  // Inject Tailwind CSS into shadow DOM
+  const style = document.createElement("style")
+  style.textContent = `
+    :host {
+      all: initial;
+    }
+    ${tailwindCss}
+  `
+  shadowRoot.appendChild(style)
+
+  // Render the app
+  const root = ReactDOM.createRoot(shadowContainer)
+  root.render(
+    <React.StrictMode>
+      <ContentApp />
+    </React.StrictMode>
+  )
+}
