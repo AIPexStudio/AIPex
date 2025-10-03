@@ -18,6 +18,7 @@ export interface TranslationResources {
     title: string
     subtitle: string
     language: string
+    theme: string
     aiHost: string
     aiToken: string
     aiModel: string
@@ -26,6 +27,11 @@ export interface TranslationResources {
     modelPlaceholder: string
     saveSuccess: string
     saveError: string
+  }
+  theme: {
+    light: string
+    dark: string
+    system: string
   }
   tooltip: {
     newChat: string
@@ -70,6 +76,7 @@ export type TranslationKey =
   | 'settings.title'
   | 'settings.subtitle'
   | 'settings.language'
+  | 'settings.theme'
   | 'settings.aiHost'
   | 'settings.aiToken'
   | 'settings.aiModel'
@@ -78,6 +85,9 @@ export type TranslationKey =
   | 'settings.modelPlaceholder'
   | 'settings.saveSuccess'
   | 'settings.saveError'
+  | 'theme.light'
+  | 'theme.dark'
+  | 'theme.system'
   | 'tooltip.newChat'
   | 'tooltip.settings'
   | 'tooltip.close'

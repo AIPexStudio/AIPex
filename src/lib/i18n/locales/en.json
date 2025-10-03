@@ -16,6 +16,7 @@
     "title": "Settings",
     "subtitle": "AI configuration",
     "language": "Language",
+    "theme": "Theme",
     "aiHost": "AI Host",
     "aiToken": "AI Token", 
     "aiModel": "AI Model",
@@ -24,6 +25,11 @@
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "Settings saved successfully!",
     "saveError": "Error saving settings"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   },
   "tooltip": {
     "newChat": "New Chat",

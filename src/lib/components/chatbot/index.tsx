@@ -68,6 +68,7 @@ import { getAllTools } from "~/lib/services/tool-registry";
 import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
 import type { Language } from "~/lib/i18n/types";
 import { getAllAvailableContexts } from "~/lib/context-providers";
+import { useTheme, type Theme } from "~/lib/hooks/use-theme";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -80,6 +81,7 @@ const formatToolOutput = (output: any) => {
 const ChatBot = () => {
   const { t, language } = useTranslation()
   const changeLanguage = useLanguageChanger()
+  const { theme, setTheme } = useTheme()
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [status, setStatus] = useState<"idle" | "submitted" | "streaming" | "error">("idle");
@@ -453,6 +455,21 @@ const ChatBot = () => {
                 <SelectContent>
                   <SelectItem value="en">{t("language.en")}</SelectItem>
                   <SelectItem value="zh">{t("language.zh")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Theme Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("settings.theme")}</label>
+              <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">{t("theme.light")}</SelectItem>
+                  <SelectItem value="dark">{t("theme.dark")}</SelectItem>
+                  <SelectItem value="system">{t("theme.system")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

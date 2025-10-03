@@ -5,7 +5,7 @@ module.exports = {
     "./components/**/*.{tsx,ts,jsx,js}",
     "./lib/**/*.{tsx,ts,jsx,js}"
   ],
-  darkMode: "media",
+  darkMode: "class",
   prefix: "",
   // Optimize for development
   safelist: [],

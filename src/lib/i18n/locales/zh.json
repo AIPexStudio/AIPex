@@ -16,6 +16,7 @@
     "title": "设置",
     "subtitle": "AI 配置",
     "language": "语言",
+    "theme": "主题",
     "aiHost": "AI 主机",
     "aiToken": "AI 令牌",
     "aiModel": "AI 模型",
@@ -24,6 +25,11 @@
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "设置保存成功！",
     "saveError": "保存设置时出错"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
   },
   "tooltip": {
     "newChat": "新对话",
