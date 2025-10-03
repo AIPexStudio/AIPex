@@ -262,6 +262,7 @@ export type McpResponse =
   | { success: true; data?: any }
   | { success: false; error: string }
 
+import { error } from "console";
 // Direct in-process MCP client: call exported server functions instead of messaging
 import {
   getAllTabs,
@@ -411,12 +412,12 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         return { success: true }
       }
       case "organize_tabs": {
-        await groupTabsByAI()
-        return { success: true }
+        const res = await groupTabsByAI()
+        return { success: res.success, error: res.error ?? "" }
       }
       case "ungroup_tabs": {
-        await ungroupAllTabs()
-        return { success: true }
+        const res = await ungroupAllTabs()
+        return { success: res.success, error: res.error ?? "" }
       }
       case "get_current_tab_content": {
         const content = await getCurrentTabContent()

@@ -48,6 +48,84 @@ import {
   useState,
 } from "react";
 
+/**
+ * Custom hook for typing animation effect
+ * Extracted from typing text component algorithm
+ */
+export function useTypingPlaceholder(
+  texts: string[],
+  options: {
+    typingSpeed?: number;
+    deletingSpeed?: number;
+    pauseDuration?: number;
+    loop?: boolean;
+  } = {}
+) {
+  const {
+    typingSpeed = 50,
+    deletingSpeed = 30,
+    pauseDuration = 2000,
+    loop = true,
+  } = options;
+
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+
+  useEffect(() => {
+    if (texts.length === 0) return;
+
+    let timeout: NodeJS.Timeout;
+    const currentText = texts[currentTextIndex];
+
+    const executeTypingAnimation = () => {
+      if (isDeleting) {
+        if (displayedText === "") {
+          setIsDeleting(false);
+          if (currentTextIndex === texts.length - 1 && !loop) {
+            return;
+          }
+          setCurrentTextIndex((prev) => (prev + 1) % texts.length);
+          setCurrentCharIndex(0);
+          timeout = setTimeout(() => {}, pauseDuration);
+        } else {
+          timeout = setTimeout(() => {
+            setDisplayedText((prev) => prev.slice(0, -1));
+          }, deletingSpeed);
+        }
+      } else {
+        if (currentCharIndex < currentText.length) {
+          timeout = setTimeout(() => {
+            setDisplayedText((prev) => prev + currentText[currentCharIndex]);
+            setCurrentCharIndex((prev) => prev + 1);
+          }, typingSpeed);
+        } else if (texts.length > 1) {
+          timeout = setTimeout(() => {
+            setIsDeleting(true);
+          }, pauseDuration);
+        }
+      }
+    };
+
+    executeTypingAnimation();
+
+    return () => clearTimeout(timeout);
+  }, [
+    currentCharIndex,
+    displayedText,
+    isDeleting,
+    typingSpeed,
+    deletingSpeed,
+    pauseDuration,
+    texts,
+    currentTextIndex,
+    loop,
+  ]);
+
+  return displayedText;
+}
+
 type AttachmentsContext = {
   files: (FileUIPart & { id: string })[];
   add: (files: File[] | FileList) => void;
@@ -481,15 +559,56 @@ export const PromptInputBody = ({
   <div className={cn(className, "flex flex-col")} {...props} />
 );
 
-export type PromptInputTextareaProps = ComponentProps<typeof Textarea>;
+export type PromptInputTextareaProps = ComponentProps<typeof Textarea> & {
+  /**
+   * Enable typing animation for placeholder
+   */
+  enableTypingAnimation?: boolean;
+  /**
+   * Array of placeholder texts to cycle through (only used when enableTypingAnimation is true)
+   */
+  placeholderTexts?: string[];
+  /**
+   * Typing animation speed options
+   */
+  typingOptions?: {
+    typingSpeed?: number;
+    deletingSpeed?: number;
+    pauseDuration?: number;
+    loop?: boolean;
+  };
+};
 
 export const PromptInputTextarea = ({
   onChange,
   className,
   placeholder = "What would you like to know?",
+  enableTypingAnimation = false,
+  placeholderTexts,
+  typingOptions,
   ...props
 }: PromptInputTextareaProps) => {
   const attachments = usePromptInputAttachments();
+  const [isFocused, setIsFocused] = useState(false);
+  const [hasValue, setHasValue] = useState(false);
+
+  // Use typing animation for placeholder if enabled
+  const textsToAnimate = useMemo(() => {
+    if (placeholderTexts && placeholderTexts.length > 0) {
+      return placeholderTexts;
+    }
+    return [placeholder];
+  }, [placeholderTexts, placeholder]);
+
+  const animatedPlaceholder = useTypingPlaceholder(
+    textsToAnimate,
+    typingOptions
+  );
+
+  const displayPlaceholder =
+    enableTypingAnimation && !isFocused && !hasValue
+      ? animatedPlaceholder
+      : placeholder;
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter") {
@@ -536,6 +655,19 @@ export const PromptInputTextarea = ({
     }
   };
 
+  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (e) => {
+    setHasValue(e.target.value.length > 0);
+    onChange?.(e);
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
   return (
     <Textarea
       className={cn(
@@ -546,12 +678,12 @@ export const PromptInputTextarea = ({
         className
       )}
       name="message"
-      onChange={(e) => {
-        onChange?.(e);
-      }}
+      onChange={handleChange}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
-      placeholder={placeholder}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      placeholder={displayPlaceholder}
       {...props}
     />
   );

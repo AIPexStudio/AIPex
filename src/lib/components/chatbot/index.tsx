@@ -4,7 +4,7 @@ import {
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import { Loader } from "@/components/ai-elements/loader";
-import { Message, MessageAvatar, MessageContent } from "@/components/ai-elements/message";
+import { Message, MessageContent } from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -33,14 +33,28 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useMount } from "ahooks";
 import type { ChatStatus } from "ai";
-import { ClockIcon, CopyIcon, PlusIcon, RefreshCcwIcon, SettingsIcon } from "lucide-react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { models } from "./constants";
+import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { models, SYSTEM_PROMPT } from "./constants";
 import { MessageHandler, type MessageHandlerConfig } from "./message-handler";
 import type { UIMessage } from "./types";
 import { Action, Actions } from "@/components/ai-elements/actions";
@@ -48,17 +62,42 @@ import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-e
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources";
 import { useStorage } from "~/lib/storage";
 import { getAllTools } from "~/lib/services/tool-registry";
+import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
+import type { Language } from "~/lib/i18n/types";
+
+const formatToolOutput = (output: any) => {
+  return `
+  \`\`\`${typeof output === "string" ? "text" : "json"}
+  ${typeof output === "string" ? output : JSON.stringify(output, null, 2)}
+  \`\`\`
+  `;
+};
 
 const ChatBot = () => {
+  const { t, language } = useTranslation()
+  const changeLanguage = useLanguageChanger()
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [status, setStatus] = useState<"idle" | "submitted" | "streaming" | "error">("idle");
   const [messageQueue, setMessageQueue] = useState<UIMessage[]>([]);
   const messageHandlerRef = useRef<MessageHandler | null>(null);
 
-  const [aiHost] = useStorage("aiHost", import.meta.env.VITE_AI_HOST || "https://api.openai.com/v1/chat/completions");
-  const [aiToken] = useStorage("aiToken", import.meta.env.VITE_AI_TOKEN);
+  const [aiHost, setAiHost] = useStorage("aiHost", import.meta.env.VITE_AI_HOST || "https://api.openai.com/v1/chat/completions");
+  const [aiToken, setAiToken] = useStorage("aiToken", import.meta.env.VITE_AI_TOKEN);
   const [aiModel, setAiModel] = useStorage("aiModel", import.meta.env.VITE_AI_MODEL);
+
+  // Settings dialog state
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempAiHost, setTempAiHost] = useState("");
+  const [tempAiToken, setTempAiToken] = useState("");
+  const [tempAiModel, setTempAiModel] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const placeholderList = [
+    t("input.placeholder1"),
+    t("input.placeholder2"),
+    t("input.placeholder3")
+  ];
  
 
   // Track cleanup functions outside of the handler
@@ -80,6 +119,7 @@ const ChatBot = () => {
         })),
         initialAiHost: aiHost,
         initialAiToken: aiToken,
+        initialMessages: [{ role: "system", id: "system", parts: [{ type: "text", text: SYSTEM_PROMPT }] }],
       };
 
       messageHandlerRef.current = new MessageHandler(config);
@@ -157,6 +197,27 @@ const ChatBot = () => {
     setInput("");
   };
 
+  const handleOpenSettings = () => {
+    setTempAiHost(aiHost || "");
+    setTempAiToken(aiToken || "");
+    setTempAiModel(aiModel || "");
+    setShowSettings(true);
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      setAiHost(tempAiHost);
+      setAiToken(tempAiToken);
+      setAiModel(tempAiModel);
+      setShowSettings(false);
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -165,13 +226,31 @@ const ChatBot = () => {
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-2">
-        <div className="text-sm font-medium">ZCP Assistant</div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleOpenSettings}
+          className="gap-2"
+        >
+          <SettingsIcon className="size-4" />
+          {t("common.settings")}
+        </Button>
+        <div className="text-sm font-medium">{t("common.title")}</div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleNewChat}
+          className="gap-2"
+        >
+          <PlusIcon className="size-4" />
+          {t("common.newChat")}
+        </Button>
       </div>
 
       <div className="flex-1 overflow-hidden">
         <Conversation className="h-full">
           <ConversationContent>
-            {messages.map((message, messageIndex) => (
+            {messages.filter((message) => message.role !== "system").map((message, messageIndex) => (
               <div key={message.id}>
                 {message.role === "assistant" &&
                   message.parts.filter((part) => part.type === "source-url").length > 0 && (
@@ -221,7 +300,7 @@ const ChatBot = () => {
                               output={
                                 part.output ? (
                                   <Response>
-                                    {part.output}
+                                    {formatToolOutput(part.output)}
                                   </Response>
                                 ) : undefined
                               }
@@ -238,7 +317,7 @@ const ChatBot = () => {
                           isStreaming={
                             status === "streaming" &&
                             i === message.parts.length - 1 &&
-                            message.id === messages.at(-1)?.id
+                            message.id === messages[messages.length - 1]?.id
                           }
                         >
                           <ReasoningTrigger />
@@ -263,7 +342,7 @@ const ChatBot = () => {
             <PromptInputAttachments>
               {(attachment) => <PromptInputAttachment data={attachment} />}
             </PromptInputAttachments>
-            <PromptInputTextarea onChange={(e) => setInput(e.target.value)} value={input} />
+            <PromptInputTextarea placeholder={t("input.newLine")} enableTypingAnimation={true} placeholderTexts={placeholderList} onChange={(e) => setInput(e.target.value)} value={input} />
             {/* Queue indicator */}
             {messageQueue.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-muted/50 rounded-md mt-2">
@@ -314,6 +393,78 @@ const ChatBot = () => {
           </PromptInputToolbar>
         </PromptInput>
       </div>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{t("settings.title")}</DialogTitle>
+            <DialogDescription>{t("settings.subtitle")}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Language Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("settings.language")}</label>
+              <Select value={language} onValueChange={(value) => changeLanguage(value as Language)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">{t("language.en")}</SelectItem>
+                  <SelectItem value="zh">{t("language.zh")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* AI Host */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("settings.aiHost")}</label>
+              <Input
+                value={tempAiHost}
+                onChange={(e) => setTempAiHost(e.target.value)}
+                placeholder={t("settings.hostPlaceholder")}
+              />
+            </div>
+
+            {/* AI Token */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("settings.aiToken")}</label>
+              <Input
+                type="password"
+                value={tempAiToken}
+                onChange={(e) => setTempAiToken(e.target.value)}
+                placeholder={t("settings.tokenPlaceholder")}
+              />
+            </div>
+
+            {/* AI Model */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("settings.aiModel")}</label>
+              <Input
+                value={tempAiModel}
+                onChange={(e) => setTempAiModel(e.target.value)}
+                placeholder={t("settings.modelPlaceholder")}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSettings(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+            >
+              {isSaving ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

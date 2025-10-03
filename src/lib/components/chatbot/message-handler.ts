@@ -291,9 +291,6 @@ export class MessageHandler {
   private buildOpenAIMessages(history: UIMessage[]): any[] {
     const messages: any[] = [];
 
-    // Add system prompt based on language preference
-
-
     for (const msg of history) {
       if (msg.role === "assistant") {
         // Handle assistant messages with potential tool calls

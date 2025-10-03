@@ -469,7 +469,7 @@ export async function getAllWindows(): Promise<SimplifiedWindow[]> {
   const windows = await chrome.windows.getAll({ populate: true })
 
   return windows.map(window => ({
-    id: window.id,
+    id: window.id || 0,
     focused: window.focused || false,
     state: window.state || "normal",
     type: window.type || "normal",
@@ -485,7 +485,7 @@ export async function getCurrentWindow(): Promise<SimplifiedWindow | null> {
   const window = await chrome.windows.getCurrent({ populate: true })
 
   return {
-    id: window.id,
+    id: window.id || 0,
     focused: window.focused || false,
     state: window.state || "normal",
     type: window.type || "normal",
@@ -617,7 +617,7 @@ export async function getTabInfo(tabId: number): Promise<SimplifiedTab | null> {
 export async function duplicateTab(tabId: number): Promise<{ success: boolean; newTabId?: number; error?: string }> {
   try {
     const tab = await chrome.tabs.duplicate(tabId)
-    return { success: true, newTabId: tab.id || undefined }
+    return { success: true, newTabId: tab?.id || 0 }
   } catch (error: any) {
     return { success: false, error: error?.message || String(error) }
   }

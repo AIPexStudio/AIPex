@@ -49,6 +49,7 @@
     "genericImage": "图片"
   },
   "input": {
+    "newLine": "Shift+Enter 换行",
     "placeholder1": "搜索或询问任何内容",
     "placeholder2": "尝试使用 @标签 提及页面",
     "placeholder3": "整理您的标签页"

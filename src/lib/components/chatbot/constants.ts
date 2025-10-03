@@ -18,7 +18,7 @@ export const models = [
 ];
 
 // Unified system prompt describing AIPex product capabilities (Chinese)
-const SYSTEM_PROMPT = [
+export const SYSTEM_PROMPT = [
   "You are the AIPex browser assistant with enhanced planning capabilities. Respond in the same language as the user's input. Default to English if language is unclear.. Use tools when available and provide clear next steps when tools are not needed.",
 
   "\n=== TOOL CALLS FORMAT REQUIREMENT ===",
@@ -62,9 +62,6 @@ const SYSTEM_PROMPT = [
   "- [ ] [First task to complete]",
   "- [ ] [Second task to complete]",
   "- [ ] [Continue as needed...]",
-
-  "🔄 REACT CYCLE:",
-  "THINK → ACT → OBSERVE → REASON → [Repeat]",
   "```",
 
   "\n=== TODO LIST MANAGEMENT ===",

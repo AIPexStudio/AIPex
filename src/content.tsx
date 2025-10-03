@@ -1,6 +1,7 @@
-import React, { useEffect } from "react"
-import ReactDOM from "react-dom"
-import "~/tailwind.css"
+import React from "react"
+import ReactDOM from "react-dom/client"
+// Import CSS as a string to inject into Shadow DOM
+import tailwindCss from "~/tailwind.css?inline"
 
 // Get asset URLs
 const globeUrl = chrome.runtime.getURL("assets/globe.svg")
@@ -860,12 +861,13 @@ const shadowRoot = container.attachShadow({ mode: "open" })
 const shadowContainer = document.createElement("div")
 shadowRoot.appendChild(shadowContainer)
 
-// Inject styles into shadow DOM
+// Inject Tailwind CSS into shadow DOM
 const style = document.createElement("style")
 style.textContent = `
   :host {
     all: initial;
   }
+  ${tailwindCss}
 `
 shadowRoot.appendChild(style)
 

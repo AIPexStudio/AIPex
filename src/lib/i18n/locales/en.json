@@ -49,6 +49,7 @@
     "genericImage": "Image"
   },
   "input": {
+    "newLine": "Shift+Enter for new line",
     "placeholder1": "Search or Ask anything",
     "placeholder2": "Try mention a tab with @tab",
     "placeholder3": "Organize your tabs"

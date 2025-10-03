@@ -45,6 +45,7 @@ export interface TranslationResources {
     zh: string
   }
   input: {
+    newLine: string
     placeholder1: string
     placeholder2: string
     placeholder3: string
@@ -54,7 +55,7 @@ export interface TranslationResources {
   }
 }
 
-export type TranslationKey = 
+export type TranslationKey =
   | 'common.title'
   | 'common.settings'
   | 'common.newChat'
@@ -88,6 +89,7 @@ export type TranslationKey =
   | 'ai.enhancedPlanning'
   | 'language.en'
   | 'language.zh'
+  | 'input.newLine'
   | 'input.placeholder1'
   | 'input.placeholder2'
   | 'input.placeholder3'

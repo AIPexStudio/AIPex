@@ -1,4 +1,4 @@
-export type UIRole = "user" | "assistant" | "tool";
+export type UIRole = "user" | "assistant" | "tool" | "system";
 
 export type UITextPart = { type: "text"; text: string };
 

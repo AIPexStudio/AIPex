@@ -11,3 +11,9 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+// Support for CSS imports with ?inline suffix
+declare module "*.css?inline" {
+  const content: string
+  export default content
+}
+
