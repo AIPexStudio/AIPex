@@ -14,6 +14,8 @@ import {
   PromptInputAttachment,
   PromptInputAttachments,
   PromptInputBody,
+  PromptInputContextTag,
+  PromptInputContextTags,
   PromptInputModelSelect,
   PromptInputModelSelectContent,
   PromptInputModelSelectItem,
@@ -23,6 +25,7 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
   PromptInputTools,
+  usePromptInputContexts,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
@@ -64,6 +67,7 @@ import { useStorage } from "~/lib/storage";
 import { getAllTools } from "~/lib/services/tool-registry";
 import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
 import type { Language } from "~/lib/i18n/types";
+import { getAllAvailableContexts } from "~/lib/context-providers";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -168,12 +172,33 @@ const ChatBot = () => {
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
     const hasAttachments = Boolean(message.files?.length);
+    const hasContexts = Boolean(message.contexts?.length);
 
-    if (!(hasText || hasAttachments)) {
+    if (!(hasText || hasAttachments || hasContexts)) {
       return;
     }
 
-    messageHandlerRef.current?.sendMessage(message.text || "Sent with attachments");
+    // Build message with contexts
+    let fullMessage = "";
+    
+    // Add contexts if present
+    if (hasContexts && message.contexts) {
+      fullMessage += "Context:\n";
+      message.contexts.forEach((ctx) => {
+        fullMessage += `\n[${ctx.type}] ${ctx.label}:\n${ctx.value}\n`;
+      });
+      fullMessage += "\n---\n\n";
+    }
+    
+    // Add user text
+    fullMessage += message.text || "";
+    
+    // Handle attachments (TODO: integrate with message)
+    if (hasAttachments) {
+      fullMessage += "\n\n(Includes attachments)";
+    }
+
+    messageHandlerRef.current?.sendMessage(fullMessage);
     setInput("");
   };
 
@@ -339,10 +364,25 @@ const ChatBot = () => {
       <div className="border-t p-4">
         <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
           <PromptInputBody>
+            {/* Context Tags */}
+            <PromptInputContextTags>
+              {(context) => <PromptInputContextTag data={context} />}
+            </PromptInputContextTags>
+            
             <PromptInputAttachments>
               {(attachment) => <PromptInputAttachment data={attachment} />}
             </PromptInputAttachments>
-            <PromptInputTextarea placeholder={t("input.newLine")} enableTypingAnimation={true} placeholderTexts={placeholderList} onChange={(e) => setInput(e.target.value)} value={input} />
+            
+            <ContextLoader />
+            
+            <PromptInputTextarea 
+              placeholder={t("input.newLine")} 
+              enableTypingAnimation={true} 
+              placeholderTexts={placeholderList} 
+              onChange={(e) => setInput(e.target.value)} 
+              value={input} 
+            />
+            
             {/* Queue indicator */}
             {messageQueue.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-muted/50 rounded-md mt-2">
@@ -468,5 +508,21 @@ const ChatBot = () => {
     </div>
   );
 };
+
+// Helper component to load available contexts
+function ContextLoader() {
+  const contexts = usePromptInputContexts();
+  
+  useEffect(() => {
+    // Load available contexts on mount
+    getAllAvailableContexts().then((available) => {
+      contexts.setAvailableContexts(available);
+    }).catch((error) => {
+      console.error("Failed to load contexts:", error);
+    });
+  }, []);
+  
+  return null;
+}
 
 export default ChatBot;

@@ -25,9 +25,16 @@ import {
   SendIcon,
   SquareIcon,
   XIcon,
+  GlobeIcon,
+  FileTextIcon,
+  BookmarkIcon,
+  ClipboardIcon,
+  CameraIcon,
+  FileIcon,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import {
+  type ChangeEvent,
   type ChangeEventHandler,
   Children,
   type ClipboardEventHandler,
@@ -38,6 +45,7 @@ import {
   Fragment,
   type HTMLAttributes,
   type KeyboardEventHandler,
+  type ReactNode,
   type RefObject,
   useCallback,
   useContext,
@@ -47,6 +55,36 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
+
+// ============ Context Types ============
+
+export type ContextItemType = 
+  | "page" 
+  | "tab" 
+  | "bookmark" 
+  | "clipboard" 
+  | "screenshot" 
+  | "custom";
+
+export type ContextItem = {
+  id: string;
+  type: ContextItemType;
+  label: string;
+  value: string;
+  icon?: ReactNode;
+  metadata?: Record<string, any>;
+};
+
+// Context icons mapping
+const CONTEXT_ICONS: Record<ContextItemType, ReactNode> = {
+  page: <GlobeIcon className="size-4" />,
+  tab: <FileIcon className="size-4" />,
+  bookmark: <BookmarkIcon className="size-4" />,
+  clipboard: <ClipboardIcon className="size-4" />,
+  screenshot: <CameraIcon className="size-4" />,
+  custom: <FileTextIcon className="size-4" />,
+};
 
 /**
  * Custom hook for typing animation effect
@@ -126,6 +164,8 @@ export function useTypingPlaceholder(
   return displayedText;
 }
 
+// ============ Contexts (Attachments + Context Items) ============
+
 type AttachmentsContext = {
   files: (FileUIPart & { id: string })[];
   add: (files: File[] | FileList) => void;
@@ -143,6 +183,30 @@ export const usePromptInputAttachments = () => {
   if (!context) {
     throw new Error(
       "usePromptInputAttachments must be used within a PromptInput"
+    );
+  }
+
+  return context;
+};
+
+// Context Items Context
+type ContextItemsContext = {
+  items: ContextItem[];
+  add: (item: ContextItem) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+  availableContexts: ContextItem[];
+  setAvailableContexts: (items: ContextItem[]) => void;
+};
+
+const ContextItemsContext = createContext<ContextItemsContext | null>(null);
+
+export const usePromptInputContexts = () => {
+  const context = useContext(ContextItemsContext);
+
+  if (!context) {
+    throw new Error(
+      "usePromptInputContexts must be used within a PromptInput"
     );
   }
 
@@ -267,9 +331,102 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
+// ============ Context Items Components ============
+
+export type PromptInputContextTagProps = HTMLAttributes<HTMLDivElement> & {
+  data: ContextItem;
+  className?: string;
+};
+
+export function PromptInputContextTag({
+  data,
+  className,
+  ...props
+}: PromptInputContextTagProps) {
+  const contexts = usePromptInputContexts();
+
+  return (
+    <div
+      className={cn(
+        "group inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded-md",
+        "bg-muted/50 hover:bg-muted transition-colors",
+        "border border-border",
+        className
+      )}
+      {...props}
+    >
+      <span className="text-muted-foreground">
+        {data.icon || CONTEXT_ICONS[data.type]}
+      </span>
+      <span className="max-w-[200px] truncate">{data.label}</span>
+      <Button
+        aria-label="Remove context"
+        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => contexts.remove(data.id)}
+        size="icon"
+        type="button"
+        variant="ghost"
+      >
+        <XIcon className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+export type PromptInputContextTagsProps = Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "children"
+> & {
+  children?: (item: ContextItem) => ReactNode;
+};
+
+export function PromptInputContextTags({
+  className,
+  children,
+  ...props
+}: PromptInputContextTagsProps) {
+  const contexts = usePromptInputContexts();
+  const [height, setHeight] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) {
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      setHeight(el.getBoundingClientRect().height);
+    });
+    ro.observe(el);
+    setHeight(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      aria-live="polite"
+      className={cn(
+        "overflow-hidden transition-[height] duration-200 ease-out",
+        className
+      )}
+      style={{ height: contexts.items.length ? height : 0 }}
+      {...props}
+    >
+      <div className="flex flex-wrap gap-2 p-3 pb-0" ref={contentRef}>
+        {contexts.items.map((item) => (
+          <Fragment key={item.id}>
+            {children ? children(item) : <PromptInputContextTag data={item} />}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export type PromptInputMessage = {
   text?: string;
   files?: FileUIPart[];
+  contexts?: ContextItem[];
 };
 
 export type PromptInputProps = Omit<
@@ -309,6 +466,8 @@ export const PromptInput = ({
   ...props
 }: PromptInputProps) => {
   const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
+  const [contextItems, setContextItems] = useState<ContextItem[]>([]);
+  const [availableContexts, setAvailableContexts] = useState<ContextItem[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -410,6 +569,25 @@ export const PromptInput = ({
     });
   }, []);
 
+  // Context management callbacks
+  const addContext = useCallback((context: ContextItem) => {
+    setContextItems((prev) => {
+      // Avoid duplicates
+      if (prev.some((item) => item.id === context.id)) {
+        return prev;
+      }
+      return [...prev, context];
+    });
+  }, []);
+
+  const removeContext = useCallback((id: string) => {
+    setContextItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const clearContexts = useCallback(() => {
+    setContextItems([]);
+  }, []);
+
   // Note: File input cannot be programmatically set for security reasons
   // The syncHiddenInput prop is no longer functional
   useEffect(() => {
@@ -508,8 +686,9 @@ export const PromptInput = ({
         return item;
       })
     ).then((files: FileUIPart[]) => {
-      onSubmit({ text, files }, event);
+      onSubmit({ text, files, contexts: contextItems }, event);
       clear();
+      clearContexts();
     });
   };
 
@@ -525,27 +704,41 @@ export const PromptInput = ({
     [items, add, remove, clear, openFileDialog]
   );
 
+  const contextsCtx = useMemo<ContextItemsContext>(
+    () => ({
+      items: contextItems,
+      add: addContext,
+      remove: removeContext,
+      clear: clearContexts,
+      availableContexts,
+      setAvailableContexts,
+    }),
+    [contextItems, addContext, removeContext, clearContexts, availableContexts]
+  );
+
   return (
     <AttachmentsContext.Provider value={ctx}>
-      <span aria-hidden="true" className="hidden" ref={anchorRef} />
-      <input
-        accept={accept}
-        className="hidden"
-        multiple={multiple}
-        onChange={handleChange}
-        ref={inputRef}
-        type="file"
-      />
-      <form
-        className={cn(
-          "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
-          className
-        )}
-        onSubmit={handleSubmit}
-        {...props}
-      >
-        {children}
-      </form>
+      <ContextItemsContext.Provider value={contextsCtx}>
+        <span aria-hidden="true" className="hidden" ref={anchorRef} />
+        <input
+          accept={accept}
+          className="hidden"
+          multiple={multiple}
+          onChange={handleChange}
+          ref={inputRef}
+          type="file"
+        />
+        <form
+          className={cn(
+            "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
+            className
+          )}
+          onSubmit={handleSubmit}
+          {...props}
+        >
+          {children}
+        </form>
+      </ContextItemsContext.Provider>
     </AttachmentsContext.Provider>
   );
 };
@@ -589,8 +782,22 @@ export const PromptInputTextarea = ({
   ...props
 }: PromptInputTextareaProps) => {
   const attachments = usePromptInputAttachments();
+  const contexts = usePromptInputContexts();
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [atPosition, setAtPosition] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ bottom: 0, left: 0, width: 0 });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const selectedItemRef = useRef<HTMLButtonElement>(null);
+
+  // Sync hasValue with external value prop (for controlled components)
+  useEffect(() => {
+    setHasValue(!!props.value);
+  }, [props.value]);
 
   // Use typing animation for placeholder if enabled
   const textsToAnimate = useMemo(() => {
@@ -611,6 +818,36 @@ export const PromptInputTextarea = ({
       : placeholder;
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    // Handle context menu navigation
+    if (showContextMenu && filteredContexts.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredContexts.length);
+        return;
+      }
+      
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + filteredContexts.length) % filteredContexts.length);
+        return;
+      }
+      
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleContextSelect(filteredContexts[selectedIndex]);
+        return;
+      }
+      
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowContextMenu(false);
+        setSearchQuery("");
+        setAtPosition(null);
+        return;
+      }
+    }
+
+    // Normal textarea behavior
     if (e.key === "Enter") {
       // Don't submit if IME composition is in progress
       if (e.nativeEvent.isComposing) {
@@ -630,6 +867,41 @@ export const PromptInputTextarea = ({
       }
     }
   };
+
+  // Handle context selection
+  const handleContextSelect = useCallback((context: ContextItem) => {
+    if (!textareaRef.current || atPosition === null) return;
+
+    // Add context to the list
+    contexts.add(context);
+
+    // Remove @ mention from text
+    const currentValue = String(props.value || "");
+    const beforeAt = currentValue.slice(0, atPosition);
+    const afterSearch = currentValue.slice(textareaRef.current.selectionStart);
+    const newValue = beforeAt + afterSearch;
+
+    // Trigger onChange with new value
+    const syntheticEvent = {
+      target: { value: newValue },
+      currentTarget: { value: newValue },
+    } as ChangeEvent<HTMLTextAreaElement>;
+    onChange?.(syntheticEvent);
+
+    // Close menu
+    setShowContextMenu(false);
+    setSearchQuery("");
+    setAtPosition(null);
+
+    // Refocus textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.selectionStart = beforeAt.length;
+        textareaRef.current.selectionEnd = beforeAt.length;
+      }
+    }, 0);
+  }, [atPosition, contexts, props.value, onChange]);
 
   const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = (event) => {
     const items = event.clipboardData?.items;
@@ -657,6 +929,27 @@ export const PromptInputTextarea = ({
 
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (e) => {
     setHasValue(e.target.value.length > 0);
+    
+    // Detect @ symbol and search query
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    const beforeCursor = value.slice(0, cursorPos);
+    
+    // Match @ followed by any characters (not just \w)
+    // Supports: @page, @tab, @current page, @github-repo, etc.
+    const match = beforeCursor.match(/@([^\s]*)$/);
+    
+    if (match) {
+      const query = match[1]; // Text after @
+      setAtPosition(beforeCursor.lastIndexOf("@"));
+      setSearchQuery(query);
+      setShowContextMenu(true);
+    } else {
+      setShowContextMenu(false);
+      setSearchQuery("");
+      setAtPosition(null);
+    }
+    
     onChange?.(e);
   };
 
@@ -665,27 +958,161 @@ export const PromptInputTextarea = ({
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
+    // Don't close if clicking on context menu
+    setTimeout(() => {
+      setIsFocused(false);
+    }, 200);
   };
 
+  // Filter contexts based on search query with fuzzy matching
+  const filteredContexts = useMemo(() => {
+    if (!searchQuery) return contexts.availableContexts;
+    
+    const query = searchQuery.toLowerCase();
+    
+    return contexts.availableContexts.filter((item) => {
+      // Match against label
+      if (item.label.toLowerCase().includes(query)) return true;
+      
+      // Match against type
+      if (item.type.toLowerCase().includes(query)) return true;
+      
+      // Match against value (URL, content preview, etc.)
+      if (item.value.toLowerCase().includes(query)) return true;
+      
+      // Match against metadata URL if available
+      if (item.metadata?.url && item.metadata.url.toLowerCase().includes(query)) return true;
+      
+      // Fuzzy match: check if query characters appear in order
+      const labelLower = item.label.toLowerCase();
+      let queryIndex = 0;
+      for (let i = 0; i < labelLower.length && queryIndex < query.length; i++) {
+        if (labelLower[i] === query[queryIndex]) {
+          queryIndex++;
+        }
+      }
+      if (queryIndex === query.length) return true;
+      
+      return false;
+    });
+  }, [contexts.availableContexts, searchQuery]);
+
+  // Reset selected index when filtered contexts change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredContexts]);
+
+  // Auto-scroll to selected item when navigating with keyboard
+  useEffect(() => {
+    if (selectedItemRef.current && scrollContainerRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedIndex]);
+
+  // Calculate menu position when showing context menu
+  useEffect(() => {
+    const updatePosition = () => {
+      if (showContextMenu && textareaRef.current) {
+        const rect = textareaRef.current.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        setMenuPosition({
+          bottom: windowHeight - rect.top + 8, // Distance from bottom of viewport to top of textarea + 8px gap
+          left: rect.left + window.scrollX,
+          width: Math.min(500, window.innerWidth - 32), // 32px for padding
+        });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on scroll and resize
+    if (showContextMenu) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [showContextMenu]);
+
   return (
-    <Textarea
-      className={cn(
-        "w-full resize-none rounded-none border-none p-3 shadow-none outline-none ring-0",
-        "field-sizing-content bg-transparent dark:bg-transparent",
-        "max-h-48 min-h-16",
-        "focus-visible:ring-0",
-        className
+    <div className="relative">
+      <Textarea
+        ref={textareaRef}
+        className={cn(
+          "w-full resize-none rounded-none border-none p-3 shadow-none outline-none ring-0",
+          "field-sizing-content bg-transparent dark:bg-transparent",
+          "max-h-48 min-h-16",
+          "focus-visible:ring-0",
+          className
+        )}
+        name="message"
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        placeholder={displayPlaceholder}
+        {...props}
+      />
+      
+      {/* Context Suggestion Menu - Portal Implementation */}
+      {showContextMenu && filteredContexts.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed z-[9999] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
+          style={{
+            bottom: `${menuPosition.bottom}px`,
+            left: `${menuPosition.left}px`,
+            width: `${menuPosition.width}px`,
+          }}
+        >
+          <div className="bg-popover border rounded-lg shadow-xl max-h-[400px] overflow-hidden mb-2">
+            {/* Search hint */}
+            {searchQuery && (
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/50">
+                Searching for: <span className="font-medium">@{searchQuery}</span>
+                {filteredContexts.length > 0 && (
+                  <span className="ml-2">({filteredContexts.length} found)</span>
+                )}
+              </div>
+            )}
+            
+            {/* Results */}
+            <div ref={scrollContainerRef} className="max-h-[350px] overflow-y-auto">
+              {filteredContexts.length > 0 && filteredContexts.map((context, index) => (
+                  <button
+                    key={context.id}
+                    ref={index === selectedIndex ? selectedItemRef : null}
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left min-w-0 border-b last:border-b-0",
+                      index === selectedIndex 
+                        ? "bg-accent text-accent-foreground" 
+                        : "hover:bg-accent/50"
+                    )}
+                    onClick={() => handleContextSelect(context)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                  >
+                    <span className="text-muted-foreground shrink-0 w-4 h-4 flex items-center justify-center">
+                      {context.icon || CONTEXT_ICONS[context.type]}
+                    </span>
+                    <span className="truncate flex-1 min-w-0">{context.label}</span>
+                    <span className="text-xs text-muted-foreground shrink-0 ml-auto">
+                      {context.type}
+                    </span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
-      name="message"
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      placeholder={displayPlaceholder}
-      {...props}
-    />
+    </div>
   );
 };
 
