@@ -67,8 +67,8 @@ import { useStorage } from "~/lib/storage";
 import { getAllTools } from "~/lib/services/tool-registry";
 import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
 import type { Language } from "~/lib/i18n/types";
-import { getAllAvailableContexts } from "~/lib/context-providers";
 import { useTheme, type Theme } from "~/lib/hooks/use-theme";
+import { useTabsSync } from "~/lib/hooks/use-tabs-sync";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -169,7 +169,7 @@ const ChatBot = () => {
         messageHandlerRef.current = null;
       }
     };
-  }, [aiModel]);
+  }, [aiModel, aiHost, aiToken]);
 
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
@@ -527,18 +527,23 @@ const ChatBot = () => {
   );
 };
 
-// Helper component to load available contexts
+// Helper component to load available contexts and sync with tab events
 function ContextLoader() {
   const contexts = usePromptInputContexts();
   
-  useEffect(() => {
-    // Load available contexts on mount
-    getAllAvailableContexts().then((available) => {
-      contexts.setAvailableContexts(available);
-    }).catch((error) => {
-      console.error("Failed to load contexts:", error);
-    });
-  }, []);
+  // Use the tabs sync hook to automatically update contexts on tab changes
+  useTabsSync({
+    onContextsUpdate: (availableContexts) => {
+      contexts.setAvailableContexts(availableContexts);
+    },
+    onContextRemove: (contextId) => {
+      contexts.remove(contextId);
+    },
+    getSelectedContexts: () => {
+      return contexts.items;
+    },
+    debounceDelay: 300, // Wait 300ms before updating to avoid excessive updates
+  });
   
   return null;
 }

@@ -203,20 +203,53 @@ export async function getAllAvailableContexts(): Promise<ContextItem[]> {
   ]);
 
   const contexts: ContextItem[] = [];
+  let currentPageTabId: number | null = null;
+  let currentPageUrl: string | null = null;
 
-  // Current page
+  // Current page - add first and record its tab ID and URL
   if (results[0].status === "fulfilled" && results[0].value) {
-    contexts.push(results[0].value);
+    const currentPage = results[0].value;
+    contexts.push(currentPage);
+
+    // Extract tab ID from the context id (format: "page-{tabId}")
+    const tabIdMatch = currentPage.id.match(/^page-(\d+)$/);
+    if (tabIdMatch) {
+      currentPageTabId = parseInt(tabIdMatch[1], 10);
+    }
+
+    // Store current page URL for comparison
+    currentPageUrl = currentPage.metadata?.url as string | null;
   }
 
-  // Tabs
+  // Tabs - exclude the current page tab
   if (results[1].status === "fulfilled") {
-    contexts.push(...results[1].value);
+    const allTabs = results[1].value;
+    const filteredTabs = allTabs.filter((tab) => {
+      // Extract tab ID from context id (format: "tab-{tabId}")
+      const tabIdMatch = tab.id.match(/^tab-(\d+)$/);
+      if (tabIdMatch) {
+        const tabId = parseInt(tabIdMatch[1], 10);
+        // Filter out if it's the current page tab
+        if (currentPageTabId !== null && tabId === currentPageTabId) {
+          return false;
+        }
+      }
+      return true;
+    });
+    contexts.push(...filteredTabs);
   }
 
-  // Bookmarks
+  // Bookmarks - exclude if URL matches current page
   if (results[2].status === "fulfilled") {
-    contexts.push(...results[2].value);
+    const allBookmarks = results[2].value;
+    const filteredBookmarks = allBookmarks.filter((bookmark) => {
+      // Filter out bookmarks that have the same URL as current page
+      if (currentPageUrl && bookmark.metadata?.url === currentPageUrl) {
+        return false;
+      }
+      return true;
+    });
+    contexts.push(...filteredBookmarks);
   }
 
   return contexts;

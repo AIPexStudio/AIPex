@@ -4,15 +4,15 @@
   "version": "0.0.2",
   "description": "Automate your browser with natural language commands - The open source browser-use solution",
   "icons": {
-    "16": "assets/logo-16.png",
-    "48": "assets/logo-48.png",
-    "128": "assets/logo-128.png"
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
   },
   "action": {
     "default_icon": {
-      "16": "assets/logo-16.png",
-      "48": "assets/logo-48.png",
-      "128": "assets/logo-128.png"
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
     }
   },
   "background": {
