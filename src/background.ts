@@ -162,7 +162,7 @@ const clearActions = async () => {
   if (response?.mutedInfo?.muted) {
     muteaction = { title: "Unmute tab", desc: "Unmute the current tab", type: "action", action: "unmute", emoji: true, emojiChar: "🔈", keycheck: true, keys: ['⌥', '⇧', 'M'] }
   }
-  if (response.pinned) {
+  if (response?.pinned) {
     pinaction = { title: "Unpin tab", desc: "Unpin the current tab", type: "action", action: "unpin", emoji: true, emojiChar: "📌", keycheck: true, keys: ['⌥', '⇧', 'P'] }
   }
   actions = [
@@ -520,7 +520,7 @@ const ungroupAllTabs = async () => {
     // For each group, get its tabs and ungroup them
     for (const group of groups) {
       const tabs = await chrome.tabs.query({ groupId: group.id })
-      const tabIds = tabs.map(tab => tab.id)
+      const tabIds = tabs.map(tab => tab.id).filter(id => id !== undefined)
 
       if (tabIds.length > 0) {
         chrome.tabs.ungroup(tabIds)
@@ -538,7 +538,7 @@ const ungroupAllTabs = async () => {
       console.log('Failed to send ungroup completion message:', err)
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error ungrouping tabs:", error)
 
     // Notify popup that operation failed
@@ -553,7 +553,7 @@ const ungroupAllTabs = async () => {
 }
 
 // OpenAI chat completion helper
-async function chatCompletion(messages, stream = true, options = {}, messageId?: string) {
+async function chatCompletion(messages: string | { role: string, content: string }[], stream = true, options = {}, messageId?: string) {
   const storage = new Storage()
 
   // 优先使用存储配置，如果存储配置不存在则使用环境变量，最后使用默认值
@@ -1476,132 +1476,7 @@ async function runChatWithTools(userMessages: any[], messageId?: string, referen
   }
 }
 
-// Classify and group a single tab by AI
-async function classifyAndGroupSingleTab(tab) {
-  try {
-    // Check if AI grouping is available
-    if (!(await isAIGroupingAvailable())) {
-      console.log('AI grouping not available, skipping single tab grouping')
-      return
-    }
-
-    // Get tab latest status
-    let latestTab;
-    try {
-      latestTab = await chrome.tabs.get(tab.id);
-    } catch (err) {
-      console.warn(`Tab ${tab.id} may have been closed, skipping.`);
-      return;
-    }
-
-    // Skip tabs without URL
-    if (!latestTab.url) {
-      console.warn(`Tab "${latestTab.title}" has no URL, skipping.`);
-      return;
-    }
-
-    const win = await chrome.windows.get(latestTab.windowId);
-    if (win.type !== "normal") {
-      console.warn(`Tab "${latestTab.title}" is not in a normal window, skipping grouping.`);
-      return;
-    }
-
-    // Get current window's active tab
-    const activeTab = await chrome.tabs.query({
-      active: true,
-      windowId: latestTab.windowId,
-    });
-
-    // Get existing groups to use as categories
-    const groups = await chrome.tabGroups.query({
-      windowId: latestTab.windowId,
-    });
-
-    let category = "Other"; // Default category
-
-    if (groups.length > 0) {
-      // If there are existing groups, try to classify into one of them
-      const existingCategories = groups.map(g => g.title).filter(Boolean);
-
-      const context = ["You are a browser tab group classifier"];
-      const content = `Classify this tab based on URL (${latestTab.url}) and title (${latestTab.title}) into one of these existing categories: ${existingCategories.join(", ")}. If none fit well, respond with "Other". Response with the category only, without any comments.`;
-
-      try {
-        const aiResponse = await chatCompletion(content, true, {});
-        const result = await parseStreamingResponse(aiResponse);
-        const suggestedCategory = result.content.trim();
-
-        // Use the suggested category if it exists, otherwise use "Other"
-        if (existingCategories.includes(suggestedCategory)) {
-          category = suggestedCategory;
-        }
-      } catch (aiError) {
-        console.warn("AI classification failed, using default category:", aiError);
-      }
-    }
-
-    // Find existing group with the same name
-    const existingGroup = groups.find((group) => group.title === category);
-
-    if (existingGroup) {
-      // Add to existing group
-      chrome.tabs.group({
-        tabIds: [latestTab.id],
-        groupId: existingGroup.id,
-      }, (groupId) => {
-        if (chrome.runtime.lastError) {
-          console.error("Failed to add to existing group:", chrome.runtime.lastError);
-        } else {
-          console.log(`Tab "${latestTab.title}" added to existing group "${category}"`);
-        }
-      });
-    } else if (category !== "Other") {
-      // Create new group only if it's not the default "Other" category
-      chrome.tabs.group({
-        createProperties: { windowId: latestTab.windowId },
-        tabIds: [latestTab.id],
-      }, (groupId) => {
-        if (chrome.runtime.lastError) {
-          console.error("Failed to create new group:", chrome.runtime.lastError);
-        } else {
-          console.log("Group created successfully! Group ID:", groupId);
-
-          // Set group title and color
-          chrome.tabGroups.update(groupId, {
-            title: category,
-            color: "blue"
-          }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("Failed to update group title:", chrome.runtime.lastError);
-            } else {
-              console.log(`Group "${category}" title and color set successfully`);
-            }
-          });
-
-          // Set collapsed state based on whether it's the active tab
-          const collapsed = latestTab.id !== activeTab[0]?.id;
-          chrome.tabGroups.update(groupId, {
-            collapsed,
-          }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("Failed to set group collapse state:", chrome.runtime.lastError);
-            } else {
-              console.log(`Group "${category}" collapsed state set to ${collapsed}`);
-            }
-          });
-        }
-      });
-    }
-
-    console.log(`Tab "${latestTab.title}" processed for grouping into "${category}"`);
-  } catch (error) {
-    console.error(`Error processing tab ${tab.id}:`, error);
-  }
-}
-
 async function groupTabsByAI() {
-  const storage = new Storage();
-
   // Get tabs from current window
   const tabs = await chrome.tabs.query({ currentWindow: true });
 
@@ -1646,7 +1521,6 @@ async function groupTabsByAI() {
     });
 
     // Ask AI to classify tabs into groups
-    const context = ["You are a browser tab group classifier"];
     const content = `Classify these browser tabs into 3-7 meaningful groups based on their content, purpose, or topic:
 ${JSON.stringify(tabData, null, 2)}
 
@@ -1770,7 +1644,7 @@ Example response format:
       console.log('Failed to send organize completion message:', err)
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in AI tab grouping:", error);
 
     // Notify popup that operation failed
@@ -2034,7 +1908,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       ; (async () => {
         try {
           const { prompt, context, messageId, referencedTabs } = message
-          let conversationMessages = []
+          let conversationMessages: { role: string, content: string }[] = []
           if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
           }
@@ -2065,7 +1939,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const { prompt, context, tools, messageId, referencedTabs } = message
 
           // Build conversation messages with context
-          let conversationMessages = []
+          let conversationMessages: { role: string, content: string }[] = []
           if (context && Array.isArray(context) && context.length > 0) {
             conversationMessages = [...context]
           }
