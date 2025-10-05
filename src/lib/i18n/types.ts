@@ -56,6 +56,14 @@ export interface TranslationResources {
     placeholder2: string
     placeholder3: string
   }
+  welcome: {
+    title: string
+    subtitle: string
+    organizeTabs: string
+    analyzePage: string
+    research: string
+    comparePrice: string
+  }
   tools: {
     [key: string]: string
   }
@@ -103,6 +111,12 @@ export type TranslationKey =
   | 'input.placeholder1'
   | 'input.placeholder2'
   | 'input.placeholder3'
+  | 'welcome.title'
+  | 'welcome.subtitle'
+  | 'welcome.organizeTabs'
+  | 'welcome.analyzePage'
+  | 'welcome.research'
+  | 'welcome.comparePrice'
 
 export interface I18nContextValue {
   language: Language

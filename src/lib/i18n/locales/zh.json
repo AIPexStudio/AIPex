@@ -17,7 +17,7 @@
     "subtitle": "AI 配置",
     "language": "语言",
     "theme": "主题",
-    "aiHost": "AI 主机",
+    "aiHost": "AI 服务地址",
     "aiToken": "AI 令牌",
     "aiModel": "AI 模型",
     "hostPlaceholder": "https://api.deepseek.com/chat/completions",
@@ -59,6 +59,14 @@
     "placeholder1": "搜索或询问任何内容",
     "placeholder2": "尝试使用 @标签 提及页面",
     "placeholder3": "整理您的标签页"
+  },
+  "welcome": {
+    "title": "欢迎使用 AIpex",
+    "subtitle": "选择一个快捷操作或询问任何问题来开始",
+    "organizeTabs": "请按主题和用途整理我的打开标签页",
+    "analyzePage": "总结此页面并将关键点保存到剪贴板",
+    "research": "请使用 Google 研究主题 'MCP'",
+    "comparePrice": "比较 iPhone 17 的价格"
   },
   "tools": {
     "get_all_tabs": "获取所有标签页",

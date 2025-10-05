@@ -60,6 +60,14 @@
     "placeholder2": "Try mention a tab with @tab",
     "placeholder3": "Organize your tabs"
   },
+  "welcome": {
+    "title": "Welcome to AIpex",
+    "subtitle": "Choose a quick action or ask anything to get started",
+    "organizeTabs": "Please organize my open tabs by topic and purpose",
+    "analyzePage": "Summarize this page and save key points to clipboard",
+    "research": "Please use Google to research topic 'MCP'",
+    "comparePrice": "Compare the price of iPhone 17"
+  },
   "tools": {
     "get_all_tabs": "Get All Tabs",
     "get_current_tab": "Get Current Tab",
