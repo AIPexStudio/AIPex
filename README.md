@@ -25,6 +25,25 @@
 
 AIPex is a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task - from complex multi-step workflows to simple repetitive actions.
 
+## 📊 Comparison with Similar Projects
+
+### AIPex vs Dia/Comet vs Playwright-based Solutions
+
+| Comparison Dimension | AIPex | Comet (Dia) | Playwright-based MCP Server |
+|---------------------|-------|-----------|----------------------------|
+| **Resource Usage** | ✅ No need to launch independent browser process, directly utilizes user's already open Chrome browser | ⚠️ Need to download and install Dia (another browser) | ❌ Requires launching independent browser process, installing Playwright dependencies, downloading browser binaries, etc. |
+| **Transfer Cost** | ✅ No, use your current browser now, no need to transfer | ⚠️ Yes, you need to adapt to new browser | ❌ Requires launching browser process |
+| **User Session Reuse** | ✅ Automatically uses existing login state | ✅ Automatically uses existing login state | ❌ Requires re-login |
+| **Browser Environment** | ✅ Fully preserves user environment | ✅ Fully preserves user environment | ❌ Clean environment lacks user settings |
+| **API Access** | ✅ Full Browser API Access | ⚠️ Limited Browser API Access | ⚠️ Limited to Playwright API |
+| **Startup Process** | ✅ Quick, only need to install extension | ⚠️ Slow, need to download and install | ❌ Requires launching browser process |
+| **LLM Token Cost** | ✅ Low, optimized tools and agent loop | ✅ Low | ⚠️ Medium to High |
+| **Speed** | ✅ Quick | ✅ Quick | ⚠️ 50-200ms inter-process communication |
+| **User Knowledge** | ✅ Low, click extension then you can use, no need any technical background | ⚠️ Need to adapt to new browser | ⚠️ Requires technical knowledge |
+| **Chat to Multiple Tabs** | ✅ Yes, you can use tabs, bookmarks, history to talk | ⚠️ Yes, but you can only choose tabs | ❌ Limited multi-tab support |
+| **Action Coverage** | ✅ Full, covers almost 100% of browser automation scenarios | ⚠️ Partially covered, and you can't apply actions in Dia | ⚠️ Limited to Playwright capabilities |
+| **BYOK (Bring Your Own Key)** | ✅ AIPex supports using your own LLM token | ❌ No | ✅ Yes |
+
 ### 🎯 Why Choose AIPex for Browser Automation?
 
 - 🧠 **Natural Language Control**: Command your browser in plain English - no coding required
