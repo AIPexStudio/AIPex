@@ -1,4 +1,4 @@
-import { Storage } from "@plasmohq/storage"
+import { Storage } from "~/lib/storage"
 
 /**
  * Get a value from storage

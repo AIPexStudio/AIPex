@@ -1275,15 +1275,32 @@ export class BrowserMcpClient {
   }
 
   async callTool(name: string, args: any, messageId?: string) {
+    return await callMcpTool({ tool: name as any, args })
+  }
+
+  async checkIsActionTool(name: string) {
+    return this.tools.find(t => t.name === name)?.action === true
+  }
+
+  async captureScreenshot() {
+    const result = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
+    if (result.success && result.data?.imageData) {
+      return result.data.imageData
+    }
+    console.warn('Failed to capture screenshot:', result)
+    return null
+  }
+
+  async callToolWithScreenshot(name: string, args: any, messageId?: string) {
     // 如果工具是 action 类型，先执行截图
     const tool = this.tools.find(t => t.name === name)
     let screenshotData = null
-    
+
     if (tool && tool.action === true) {
       try {
         // 先执行截图并获取结果
         const screenshotResult = await callMcpTool({ tool: "capture_screenshot" as any, args: {} })
-        
+
         // 如果截图成功，保存截图数据
         if (screenshotResult.success && screenshotResult.data?.imageData) {
           screenshotData = {
@@ -1300,10 +1317,10 @@ export class BrowserMcpClient {
         console.warn("Failed to capture screenshot before action:", error)
       }
     }
-    
+
     // 执行原始工具调用
     const result = await callMcpTool({ tool: name as any, args })
-    
+
     // 如果有截图数据，直接发送到 sidepanel，不添加到返回结果中
     if (screenshotData) {
       try {
@@ -1321,7 +1338,7 @@ export class BrowserMcpClient {
         console.warn('Failed to send screenshot to sidepanel:', error)
       }
     }
-    
+
     return result
   }
 

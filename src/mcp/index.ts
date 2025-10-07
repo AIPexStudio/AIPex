@@ -123,7 +123,7 @@ export type McpToolName =
   | "get_context_menu_items"
   // Screenshot
   | "capture_screenshot"
-  | "capture_tab_screenshot" 
+  | "capture_tab_screenshot"
   | "capture_screenshot_to_clipboard"
   | "read_clipboard_image"
   | "get_clipboard_image_info"
@@ -262,6 +262,7 @@ export type McpResponse =
   | { success: true; data?: any }
   | { success: false; error: string }
 
+import { error } from "console";
 // Direct in-process MCP client: call exported server functions instead of messaging
 import {
   getAllTabs,
@@ -391,7 +392,7 @@ import {
   captureScreenshotToClipboard,
   readClipboardImage,
   getClipboardImageInfo
-} from "~mcp-servers"
+} from "~/mcp-servers"
 
 export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
   try {
@@ -411,12 +412,12 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         return { success: true }
       }
       case "organize_tabs": {
-        await groupTabsByAI()
-        return { success: true }
+        const res = await groupTabsByAI()
+        return { success: res.success, error: res.error ?? "" }
       }
       case "ungroup_tabs": {
-        await ungroupAllTabs()
-        return { success: true }
+        const res = await ungroupAllTabs()
+        return { success: res.success, error: res.error ?? "" }
       }
       case "get_current_tab_content": {
         const content = await getCurrentTabContent()
@@ -514,7 +515,7 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         return result.success ? { success: true } : { success: false, error: result.error || "Failed to switch window" }
       }
       case "create_new_window": {
-        const { url } = request.args
+        const { url } = request.args ?? {}
         const result = await createNewWindow(url)
         return result.success ? { success: true, data: result } : { success: false, error: result.error || "Failed to create window" }
       }
@@ -914,14 +915,14 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         const { text, filename, folderPath, displayResults = true } = request.args
         if (!text || typeof text !== "string") return { success: false, error: "Text is required and must be a string" }
         const result = await downloadTextAsMarkdown(text, filename, folderPath)
-        
+
         if (result.success) {
           const responseData = {
             downloadId: result.downloadId,
             finalPath: result.finalPath,
             message: `Successfully downloaded markdown file`
           }
-          
+
           if (displayResults) {
             responseData.message += `\n\n📄 Download Summary:\n` +
               `- File: ${result.finalPath || filename || 'generated-filename.md'}\n` +
@@ -930,9 +931,9 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
               (folderPath ? `- Folder: ${folderPath}\n` : '') +
               `- Content: Text document`
           }
-          
-          return { 
-            success: true, 
+
+          return {
+            success: true,
             data: responseData
           }
         } else {
@@ -943,29 +944,29 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
         const { imageData, filename, folderPath } = request.args
         if (!imageData || typeof imageData !== "string") return { success: false, error: "Image data is required and must be a string" }
         const result = await downloadImage(imageData, filename, folderPath)
-        return result.success ? { 
-          success: true, 
-          data: { 
-            downloadId: result.downloadId, 
-            finalPath: result.finalPath 
-          } 
+        return result.success ? {
+          success: true,
+          data: {
+            downloadId: result.downloadId,
+            finalPath: result.finalPath
+          }
         } : { success: false, error: result.error || "Failed to download image" }
       }
       case "download_chat_images": {
         const { messages, folderPrefix, filenamingStrategy = 'descriptive', displayResults = true } = request.args
         if (!messages || !Array.isArray(messages)) return { success: false, error: "Messages array is required" }
         const result = await downloadChatImages(messages, folderPrefix, filenamingStrategy)
-        
+
         if (result.success) {
-          const responseData = { 
-            downloadedCount: result.downloadedCount, 
+          const responseData = {
+            downloadedCount: result.downloadedCount,
             downloadIds: result.downloadIds,
             errors: result.errors,
             message: `Successfully downloaded ${result.downloadedCount || 0} images from chat messages`,
             folderPath: result.folderPath,
             filesList: result.filesList
           }
-          
+
           if (displayResults) {
             responseData.message += `\n\n📁 Download Summary:\n` +
               `- Folder: ${result.folderPath || folderPrefix || 'Default'}\n` +
@@ -973,9 +974,9 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
               `- Strategy: ${filenamingStrategy}\n` +
               (result.filesList ? `- Files: ${result.filesList.join(', ')}` : '')
           }
-          
-          return { 
-            success: true, 
+
+          return {
+            success: true,
             data: responseData
           }
         } else {
@@ -985,31 +986,31 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
       case "download_current_chat_images": {
         console.log('🎯 [DEBUG] MCP Tool download_current_chat_images called:', request.args)
         const { folderPrefix, imageNames, filenamingStrategy = 'descriptive', displayResults = true } = request.args
-        
+
         // Since this is called from background script, we need to directly access the chat images
         // We'll use a global function that will be available in background script context
         try {
           console.log('📤 [DEBUG] Calling background download function directly...')
-          
+
           // Import and call the background download function directly
           if (typeof (globalThis as any).downloadCurrentChatImagesFromBackground === 'function') {
             const result = await (globalThis as any).downloadCurrentChatImagesFromBackground(
-              folderPrefix || "AIPex-Chat-Images", 
+              folderPrefix || "AIPex-Chat-Images",
               imageNames,
-              filenamingStrategy, 
+              filenamingStrategy,
               displayResults
             )
             console.log('📥 [DEBUG] Background function result:', result)
-            
+
             if (result.success) {
-              const responseData = { 
-                downloadedCount: result.downloadedCount, 
+              const responseData = {
+                downloadedCount: result.downloadedCount,
                 downloadIds: result.downloadIds,
                 message: `Successfully downloaded ${result.downloadedCount || 0} images from current chat`,
                 folderPath: result.folderPath,
                 filesList: result.filesList
               }
-              
+
               if (displayResults) {
                 responseData.message += `\n\n📁 Download Summary:\n` +
                   `- Folder: ${result.folderPath || folderPrefix}\n` +
@@ -1017,9 +1018,9 @@ export async function callMcpTool(request: McpRequest): Promise<McpResponse> {
                   `- Strategy: ${filenamingStrategy}\n` +
                   (result.filesList ? `- Files: ${result.filesList.join(', ')}` : '')
               }
-              
-              return { 
-                success: true, 
+
+              return {
+                success: true,
                 data: responseData
               }
             } else {

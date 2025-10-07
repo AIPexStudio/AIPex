@@ -12,7 +12,7 @@ import { browserMcpClient } from "~/mcp/client"
 export class ToolManager {
   private static instance: ToolManager
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): ToolManager {
     if (!ToolManager.instance) {
@@ -74,7 +74,7 @@ export class ToolManager {
    * 调用工具
    */
   public async callTool(toolName: string, args: any, messageId?: string) {
-    return await browserMcpClient.callTool(toolName, args, messageId)
+    return await browserMcpClient.callToolWithScreenshot(toolName, args, messageId)
   }
 
   /**

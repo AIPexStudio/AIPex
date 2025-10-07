@@ -1,4 +1,4 @@
-import { Storage } from "@plasmohq/storage"
+import { Storage } from "~/lib/storage"
 import type { Language, TranslationResources, TranslationKey } from "./types"
 
 // Language resource imports
