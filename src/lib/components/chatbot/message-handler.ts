@@ -410,9 +410,6 @@ export class MessageHandler {
         // Add system message with contexts if present
         if (contextParts.length > 0) {
           let systemContent = "# IMPORTANT: User-Provided Context\n\n";
-          systemContent += "The user has explicitly provided the following context for this query. ";
-          systemContent += "**You MUST use ONLY this provided context to answer the question.** ";
-          systemContent += "DO NOT fetch or access other pages, tabs, or resources unless explicitly requested.\n\n";
 
           contextParts.forEach((ctx, index) => {
             systemContent += `## Context ${index + 1}: ${ctx.label}\n`;
@@ -422,7 +419,6 @@ export class MessageHandler {
             if (ctx.metadata) {
               if (ctx.metadata.tabId) {
                 systemContent += `- **Tab ID**: ${ctx.metadata.tabId}\n`;
-                systemContent += `  (If you need to interact with THIS specific tab, use tabId: ${ctx.metadata.tabId})\n`;
               }
               if (ctx.metadata.url) {
                 systemContent += `- **URL**: ${ctx.metadata.url}\n`;
@@ -436,14 +432,6 @@ export class MessageHandler {
             systemContent += `\n**Content**:\n\`\`\`\n${ctx.value}\n\`\`\`\n\n`;
             systemContent += "---\n\n";
           });
-
-          systemContent += "## Instructions:\n";
-          systemContent += "1. **PRIMARY RULE**: Base your answer ONLY on the context provided above\n";
-          systemContent += "2. **DO NOT**: Fetch content from the current active tab unless the user specifically asks for it\n";
-          systemContent += "3. **DO NOT**: Use get_page_content, read_tab_content, or similar tools unless explicitly requested\n";
-          systemContent += "4. **IF** the user asks about 'this page' or 'current page' WITHOUT providing context, then you can fetch it\n";
-          systemContent += "5. **IF** you need to interact with the context tab (e.g., click, scroll), use the tabId provided above\n";
-          systemContent += "6. **ANALYZE** the provided content directly - it's already complete and ready for your analysis\n\n";
 
           messages.push({
             role: "system",
