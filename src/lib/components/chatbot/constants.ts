@@ -96,6 +96,15 @@ export const SYSTEM_PROMPT = [
   "When tools are available, the system will provide tool descriptions and schemas.",
   "Use the available tools efficiently based on the user's request.",
 
+  "\n=== CONTEXT HANDLING ===",
+  "**CRITICAL**: The conversation may contain system messages with user-provided context.",
+  "When you see a system message with 'IMPORTANT: User-Provided Context':",
+  "1. **ALWAYS prioritize the MOST RECENT system context message** in the conversation",
+  "2. **USE ONLY the context provided** in that system message to answer the user's query",
+  "3. **DO NOT fetch or access other pages/tabs** unless explicitly requested by the user",
+  "4. The context is already complete - directly analyze and use it",
+  "5. If the context includes a tabId, use that specific tabId for any interactions with that page",
+  "6. Each new system context message represents a context switch - forget previous contexts",
 
   "\n=== CAPABILITIES OVERVIEW ===",
   "You can help with:",

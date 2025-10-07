@@ -30,6 +30,7 @@ export async function getCurrentPageContext(): Promise<ContextItem | null> {
       label: tab.title || "Current Page",
       value: content,
       metadata: {
+        tabId: tab.id, // Add tabId for AI to directly call tab-related tools
         url: tab.url,
         title: tab.title,
       },
@@ -55,6 +56,7 @@ export async function getTabsContext(): Promise<ContextItem[]> {
         label: tab.title || "Untitled",
         value: tab.url || "",
         metadata: {
+          tabId: tab.id, // Add tabId for AI to directly call tab-related tools
           url: tab.url,
           title: tab.title,
           favIconUrl: tab.favIconUrl,

@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ChatStatus } from "ai";
-import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, LayersIcon, FileTextIcon, SearchIcon, DollarSignIcon } from "lucide-react";
+import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, LayersIcon, FileTextIcon, SearchIcon, DollarSignIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { models, SYSTEM_PROMPT } from "./constants";
 import { MessageHandler, type MessageHandlerConfig } from "./message-handler";
@@ -77,6 +77,25 @@ const formatToolOutput = (output: any) => {
   ${typeof output === "string" ? output : JSON.stringify(output, null, 2)}
   \`\`\`
   `;
+};
+
+// Get icon for context type
+const getContextIcon = (contextType: string) => {
+  const iconProps = { className: "size-4" };
+  switch (contextType) {
+    case "page":
+      return <GlobeIcon {...iconProps} />;
+    case "tab":
+      return <FileIcon {...iconProps} />;
+    case "bookmark":
+      return <BookmarkIcon {...iconProps} />;
+    case "clipboard":
+      return <ClipboardIcon {...iconProps} />;
+    case "screenshot":
+      return <CameraIcon {...iconProps} />;
+    default:
+      return <FileTextIcon {...iconProps} />;
+  }
 };
 
 // Welcome screen component
@@ -266,27 +285,12 @@ const ChatBot = () => {
       return;
     }
 
-    // Build message with contexts
-    let fullMessage = "";
-    
-    // Add contexts if present
-    if (hasContexts && message.contexts) {
-      fullMessage += "Context:\n";
-      message.contexts.forEach((ctx) => {
-        fullMessage += `\n[${ctx.type}] ${ctx.label}:\n${ctx.value}\n`;
-      });
-      fullMessage += "\n---\n\n";
-    }
-    
-    // Add user text
-    fullMessage += message.text || "";
-    
-    // Handle attachments (TODO: integrate with message)
-    if (hasAttachments) {
-      fullMessage += "\n\n(Includes attachments)";
-    }
-
-    messageHandlerRef.current?.sendMessage(fullMessage);
+    // Send message with contexts as separate parameter
+    messageHandlerRef.current?.sendMessage(
+      message.text || "",
+      message.files,
+      message.contexts
+    );
     setInput("");
   };
 
@@ -407,6 +411,32 @@ const ChatBot = () => {
                           )}
                         </Fragment>
                       );
+                    case "file":
+                      return (
+                        <Message key={`${message.id}-${i}`} from={message.role as "user" | "assistant" | "system"}>
+                          <MessageContent>
+                            {part.mediaType.startsWith("image/") ? (
+                              <div className="max-w-md">
+                                <img 
+                                  src={part.url} 
+                                  alt={part.filename || "Attached image"} 
+                                  className="rounded-lg border border-gray-200 dark:border-gray-700"
+                                />
+                                {part.filename && (
+                                  <p className="text-xs text-muted-foreground mt-1">{part.filename}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <p className="text-sm">
+                                  📎 {part.filename || "Attached file"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{part.mediaType}</p>
+                              </div>
+                            )}
+                          </MessageContent>
+                        </Message>
+                      );
                     case "tool":
                       return (
                         <Tool key={`${message.id}-${i}`} defaultOpen={false}>
@@ -440,6 +470,35 @@ const ChatBot = () => {
                           <ReasoningTrigger />
                           <ReasoningContent>{part.text}</ReasoningContent>
                         </Reasoning>
+                      );
+                    case "context":
+                      return (
+                        <div 
+                          key={`${message.id}-${i}`} 
+                          className={cn(
+                            "flex w-full items-end gap-2 py-2",
+                            message.role === "user" ? "justify-end" : "flex-row-reverse justify-end"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 max-w-[80%] px-3 py-1.5 text-sm rounded-md bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
+                            <span className="text-primary flex-shrink-0">
+                              {getContextIcon(part.contextType)}
+                            </span>
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="font-medium text-foreground truncate">
+                                {part.label}
+                              </span>
+                              {part.metadata?.url && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {part.metadata.url}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded flex-shrink-0">
+                              {part.contextType}
+                            </span>
+                          </div>
+                        </div>
                       );
                     default:
                       return null;

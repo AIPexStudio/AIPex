@@ -1,7 +1,9 @@
 import { browserMcpClient } from "~/mcp/client";
 import { CancellationError, CancellationToken } from "./cancellation-token";
-import type { UIMessage, UITextPart, UIToolPart } from "./types";
+import type { UIMessage, UITextPart, UIToolPart, UIFilePart, UIContextPart } from "./types";
 import type { AITool } from "~/lib/services/tool-registry";
+import type { FileUIPart } from "ai";
+import type { ContextItem } from "@/components/ai-elements/prompt-input";
 
 export type ChatStatus = "idle" | "submitted" | "streaming" | "error";
 export type EventType = "messages_updated" | "status_changed" | "queue_changed";
@@ -135,13 +137,45 @@ export class MessageHandler {
   }
 
   // --- Core Logic ---
-  public sendMessage(text: string): void {
-    if (!text.trim()) return;
+  public sendMessage(text: string, files?: FileUIPart[], contexts?: ContextItem[]): void {
+    if (!text.trim() && (!files || files.length === 0) && (!contexts || contexts.length === 0)) return;
+
+    const parts: (UITextPart | UIFilePart | UIContextPart)[] = [];
+
+    // Add context parts if present (add first so they appear before text)
+    if (contexts && contexts.length > 0) {
+      contexts.forEach(ctx => {
+        parts.push({
+          type: "context",
+          contextType: ctx.type,
+          label: ctx.label,
+          value: ctx.value,
+          metadata: ctx.metadata,
+        });
+      });
+    }
+
+    // Add text part if present
+    if (text.trim()) {
+      parts.push({ type: "text", text: text.trim() });
+    }
+
+    // Add file parts if present
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        parts.push({
+          type: "file",
+          mediaType: file.mediaType,
+          filename: file.filename,
+          url: file.url,
+        });
+      });
+    }
 
     const userMessage: UIMessage = {
       id: `${Date.now()}-user`,
       role: "user",
-      parts: [{ type: "text", text: text.trim() }],
+      parts,
     };
 
     if (this.isProcessing) {
@@ -166,7 +200,7 @@ export class MessageHandler {
 
     try {
       // Safety counter to prevent infinite loops
-      const MAX_ITERATIONS = 50;
+      const MAX_ITERATIONS = 1000;
       let iterationCount = 0;
 
       // eslint-disable-next-line no-constant-condition
@@ -296,7 +330,8 @@ export class MessageHandler {
   private buildOpenAIMessages(history: UIMessage[]): any[] {
     const messages: any[] = [];
 
-    for (const msg of history) {
+    for (let msgIndex = 0; msgIndex < history.length; msgIndex++) {
+      const msg = history[msgIndex];
       if (msg.role === "assistant") {
         // Handle assistant messages with potential tool calls
         const textParts = msg.parts.filter((p): p is UITextPart => p.type === "text");
@@ -368,13 +403,100 @@ export class MessageHandler {
         });
       } else {
         // Handle user messages
-        messages.push({
-          role: msg.role,
-          content: msg.parts
-            .filter((p): p is UITextPart => p.type === "text")
-            .map((p) => p.text)
-            .join(""),
-        });
+        const textParts = msg.parts.filter((p): p is UITextPart => p.type === "text");
+        const fileParts = msg.parts.filter((p): p is UIFilePart => p.type === "file");
+        const contextParts = msg.parts.filter((p): p is UIContextPart => p.type === "context");
+
+        // Add system message with contexts if present
+        if (contextParts.length > 0) {
+          let systemContent = "# IMPORTANT: User-Provided Context\n\n";
+          systemContent += "The user has explicitly provided the following context for this query. ";
+          systemContent += "**You MUST use ONLY this provided context to answer the question.** ";
+          systemContent += "DO NOT fetch or access other pages, tabs, or resources unless explicitly requested.\n\n";
+
+          contextParts.forEach((ctx, index) => {
+            systemContent += `## Context ${index + 1}: ${ctx.label}\n`;
+            systemContent += `- **Type**: ${ctx.contextType}\n`;
+
+            // Add metadata information
+            if (ctx.metadata) {
+              if (ctx.metadata.tabId) {
+                systemContent += `- **Tab ID**: ${ctx.metadata.tabId}\n`;
+                systemContent += `  (If you need to interact with THIS specific tab, use tabId: ${ctx.metadata.tabId})\n`;
+              }
+              if (ctx.metadata.url) {
+                systemContent += `- **URL**: ${ctx.metadata.url}\n`;
+              }
+              if (ctx.metadata.title) {
+                systemContent += `- **Title**: ${ctx.metadata.title}\n`;
+              }
+            }
+
+            // Add context value
+            systemContent += `\n**Content**:\n\`\`\`\n${ctx.value}\n\`\`\`\n\n`;
+            systemContent += "---\n\n";
+          });
+
+          systemContent += "## Instructions:\n";
+          systemContent += "1. **PRIMARY RULE**: Base your answer ONLY on the context provided above\n";
+          systemContent += "2. **DO NOT**: Fetch content from the current active tab unless the user specifically asks for it\n";
+          systemContent += "3. **DO NOT**: Use get_page_content, read_tab_content, or similar tools unless explicitly requested\n";
+          systemContent += "4. **IF** the user asks about 'this page' or 'current page' WITHOUT providing context, then you can fetch it\n";
+          systemContent += "5. **IF** you need to interact with the context tab (e.g., click, scroll), use the tabId provided above\n";
+          systemContent += "6. **ANALYZE** the provided content directly - it's already complete and ready for your analysis\n\n";
+
+          messages.push({
+            role: "system",
+            content: systemContent,
+          });
+        }
+
+        // Get user text content
+        const userText = textParts.map((p) => p.text).join("");
+
+        // If no files, use simple string content
+        if (fileParts.length === 0) {
+          messages.push({
+            role: msg.role,
+            content: userText,
+          });
+        } else {
+          // Use multimodal content format (array of content parts)
+          const contentParts: any[] = [];
+
+          // Add text content if present
+          if (userText) {
+            contentParts.push({
+              type: "text",
+              text: userText,
+            });
+          }
+
+          // Add file content (images)
+          fileParts.forEach((file) => {
+            // For images, use image_url format
+            if (file.mediaType.startsWith("image/")) {
+              contentParts.push({
+                type: "image_url",
+                image_url: {
+                  url: file.url, // Can be data URL or hosted URL
+                },
+              });
+            } else {
+              // For other file types, add as text description
+              // (OpenAI chat API primarily supports images in multimodal format)
+              contentParts.push({
+                type: "text",
+                text: `[Attached file: ${file.filename || "file"} (${file.mediaType})]`,
+              });
+            }
+          });
+
+          messages.push({
+            role: msg.role,
+            content: contentParts,
+          });
+        }
       }
     }
 
