@@ -184,9 +184,9 @@ const ChatBot = () => {
   const [messageQueue, setMessageQueue] = useState<UIMessage[]>([]);
   const messageHandlerRef = useRef<MessageHandler | null>(null);
 
-  const [aiHost, setAiHost] = useStorage("aiHost", import.meta.env.VITE_AI_HOST || "https://api.openai.com/v1/chat/completions");
-  const [aiToken, setAiToken] = useStorage("aiToken", import.meta.env.VITE_AI_TOKEN);
-  const [aiModel, setAiModel] = useStorage("aiModel", import.meta.env.VITE_AI_MODEL);
+  const [aiHost, setAiHost, isLoadingHost] = useStorage("aiHost", import.meta.env.VITE_AI_HOST || "https://api.openai.com/v1/chat/completions");
+  const [aiToken, setAiToken, isLoadingToken] = useStorage("aiToken", import.meta.env.VITE_AI_TOKEN);
+  const [aiModel, setAiModel, isLoadingModel] = useStorage("aiModel", import.meta.env.VITE_AI_MODEL || "deepseek-chat");
 
   // Settings dialog state
   const [showSettings, setShowSettings] = useState(false);
@@ -204,68 +204,89 @@ const ChatBot = () => {
 
   // Track cleanup functions outside of the handler
   const unsubscribeFunctionsRef = useRef<(() => void)[]>([]);
+  const isInitializedRef = useRef(false);
 
-  // Initialize message handler and subscribe to events
+  // Initialize message handler ONCE on mount (wait for settings to load first)
   useEffect(() => {
-    if (!messageHandlerRef.current) {
-      // Create new handler only if it doesn't exist
-      const config: MessageHandlerConfig = {
-        initialModel: aiModel,
-        initialTools: getAllTools().map((tool) => ({
-          type: "function",
-          function: {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.inputSchema,
-          },
-        })),
-        initialAiHost: aiHost,
-        initialAiToken: aiToken,
-        initialMessages: [{ role: "system", id: "system", parts: [{ type: "text", text: SYSTEM_PROMPT }] }],
-      };
-
-      messageHandlerRef.current = new MessageHandler(config);
-
-      const unsubscribeMessages = messageHandlerRef.current.subscribe(
-        "messages_updated",
-        (newMessages) => {
-          setMessages(newMessages);
-        }
-      );
-      const unsubscribeStatus = messageHandlerRef.current.subscribe(
-        "status_changed",
-        (newStatus) => {
-          setStatus(newStatus);
-        }
-      );
-      const unsubscribeQueue = messageHandlerRef.current.subscribe("queue_changed", (newQueue) => {
-        setMessageQueue(newQueue);
-      });
-
-      // Store cleanup functions
-      unsubscribeFunctionsRef.current = [unsubscribeMessages, unsubscribeStatus, unsubscribeQueue];
-
-      // Set initial state from handler
-      setMessages(messageHandlerRef.current.getMessages());
-      setStatus(messageHandlerRef.current.getStatus());
-      setMessageQueue(messageHandlerRef.current.getQueue());
-    } else {
-      // Update existing handler configuration instead of recreating
-      messageHandlerRef.current.updateConfig({
-        initialModel: aiModel,
-      });
+    // Wait for all settings to load from storage
+    if (isLoadingHost || isLoadingToken || isLoadingModel) {
+      return;
     }
 
+    // Only initialize once - use ref to prevent re-initialization even if dependencies change
+    if (isInitializedRef.current || messageHandlerRef.current) {
+      return;
+    }
+    
+    const config: MessageHandlerConfig = {
+      initialModel: aiModel || "deepseek-chat",
+      initialTools: getAllTools().map((tool) => ({
+        type: "function",
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.inputSchema,
+        },
+      })),
+      initialAiHost: aiHost || "https://api.openai.com/v1/chat/completions",
+      initialAiToken: aiToken || "",
+      initialMessages: [{ role: "system", id: "system", parts: [{ type: "text", text: SYSTEM_PROMPT }] }],
+    };
+
+    messageHandlerRef.current = new MessageHandler(config);
+    isInitializedRef.current = true;
+
+    const unsubscribeMessages = messageHandlerRef.current.subscribe(
+      "messages_updated",
+      (newMessages) => {
+        setMessages(newMessages);
+      }
+    );
+    const unsubscribeStatus = messageHandlerRef.current.subscribe(
+      "status_changed",
+      (newStatus) => {
+        setStatus(newStatus);
+      }
+    );
+    const unsubscribeQueue = messageHandlerRef.current.subscribe("queue_changed", (newQueue) => {
+      setMessageQueue(newQueue);
+    });
+
+    // Store cleanup functions
+    unsubscribeFunctionsRef.current = [unsubscribeMessages, unsubscribeStatus, unsubscribeQueue];
+
+    // Set initial state from handler
+    setMessages(messageHandlerRef.current.getMessages());
+    setStatus(messageHandlerRef.current.getStatus());
+    setMessageQueue(messageHandlerRef.current.getQueue());
+  }, [isLoadingHost, isLoadingToken, isLoadingModel, aiModel, aiHost, aiToken]); // ✅ 包含配置值但使用 ref 防止重复初始化
+
+  // Cleanup only on unmount
+  useEffect(() => {
     return () => {
-      // Cleanup only when component unmounts
       unsubscribeFunctionsRef.current.forEach((fn) => fn());
       unsubscribeFunctionsRef.current = [];
       if (messageHandlerRef.current) {
         messageHandlerRef.current.destroy();
         messageHandlerRef.current = null;
       }
+      isInitializedRef.current = false;
     };
-  }, [aiModel, aiHost, aiToken]);
+  }, []);
+
+  // Update configuration when settings change (after initial load)
+  useEffect(() => {
+    // Skip if still loading or if handler not yet created
+    if (isLoadingHost || isLoadingToken || isLoadingModel || !messageHandlerRef.current) {
+      return;
+    }
+    
+    messageHandlerRef.current.updateConfig({
+      initialModel: aiModel || "deepseek-chat",
+      initialAiHost: aiHost || "https://api.openai.com/v1/chat/completions",
+      initialAiToken: aiToken || "",
+    });
+  }, [aiModel, aiHost, aiToken, isLoadingHost, isLoadingToken, isLoadingModel]);
 
   const handleSubmit = (message: PromptInputMessage | string) => {
     // Handle string input (from welcome suggestions)
@@ -323,6 +344,12 @@ const ChatBot = () => {
   };
 
   const handleSaveSettings = async () => {
+    // Validate AI Model is not empty
+    if (!tempAiModel || !tempAiModel.trim()) {
+      console.error("AI Model cannot be empty!");
+      return;
+    }
+    
     setIsSaving(true);
     try {
       setAiHost(tempAiHost);
@@ -555,7 +582,9 @@ const ChatBot = () => {
               </PromptInputActionMenu>
               <PromptInputModelSelect
                 onValueChange={(value) => {
-                  setAiModel(value);
+                  if (value && value.trim()) {
+                    setAiModel(value);
+                  }
                 }}
                 value={aiModel}
               >

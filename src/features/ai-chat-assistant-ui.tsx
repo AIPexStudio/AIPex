@@ -63,7 +63,6 @@ const AIChatSidebarAssistantUI = () => {
       // Show success feedback
       setSaveStatus(t("settings.saveSuccess"))
       setTimeout(() => setSaveStatus(""), 1500)
-      console.log("AI settings saved")
     } catch (e) {
       console.error("Error saving AI settings:", e)
       // Show error feedback
