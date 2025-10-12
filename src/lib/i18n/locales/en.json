@@ -16,6 +16,7 @@
     "title": "Settings",
     "subtitle": "AI configuration",
     "language": "Language",
+    "theme": "Theme",
     "aiHost": "AI Host",
     "aiToken": "AI Token", 
     "aiModel": "AI Model",
@@ -24,6 +25,11 @@
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "Settings saved successfully!",
     "saveError": "Error saving settings"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   },
   "tooltip": {
     "newChat": "New Chat",
@@ -49,9 +55,18 @@
     "genericImage": "Image"
   },
   "input": {
+    "newLine": "Shift+Enter for new line",
     "placeholder1": "Search or Ask anything",
     "placeholder2": "Try mention a tab with @tab",
     "placeholder3": "Organize your tabs"
+  },
+  "welcome": {
+    "title": "Welcome to AIpex",
+    "subtitle": "Choose a quick action or ask anything to get started",
+    "organizeTabs": "Please organize my open tabs by topic and purpose",
+    "analyzePage": "Summarize this page and save key points to clipboard",
+    "research": "Please use Google to research topic 'MCP'",
+    "comparePrice": "Compare the price of iPhone 17"
   },
   "tools": {
     "get_all_tabs": "Get All Tabs",

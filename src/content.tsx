@@ -1,53 +1,11 @@
-import cssText from "data-text:~style.css"
-import type { PlasmoCSConfig } from "plasmo"
-import React, { useEffect } from "react"
-import ReactDOM from "react-dom"
-import globeUrl from "url:~/assets/globe.svg"
-import iconUrl from "url:~/assets/icon.png"
+import React from "react"
+import ReactDOM from "react-dom/client"
+// Import CSS as a string to inject into Shadow DOM
+import tailwindCss from "~/tailwind.css?inline"
 
-import "url:~/assets/logo-notion.png"
-import "url:~/assets/logo-sheets.png"
-import "url:~/assets/logo-docs.png"
-import "url:~/assets/logo-slides.png"
-import "url:~/assets/logo-forms.png"
-import "url:~/assets/logo-medium.png"
-import "url:~/assets/logo-github.png"
-import "url:~/assets/logo-codepen.png"
-import "url:~/assets/logo-excel.png"
-import "url:~/assets/logo-powerpoint.png"
-import "url:~/assets/logo-word.png"
-import "url:~/assets/logo-figma.png"
-import "url:~/assets/logo-producthunt.png"
-import "url:~/assets/logo-twitter.png"
-import "url:~/assets/logo-spotify.png"
-import "url:~/assets/logo-canva.png"
-import "url:~/assets/logo-anchor.png"
-import "url:~/assets/logo-photoshop.png"
-import "url:~/assets/logo-qr.png"
-import "url:~/assets/logo-asana.png"
-import "url:~/assets/logo-linear.png"
-import "url:~/assets/logo-wip.png"
-import "url:~/assets/logo-calendar.png"
-import "url:~/assets/logo-keep.png"
-import "url:~/assets/logo-meet.png"
-
-export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"]
-}
-
-// Inject Tailwind only into the shadow host created by Plasmo (prevents leaking to host page)
-export const getStyle = (): HTMLStyleElement => {
-  const baseFontSize = 16
-  let updatedCssText = cssText
-  const remRegex = /([\d.]+)rem/g
-  updatedCssText = updatedCssText.replace(remRegex, (match, remValue) => {
-    const pixelsValue = parseFloat(remValue) * baseFontSize
-    return `${pixelsValue}px`
-  })
-  const styleElement = document.createElement("style")
-  styleElement.textContent = updatedCssText
-  return styleElement
-}
+// Get asset URLs
+const globeUrl = chrome.runtime.getURL("assets/globe.svg")
+const iconUrl = chrome.runtime.getURL("assets/icon.png")
 
 
 const placeholderList = [
@@ -426,17 +384,15 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     }
   }, [input, actions])
 
-  // Message listener
+  // Close-omni message listener (open-aipex is handled by ContentApp parent)
   React.useEffect(() => {
-    const onMessage = (message: any) => {
-      if (message.request === "open-aipex") {
-        // This will be handled by the parent component
-      } else if (message.request === "close-omni") {
+    const handleMessage = (message: any) => {
+      if (message.request === "close-omni") {
         onClose()
       }
     }
-    chrome.runtime.onMessage.addListener(onMessage)
-    return () => chrome.runtime.onMessage.removeListener(onMessage)
+    chrome.runtime.onMessage.addListener(handleMessage)
+    return () => chrome.runtime.onMessage.removeListener(handleMessage)
   }, [onClose])
 
   // Global shortcut listener (Esc to close)
@@ -844,24 +800,31 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
 }
 
 
-const PlasmoOverlay = () => {
+const ContentApp = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false)
-  // For resetting FloatingBot's y coordinate
-  // const [resetBotY, setResetBotY] = React.useState(0)
-  // const hoverTimer = React.useRef<NodeJS.Timeout | null>(null)
-  // const isHoveringEdge = React.useRef(false)
 
-  // Message listener for external triggers
+  // Message listener for external triggers (keyboard shortcuts from background)
   React.useEffect(() => {
-    const onMessage = (message: any) => {
+    const handleMessage = (message: any, _sender: any, sendResponse: any) => {
+      
       if (message.request === "open-aipex") {
         setIsOmniOpen(true)
+        sendResponse({ success: true })
+        return true // Keep message channel open
       } else if (message.request === "close-omni") {
         setIsOmniOpen(false)
+        sendResponse({ success: true })
+        return true
       }
+      
+      return false
     }
-    chrome.runtime.onMessage.addListener(onMessage)
-    return () => chrome.runtime.onMessage.removeListener(onMessage)
+    
+    chrome.runtime.onMessage.addListener(handleMessage)
+    
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage)
+    }
   }, [])
 
   // Hover right side for 2 seconds to show icon logic removed
@@ -878,11 +841,9 @@ const PlasmoOverlay = () => {
   //   // Logic removed
   // }
 
-  // Return UI directly, no ReactDOM.createPortal needed
+  // Return UI
   return (
     <>
-      {/* <SelectionPopup /> */}
-      {/* FloatingBot removed */}
       {isOmniOpen && (
         <Omni 
           isOpen={isOmniOpen}
@@ -893,4 +854,40 @@ const PlasmoOverlay = () => {
   )
 }
 
-export default PlasmoOverlay
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initContentScript)
+} else {
+  initContentScript()
+}
+
+function initContentScript() {
+  
+  // Mount the content script
+  const container = document.createElement("div")
+  container.id = "aipex-content-root"
+  document.body.appendChild(container)
+
+  // Create shadow DOM to isolate styles
+  const shadowRoot = container.attachShadow({ mode: "open" })
+  const shadowContainer = document.createElement("div")
+  shadowRoot.appendChild(shadowContainer)
+
+  // Inject Tailwind CSS into shadow DOM
+  const style = document.createElement("style")
+  style.textContent = `
+    :host {
+      all: initial;
+    }
+    ${tailwindCss}
+  `
+  shadowRoot.appendChild(style)
+
+  // Render the app
+  const root = ReactDOM.createRoot(shadowContainer)
+  root.render(
+    <React.StrictMode>
+      <ContentApp />
+    </React.StrictMode>
+  )
+}

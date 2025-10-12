@@ -1,4 +1,4 @@
-import { Storage } from "@plasmohq/storage"
+import { Storage } from "~/lib/storage"
 
 export type TabGroup = {
   id: number

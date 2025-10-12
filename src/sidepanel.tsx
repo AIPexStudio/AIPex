@@ -1,26 +1,21 @@
 import React from "react"
-import AIChatSidebar from "~features/ai-chat-assistant-ui"
-import { I18nProvider } from "~lib/i18n/context"
-import cssText from "data-text:~style.css"
+import ReactDOM from "react-dom/client"
+import { I18nProvider } from "~/lib/i18n/context"
+import ChatBot from "~/lib/components/chatbot"
+// CSS is loaded directly in HTML for better HMR support
+// import "~/tailwind.css"
 
-// Inject Tailwind only into the sidepanel document (does not affect host pages)
-export const getStyle = (): HTMLStyleElement => {
-  const baseFontSize = 16
-  let updatedCssText = cssText
-  const remRegex = /([\d.]+)rem/g
-  updatedCssText = updatedCssText.replace(remRegex, (match, remValue) => {
-    const pixelsValue = parseFloat(remValue) * baseFontSize
-    return `${pixelsValue}px`
-  })
-  const styleElement = document.createElement("style")
-  styleElement.textContent = updatedCssText
-  return styleElement
-}
-
-const PlasmoSidepanel = () => (
+const SidepanelApp = () => (
   <I18nProvider>
-    <AIChatSidebar />
+    <ChatBot />
   </I18nProvider>
 )
 
-export default PlasmoSidepanel 
+const root = document.getElementById("root")
+if (root) {
+  ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+      <SidepanelApp />
+    </React.StrictMode>
+  )
+} 

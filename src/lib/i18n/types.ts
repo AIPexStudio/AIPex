@@ -18,6 +18,7 @@ export interface TranslationResources {
     title: string
     subtitle: string
     language: string
+    theme: string
     aiHost: string
     aiToken: string
     aiModel: string
@@ -26,6 +27,11 @@ export interface TranslationResources {
     modelPlaceholder: string
     saveSuccess: string
     saveError: string
+  }
+  theme: {
+    light: string
+    dark: string
+    system: string
   }
   tooltip: {
     newChat: string
@@ -45,16 +51,25 @@ export interface TranslationResources {
     zh: string
   }
   input: {
+    newLine: string
     placeholder1: string
     placeholder2: string
     placeholder3: string
+  }
+  welcome: {
+    title: string
+    subtitle: string
+    organizeTabs: string
+    analyzePage: string
+    research: string
+    comparePrice: string
   }
   tools: {
     [key: string]: string
   }
 }
 
-export type TranslationKey = 
+export type TranslationKey =
   | 'common.title'
   | 'common.settings'
   | 'common.newChat'
@@ -69,6 +84,7 @@ export type TranslationKey =
   | 'settings.title'
   | 'settings.subtitle'
   | 'settings.language'
+  | 'settings.theme'
   | 'settings.aiHost'
   | 'settings.aiToken'
   | 'settings.aiModel'
@@ -77,6 +93,9 @@ export type TranslationKey =
   | 'settings.modelPlaceholder'
   | 'settings.saveSuccess'
   | 'settings.saveError'
+  | 'theme.light'
+  | 'theme.dark'
+  | 'theme.system'
   | 'tooltip.newChat'
   | 'tooltip.settings'
   | 'tooltip.close'
@@ -88,9 +107,16 @@ export type TranslationKey =
   | 'ai.enhancedPlanning'
   | 'language.en'
   | 'language.zh'
+  | 'input.newLine'
   | 'input.placeholder1'
   | 'input.placeholder2'
   | 'input.placeholder3'
+  | 'welcome.title'
+  | 'welcome.subtitle'
+  | 'welcome.organizeTabs'
+  | 'welcome.analyzePage'
+  | 'welcome.research'
+  | 'welcome.comparePrice'
 
 export interface I18nContextValue {
   language: Language
