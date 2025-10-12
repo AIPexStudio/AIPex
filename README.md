@@ -189,39 +189,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Thank you to all the amazing contributors who help make AIPex better:
 
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/buttercannfly">
-        <img src="https://github.com/buttercannfly.png?size=100" width="100px;" alt=""/>
-        <br />
-        <sub><b>ropzislaw</b></sub>
-      </a>
-      <br />
-      <sub>56 commits</sub>
-    </td>
-    <td align="center">
-      <a href="https://github.com/Codexiaoyi">
-        <img src="https://github.com/Codexiaoyi.png?size=100" width="100px;" alt=""/>
-        <br />
-        <sub><b>Codexiaoyi</b></sub>
-      </a>
-      <br />
-      <sub>10 commits</sub>
-    </td>
-    <td align="center">
-      <a href="https://github.com/buttercannfly">
-        <img src="https://github.com/buttercannfly.png?size=100" width="100px;" alt=""/>
-        <br />
-        <sub><b>buttercannfly</b></sub>
-      </a>
-      <br />
-      <sub>5 commits</sub>
-    </td>
-  </tr>
-</table>
+<a href="https://github.com/buttercannfly/AIPex/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=buttercannfly/AIPex" />
+</a>
 
-**Total Contributors: 3** | **Total Commits: 71**
+*Contributors are automatically updated from GitHub. Click to see detailed contribution statistics.*
 
 ---
 
