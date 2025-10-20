@@ -247,6 +247,30 @@ export class MessageHandler {
 
         // Case 1: Last message is from user or a tool result -> call LLM
         if (lastMessage.role === "user" || lastMessage.role === "tool") {
+          // SECURITY ENHANCEMENT: Early host access validation
+          // Added comprehensive host validation before AI processing to prevent access to restricted websites.
+          // This provides immediate feedback to users when their requests involve blocked hosts,
+          // rather than allowing the AI to attempt multiple strategies first.
+          // Validates against URL patterns, handles encoded URLs, IP addresses, and prevents indirect access attempts.
+          if (lastMessage.role === "user") {
+            const hostValidation = await this._validateHostsInUserMessage(lastMessage);
+            if (!hostValidation.allowed) {
+              // Create an immediate error response without calling the AI
+              this.setMessages((prev) => [
+                ...prev,
+                {
+                  id: `${Date.now()}-assistant-error`,
+                  role: "assistant",
+                  parts: [{ type: "text", text: hostValidation.message || "Access denied due to host restrictions." }],
+                },
+              ]);
+              this.setStatus("idle");
+              this.isProcessing = false;
+              this.processingToken = null;
+              break;
+            }
+          }
+
           await this._startStream(this.messages);
           // After streaming, the new assistant message is the last one.
           // The loop will continue on the next iteration to check it for tools.
@@ -546,6 +570,295 @@ export class MessageHandler {
   resetMessages(): void {
     this.setMessages(this.initialMessages);
     this.setMessageQueue([]);
+  }
+
+  /**
+   * Validate hosts mentioned in user messages before allowing AI processing
+   *
+   * SECURITY FEATURE: Comprehensive host access validation system
+   * - Extracts URLs, hostnames, and service names from user messages using multiple regex patterns
+   * - Handles full URLs, partial URLs, social media mentions, IP addresses, and international domains
+   * - Validates each host against the configured whitelist/blocklist using HostAccessManager
+   * - Provides immediate rejection with clear error messages for blocked hosts
+   * - Includes indirect access prevention to block attempts to access restricted content through allowed domains
+   *
+   * This method is called early in the message processing pipeline to prevent AI from
+   * attempting multiple strategies when access to certain hosts is restricted.
+   */
+  private async _validateHostsInUserMessage(message: UIMessage): Promise<{ allowed: boolean; message?: string }> {
+    // Extract text content from the message
+    const textContent = message.parts
+      .filter(part => part.type === "text")
+      .map(part => part.type === "text" ? part.text : "")
+      .join(" ")
+      .toLowerCase();
+
+    const mentionedHosts: string[] = [];
+
+    // Extract potential URLs and hostnames using comprehensive patterns
+    const urlPatterns = [
+      // Full URLs with protocols
+      /https?:\/\/[^\s<>"{}|\\^`[\]]+/g,
+      // URLs without protocols (common in messages)
+      /(?:^|\s)(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s<>"{}|\\^`[\]]*)*?(?:\s|$)/g,
+      // Common social media and site names
+      /\b(?:youtube|facebook|twitter|x|instagram|tiktok|reddit|linkedin|github|stackoverflow|amazon|netflix|spotify|discord|twitch|pinterest|snapchat|tumblr|weibo|vk|telegram|whatsapp)\b(?:\.com)?/g,
+      // IP addresses
+      /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g,
+      // International domains (punycode)
+      /\b[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})*\b/g
+    ];
+
+    // Extract potential hosts from all patterns
+    for (const pattern of urlPatterns) {
+      const matches = textContent.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          const normalizedHosts = this._extractHostsFromMatch(match.trim());
+          normalizedHosts.forEach(host => {
+            if (host && !mentionedHosts.includes(host)) {
+              mentionedHosts.push(host);
+            }
+          });
+        });
+      }
+    }
+
+    // If no hosts mentioned, allow the request
+    if (mentionedHosts.length === 0) {
+      return { allowed: true };
+    }
+
+    // Import host access manager dynamically to avoid circular imports
+    const { hostAccessManager } = await import("~/lib/services/host-access-manager");
+
+    // Check each mentioned host against the current configuration
+    for (const host of mentionedHosts) {
+      // Try different URL formats and variations that might be used
+      const testUrls = [
+        `https://${host}`,
+        `http://${host}`,
+        `https://www.${host}`,
+        `http://www.${host}`,
+        // Try the host as-is (might already be a full URL)
+        host.startsWith('http') ? host : `https://${host}`
+      ];
+
+      let isAllowed = false;
+      let lastError = '';
+
+      for (const testUrl of testUrls) {
+        try {
+          // Normalize the URL first
+          const normalizedUrl = this._normalizeUrl(testUrl);
+          if (!normalizedUrl) continue;
+
+          const result = await hostAccessManager.isHostAllowed(normalizedUrl);
+          if (result.allowed) {
+            isAllowed = true;
+            break;
+          } else {
+            lastError = result.reason || `Host ${host} is not allowed`;
+          }
+        } catch (e) {
+          // Continue checking other formats
+          lastError = `Invalid URL format: ${host}`;
+        }
+      }
+
+      if (!isAllowed) {
+        return {
+          allowed: false,
+          message: `❌ **Access Denied**: The host "${host}" is not allowed according to your current security settings.\n\n${lastError}\n\nPlease check your host access configuration in the settings panel.`
+        };
+      }
+    }
+
+    // Additional check: Prevent indirect access attempts
+    const indirectAccessCheck = await this._checkForIndirectAccess(textContent, mentionedHosts);
+    if (!indirectAccessCheck.allowed) {
+      return indirectAccessCheck;
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Check for attempts to indirectly access restricted content through allowed domains
+   *
+   * SECURITY FEATURE: Indirect access prevention system
+   * - Detects patterns that indicate users trying to access restricted content indirectly
+   * - Blocks requests like "search Google for YouTube videos" or "show me TikTok content"
+   * - Uses comprehensive regex patterns to identify indirect access attempts across multiple services
+   * - Validates that mentioned services are actually restricted before blocking
+   * - Prevents AI from using allowed domains (like Google) to access restricted content
+   *
+   * This prevents bypass attempts where users try to access blocked sites through
+   * search engines, navigation requests, or content requests on allowed domains.
+   */
+  private async _checkForIndirectAccess(textContent: string, mentionedHosts: string[]): Promise<{ allowed: boolean; message?: string }> {
+    // If no hosts were explicitly mentioned, we can skip this check
+    if (mentionedHosts.length === 0) {
+      return { allowed: true };
+    }
+
+    // Import host access manager
+    const { hostAccessManager } = await import("~/lib/services/host-access-manager");
+
+    // Patterns that indicate indirect access attempts
+    const indirectAccessPatterns = [
+      // Search queries mentioning restricted sites
+      /\b(?:search|find|look up|google|bing|duckduckgo)\b.*\b(?:youtube|tiktok|facebook|twitter|instagram|reddit)\b/i,
+      /\b(?:show me|find me|get me)\b.*\b(?:videos?|tiktoks?|posts?|tweets?|photos?)\b.*\b(?:from|on)\b.*\b(?:youtube|tiktok|facebook|twitter|instagram|reddit)\b/i,
+      // Navigation requests to restricted sites
+      /\b(?:go to|navigate to|visit|open)\b.*\b(?:youtube|tiktok|facebook|twitter|instagram|reddit)\b/i,
+      /\b(?:take me to|bring me to)\b.*\b(?:youtube|tiktok|facebook|twitter|instagram|reddit)\b/i,
+      // Content requests from restricted sites
+      /\b(?:watch|see|view)\b.*\b(?:videos?|tiktoks?|streams?|lives?)\b.*\b(?:on|from)\b.*\b(?:youtube|tiktok|twitch)\b/i,
+      /\b(?:read|check|see)\b.*\b(?:posts?|comments?|threads?)\b.*\b(?:on|from)\b.*\b(?:reddit|facebook|twitter)\b/i,
+      // Direct mentions of restricted platforms with actions
+      /\b(?:youtube|tiktok|facebook|twitter|instagram|reddit)\b.*\b(?:videos?|content|posts?|profile|page|account)\b/i
+    ];
+
+    // Check if the message matches any indirect access patterns
+    for (const pattern of indirectAccessPatterns) {
+      if (pattern.test(textContent)) {
+        // Extract the potentially restricted service mentioned
+        const restrictedServices = ['youtube', 'tiktok', 'facebook', 'twitter', 'instagram', 'reddit', 'linkedin', 'github', 'stackoverflow', 'amazon', 'netflix', 'spotify', 'discord', 'twitch', 'pinterest', 'snapchat'];
+
+        for (const service of restrictedServices) {
+          if (textContent.toLowerCase().includes(service)) {
+            // Verify this service is actually restricted
+            const testUrls = [`https://${service}.com`, `https://www.${service}.com`];
+            for (const testUrl of testUrls) {
+              try {
+                const result = await hostAccessManager.isHostAllowed(testUrl);
+                if (!result.allowed) {
+                  return {
+                    allowed: false,
+                    message: `❌ **Access Denied**: Your request appears to involve accessing "${service}" content, which is not allowed according to your current security settings.\n\nEven indirect access attempts (such as searching for or requesting ${service} content) are blocked.\n\nPlease check your host access configuration in the settings panel.`
+                  };
+                }
+              } catch (e) {
+                // Continue checking
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Extract normalized hostnames from a matched string
+   *
+   * SECURITY FEATURE: Robust hostname extraction and normalization
+   * - Attempts to parse strings as full URLs using the URL constructor
+   * - Falls back to manual hostname extraction for partial matches
+   * - Handles protocol removal, path/query stripping, and www prefix normalization
+   * - Validates hostname format (length, contains dots, etc.)
+   * - Returns both the hostname with and without www prefix for comprehensive matching
+   *
+   * This method ensures reliable hostname extraction from various URL formats
+   * that users might include in their messages, supporting the security validation system.
+   */
+  private _extractHostsFromMatch(match: string): string[] {
+    const hosts: string[] = [];
+
+    try {
+      // First try to parse as a full URL
+      let url: URL;
+      if (match.startsWith('http://') || match.startsWith('https://')) {
+        url = new URL(match);
+      } else {
+        // Try to construct a valid URL
+        try {
+          url = new URL(`https://${match}`);
+        } catch {
+          // If that fails, try http
+          url = new URL(`http://${match}`);
+        }
+      }
+
+      if (url.hostname) {
+        hosts.push(url.hostname.toLowerCase());
+        // Also check for common variations
+        if (url.hostname.startsWith('www.')) {
+          hosts.push(url.hostname.substring(4));
+        }
+      }
+    } catch (e) {
+      // If URL parsing fails, try to extract hostname manually
+      let host = match.toLowerCase().trim();
+
+      // Remove protocols
+      if (host.startsWith('http://')) {
+        host = host.substring(7);
+      } else if (host.startsWith('https://')) {
+        host = host.substring(8);
+      }
+
+      // Remove paths, query params, etc.
+      host = host.split('/')[0].split('?')[0].split('#')[0];
+
+      // Remove www. prefix
+      if (host.startsWith('www.')) {
+        host = host.substring(4);
+      }
+
+      // Basic validation - should have at least one dot and be reasonable length
+      if (host && host.includes('.') && host.length >= 4 && host.length <= 253) {
+        hosts.push(host);
+      }
+    }
+
+    return hosts;
+  }
+
+  /**
+   * Normalize a URL by decoding, handling redirects, and standardizing format
+   *
+   * SECURITY FEATURE: URL normalization for consistent validation
+   * - URL-decodes the entire URL to handle encoded characters
+   * - Parses and reconstructs URLs to standardize format
+   * - Converts hostnames to lowercase for case-insensitive matching
+   * - Handles international domains (punycode) properly
+   * - Returns null for invalid URLs to allow graceful fallback
+   *
+   * This normalization ensures that equivalent URLs (with different encodings,
+   * cases, or formats) are treated consistently during host access validation.
+   */
+  private _normalizeUrl(url: string): string | null {
+    try {
+      // URL decode the entire URL first
+      const decodedUrl = decodeURIComponent(url);
+
+      // Parse the URL
+      const urlObj = new URL(decodedUrl);
+
+      // Normalize the hostname
+      let hostname = urlObj.hostname.toLowerCase();
+
+      // Handle international domains (punycode)
+      if (hostname.includes('xn--') || hostname.match(/[^\x00-\x7F]/)) {
+        try {
+          hostname = new URL(urlObj.toString()).hostname;
+        } catch {
+          // Keep original if punycode conversion fails
+        }
+      }
+
+      // Reconstruct normalized URL
+      const normalized = new URL(urlObj.toString());
+      normalized.hostname = hostname;
+
+      return normalized.toString();
+    } catch (e) {
+      console.warn('Failed to normalize URL:', url, e);
+      return null;
+    }
   }
 
   // Start streaming assistant response

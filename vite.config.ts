@@ -15,6 +15,10 @@ export default defineConfig({
         {
           src: 'assets/*',
           dest: 'assets'
+        },
+        {
+          src: 'host-access-config.json',
+          dest: '.'
         }
       ]
     })

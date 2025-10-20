@@ -1,4 +1,5 @@
 import { callMcpTool } from "./index.js"
+import { hostAccessManager } from "~/lib/services/host-access-manager"
 
 // Simple MCP-style client that provides tool descriptions and handles tool calls
 export class BrowserMcpClient {
@@ -1275,11 +1276,101 @@ export class BrowserMcpClient {
   }
 
   async callTool(name: string, args: any, messageId?: string) {
+    // Check host access for tools that interact with web pages
+    const hostCheckResult = await this.checkHostAccessForTool(name, args)
+    if (!hostCheckResult.allowed) {
+      return {
+        success: false,
+        error: `Host access denied: ${hostCheckResult.reason}`,
+        data: null
+      }
+    }
+
     return await callMcpTool({ tool: name as any, args })
   }
 
   async checkIsActionTool(name: string) {
     return this.tools.find(t => t.name === name)?.action === true
+  }
+
+  /**
+   * Check if a tool requires host access validation and validate it
+   */
+  private async checkHostAccessForTool(toolName: string, args: any): Promise<{ allowed: boolean; reason?: string }> {
+    // Tools that require host checking
+    const hostCheckingTools = [
+      'create_new_tab',
+      'get_tab_content',
+      'get_current_tab_content',
+      'switch_to_tab',
+      'get_all_tabs',
+      'get_current_tab',
+      'get_tab_info',
+      'duplicate_tab',
+      'close_tab',
+      'get_page_metadata',
+      'extract_page_text',
+      'get_page_links',
+      'search_page_text',
+      'get_page_performance',
+      'get_page_accessibility',
+      'get_interactive_elements',
+      'click_element',
+      'fill_input',
+      'clear_input',
+      'get_input_value',
+      'submit_form',
+      'get_form_elements',
+      'scroll_to_element',
+      'highlight_element',
+      'highlight_text_inline',
+      'summarize_page',
+      'get_all_windows',
+      'get_current_window',
+      'switch_to_window',
+      'get_all_tab_groups',
+      'get_recent_history',
+      'search_history',
+      'get_all_bookmarks',
+      'search_bookmarks',
+      'capture_screenshot',
+      'capture_tab_screenshot',
+      'copy_current_page_url',
+      'copy_page_links',
+      'copy_page_metadata'
+    ]
+
+    if (!hostCheckingTools.includes(toolName)) {
+      return { allowed: true }
+    }
+
+    let urlToCheck: string | null = null
+
+    if (toolName === 'create_new_tab') {
+      urlToCheck = args.url
+    } else if (args.tabId) {
+      // For tools that work with existing tabs, get the tab's URL
+      try {
+        const tab = await chrome.tabs.get(args.tabId)
+        urlToCheck = tab.url || null
+      } catch (e) {
+        return { allowed: false, reason: `Cannot access tab ${args.tabId}: ${e}` }
+      }
+    } else {
+      // For tools that work on the current active tab, get the active tab's URL
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+        urlToCheck = activeTab?.url || null
+      } catch (e) {
+        return { allowed: false, reason: `Cannot access active tab: ${e}` }
+      }
+    }
+
+    if (!urlToCheck) {
+      return { allowed: false, reason: 'No URL found for host validation' }
+    }
+
+    return await hostAccessManager.isHostAllowed(urlToCheck)
   }
 
   async captureScreenshot() {
