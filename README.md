@@ -1,6 +1,6 @@
 # 🤖 AIPex - AI-Powered Browser Automation Extension
 
-> **Automate your browser with natural language commands - The open source browser-use solution**
+> **The Open Source ChatGPT Atlas - Automate your browser with natural language commands**
 
 <div align="right">
   <a href="README.md">🇺🇸 English</a> | <a href="README.zh-CN.md">🇨🇳 中文</a>
@@ -20,27 +20,36 @@
 [![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/k3aSZS7m)
 
 <div align="center">
-  **⭐ Star this repo if you find it helpful! ⭐**
+  **⭐ The Open Source ChatGPT Atlas Alternative ⭐**
   
   [![Chrome Web Store](https://img.shields.io/badge/Install%20on%20Chrome%20Web%20Store-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
 </div>
 
 ## 🤖 What is AIPex?
 
-AIPex is a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task - from complex multi-step workflows to simple repetitive actions.
+AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task - from complex multi-step workflows to simple repetitive actions.
+
+**🎯 Why choose AIPex over ChatGPT Atlas?**
+- ✅ **Free & Open Source** - No subscription fees, full transparency
+- ✅ **No Browser Migration** - Use your existing browser directly
+- ✅ **All Atlas Features** - Complete feature parity with additional capabilities
+- ✅ **Better Performance** - Optimized for speed and efficiency
 
 ## 📊 Comparison with Similar Projects
 
-### AIPex vs Dia/Comet vs Playwright-based Solutions
+### AIPex vs ChatGPT Atlas vs Dia/Comet vs Playwright-based Solutions
 
-| Feature | AIPex | Comet (Dia) | Playwright-based |
-|---------|-------|-------------|------------------|
-| **Setup & Resources** | ✅ One-click extension install, uses current browser | ⚠️ Install separate Dia browser | ❌ Launch browser + install dependencies |
-| **Session Reuse** | ✅ Auto-uses existing logins & settings | ✅ Preserves user environment | ❌ Clean environment, requires re-login |
-| **Ease of Use** | ✅ No technical knowledge needed | ⚠️ Adapt to new browser | ⚠️ Requires technical setup |
-| **Performance** | ✅ Fast, low LLM token cost | ✅ Fast, low token cost | ⚠️ Slower (IPC overhead, higher token cost) |
-| **Capabilities** | ✅ Full browser API, multi-tab support | ⚠️ Limited API, tab selection only | ⚠️ Limited to Playwright API |
-| **BYOK** | ✅ Yes | ❌ No | ✅ Yes |
+| Feature | AIPex | ChatGPT Atlas | Comet (Dia) | Playwright-based |
+|---------|-------|---------------|-------------|------------------|
+| **Pricing & Open Source** | ✅ Free and open source | ❌ Paid and closed source | ✅ Free and open source | ✅ Free and open source |
+| **Browser Migration Cost** | ✅ No migration needed, use existing browser | ❌ Requires browser migration | ⚠️ Install separate Dia browser | ❌ Launch browser + install dependencies |
+| **Setup & Resources** | ✅ One-click extension install, uses current browser | ❌ Requires browser migration | ⚠️ Install separate Dia browser | ❌ Launch browser + install dependencies |
+| **Session Reuse** | ✅ Auto-uses existing logins & settings | ✅ Preserves user environment | ✅ Preserves user environment | ❌ Clean environment, requires re-login |
+| **Ease of Use** | ✅ No technical knowledge needed | ⚠️ Adapt to new browser | ⚠️ Adapt to new browser | ⚠️ Requires technical setup |
+| **Performance** | ✅ Fast, low LLM token cost | ✅ Fast, low token cost | ✅ Fast, low token cost | ⚠️ Slower (IPC overhead, higher token cost) |
+| **Capabilities** | ✅ Full browser API, multi-tab support | ⚠️ Limited features | ⚠️ Limited API, tab selection only | ⚠️ Limited to Playwright API |
+| **Feature Coverage** | ✅ All Atlas features available | ⚠️ Multiple features implemented | ⚠️ Limited features | ⚠️ Limited features |
+| **BYOK** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
 
 ### 🎯 Why Choose AIPex for Browser Automation?
 
