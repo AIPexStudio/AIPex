@@ -20,7 +20,8 @@
   "files": [
     "build/",
     "README.md",
-    "package.json"
+    "package.json",
+    "host-access-config.json"
   ],
   "dependencies": {
     "@ant-design/x": "^1.4.0",

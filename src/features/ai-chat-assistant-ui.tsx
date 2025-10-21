@@ -5,17 +5,25 @@ import { Thread } from "~/lib/components/assistant-ui/thread"
 import { AIPexRuntimeProvider } from "~/lib/components/assistant-ui/runtime-provider"
 import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks"
 import type { Language } from "~/lib/i18n/types"
+import { hostAccessManager, type HostAccessMode, type HostAccessConfig } from "~/lib/services/host-access-manager"
 
 const AIChatSidebarAssistantUI = () => {
   const { t, language } = useTranslation()
   const changeLanguage = useLanguageChanger()
   const [showSettings, setShowSettings] = useState(false)
-  
+
   const [aiHost, setAiHost] = useState("")
   const [aiToken, setAiToken] = useState("")
   const [aiModel, setAiModel] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState("")
+
+  // Host access configuration
+  const [hostAccessMode, setHostAccessMode] = useState<HostAccessMode>("include-all")
+  const [whitelist, setWhitelist] = useState<string[]>([])
+  const [blocklist, setBlocklist] = useState<string[]>([])
+  const [whitelistInput, setWhitelistInput] = useState("")
+  const [blocklistInput, setBlocklistInput] = useState("")
 
   // Listen for settings open event from Thread component
   useEffect(() => {
@@ -50,6 +58,21 @@ const AIChatSidebarAssistantUI = () => {
     loadAISettings()
   }, [])
 
+  // Load host access settings initially
+  useEffect(() => {
+    const loadHostAccessSettings = async () => {
+      try {
+        const config = await hostAccessManager.getConfig()
+        setHostAccessMode(config.mode)
+        setWhitelist(config.whitelist)
+        setBlocklist(config.blocklist)
+      } catch (e) {
+        console.error("Failed to load host access settings", e)
+      }
+    }
+    loadHostAccessSettings()
+  }, [])
+
   const handleSaveAISettings = async () => {
     setIsSaving(true)
     try {
@@ -73,6 +96,49 @@ const AIChatSidebarAssistantUI = () => {
     }
   }
 
+  const handleSaveHostAccessSettings = async () => {
+    setIsSaving(true)
+    try {
+      await hostAccessManager.updateConfig({
+        mode: hostAccessMode,
+        whitelist,
+        blocklist
+      })
+      // Show success feedback
+      setSaveStatus(t("settings.saveSuccess"))
+      setTimeout(() => setSaveStatus(""), 1500)
+    } catch (e) {
+      console.error("Error saving host access settings:", e)
+      // Show error feedback
+      setSaveStatus(t("settings.saveError"))
+      setTimeout(() => setSaveStatus(""), 3000)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const addToWhitelist = () => {
+    if (whitelistInput.trim() && !whitelist.includes(whitelistInput.trim())) {
+      setWhitelist([...whitelist, whitelistInput.trim()])
+      setWhitelistInput("")
+    }
+  }
+
+  const removeFromWhitelist = (host: string) => {
+    setWhitelist(whitelist.filter(h => h !== host))
+  }
+
+  const addToBlocklist = () => {
+    if (blocklistInput.trim() && !blocklist.includes(blocklistInput.trim())) {
+      setBlocklist([...blocklist, blocklistInput.trim()])
+      setBlocklistInput("")
+    }
+  }
+
+  const removeFromBlocklist = (host: string) => {
+    setBlocklist(blocklist.filter(h => h !== host))
+  }
+
   return (
     <div className="fixed bottom-0 left-0 w-full h-full bg-white flex flex-col border-t border-gray-200 font-sans text-gray-900">
       {/* Header */}
@@ -89,7 +155,7 @@ const AIChatSidebarAssistantUI = () => {
           title={t("tooltip.newChat")}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14M5 12h14"/>
+            <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
         <button
@@ -102,7 +168,7 @@ const AIChatSidebarAssistantUI = () => {
           </svg>
         </button>
       </div>
-      
+
       {/* Main chat interface - always visible */}
       <div className="flex-1 min-h-0 flex flex-col">
         <AIPexRuntimeProvider>
@@ -139,8 +205,8 @@ const AIChatSidebarAssistantUI = () => {
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-3">{t("settings.language")}</label>
-                  <select 
-                    value={language} 
+                  <select
+                    value={language}
                     onChange={(e) => changeLanguage(e.target.value as Language)}
                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
@@ -196,6 +262,103 @@ const AIChatSidebarAssistantUI = () => {
                     {saveStatus}
                   </div>
                 )}
+              </div>
+
+              {/* Host Access Configuration */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 space-y-5 shadow-sm">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">Host Access Mode</label>
+                  <select
+                    value={hostAccessMode}
+                    onChange={(e) => setHostAccessMode(e.target.value as HostAccessMode)}
+                    className="w-full px-4 py-3 border-2 border-green-200 rounded-xl text-gray-900 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  >
+                    <option value="include-all">Include All Hosts</option>
+                    <option value="whitelist">Whitelist Mode</option>
+                    <option value="blocklist">Blocklist Mode</option>
+                  </select>
+                  <p className="text-xs text-gray-600 mt-2">
+                    {hostAccessMode === "include-all" && "AI can access any website"}
+                    {hostAccessMode === "whitelist" && "AI can only access whitelisted hosts"}
+                    {hostAccessMode === "blocklist" && "AI cannot access blocklisted hosts"}
+                  </p>
+                </div>
+
+                {hostAccessMode === "whitelist" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-3">Whitelist</label>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        className="flex-1 px-4 py-3 border-2 border-green-200 rounded-xl text-gray-900 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                        value={whitelistInput}
+                        onChange={(e) => setWhitelistInput(e.target.value)}
+                        placeholder="example.com"
+                        onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
+                      />
+                      <button
+                        onClick={addToWhitelist}
+                        className="px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold shadow-sm hover:shadow-md"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {whitelist.map((host, index) => (
+                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-green-200">
+                          <span className="text-sm text-gray-700">{host}</span>
+                          <button
+                            onClick={() => removeFromWhitelist(host)}
+                            className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {hostAccessMode === "blocklist" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-3">Blocklist</label>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        className="flex-1 px-4 py-3 border-2 border-green-200 rounded-xl text-gray-900 focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                        value={blocklistInput}
+                        onChange={(e) => setBlocklistInput(e.target.value)}
+                        placeholder="example.com"
+                        onKeyPress={(e) => e.key === 'Enter' && addToBlocklist()}
+                      />
+                      <button
+                        onClick={addToBlocklist}
+                        className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-semibold shadow-sm hover:shadow-md"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {blocklist.map((host, index) => (
+                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-red-200">
+                          <span className="text-sm text-gray-700">{host}</span>
+                          <button
+                            onClick={() => removeFromBlocklist(host)}
+                            className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleSaveHostAccessSettings}
+                    disabled={isSaving}
+                    className={`px-6 py-3 rounded-xl text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isSaving ? 'bg-gray-300 disabled:cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 hover:scale-105'}`}
+                  >{isSaving ? t("common.saving") : t("common.save")}</button>
+                </div>
               </div>
             </div>
           </div>
