@@ -55,18 +55,7 @@ AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chro
 
 ### 1. Research Topic
 
-Watch our demo video to see AIPex in action:
-
-[![AIPex Demo](https://img.youtube.com/vi/0XhI2RPF0RY/maxresdefault.jpg)](https://youtu.be/0XhI2RPF0RY)
-
-**Research Automation Made Simple:**
-- 🔍 **Smart Content Analysis**: Extract structured data from any webpage
-- 📊 **Price Monitoring**: Track prices across multiple e-commerce sites  
-- 🤖 **Research Automation**: Gather information from multiple sources automatically
-- 📝 **Document Processing**: Extract and organize information from web documents
-- 🎯 **Precision Actions**: Click, fill, scroll, and interact with elements using AI vision
-
-![Data Extraction](gif/research.gif)
+https://github.com/user-attachments/assets/4a4f2a64-691c-4783-965e-043b329a8035
 
 ## 🚀 Getting Started
 
