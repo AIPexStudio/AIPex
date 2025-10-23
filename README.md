@@ -51,48 +51,22 @@ AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chro
 | **Feature Coverage** | ✅ All Atlas features available | ⚠️ Multiple features implemented | ⚠️ Limited features | ⚠️ Limited features |
 | **BYOK** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
 
-### 🎯 Why Choose AIPex for Browser Automation?
+## 🚀 Do Amazing with AIPex
 
-- 🧠 **Natural Language Control**: Command your browser in plain English - no coding required
-- 🤖 **AI-Powered Intelligence**: 30+ MCP tools that understand context and adapt to your needs
-- ⚡ **Multi-Step Automation**: Execute complex workflows with single commands
-- 🔄 **Universal Compatibility**: Works with any website - no special setup needed
-- 📊 **Smart Data Extraction**: Automatically collect and organize information from web pages
+### 1. Research Topic
+
+Watch our demo video to see AIPex in action:
+
+[![AIPex Demo](https://img.youtube.com/vi/0XhI2RPF0RY/maxresdefault.jpg)](https://youtu.be/0XhI2RPF0RY)
+
+**Research Automation Made Simple:**
+- 🔍 **Smart Content Analysis**: Extract structured data from any webpage
+- 📊 **Price Monitoring**: Track prices across multiple e-commerce sites  
+- 🤖 **Research Automation**: Gather information from multiple sources automatically
+- 📝 **Document Processing**: Extract and organize information from web documents
 - 🎯 **Precision Actions**: Click, fill, scroll, and interact with elements using AI vision
-- 📝 **Form Automation**: Fill out forms, submit data, and handle complex interactions
-- 🖼️ **At Tabs**: Read & Act with Multiple tabs
-- 🔧 **Developer Friendly**: Open source with extensive API for custom automation
-- 🚀 **Lightning Fast**: Execute automation tasks in seconds, not minutes
-
-## ✨ Core Automation Features
-
-### 📊 Intelligent Data Extraction
-- **Smart Content Analysis**: Extract structured data from any webpage
-- **Price Monitoring**: Track prices across multiple e-commerce sites
-- **Research Automation**: Gather information from multiple sources automatically
 
 ![Data Extraction](gif/research.gif)
-
-### 🎯 Precision Element Interaction
-- **Visual Element Detection**: AI can see and interact with page elements
-- **Form Automation**: Fill out complex forms with intelligent field mapping
-- **Dynamic Content Handling**: Adapt to changing page layouts and content
-
-![Element Interaction](gif/compare.gif)
-
-### 📝 Content Processing & Analysis
-- **Text Highlighting & Summarization**: Automatically highlight and summarize important content
-- **Document Processing**: Extract and organize information from web documents
-- **Smart Note-Taking**: Capture and organize insights from web browsing
-
-![Content Processing](gif/summariz.gif)
-
-### 🗂️ Advanced Tab & Window Management
-- **AI-Powered Organization**: Automatically group and organize tabs by topic
-- **Smart Tab Switching**: Find and switch between tabs using natural language
-- **Multi-Window Coordination**: Manage complex workflows across multiple browser windows
-
-![Tab Management](gif/organize-tabs.gif)
 
 ## 🚀 Getting Started
 
