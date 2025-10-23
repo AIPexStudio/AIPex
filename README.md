@@ -53,9 +53,21 @@ AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chro
 
 ## 🚀 Do Amazing with AIPex
 
-### 1. Research Topic
+### 1. "Organize my tabs by topic"
 
 https://github.com/user-attachments/assets/4a4f2a64-691c-4783-965e-043b329a8035
+
+### 2. "Use google to research MCP"
+
+https://github.com/user-attachments/assets/71ec4efd-d80e-4e8f-8e39-88baee3ec38e
+
+### 3. "write a twitter to say hello"
+
+https://github.com/user-attachments/assets/81f6b482-84d0-4fd9-924b-dca634b208ec
+
+### 4. "please help me pass the exam"
+
+https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 ## 🚀 Getting Started
 
