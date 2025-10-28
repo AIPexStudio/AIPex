@@ -262,7 +262,6 @@ export type McpResponse =
   | { success: true; data?: any }
   | { success: false; error: string }
 
-import { error } from "console";
 // Direct in-process MCP client: call exported server functions instead of messaging
 import {
   getAllTabs,
