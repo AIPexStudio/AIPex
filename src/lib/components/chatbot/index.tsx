@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ChatStatus } from "ai";
-import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, LayersIcon, FileTextIcon, SearchIcon, DollarSignIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, LayersIcon, FileTextIcon, SearchIcon, DollarSignIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon, MicIcon } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { models, SYSTEM_PROMPT } from "./constants";
 import { MessageHandler, type MessageHandlerConfig } from "./message-handler";
@@ -70,7 +70,8 @@ import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
 import type { Language } from "~/lib/i18n/types";
 import { useTheme, type Theme } from "~/lib/hooks/use-theme";
 import { useTabsSync } from "~/lib/hooks/use-tabs-sync";
-import { hostAccessManager, type HostAccessMode, type HostAccessConfig } from "~/lib/services/host-access-manager";
+import { hostAccessManager, type HostAccessMode } from "~/lib/services/host-access-manager";
+import VoiceMode from "~/lib/components/voice-mode";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -102,7 +103,7 @@ const getContextIcon = (contextType: string) => {
 // Welcome screen component
 const WelcomeScreen = ({ onSuggestionClick }: { onSuggestionClick: (text: string) => void }) => {
   const { t } = useTranslation();
-  
+
   const suggestions = [
     {
       icon: LayersIcon,
@@ -203,13 +204,15 @@ const ChatBot = () => {
   const [whitelistInput, setWhitelistInput] = useState("");
   const [blocklistInput, setBlocklistInput] = useState("");
   const [activeTab, setActiveTab] = useState("general");
+  // Voice mode state
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
 
   const placeholderList = [
     t("input.placeholder1"),
     t("input.placeholder2"),
     t("input.placeholder3")
   ];
- 
+
 
   // Track cleanup functions outside of the handler
   const unsubscribeFunctionsRef = useRef<(() => void)[]>([]);
@@ -226,7 +229,7 @@ const ChatBot = () => {
     if (isInitializedRef.current || messageHandlerRef.current) {
       return;
     }
-    
+
     const config: MessageHandlerConfig = {
       initialModel: aiModel || "deepseek-chat",
       initialTools: getAllTools().map((tool) => ({
@@ -289,7 +292,7 @@ const ChatBot = () => {
     if (isLoadingHost || isLoadingToken || isLoadingModel || !messageHandlerRef.current) {
       return;
     }
-    
+
     messageHandlerRef.current.updateConfig({
       initialModel: aiModel || "deepseek-chat",
       initialAiHost: aiHost || "https://api.openai.com/v1/chat/completions",
@@ -373,21 +376,21 @@ const ChatBot = () => {
       console.error("AI Model cannot be empty!");
       return;
     }
-    
+
     setIsSaving(true);
     try {
       // Save AI settings
       setAiHost(tempAiHost);
       setAiToken(tempAiToken);
       setAiModel(tempAiModel);
-      
+
       // Save host access settings
       await hostAccessManager.updateConfig({
         mode: hostAccessMode,
         whitelist,
         blocklist
       });
-      
+
       setShowSettings(false);
       console.log("All settings saved successfully");
     } catch (error) {
@@ -455,139 +458,139 @@ const ChatBot = () => {
               <WelcomeScreen onSuggestionClick={handleSubmit} />
             ) : (
               messages.filter((message) => message.role !== "system").map((message, messageIndex) => (
-              <div key={message.id}>
-                {message.role === "assistant" &&
-                  message.parts.filter((part) => part.type === "source-url").length > 0 && (
-                    <Sources>
-                      <SourcesTrigger
-                        count={message.parts.filter((part) => part.type === "source-url").length}
-                      />
-                      {message.parts
-                        .filter((part) => part.type === "source-url")
-                        .map((part, i) => (
-                          <SourcesContent key={`${message.id}-${i}`}>
-                            <Source key={`${message.id}-${i}`} href={part.url} title={part.url} />
-                          </SourcesContent>
-                        ))}
-                    </Sources>
-                  )}
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      const isLastMessage = messageIndex === messages.length - 1;
-                      return (
-                        <Fragment key={`${message.id}-${i}`}>
-                          <Message from={message.role as "user" | "assistant" | "system"}>
+                <div key={message.id}>
+                  {message.role === "assistant" &&
+                    message.parts.filter((part) => part.type === "source-url").length > 0 && (
+                      <Sources>
+                        <SourcesTrigger
+                          count={message.parts.filter((part) => part.type === "source-url").length}
+                        />
+                        {message.parts
+                          .filter((part) => part.type === "source-url")
+                          .map((part, i) => (
+                            <SourcesContent key={`${message.id}-${i}`}>
+                              <Source key={`${message.id}-${i}`} href={part.url} title={part.url} />
+                            </SourcesContent>
+                          ))}
+                      </Sources>
+                    )}
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "text":
+                        const isLastMessage = messageIndex === messages.length - 1;
+                        return (
+                          <Fragment key={`${message.id}-${i}`}>
+                            <Message from={message.role as "user" | "assistant" | "system"}>
+                              <MessageContent>
+                                <Response>{part.text}</Response>
+                              </MessageContent>
+                            </Message>
+                            {message.role === "assistant" && isLastMessage && (
+                              <Actions className="mt-2">
+                                <Action onClick={() => handleRegenerate()} label="Retry">
+                                  <RefreshCcwIcon className="size-3" />
+                                </Action>
+                                <Action onClick={() => handleCopy(part.text)} label="Copy">
+                                  <CopyIcon className="size-3" />
+                                </Action>
+                              </Actions>
+                            )}
+                          </Fragment>
+                        );
+                      case "file":
+                        return (
+                          <Message key={`${message.id}-${i}`} from={message.role as "user" | "assistant" | "system"}>
                             <MessageContent>
-                              <Response>{part.text}</Response>
+                              {part.mediaType.startsWith("image/") ? (
+                                <div className="max-w-md">
+                                  <img
+                                    src={part.url}
+                                    alt={part.filename || "Attached image"}
+                                    className="rounded-lg border border-gray-200 dark:border-gray-700"
+                                  />
+                                  {part.filename && (
+                                    <p className="text-xs text-muted-foreground mt-1">{part.filename}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                  <p className="text-sm">
+                                    📎 {part.filename || "Attached file"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">{part.mediaType}</p>
+                                </div>
+                              )}
                             </MessageContent>
                           </Message>
-                          {message.role === "assistant" && isLastMessage && (
-                            <Actions className="mt-2">
-                              <Action onClick={() => handleRegenerate()} label="Retry">
-                                <RefreshCcwIcon className="size-3" />
-                              </Action>
-                              <Action onClick={() => handleCopy(part.text)} label="Copy">
-                                <CopyIcon className="size-3" />
-                              </Action>
-                            </Actions>
-                          )}
-                        </Fragment>
-                      );
-                    case "file":
-                      return (
-                        <Message key={`${message.id}-${i}`} from={message.role as "user" | "assistant" | "system"}>
-                          <MessageContent>
-                            {part.mediaType.startsWith("image/") ? (
-                              <div className="max-w-md">
-                                <img 
-                                  src={part.url} 
-                                  alt={part.filename || "Attached image"} 
-                                  className="rounded-lg border border-gray-200 dark:border-gray-700"
-                                />
-                                {part.filename && (
-                                  <p className="text-xs text-muted-foreground mt-1">{part.filename}</p>
+                        );
+                      case "tool":
+                        return (
+                          <Tool key={`${message.id}-${i}`} defaultOpen={false}>
+                            <ToolHeader type={`tool-${part.toolName}`} state={part.state} />
+                            <ToolContent>
+                              <ToolInput input={part.input} />
+                              <ToolOutput
+                                output={
+                                  part.output ? (
+                                    <Response>
+                                      {formatToolOutput(part.output)}
+                                    </Response>
+                                  ) : undefined
+                                }
+                                errorText={part.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                        );
+                      case "reasoning":
+                        return (
+                          <Reasoning
+                            key={`${message.id}-${i}`}
+                            className="w-full"
+                            isStreaming={
+                              status === "streaming" &&
+                              i === message.parts.length - 1 &&
+                              message.id === messages[messages.length - 1]?.id
+                            }
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+                      case "context":
+                        return (
+                          <div
+                            key={`${message.id}-${i}`}
+                            className={cn(
+                              "flex w-full items-end gap-2 py-2",
+                              message.role === "user" ? "justify-end" : "flex-row-reverse justify-end"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 max-w-[80%] px-3 py-1.5 text-sm rounded-md bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
+                              <span className="text-primary flex-shrink-0">
+                                {getContextIcon(part.contextType)}
+                              </span>
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="font-medium text-foreground truncate">
+                                  {part.label}
+                                </span>
+                                {part.metadata?.url && (
+                                  <span className="text-xs text-muted-foreground truncate">
+                                    {part.metadata.url}
+                                  </span>
                                 )}
                               </div>
-                            ) : (
-                              <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                <p className="text-sm">
-                                  📎 {part.filename || "Attached file"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">{part.mediaType}</p>
-                              </div>
-                            )}
-                          </MessageContent>
-                        </Message>
-                      );
-                    case "tool":
-                      return (
-                        <Tool key={`${message.id}-${i}`} defaultOpen={false}>
-                          <ToolHeader type={`tool-${part.toolName}`} state={part.state} />
-                          <ToolContent>
-                            <ToolInput input={part.input} />
-                            <ToolOutput
-                              output={
-                                part.output ? (
-                                  <Response>
-                                    {formatToolOutput(part.output)}
-                                  </Response>
-                                ) : undefined
-                              }
-                              errorText={part.errorText}
-                            />
-                          </ToolContent>
-                        </Tool>
-                      );
-                    case "reasoning":
-                      return (
-                        <Reasoning
-                          key={`${message.id}-${i}`}
-                          className="w-full"
-                          isStreaming={
-                            status === "streaming" &&
-                            i === message.parts.length - 1 &&
-                            message.id === messages[messages.length - 1]?.id
-                          }
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      );
-                    case "context":
-                      return (
-                        <div 
-                          key={`${message.id}-${i}`} 
-                          className={cn(
-                            "flex w-full items-end gap-2 py-2",
-                            message.role === "user" ? "justify-end" : "flex-row-reverse justify-end"
-                          )}
-                        >
-                          <div className="flex items-center gap-2 max-w-[80%] px-3 py-1.5 text-sm rounded-md bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
-                            <span className="text-primary flex-shrink-0">
-                              {getContextIcon(part.contextType)}
-                            </span>
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="font-medium text-foreground truncate">
-                                {part.label}
+                              <span className="text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded flex-shrink-0">
+                                {part.contextType}
                               </span>
-                              {part.metadata?.url && (
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {part.metadata.url}
-                                </span>
-                              )}
                             </div>
-                            <span className="text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded flex-shrink-0">
-                              {part.contextType}
-                            </span>
                           </div>
-                        </div>
-                      );
-                    default:
-                      return null;
-                  }
-                })}
-              </div>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </div>
               ))
             )}
             {status === "submitted" && <Loader />}
@@ -603,21 +606,21 @@ const ChatBot = () => {
             <PromptInputContextTags>
               {(context) => <PromptInputContextTag data={context} />}
             </PromptInputContextTags>
-            
+
             <PromptInputAttachments>
               {(attachment) => <PromptInputAttachment data={attachment} />}
             </PromptInputAttachments>
-            
+
             <ContextLoader />
-            
-            <PromptInputTextarea 
-              placeholder={t("input.newLine")} 
-              enableTypingAnimation={true} 
-              placeholderTexts={placeholderList} 
-              onChange={(e) => setInput(e.target.value)} 
-              value={input} 
+
+            <PromptInputTextarea
+              placeholder={t("input.newLine")}
+              enableTypingAnimation={true}
+              placeholderTexts={placeholderList}
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
             />
-            
+
             {/* Queue indicator */}
             {messageQueue.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-muted/50 rounded-md mt-2">
@@ -636,6 +639,15 @@ const ChatBot = () => {
                   <PromptInputActionAddAttachments />
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowVoiceMode(true)}
+                className="shrink-0 rounded-lg"
+                title="Voice Mode"
+              >
+                <MicIcon className="size-4" />
+              </Button>
               <PromptInputModelSelect
                 onValueChange={(value) => {
                   if (value && value.trim()) {
@@ -678,7 +690,7 @@ const ChatBot = () => {
             <DialogTitle>{t("settings.title")}</DialogTitle>
             <DialogDescription>{t("settings.subtitle")}</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {/* Tab Navigation */}
             <div className="flex border-b">
@@ -707,7 +719,7 @@ const ChatBot = () => {
                 Security
               </button>
             </div>
-            
+
             {/* General Tab Content */}
             {activeTab === "general" && (
               <div className="space-y-4 py-4">
@@ -772,13 +784,13 @@ const ChatBot = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Security Tab Content */}
             {activeTab === "security" && (
               <div className="space-y-4 py-4">
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Host Access Security</h3>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Host Access Mode</label>
                     <Select value={hostAccessMode} onValueChange={(value) => setHostAccessMode(value as HostAccessMode)}>
@@ -888,6 +900,14 @@ const ChatBot = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Voice Mode */}
+      {showVoiceMode && (
+        <VoiceMode
+          onClose={() => setShowVoiceMode(false)}
+          onSubmit={handleSubmit}
+        />
+      )}
     </div>
   );
 };
@@ -895,7 +915,7 @@ const ChatBot = () => {
 // Helper component to load available contexts and sync with tab events
 function ContextLoader() {
   const contexts = usePromptInputContexts();
-  
+
   // Use the tabs sync hook to automatically update contexts on tab changes
   useTabsSync({
     onContextsUpdate: (availableContexts) => {
@@ -909,7 +929,7 @@ function ContextLoader() {
     },
     debounceDelay: 300, // Wait 300ms before updating to avoid excessive updates
   });
-  
+
   return null;
 }
 

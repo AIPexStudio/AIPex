@@ -69,6 +69,21 @@ https://github.com/user-attachments/assets/81f6b482-84d0-4fd9-924b-dca634b208ec
 
 https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
+### 🎤 Voice Mode (NEW!)
+- **Hands-Free Control**: Control your browser using voice commands
+- **Real-Time Speech Recognition**: Natural voice interaction with AI
+- **Text-to-Speech Output**: AI responses are spoken back to you
+- **GPU-Accelerated Visuals**: Beautiful particle animations powered by Three.js + GLSL shaders
+- **Audio Visualization**: Dynamic particles that react to voice frequency and amplitude
+
+**Quick Start:**
+1. Click the microphone icon in the chat input toolbar
+2. Allow microphone permissions
+3. Click the red microphone button to start speaking
+4. Watch the stunning particle animations respond to your voice!
+
+[📖 Voice Mode Quick Start Guide](VOICE_MODE_QUICKSTART.md) | [📚 Detailed Guide](VOICE_MODE_GUIDE.md)
+
 ## 🚀 Getting Started
 
 ### Quick Start
