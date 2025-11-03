@@ -17,15 +17,9 @@ export class InMemoryStorage implements StorageAdapter {
   }
 
   async listAll(): Promise<SessionSummary[]> {
-    return Array.from(this.sessions.values()).map((session) => {
-      const stats = session.getStats();
-      return {
-        id: session.id,
-        turnCount: stats.totalTurns,
-        createdAt: stats.createdAt,
-        lastActiveAt: stats.lastActiveAt,
-      };
-    });
+    return Array.from(this.sessions.values()).map((session) =>
+      session.getSummary(),
+    );
   }
 
   clear(): void {
