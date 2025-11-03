@@ -24,6 +24,9 @@
       },
       "style": {
         "noNonNullAssertion": "off"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
       }
     }
   },

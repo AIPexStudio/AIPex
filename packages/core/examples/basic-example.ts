@@ -51,7 +51,7 @@ class CalculatorTool extends Tool<
 
 async function main() {
   // Check for API key
-  const apiKey = process.env?.GEMINI_API_KEY;
+  const apiKey = process.env?.["GEMINI_API_KEY"];
   if (!apiKey) {
     console.error("Please set GEMINI_API_KEY environment variable");
     process.exit(1);

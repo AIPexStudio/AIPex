@@ -9,10 +9,17 @@ const mockGenerateContentStream = vi.fn();
 
 vi.mock("@google/genai", () => {
   return {
-    GoogleGenerativeAI: class {
+    GoogleGenAI: class {
       models = {
         generateContentStream: mockGenerateContentStream,
       };
+    },
+    Type: {
+      OBJECT: "object",
+      STRING: "string",
+      NUMBER: "number",
+      BOOLEAN: "boolean",
+      ARRAY: "array",
     },
   };
 });
@@ -71,21 +78,17 @@ describe("Agent", () => {
                 parts: [{ text: "Hello" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       let sessionId: string | undefined;
 
@@ -113,21 +116,17 @@ describe("Agent", () => {
                 parts: [{ text: "Response" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       const events: string[] = [];
 
@@ -157,21 +156,17 @@ describe("Agent", () => {
                 parts: [{ text: "Response" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       let sessionId: string | undefined;
 
@@ -211,21 +206,17 @@ describe("Agent", () => {
                 parts: [{ text: "Response" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       let sessionId: string | undefined;
 
@@ -253,21 +244,17 @@ describe("Agent", () => {
                 parts: [{ text: "Response" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       for await (const _event of agent.execute("Hello")) {
         // Execute to create session

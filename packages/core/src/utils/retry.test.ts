@@ -41,6 +41,7 @@ describe("retry", () => {
     const fn = vi.fn().mockRejectedValue(error);
 
     const promise = retry(fn, { maxAttempts: 3 });
+    promise.catch(() => {}); // Suppress unhandled rejection warning
 
     await vi.runAllTimersAsync();
     await expect(promise).rejects.toThrow("persistent failure");
@@ -56,6 +57,7 @@ describe("retry", () => {
       initialDelayMs: 1000,
       backoffMultiplier: 2,
     });
+    promise.catch(() => {}); // Suppress unhandled rejection warning
 
     await vi.runAllTimersAsync();
     await expect(promise).rejects.toThrow();
@@ -76,11 +78,14 @@ describe("retry", () => {
       backoffMultiplier: 10,
       maxDelayMs: 3000,
     });
+    promise.catch(() => {}); // Suppress unhandled rejection warning
 
     await vi.runAllTimersAsync();
     await expect(promise).rejects.toThrow();
 
-    const delays = sleepSpy.mock.calls.map((call) => call[1]);
+    const delays = sleepSpy.mock.calls
+      .map((call) => call[1])
+      .filter((delay): delay is number => typeof delay === "number");
     expect(Math.max(...delays)).toBeLessThanOrEqual(3000);
   });
 
@@ -97,6 +102,7 @@ describe("retry", () => {
       shouldRetry: (error) =>
         error instanceof Error && error.message !== "non-retryable",
     });
+    promise.catch(() => {}); // Suppress unhandled rejection warning
 
     await vi.runAllTimersAsync();
     await expect(promise).rejects.toThrow("non-retryable");
@@ -117,7 +123,7 @@ describe("sleep", () => {
     const promise = sleep(1000);
     const callback = vi.fn();
 
-    await promise.then(callback);
+    promise.then(callback);
 
     expect(callback).not.toHaveBeenCalled();
 

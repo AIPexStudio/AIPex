@@ -26,7 +26,7 @@ export abstract class Tool<TParams = unknown, TResult = unknown> {
     // Extract the actual schema (remove the root wrapper)
     const parameters =
       typeof jsonSchema === "object" && jsonSchema !== null
-        ? jsonSchema.definitions?.[this.name] ?? {}
+        ? (jsonSchema.definitions?.[this.name] ?? {})
         : {};
 
     return {
