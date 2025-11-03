@@ -37,6 +37,9 @@ export interface SessionConfig {
 export interface SessionMetadata {
   createdAt: number;
   lastActiveAt: number;
+  totalTurns?: number;
+  totalTokens?: number;
+  tags?: string[];
   [key: string]: unknown;
 }
 
@@ -46,4 +49,5 @@ export interface SerializedSession {
   systemPrompt?: string;
   metadata: SessionMetadata;
   config: SessionConfig;
+  preview?: string;
 }
