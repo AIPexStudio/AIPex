@@ -76,6 +76,101 @@ describe("GeminiProvider", () => {
       expect(result.usage.totalTokens).toBe(30);
     });
 
+    it("should handle function responses with wrapped output", async () => {
+      const mockResponse = {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "The weather is sunny." }],
+            },
+            finishReason: "STOP",
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 15,
+          candidatesTokenCount: 10,
+          totalTokenCount: 25,
+        },
+      };
+
+      mockGenerateContent.mockResolvedValue(mockResponse);
+
+      const result = await provider.generateContent({
+        messages: [
+          { role: "user", content: "What's the weather?" },
+          {
+            role: "assistant",
+            functionCalls: [
+              {
+                id: "call_1",
+                name: "get_weather",
+                params: { city: "Tokyo" },
+              },
+            ],
+          },
+          {
+            role: "user",
+            functionResponse: {
+              name: "get_weather",
+              result: { temperature: 25, condition: "sunny" },
+            },
+          },
+        ],
+      });
+
+      expect(mockGenerateContent).toHaveBeenCalled();
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      const contents = callArgs.contents;
+
+      const functionResponseContent = contents.find((c: any) =>
+        c.parts.some((p: any) => p.functionResponse),
+      );
+      expect(functionResponseContent).toBeDefined();
+      expect(functionResponseContent.parts[0].functionResponse).toEqual({
+        name: "get_weather",
+        response: {
+          output: { temperature: 25, condition: "sunny" },
+        },
+      });
+
+      expect(result.text).toBe("The weather is sunny.");
+    });
+
+    it("should filter out messages with empty parts", async () => {
+      const mockResponse = {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "Response" }],
+            },
+            finishReason: "STOP",
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 5,
+          totalTokenCount: 15,
+        },
+      };
+
+      mockGenerateContent.mockResolvedValue(mockResponse);
+
+      await provider.generateContent({
+        messages: [
+          { role: "user", content: "Hello" },
+          { role: "assistant", content: "" },
+          { role: "user", content: "Are you there?" },
+        ],
+      });
+
+      expect(mockGenerateContent).toHaveBeenCalled();
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      const contents = callArgs.contents;
+
+      expect(contents.length).toBe(2);
+      expect(contents.every((c: any) => c.parts.length > 0)).toBe(true);
+    });
+
     it("should handle function calls in response", async () => {
       const mockResponse = {
         candidates: [
@@ -109,6 +204,57 @@ describe("GeminiProvider", () => {
       expect(result.functionCalls).toHaveLength(1);
       expect(result.functionCalls[0].name).toBe("get_weather");
       expect(result.functionCalls[0].params).toEqual({ city: "Tokyo" });
+    });
+
+    it("should convert tool parameters directly without wrapping", async () => {
+      const mockResponse = {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "Response" }],
+            },
+            finishReason: "STOP",
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 5,
+          totalTokenCount: 15,
+        },
+      };
+
+      mockGenerateContent.mockResolvedValue(mockResponse);
+
+      const toolParameters = {
+        type: "object",
+        properties: {
+          city: { type: "string", description: "City name" },
+          units: { type: "string", enum: ["celsius", "fahrenheit"] },
+        },
+        required: ["city"],
+      };
+
+      await provider.generateContent({
+        messages: [{ role: "user", content: "Weather?" }],
+        tools: [
+          {
+            name: "get_weather",
+            description: "Get weather for a city",
+            parameters: toolParameters,
+          },
+        ],
+      });
+
+      expect(mockGenerateContent).toHaveBeenCalled();
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      const tools = callArgs.config.tools;
+
+      expect(tools).toBeDefined();
+      expect(tools[0].functionDeclarations[0]).toEqual({
+        name: "get_weather",
+        description: "Get weather for a city",
+        parameters: toolParameters,
+      });
     });
 
     it("should handle system instructions", async () => {
@@ -262,6 +408,49 @@ describe("GeminiProvider", () => {
 
       expect(functionCalls).toHaveLength(1);
       expect(functionCalls[0].name).toBe("test_fn");
+      expect(functionCalls[0].params).toEqual({ key: "value" });
+    });
+
+    it("should handle function calls with null args in stream", async () => {
+      async function* mockStreamGenerator() {
+        yield {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    functionCall: {
+                      name: "no_args_fn",
+                      args: null,
+                    },
+                  },
+                ],
+              },
+              finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
+            },
+          ],
+        };
+      }
+
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
+
+      const functionCalls = [];
+      for await (const chunk of provider.generateStream({
+        messages: [{ role: "user", content: "Test" }],
+      })) {
+        if (chunk.type === "function_call") {
+          functionCalls.push(chunk.call);
+        }
+      }
+
+      expect(functionCalls).toHaveLength(1);
+      expect(functionCalls[0].name).toBe("no_args_fn");
+      expect(functionCalls[0].params).toEqual({});
     });
 
     it("should throw LLMError on stream error", async () => {

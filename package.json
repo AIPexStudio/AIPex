@@ -12,7 +12,7 @@
     "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
   },
   "scripts": {
-    "preflight": "npm run format && npm run lint:fix && npm run typecheck",
+    "preflight": "npm run format && npm run lint:fix && npm run typecheck && npm run test",
     "format": "biome format . --write",
     "lint": "biome check .",
     "lint:fix": "biome check . --fix --unsafe",

@@ -5,8 +5,6 @@ import {
   type GenerateContentResponseUsageMetadata,
   GoogleGenAI,
   type Part,
-  type Schema,
-  Type,
 } from "@google/genai";
 import { ErrorCode, LLMError } from "../utils/errors.js";
 import { generateId } from "../utils/id-generator.js";
@@ -177,41 +175,45 @@ export class GeminiProvider extends BaseLLMProvider {
   }
 
   private toGeminiContents(messages: UnifiedMessage[]): Content[] {
-    return messages.map((msg) => {
-      const parts: Part[] = [];
+    return messages
+      .map((msg) => {
+        const parts: Part[] = [];
 
-      if (msg.content) {
-        parts.push({ text: msg.content });
-      }
+        if (msg.content) {
+          parts.push({ text: msg.content });
+        }
 
-      if (msg.functionCall) {
-        parts.push({
-          functionCall: {
-            name: msg.functionCall.name,
-            args: msg.functionCall.params,
-          },
-        });
-      }
+        if (msg.functionCall) {
+          parts.push({
+            functionCall: {
+              name: msg.functionCall.name,
+              args: msg.functionCall.params,
+            },
+          });
+        }
 
-      if (msg.functionResponse) {
-        parts.push({
-          functionResponse: {
-            name: msg.functionResponse.name,
-            response: msg.functionResponse.result,
-          },
-        });
-      }
+        if (msg.functionResponse) {
+          parts.push({
+            functionResponse: {
+              name: msg.functionResponse.name,
+              response: {
+                output: msg.functionResponse.result,
+              },
+            },
+          });
+        }
 
-      return {
-        role:
-          msg.role === "assistant"
-            ? "model"
-            : msg.role === "user"
-              ? "user"
-              : "function",
-        parts,
-      };
-    });
+        return {
+          role:
+            msg.role === "assistant"
+              ? "model"
+              : msg.role === "user"
+                ? "user"
+                : "function",
+          parts,
+        };
+      })
+      .filter((c) => c.parts.length > 0);
   }
 
   private convertToGeminiTools(
@@ -224,10 +226,7 @@ export class GeminiProvider extends BaseLLMProvider {
         {
           name: tool.name,
           description: tool.description,
-          parameters: {
-            type: Type.OBJECT,
-            properties: tool.parameters as Record<string, Schema>,
-          },
+          parameters: tool.parameters,
         },
       ],
     }));
@@ -257,7 +256,7 @@ export class GeminiProvider extends BaseLLMProvider {
         functionCalls.push({
           id: generateId(),
           name: fc.name || "",
-          params: (fc.args as Record<string, unknown>) || {},
+          params: fc.args || {},
         });
       }
     }
