@@ -57,8 +57,36 @@ export class ConversationManager {
     await this.storage.delete(id);
   }
 
-  async listSessions(): Promise<SessionSummary[]> {
-    return await this.storage.listAll();
+  /**
+   * List all sessions with filtering, sorting, and pagination
+   * Reference: codex-rs/app-server/src/codex_message_processor.rs:887-954
+   */
+  async listSessions(options?: {
+    limit?: number;
+    offset?: number;
+    sortBy?: "createdAt" | "lastActiveAt";
+    tags?: string[];
+  }): Promise<SessionSummary[]> {
+    // Get all session summaries
+    const summaries = await this.storage.listAll();
+
+    // Filter (if tags provided)
+    let filtered = summaries;
+    if (options?.tags && options.tags.length > 0) {
+      filtered = filtered.filter((s) =>
+        s.tags?.some((tag) => options.tags!.includes(tag)),
+      );
+    }
+
+    // Sort
+    const sortBy = options?.sortBy || "lastActiveAt";
+    filtered.sort((a, b) => b[sortBy] - a[sortBy]);
+
+    // Paginate
+    const offset = options?.offset || 0;
+    const limit = options?.limit || 50;
+
+    return filtered.slice(offset, offset + limit);
   }
 
   clearCache(): void {

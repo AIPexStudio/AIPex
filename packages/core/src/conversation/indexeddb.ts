@@ -129,13 +129,7 @@ export class IndexedDBAdapter implements StorageAdapter {
         for (const data of request.result) {
           try {
             const session = Session.fromJSON(data);
-            const stats = session.getStats();
-            summaries.push({
-              id: session.id,
-              turnCount: stats.totalTurns,
-              createdAt: stats.createdAt,
-              lastActiveAt: stats.lastActiveAt,
-            });
+            summaries.push(session.getSummary());
           } catch (error) {
             console.error(`Failed to deserialize session: ${error}`);
           }

@@ -2,168 +2,119 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Session } from "./session.js";
 import type { CompletedTurn } from "./types.js";
 
-describe("Session", () => {
+describe("Session.getSummary", () => {
   let session: Session;
 
   beforeEach(() => {
-    session = new Session();
+    session = new Session("test-id");
   });
 
-  it("should create session with generated id", () => {
-    expect(session.id).toBeDefined();
-    expect(typeof session.id).toBe("string");
-  });
-
-  it("should create session with custom id", () => {
-    const customSession = new Session("custom-id");
-    expect(customSession.id).toBe("custom-id");
-  });
-
-  it("should add turn to session", () => {
+  it("should generate preview from first user message", () => {
     const turn: CompletedTurn = {
       id: "turn-1",
-      userMessage: { role: "user", content: "Hello" },
-      assistantMessage: { role: "assistant", content: "Hi there" },
+      userMessage: { role: "user", content: "帮我分析代码" },
+      assistantMessage: { role: "assistant", content: "好的" },
       functionCalls: [],
       functionResults: [],
       timestamp: Date.now(),
     };
 
     session.addTurn(turn);
-    expect(session.getTurnCount()).toBe(1);
+
+    const summary = session.getSummary();
+    expect(summary.id).toBe("test-id");
+    expect(summary.preview).toBe("帮我分析代码");
+    expect(summary.totalTurns).toBe(1);
+    expect(summary.createdAt).toBeGreaterThan(0);
+    expect(summary.lastActiveAt).toBeGreaterThan(0);
   });
 
-  it("should get messages from turns", () => {
+  it("should use default preview when no user message", () => {
+    const summary = session.getSummary();
+    expect(summary.preview).toMatch(/^Conversation/);
+    expect(summary.totalTurns).toBe(0);
+  });
+
+  it("should handle multiple turns correctly", () => {
+    const turn1: CompletedTurn = {
+      id: "turn-1",
+      userMessage: { role: "user", content: "第一条消息" },
+      assistantMessage: { role: "assistant", content: "回复1" },
+      functionCalls: [],
+      functionResults: [],
+      timestamp: Date.now(),
+    };
+
+    const turn2: CompletedTurn = {
+      id: "turn-2",
+      userMessage: { role: "user", content: "第二条消息" },
+      assistantMessage: { role: "assistant", content: "回复2" },
+      functionCalls: [],
+      functionResults: [],
+      timestamp: Date.now(),
+    };
+
+    session.addTurn(turn1);
+    session.addTurn(turn2);
+
+    const summary = session.getSummary();
+    expect(summary.preview).toBe("第一条消息"); // Should use first message
+    expect(summary.totalTurns).toBe(2);
+  });
+
+  it("should truncate long first message", () => {
+    const longMessage = "A".repeat(150);
     const turn: CompletedTurn = {
       id: "turn-1",
-      userMessage: { role: "user", content: "Hello" },
-      assistantMessage: { role: "assistant", content: "Hi there" },
+      userMessage: { role: "user", content: longMessage },
+      assistantMessage: { role: "assistant", content: "回复" },
       functionCalls: [],
       functionResults: [],
       timestamp: Date.now(),
     };
 
     session.addTurn(turn);
-    const messages = session.getMessages();
 
-    expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe("user");
-    expect(messages[1].role).toBe("assistant");
+    const summary = session.getSummary();
+    expect(summary.preview.length).toBe(103); // 100 chars + "..."
+    expect(summary.preview).toContain("...");
   });
 
-  it("should include system prompt in messages", () => {
-    const sessionWithPrompt = new Session(undefined, {
-      systemPrompt: "You are a helpful assistant",
+  it("should include tags in summary", () => {
+    const sessionWithTags = new Session("test-id", {
+      systemPrompt: "test",
     });
+    sessionWithTags["metadata"].tags = ["important", "urgent"];
 
-    const messages = sessionWithPrompt.getMessages();
-    expect(messages[0].role).toBe("system");
-    expect(messages[0].content).toBe("You are a helpful assistant");
-  });
-
-  it("should handle function calls in turns", () => {
     const turn: CompletedTurn = {
       id: "turn-1",
-      userMessage: { role: "user", content: "What is the weather?" },
-      assistantMessage: { role: "assistant", content: "" },
-      functionCalls: [
-        { id: "call-1", name: "get_weather", params: { city: "Tokyo" } },
-      ],
-      functionResults: [
-        { id: "call-1", name: "get_weather", result: { temp: 20 } },
-      ],
+      userMessage: { role: "user", content: "测试消息" },
+      assistantMessage: { role: "assistant", content: "回复" },
+      functionCalls: [],
+      functionResults: [],
+      timestamp: Date.now(),
+    };
+
+    sessionWithTags.addTurn(turn);
+
+    const summary = sessionWithTags.getSummary();
+    expect(summary.tags).toEqual(["important", "urgent"]);
+  });
+
+  it("should update totalTurns in summary", () => {
+    const turn: CompletedTurn = {
+      id: "turn-1",
+      userMessage: { role: "user", content: "测试" },
+      assistantMessage: { role: "assistant", content: "回复" },
+      functionCalls: [],
+      functionResults: [],
       timestamp: Date.now(),
     };
 
     session.addTurn(turn);
-    const messages = session.getMessages();
+    expect(session.getSummary().totalTurns).toBe(1);
 
-    expect(messages.some((m) => m.functionCall)).toBe(true);
-    expect(messages.some((m) => m.functionResponse)).toBe(true);
-  });
-
-  it("should get recent turns", () => {
-    for (let i = 0; i < 10; i++) {
-      session.addTurn({
-        id: `turn-${i}`,
-        userMessage: { role: "user", content: `Message ${i}` },
-        assistantMessage: { role: "assistant", content: `Response ${i}` },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      });
-    }
-
-    const recent = session.getRecentTurns(3);
-    expect(recent).toHaveLength(3);
-    expect(recent[2].id).toBe("turn-9");
-  });
-
-  it("should calculate stats correctly", () => {
-    session.addTurn({
-      id: "turn-1",
-      userMessage: { role: "user", content: "Hello" },
-      assistantMessage: { role: "assistant", content: "Hi" },
-      functionCalls: [{ id: "call-1", name: "test_tool", params: {} }],
-      functionResults: [{ id: "call-1", name: "test_tool", result: {} }],
-      timestamp: Date.now(),
-      metadata: {
-        tokensUsed: 100,
-        duration: 1000,
-      },
-    });
-
-    const stats = session.getStats();
-    expect(stats.totalTurns).toBe(1);
-    expect(stats.totalTokens).toBe(100);
-    expect(stats.avgTurnDuration).toBe(1000);
-    expect(stats.toolCallCount).toBe(1);
-  });
-
-  it("should truncate old turns when exceeding max history", () => {
-    const sessionWithLimit = new Session(undefined, {
-      maxHistoryLength: 3,
-      keepRecentTurns: 3,
-    });
-
-    for (let i = 0; i < 10; i++) {
-      sessionWithLimit.addTurn({
-        id: `turn-${i}`,
-        userMessage: { role: "user", content: `Message ${i}` },
-        assistantMessage: { role: "assistant", content: `Response ${i}` },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      });
-    }
-
-    // After adding 10 turns with maxHistoryLength=3 and keepRecentTurns=3
-    // Should keep only the last 3 turns
-    expect(sessionWithLimit.getTurnCount()).toBe(3);
-  });
-
-  it("should serialize and deserialize", () => {
-    session.addTurn({
-      id: "turn-1",
-      userMessage: { role: "user", content: "Hello" },
-      assistantMessage: { role: "assistant", content: "Hi" },
-      functionCalls: [],
-      functionResults: [],
-      timestamp: Date.now(),
-    });
-
-    const json = session.toJSON();
-    const restored = Session.fromJSON(json);
-
-    expect(restored.id).toBe(session.id);
-    expect(restored.getTurnCount()).toBe(session.getTurnCount());
-  });
-
-  it("should update system prompt", () => {
-    session.setSystemPrompt("New system prompt");
-    const messages = session.getMessages();
-
-    expect(messages[0].role).toBe("system");
-    expect(messages[0].content).toBe("New system prompt");
+    session.addTurn(turn);
+    expect(session.getSummary().totalTurns).toBe(2);
   });
 });

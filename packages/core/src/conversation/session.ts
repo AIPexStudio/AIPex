@@ -1,5 +1,7 @@
 import type { UnifiedMessage } from "../llm/types.js";
 import { generateId } from "../utils/id-generator.js";
+import { extractPreview, generateDefaultPreview } from "./preview.js";
+import type { SessionSummary } from "./storage.js";
 import type {
   CompletedTurn,
   SerializedSession,
@@ -14,6 +16,7 @@ export class Session {
   private systemPrompt?: string;
   private metadata: SessionMetadata;
   private config: SessionConfig;
+  private preview: string;
 
   constructor(id?: string, config: SessionConfig = {}) {
     this.id = id || generateId();
@@ -27,11 +30,18 @@ export class Session {
       createdAt: Date.now(),
       lastActiveAt: Date.now(),
     };
+    this.preview = generateDefaultPreview(this.metadata.createdAt);
   }
 
   addTurn(turn: CompletedTurn): void {
     this.turns.push(turn);
     this.metadata.lastActiveAt = Date.now();
+    this.metadata.totalTurns = this.turns.length;
+
+    // Update preview with first user message (only on first turn)
+    if (this.turns.length === 1) {
+      this.preview = extractPreview(turn.userMessage.content);
+    }
 
     // Simple length-based truncation - check if we exceeded the limit after adding
     const maxLength = this.config.maxHistoryLength!;
@@ -117,6 +127,17 @@ export class Session {
     };
   }
 
+  getSummary(): SessionSummary {
+    return {
+      id: this.id,
+      preview: this.preview,
+      createdAt: this.metadata.createdAt,
+      lastActiveAt: this.metadata.lastActiveAt,
+      totalTurns: this.turns.length,
+      tags: this.metadata.tags,
+    };
+  }
+
   setSystemPrompt(prompt: string): void {
     this.systemPrompt = prompt;
   }
@@ -128,6 +149,7 @@ export class Session {
       systemPrompt: this.systemPrompt,
       metadata: this.metadata,
       config: this.config,
+      preview: this.preview,
     };
   }
 
@@ -136,6 +158,8 @@ export class Session {
     session.turns = data.turns;
     session.systemPrompt = data.systemPrompt;
     session.metadata = data.metadata;
+    session.preview =
+      data.preview || generateDefaultPreview(data.metadata.createdAt);
     return session;
   }
 }

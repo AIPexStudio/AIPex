@@ -20,7 +20,6 @@ export type {
   StorageAdapter,
 } from "./conversation/index.js";
 export { IndexedDBAdapter } from "./conversation/indexeddb.js";
-export { LocalStorageAdapter } from "./conversation/localstorage.js";
 export { ConversationManager } from "./conversation/manager.js";
 export { InMemoryStorage } from "./conversation/memory-storage.js";
 // Conversation
