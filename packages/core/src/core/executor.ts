@@ -66,13 +66,13 @@ export class AgentExecutor {
       const toolCalls: Array<{
         id: string;
         name: string;
-        params: unknown;
+        params: Record<string, unknown>;
       }> = [];
       let assistantContent = "";
       const functionResults: Array<{
         id: string;
         name: string;
-        result: unknown;
+        result: Record<string, unknown>;
       }> = [];
 
       for await (const event of this.activeTurn.execute()) {
@@ -96,7 +96,7 @@ export class AgentExecutor {
           functionResults.push({
             id: event.callId,
             name: toolCalls.find((c) => c.id === event.callId)?.name || "",
-            result: event.result.data,
+            result: event.result.data ?? {},
           });
         }
 

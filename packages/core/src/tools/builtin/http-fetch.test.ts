@@ -100,6 +100,7 @@ describe("HttpFetchTool", () => {
     await tool.execute(
       {
         url: "https://example.com",
+        method: "GET",
         headers: {
           Authorization: "Bearer token",
           "X-Custom": "value",
@@ -140,7 +141,10 @@ describe("HttpFetchTool", () => {
     global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
     await expect(
-      tool.execute({ url: "https://example.com" }, contextWithSignal),
+      tool.execute(
+        { url: "https://example.com", method: "GET" },
+        contextWithSignal,
+      ),
     ).rejects.toThrow();
   });
 
@@ -161,7 +165,7 @@ describe("HttpFetchTool", () => {
 
     global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-    await tool.execute({ url: "https://example.com" }, context);
+    await tool.execute({ url: "https://example.com", method: "GET" }, context);
 
     expect(global.fetch).toHaveBeenCalledWith(
       "https://example.com",

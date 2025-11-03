@@ -26,13 +26,13 @@ export abstract class Tool<TParams = unknown, TResult = unknown> {
     // Extract the actual schema (remove the root wrapper)
     const parameters =
       typeof jsonSchema === "object" && jsonSchema !== null
-        ? (jsonSchema as Record<string, unknown>)
+        ? jsonSchema.definitions?.[this.name] ?? {}
         : {};
 
     return {
       name: this.name,
       description: this.description,
-      parameters,
+      parameters: parameters as Record<string, unknown>,
     };
   }
 
@@ -48,7 +48,7 @@ export abstract class Tool<TParams = unknown, TResult = unknown> {
 
       return {
         success: true,
-        data: result,
+        data: result ?? {},
         metadata: {
           duration: Date.now() - startTime,
         },

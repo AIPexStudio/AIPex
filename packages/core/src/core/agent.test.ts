@@ -7,14 +7,12 @@ import { Agent } from "./agent.js";
 
 const mockGenerateContentStream = vi.fn();
 
-vi.mock("@google/generative-ai", () => {
+vi.mock("@google/genai", () => {
   return {
     GoogleGenerativeAI: class {
-      getGenerativeModel() {
-        return {
-          generateContentStream: mockGenerateContentStream,
-        };
-      }
+      models = {
+        generateContentStream: mockGenerateContentStream,
+      };
     },
   };
 });

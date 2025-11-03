@@ -14,8 +14,8 @@ import {
   GeminiProvider,
   HttpFetchTool,
   ToolRegistry,
-} from "../src/index.js";
-import { Tool } from "../src/tools/base.js";
+} from "../dist/src/index.js";
+import { Tool } from "../dist/src/tools/base.js";
 
 // Custom calculator tool
 class CalculatorTool extends Tool<
@@ -51,7 +51,7 @@ class CalculatorTool extends Tool<
 
 async function main() {
   // Check for API key
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env?.GEMINI_API_KEY;
   if (!apiKey) {
     console.error("Please set GEMINI_API_KEY environment variable");
     process.exit(1);
@@ -130,14 +130,9 @@ async function main() {
   // Show tool metrics
   console.log("\n📊 Tool Metrics:");
   const metrics = toolRegistry.getMetrics();
-  for (const metric of metrics) {
-    console.log(
-      `  ${metric.toolName}: ${metric.totalCalls} calls, avg ${metric.avgDuration.toFixed(2)}ms`,
-    );
-  }
+  console.log(JSON.stringify(metrics, null, 2));
+  console.table(metrics);
 }
 
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
-}
+// Run the example
+main().catch(console.error);

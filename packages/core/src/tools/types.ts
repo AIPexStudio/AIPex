@@ -33,7 +33,7 @@ export class SharedState {
 
 export interface ToolResult {
   success: boolean;
-  data?: unknown;
+  data?: Record<string, unknown>;
   error?: string;
   errorType?: string;
   metadata?: {

@@ -50,7 +50,15 @@ describe("Tool", () => {
 
     expect(declaration.name).toBe("test_tool");
     expect(declaration.description).toBe("A test tool");
-    expect(declaration.parameters).toBeDefined();
+    expect(declaration.parameters).toMatchObject({
+      type: "object",
+      properties: {
+        input: {
+          type: "string",
+          description: "Test input",
+        },
+      },
+    });
   });
 
   it("should execute successfully", async () => {

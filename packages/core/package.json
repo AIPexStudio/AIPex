@@ -30,7 +30,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^1.28.0",
     "lru-cache": "^11.0.2",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.1"

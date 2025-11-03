@@ -1,12 +1,13 @@
 import {
   type Content,
-  type FunctionCallPart,
-  type FunctionDeclarationSchema,
-  type FunctionResponsePart,
-  GoogleGenerativeAI,
+  type Tool as GeminiTool,
+  type GenerateContentResponse,
+  type GenerateContentResponseUsageMetadata,
+  GoogleGenAI,
   type Part,
-  type TextPart,
-} from "@google/generative-ai";
+  type Schema,
+  Type,
+} from "@google/genai";
 import { ErrorCode, LLMError } from "../utils/errors.js";
 import { generateId } from "../utils/id-generator.js";
 import { BaseLLMProvider } from "./base-provider.js";
@@ -33,45 +34,39 @@ export class GeminiProvider extends BaseLLMProvider {
     thinking: false,
   };
 
-  private client: GoogleGenerativeAI;
+  private client: GoogleGenAI;
   private modelName: string;
 
   constructor(config: GeminiConfig) {
     super(config.apiKey, "");
-    this.client = new GoogleGenerativeAI(config.apiKey);
+    this.client = new GoogleGenAI({ apiKey: config.apiKey });
     this.modelName = config.model || "gemini-2.0-flash-exp";
   }
 
   protected async doGenerateContent(request: LLMRequest): Promise<LLMResponse> {
     try {
-      const model = this.client.getGenerativeModel({
+      const systemInstruction = this.extractSystemInstruction(request.messages);
+      const contents = this.toGeminiContents(
+        request.messages.filter((m) => m.role !== "system"),
+      );
+
+      const tools = request.tools
+        ? this.convertToGeminiTools(request.tools)
+        : undefined;
+
+      const response = await this.client.models.generateContent({
         model: this.modelName,
-        systemInstruction: this.extractSystemInstruction(request.messages),
-        tools: request.tools
-          ? [
-              {
-                functionDeclarations: request.tools.map((tool) => ({
-                  name: tool.name,
-                  description: tool.description,
-                  parameters:
-                    tool.parameters as unknown as FunctionDeclarationSchema,
-                })),
-              },
-            ]
-          : undefined,
-        generationConfig: {
+        contents,
+        config: {
+          systemInstruction: systemInstruction || undefined,
+          tools,
           temperature: request.temperature,
           maxOutputTokens: request.maxTokens,
           topP: request.topP,
         },
       });
 
-      const contents = this.toGeminiContents(
-        request.messages.filter((m) => m.role !== "system"),
-      );
-
-      const result = await model.generateContent({ contents });
-      return this.fromGeminiResult(result.response);
+      return this.fromGeminiResult(response);
     } catch (error) {
       throw this.handleGeminiError(error);
     }
@@ -81,36 +76,30 @@ export class GeminiProvider extends BaseLLMProvider {
     request: LLMRequest,
   ): AsyncGenerator<StreamChunk> {
     try {
-      const model = this.client.getGenerativeModel({
+      const systemInstruction = this.extractSystemInstruction(request.messages);
+      const contents = this.toGeminiContents(
+        request.messages.filter((m) => m.role !== "system"),
+      );
+
+      const tools = request.tools
+        ? this.convertToGeminiTools(request.tools)
+        : undefined;
+
+      const stream = await this.client.models.generateContentStream({
         model: this.modelName,
-        systemInstruction: this.extractSystemInstruction(request.messages),
-        tools: request.tools
-          ? [
-              {
-                functionDeclarations: request.tools.map((tool) => ({
-                  name: tool.name,
-                  description: tool.description,
-                  parameters:
-                    tool.parameters as unknown as FunctionDeclarationSchema,
-                })),
-              },
-            ]
-          : undefined,
-        generationConfig: {
+        contents,
+        config: {
+          systemInstruction: systemInstruction || undefined,
+          tools,
           temperature: request.temperature,
           maxOutputTokens: request.maxTokens,
           topP: request.topP,
         },
       });
 
-      const contents = this.toGeminiContents(
-        request.messages.filter((m) => m.role !== "system"),
-      );
-
-      const result = await model.generateContentStream({ contents });
       let accumulatedText = "";
 
-      for await (const chunk of result.stream) {
+      for await (const chunk of stream) {
         const candidate = chunk.candidates?.[0];
         if (!candidate) continue;
 
@@ -118,7 +107,7 @@ export class GeminiProvider extends BaseLLMProvider {
         if (!content?.parts) continue;
 
         for (const part of content.parts) {
-          if ("text" in part && part.text) {
+          if (part.text) {
             const delta = part.text.slice(accumulatedText.length);
             if (delta) {
               accumulatedText = part.text;
@@ -126,11 +115,11 @@ export class GeminiProvider extends BaseLLMProvider {
             }
           }
 
-          if ("functionCall" in part && part.functionCall) {
+          if (part.functionCall) {
             const fc = part.functionCall;
             const call: FunctionCall = {
               id: generateId(),
-              name: fc.name,
+              name: fc.name || "",
               params: (fc.args as Record<string, unknown>) || {},
             };
             yield { type: "function_call", call };
@@ -138,8 +127,7 @@ export class GeminiProvider extends BaseLLMProvider {
         }
 
         if (candidate.finishReason) {
-          const response = await result.response;
-          const usage = this.extractUsageFromResponse(response);
+          const usage = this.extractUsageFromCandidate(chunk.usageMetadata);
           yield {
             type: "done",
             finishReason: candidate.finishReason,
@@ -156,17 +144,20 @@ export class GeminiProvider extends BaseLLMProvider {
     messages: UnifiedMessage[],
   ): Promise<TokenCount> {
     try {
-      const model = this.client.getGenerativeModel({
-        model: this.modelName,
-        systemInstruction: this.extractSystemInstruction(messages),
-      });
-
+      const systemInstruction = this.extractSystemInstruction(messages);
       const contents = this.toGeminiContents(
         messages.filter((m) => m.role !== "system"),
       );
 
-      const result = await model.countTokens({ contents });
-      const totalTokens = result.totalTokens || 0;
+      const response = await this.client.models.countTokens({
+        model: this.modelName,
+        contents,
+        config: {
+          systemInstruction: systemInstruction || undefined,
+        },
+      });
+
+      const totalTokens = response.totalTokens || 0;
 
       return {
         promptTokens: totalTokens,
@@ -190,16 +181,16 @@ export class GeminiProvider extends BaseLLMProvider {
       const parts: Part[] = [];
 
       if (msg.content) {
-        parts.push({ text: msg.content } as TextPart);
+        parts.push({ text: msg.content });
       }
 
       if (msg.functionCall) {
         parts.push({
           functionCall: {
             name: msg.functionCall.name,
-            args: (msg.functionCall.params as Record<string, unknown>) || {},
+            args: msg.functionCall.params,
           },
-        } as FunctionCallPart);
+        });
       }
 
       if (msg.functionResponse) {
@@ -208,7 +199,7 @@ export class GeminiProvider extends BaseLLMProvider {
             name: msg.functionResponse.name,
             response: msg.functionResponse.result,
           },
-        } as FunctionResponsePart);
+        });
       }
 
       return {
@@ -223,13 +214,26 @@ export class GeminiProvider extends BaseLLMProvider {
     });
   }
 
-  private fromGeminiResult(
-    response: Awaited<
-      ReturnType<
-        ReturnType<GoogleGenerativeAI["getGenerativeModel"]>["generateContent"]
-      >
-    >["response"],
-  ): LLMResponse {
+  private convertToGeminiTools(
+    tools: LLMRequest["tools"],
+  ): GeminiTool[] | undefined {
+    if (!tools || tools.length === 0) return undefined;
+
+    return tools.map((tool) => ({
+      functionDeclarations: [
+        {
+          name: tool.name,
+          description: tool.description,
+          parameters: {
+            type: Type.OBJECT,
+            properties: tool.parameters as Record<string, Schema>,
+          },
+        },
+      ],
+    }));
+  }
+
+  private fromGeminiResult(response: GenerateContentResponse): LLMResponse {
     const candidate = response.candidates?.[0];
     if (!candidate?.content) {
       throw new LLMError(
@@ -242,16 +246,17 @@ export class GeminiProvider extends BaseLLMProvider {
     let text = "";
     const functionCalls: FunctionCall[] = [];
 
-    for (const part of candidate.content.parts) {
-      if ("text" in part && part.text) {
+    const parts = candidate.content.parts || [];
+    for (const part of parts) {
+      if (part.text) {
         text += part.text;
       }
 
-      if ("functionCall" in part && part.functionCall) {
+      if (part.functionCall) {
         const fc = part.functionCall;
         functionCalls.push({
           id: generateId(),
-          name: fc.name,
+          name: fc.name || "",
           params: (fc.args as Record<string, unknown>) || {},
         });
       }
@@ -267,12 +272,26 @@ export class GeminiProvider extends BaseLLMProvider {
     };
   }
 
+  private extractUsageFromCandidate(
+    usage?: GenerateContentResponseUsageMetadata,
+  ): TokenCount {
+    if (!usage) {
+      return {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      };
+    }
+
+    return {
+      promptTokens: usage.promptTokenCount || 0,
+      completionTokens: usage.candidatesTokenCount || 0,
+      totalTokens: usage.totalTokenCount || 0,
+    };
+  }
+
   private extractUsageFromResponse(
-    response: Awaited<
-      ReturnType<
-        ReturnType<GoogleGenerativeAI["getGenerativeModel"]>["generateContent"]
-      >
-    >["response"],
+    response: GenerateContentResponse,
   ): TokenCount {
     const usage = response.usageMetadata;
     if (!usage) {

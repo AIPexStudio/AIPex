@@ -33,7 +33,6 @@ export class Turn {
       yield { type: "llm_stream_start" };
 
       const pendingCalls: FunctionCall[] = [];
-
       for await (const chunk of this.llmProvider.generateStream(this.request)) {
         // Check cancellation
         if (this.cancelToken.signal.aborted) {

@@ -6,16 +6,14 @@ const mockGenerateContent = vi.fn();
 const mockGenerateContentStream = vi.fn();
 const mockCountTokens = vi.fn();
 
-vi.mock("@google/generative-ai", () => {
+vi.mock("@google/genai", () => {
   return {
-    GoogleGenerativeAI: class {
-      getGenerativeModel() {
-        return {
-          generateContent: mockGenerateContent,
-          generateContentStream: mockGenerateContentStream,
-          countTokens: mockCountTokens,
-        };
-      }
+    GoogleGenAI: class {
+      models = {
+        generateContent: mockGenerateContent,
+        generateContentStream: mockGenerateContentStream,
+        countTokens: mockCountTokens,
+      };
     },
   };
 });
@@ -51,20 +49,18 @@ describe("GeminiProvider", () => {
   describe("generateContent", () => {
     it("should generate content successfully", async () => {
       const mockResponse = {
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [{ text: "Hello, I am an AI assistant." }],
-              },
-              finishReason: "STOP",
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "Hello, I am an AI assistant." }],
             },
-          ],
-          usageMetadata: {
-            promptTokenCount: 10,
-            candidatesTokenCount: 20,
-            totalTokenCount: 30,
+            finishReason: "STOP",
           },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 20,
+          totalTokenCount: 30,
         },
       };
 
@@ -82,27 +78,25 @@ describe("GeminiProvider", () => {
 
     it("should handle function calls in response", async () => {
       const mockResponse = {
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    functionCall: {
-                      name: "get_weather",
-                      args: { city: "Tokyo" },
-                    },
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  functionCall: {
+                    name: "get_weather",
+                    args: { city: "Tokyo" },
                   },
-                ],
-              },
-              finishReason: "STOP",
+                },
+              ],
             },
-          ],
-          usageMetadata: {
-            promptTokenCount: 10,
-            candidatesTokenCount: 20,
-            totalTokenCount: 30,
+            finishReason: "STOP",
           },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 20,
+          totalTokenCount: 30,
         },
       };
 
@@ -119,20 +113,18 @@ describe("GeminiProvider", () => {
 
     it("should handle system instructions", async () => {
       const mockResponse = {
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [{ text: "Response" }],
-              },
-              finishReason: "STOP",
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "Response" }],
             },
-          ],
-          usageMetadata: {
-            promptTokenCount: 10,
-            candidatesTokenCount: 20,
-            totalTokenCount: 30,
+            finishReason: "STOP",
           },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 20,
+          totalTokenCount: 30,
         },
       };
 
@@ -162,9 +154,7 @@ describe("GeminiProvider", () => {
 
     it("should throw on missing candidate content", async () => {
       mockGenerateContent.mockResolvedValue({
-        response: {
-          candidates: [{}],
-        },
+        candidates: [{}],
       });
 
       await expect(
@@ -203,21 +193,17 @@ describe("GeminiProvider", () => {
                 parts: [{ text: "Hello World!" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       const chunks: string[] = [];
       for await (const chunk of provider.generateStream({
@@ -247,21 +233,17 @@ describe("GeminiProvider", () => {
                 ],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       const functionCalls = [];
       for await (const chunk of provider.generateStream({
@@ -300,21 +282,17 @@ describe("GeminiProvider", () => {
                 parts: [{ text: "Hello" }],
               },
               finishReason: "STOP",
+              usageMetadata: {
+                totalTokenCount: 10,
+                promptTokenCount: 5,
+                candidatesTokenCount: 5,
+              },
             },
           ],
         };
       }
 
-      mockGenerateContentStream.mockResolvedValue({
-        stream: mockStreamGenerator(),
-        response: Promise.resolve({
-          usageMetadata: {
-            totalTokenCount: 10,
-            promptTokenCount: 5,
-            candidatesTokenCount: 5,
-          },
-        }),
-      });
+      mockGenerateContentStream.mockResolvedValue(mockStreamGenerator());
 
       const chunks: string[] = [];
       for await (const chunk of provider.generateStream({

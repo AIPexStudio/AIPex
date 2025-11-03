@@ -12,13 +12,13 @@ export interface UnifiedMessage {
 export interface FunctionCall {
   id: string;
   name: string;
-  params: unknown;
+  params: Record<string, unknown>;
 }
 
 export interface FunctionResponse {
   id: string;
   name: string;
-  result: unknown;
+  result: Record<string, unknown>;
 }
 
 export interface FunctionDeclaration {

@@ -15,7 +15,7 @@ export interface LogEntry {
 
 export class Logger {
   constructor(
-    private minLevel: LogLevel = LogLevel.INFO,
+    private minLevel: LogLevel = LogLevel.DEBUG,
     private prefix = "[AIPex]",
   ) {}
 

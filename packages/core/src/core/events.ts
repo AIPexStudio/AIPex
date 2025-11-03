@@ -33,7 +33,7 @@ export type AgentEvent =
       type: "tool_call_pending";
       callId: string;
       toolName: string;
-      params: unknown;
+      params: Record<string, unknown>;
     }
   | { type: "tool_call_start"; callId: string }
   | { type: "tool_output_stream"; callId: string; chunk: string }
@@ -54,7 +54,7 @@ export type TurnEvent =
       type: "tool_call_pending";
       callId: string;
       toolName: string;
-      params: unknown;
+      params: Record<string, unknown>;
     }
   | { type: "tool_call_start"; callId: string }
   | { type: "tool_output_stream"; callId: string; chunk: string }
