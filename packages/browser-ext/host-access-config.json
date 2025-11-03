@@ -1,0 +1,5 @@
+{
+  "mode": "include-all",
+  "whitelist": ["*.google.com"],
+  "blocklist": ["youtube.com"]
+}

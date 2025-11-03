@@ -12,116 +12,18 @@
     "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify"
-  },
-  "files": [
-    "build/",
-    "README.md",
-    "package.json",
-    "host-access-config.json"
-  ],
-  "dependencies": {
-    "@ant-design/x": "^1.4.0",
-    "@assistant-ui/react": "^0.10.25",
-    "@assistant-ui/react-markdown": "^0.10.9",
-    "@modelcontextprotocol/sdk": "^1.17.4",
-    "@radix-ui/react-avatar": "^1.1.10",
-    "@radix-ui/react-collapsible": "^1.1.12",
-    "@radix-ui/react-dialog": "^1.1.15",
-    "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-hover-card": "^1.1.15",
-    "@radix-ui/react-progress": "^1.1.7",
-    "@radix-ui/react-scroll-area": "^1.2.10",
-    "@radix-ui/react-select": "^2.2.6",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-tooltip": "^1.2.8",
-    "@radix-ui/react-use-controllable-state": "^1.2.2",
-    "ahooks": "^3.9.5",
-    "ai": "^5.0.59",
-    "assistant-ui": "^0.0.56",
-    "bip39": "^3.1.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "embla-carousel-react": "^8.6.0",
-    "lucide-react": "^0.542.0",
-    "markdown-to-jsx": "^7.7.10",
-    "nanoid": "^5.1.6",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "react-syntax-highlighter": "^15.6.1",
-    "remark-gfm": "^4.0.1",
-    "streamdown": "^1.3.0",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss": "4.1.13",
-    "tokenlens": "^1.3.1",
-    "tw-animate-css": "^1.4.0",
-    "use-stick-to-bottom": "^1.1.1"
+    "preflight": "npm run format && npm run lint:fix && npm run typecheck",
+    "format": "biome format . --write",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --fix --unsafe",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.2.0",
-    "@ianvs/prettier-plugin-sort-imports": "4.1.1",
-    "@tailwindcss/postcss": "^4.1.14",
-    "@types/chrome": "0.0.258",
-    "@types/node": "24.6.2",
-    "@types/react": "19.2.0",
-    "@types/react-dom": "19.2.0",
-    "@types/react-syntax-highlighter": "^15.5.13",
-    "@vitejs/plugin-react": "^5.0.4",
-    "postcss": "8.4.33",
-    "postcss-modules": "^4.3.0",
-    "prettier": "3.2.4",
-    "tailwindcss-cli": "^0.1.2",
-    "typescript": "5.3.3",
-    "vite": "^7.1.8",
-    "vite-plugin-static-copy": "^3.1.3"
-  },
-  "manifest": {
-    "web_accessible_resources": [
-      {
-        "resources": [
-          "*"
-        ],
-        "matches": [
-          "<all_urls>"
-        ]
-      }
-    ],
-    "host_permissions": [
-      "https://*/*",
-      "http://*/*",
-      "<all_urls>"
-    ],
-    "commands": {
-      "open-aipex": {
-        "suggested_key": {
-          "default": "Ctrl+M",
-          "mac": "Command+M"
-        },
-        "description": "Open command menu"
-      }
-    },
-    "permissions": [
-      "tabs",
-      "windows",
-      "tabGroups",
-      "activeTab",
-      "bookmarks",
-      "browsingData",
-      "history",
-      "scripting",
-      "search",
-      "commands",
-      "storage",
-      "contextMenus",
-      "scripting",
-      "sessions",
-      "sidePanel",
-      "management",
-      "downloads",
-      "tabCapture"
-    ]
+    "@biomejs/biome": "^2.3.2",
+    "@types/node": "^24.9.2",
+    "@vitest/coverage-v8": "^4.0.6",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.6"
   }
 }
