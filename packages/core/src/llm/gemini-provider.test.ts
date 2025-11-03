@@ -141,15 +141,21 @@ describe("GeminiProvider", () => {
     });
 
     it("should throw LLMError on API error", async () => {
+      vi.useFakeTimers();
       mockGenerateContent.mockRejectedValue(
         new Error("PERMISSION_DENIED: API key invalid"),
       );
 
-      await expect(
+      const promise = expect(
         provider.generateContent({
           messages: [{ role: "user", content: "Hello" }],
         }),
       ).rejects.toThrow(LLMError);
+
+      await vi.runAllTimersAsync();
+      await promise;
+
+      vi.useRealTimers();
     });
 
     it("should throw on missing candidate content", async () => {
@@ -357,43 +363,61 @@ describe("GeminiProvider", () => {
 
   describe("error handling", () => {
     it("should handle API_KEY_INVALID error", async () => {
+      vi.useFakeTimers();
       mockGenerateContent.mockRejectedValue(
         new Error("API_KEY_INVALID: Invalid API key"),
       );
 
-      await expect(
+      const promise = expect(
         provider.generateContent({
           messages: [{ role: "user", content: "Hello" }],
         }),
       ).rejects.toThrow(expect.objectContaining({ code: "LLM_AUTH_ERROR" }));
+
+      await vi.runAllTimersAsync();
+      await promise;
+
+      vi.useRealTimers();
     });
 
     it("should handle RESOURCE_EXHAUSTED error", async () => {
+      vi.useFakeTimers();
       mockGenerateContent.mockRejectedValue(
         new Error("RESOURCE_EXHAUSTED: Rate limit"),
       );
 
-      await expect(
+      const promise = expect(
         provider.generateContent({
           messages: [{ role: "user", content: "Hello" }],
         }),
       ).rejects.toThrow(
         expect.objectContaining({ code: "LLM_RATE_LIMIT", retryDelay: 60000 }),
       );
+
+      await vi.runAllTimersAsync();
+      await promise;
+
+      vi.useRealTimers();
     });
 
     it("should handle DEADLINE_EXCEEDED error", async () => {
+      vi.useFakeTimers();
       mockGenerateContent.mockRejectedValue(
         new Error("DEADLINE_EXCEEDED: Timeout"),
       );
 
-      await expect(
+      const promise = expect(
         provider.generateContent({
           messages: [{ role: "user", content: "Hello" }],
         }),
       ).rejects.toThrow(
         expect.objectContaining({ code: "LLM_TIMEOUT", retryDelay: 5000 }),
       );
+
+      await vi.runAllTimersAsync();
+      await promise;
+
+      vi.useRealTimers();
     });
   });
 });
