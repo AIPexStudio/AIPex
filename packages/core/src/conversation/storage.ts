@@ -2,9 +2,11 @@ import type { Session } from "./session.js";
 
 export interface SessionSummary {
   id: string;
-  turnCount: number;
+  preview: string;
   createdAt: number;
   lastActiveAt: number;
+  totalTurns: number;
+  tags?: string[];
 }
 
 export interface StorageAdapter {
