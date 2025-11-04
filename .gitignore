@@ -29,6 +29,7 @@ yarn-error.log*
 out/
 build/
 dist/
+.history/
 
 # plasmo - https://www.plasmo.com
 .plasmo
