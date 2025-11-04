@@ -1,4 +1,5 @@
 import { GeminiProvider } from "./gemini-provider.js";
+import { OpenAIProvider } from "./openai-provider.js";
 import type { LLMProvider } from "./provider.js";
 
 export interface LLMProviderConfig {
@@ -16,10 +17,18 @@ export function createLLMProvider(config: LLMProviderConfig): LLMProvider {
         model: config.model,
       });
     case "openai":
-      throw new Error("OpenAI provider not yet implemented");
+      return new OpenAIProvider({
+        apiKey: config.apiKey,
+        model: config.model,
+        baseUrl: config.baseUrl,
+      });
     case "claude":
       throw new Error("Claude provider not yet implemented");
     default:
-      throw new Error(`Unknown provider: ${config.provider}`);
+      return new OpenAIProvider({
+        apiKey: config.apiKey,
+        model: config.model,
+        baseUrl: config.baseUrl,
+      });
   }
 }
