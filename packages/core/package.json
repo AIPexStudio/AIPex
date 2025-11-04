@@ -32,10 +32,12 @@
   "dependencies": {
     "@google/genai": "^1.28.0",
     "lru-cache": "^11.0.2",
+    "openai": "^6.8.0",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2"
+    "@types/node": "^22.10.2",
+    "dotenv": "^17.2.3"
   }
 }
