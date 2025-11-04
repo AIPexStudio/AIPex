@@ -44,6 +44,7 @@ export type {
   TokenCount,
   UnifiedMessage,
 } from "./llm/index.js";
+export { OpenAIProvider } from "./llm/openai-provider.js";
 // Tools
 export { Tool } from "./tools/base.js";
 export {
