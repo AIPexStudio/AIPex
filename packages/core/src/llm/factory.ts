@@ -1,3 +1,4 @@
+import { ClaudeProvider } from "./claude-provider.js";
 import { GeminiProvider } from "./gemini-provider.js";
 import { OpenAIProvider } from "./openai-provider.js";
 import type { LLMProvider } from "./provider.js";
@@ -23,7 +24,10 @@ export function createLLMProvider(config: LLMProviderConfig): LLMProvider {
         baseUrl: config.baseUrl,
       });
     case "claude":
-      throw new Error("Claude provider not yet implemented");
+      return new ClaudeProvider({
+        apiKey: config.apiKey,
+        model: config.model,
+      });
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
   }
