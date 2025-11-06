@@ -32,6 +32,7 @@ export { LoopDetector } from "./core/loop-detector.js";
 export { Turn } from "./core/turn.js";
 export { TurnState } from "./core/types.js";
 // LLM Provider
+export { ClaudeProvider } from "./llm/claude-provider.js";
 export { createLLMProvider } from "./llm/factory.js";
 export { GeminiProvider } from "./llm/gemini-provider.js";
 export type {

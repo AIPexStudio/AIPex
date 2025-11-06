@@ -30,6 +30,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
     "@google/genai": "^1.28.0",
     "lru-cache": "^11.0.2",
     "openai": "^6.8.0",
