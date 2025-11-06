@@ -115,7 +115,10 @@ export class Turn {
         shouldContinue: pendingCalls.length > 0,
       };
     } catch (error) {
-      this.state = TurnState.FAILED;
+      // Preserve CANCELLED state if this is a cancellation error
+      if (!(error instanceof TurnCancelledError)) {
+        this.state = TurnState.FAILED;
+      }
       throw error;
     } finally {
       await this.cleanup();
