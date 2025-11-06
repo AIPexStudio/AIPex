@@ -436,12 +436,20 @@ describe("OpenAIProvider", () => {
           {
             role: "function",
             content: "8",
-            functionResponse: { id: "call_1", name: "calculator", result: { value: 8 } },
+            functionResponse: {
+              id: "call_1",
+              name: "calculator",
+              result: { value: 8 },
+            },
           },
           {
             role: "function",
             content: "20",
-            functionResponse: { id: "call_2", name: "calculator", result: { value: 20 } },
+            functionResponse: {
+              id: "call_2",
+              name: "calculator",
+              result: { value: 20 },
+            },
           },
         ],
       });
@@ -558,7 +566,11 @@ describe("OpenAIProvider", () => {
           {
             role: "function",
             content: "4",
-            functionResponse: { id: "call_1", name: "calculator", result: { value: 4 } },
+            functionResponse: {
+              id: "call_1",
+              name: "calculator",
+              result: { value: 4 },
+            },
           },
         ],
       });
@@ -608,7 +620,11 @@ describe("OpenAIProvider", () => {
           {
             role: "function",
             content: "1",
-            functionResponse: { id: "call_1", name: "calculator", result: { value: 1 } },
+            functionResponse: {
+              id: "call_1",
+              name: "calculator",
+              result: { value: 1 },
+            },
           },
           { role: "user", content: "Second calculation" },
           {
@@ -623,7 +639,11 @@ describe("OpenAIProvider", () => {
           {
             role: "function",
             content: "2",
-            functionResponse: { id: "call_2", name: "calculator", result: { value: 2 } },
+            functionResponse: {
+              id: "call_2",
+              name: "calculator",
+              result: { value: 2 },
+            },
           },
         ],
       });
@@ -633,7 +653,9 @@ describe("OpenAIProvider", () => {
       const messages = callArgs.messages;
 
       // Should have 2 separate assistant messages (they're separated by user/tool messages)
-      const assistantMessages = messages.filter((m: any) => m.role === "assistant");
+      const assistantMessages = messages.filter(
+        (m: any) => m.role === "assistant",
+      );
       expect(assistantMessages).toHaveLength(2);
       expect(assistantMessages[0].tool_calls).toHaveLength(1);
       expect(assistantMessages[1].tool_calls).toHaveLength(1);

@@ -273,13 +273,22 @@ export class OpenAIProvider extends BaseLLMProvider {
           let contentBeforeCalls = msg.content || null;
 
           // Look for a preceding assistant message with content but no functionCall
-          if (i > 0 && messages[i - 1].role === "assistant" && !messages[i - 1].functionCall && messages[i - 1].content) {
+          if (
+            i > 0 &&
+            messages[i - 1].role === "assistant" &&
+            !messages[i - 1].functionCall &&
+            messages[i - 1].content
+          ) {
             contentBeforeCalls = messages[i - 1].content;
             // Remove the last added message since we'll merge it
             result.pop();
           }
 
-          while (j < messages.length && messages[j].role === "assistant" && messages[j].functionCall) {
+          while (
+            j < messages.length &&
+            messages[j].role === "assistant" &&
+            messages[j].functionCall
+          ) {
             toolCalls.push({
               id: messages[j].functionCall!.id,
               type: "function" as const,

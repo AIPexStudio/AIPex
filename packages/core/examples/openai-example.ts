@@ -9,15 +9,15 @@
  * - Handling events
  */
 
+import dotenv from "dotenv";
 import { z } from "zod";
 import {
   Agent,
-  OpenAIProvider,
   HttpFetchTool,
+  OpenAIProvider,
   ToolRegistry,
 } from "../dist/src/index.js";
 import { Tool } from "../dist/src/tools/base.js";
-import dotenv from "dotenv";
 
 dotenv.config();
 
