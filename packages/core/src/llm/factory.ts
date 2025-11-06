@@ -25,10 +25,6 @@ export function createLLMProvider(config: LLMProviderConfig): LLMProvider {
     case "claude":
       throw new Error("Claude provider not yet implemented");
     default:
-      return new OpenAIProvider({
-        apiKey: config.apiKey,
-        model: config.model,
-        baseUrl: config.baseUrl,
-      });
+      throw new Error(`Unknown provider: ${config.provider}`);
   }
 }
