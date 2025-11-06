@@ -14,6 +14,7 @@
  */
 
 import { z } from "zod";
+import dotenv from "dotenv";
 import {
   Agent,
   ClaudeProvider,
@@ -58,6 +59,8 @@ class CalculatorTool extends Tool<
 }
 
 async function main() {
+  dotenv.config();
+
   // Check for API keys and create appropriate provider
   let llmProvider: LLMProvider;
   let providerName: string;
