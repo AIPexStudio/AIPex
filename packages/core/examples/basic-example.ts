@@ -2,19 +2,27 @@
  * Basic example of using AIPex Core
  *
  * This example demonstrates:
- * - Creating an agent with Gemini provider
+ * - Creating an agent with multiple provider support (Claude, Gemini, or DeepSeek)
  * - Registering a custom tool
  * - Executing a task
  * - Handling events
+ *
+ * Set one of these environment variables:
+ * - ANTHROPIC_API_KEY for Claude
+ * - GEMINI_API_KEY for Gemini
+ * - DEEPSEEK_API_KEY for DeepSeek
  */
 
 import { z } from "zod";
 import {
   Agent,
+  ClaudeProvider,
   GeminiProvider,
   HttpFetchTool,
+  OpenAIProvider,
   ToolRegistry,
 } from "../dist/src/index.js";
+import type { LLMProvider } from "../dist/src/llm/provider.js";
 import { Tool } from "../dist/src/tools/base.js";
 
 // Custom calculator tool
@@ -50,18 +58,41 @@ class CalculatorTool extends Tool<
 }
 
 async function main() {
-  // Check for API key
-  const apiKey = process.env?.["GEMINI_API_KEY"];
-  if (!apiKey) {
-    console.error("Please set GEMINI_API_KEY environment variable");
+  // Check for API keys and create appropriate provider
+  let llmProvider: LLMProvider;
+  let providerName: string;
+
+  const anthropicKey = process.env?.["ANTHROPIC_API_KEY"];
+  const geminiKey = process.env?.["GEMINI_API_KEY"];
+  const deepseekKey = process.env?.["DEEPSEEK_API_KEY"];
+
+  if (anthropicKey) {
+    llmProvider = new ClaudeProvider({
+      apiKey: anthropicKey,
+      model: "claude-sonnet-4-5",
+    });
+    providerName = "Claude";
+  } else if (geminiKey) {
+    llmProvider = new GeminiProvider({
+      apiKey: geminiKey,
+      model: "gemini-2.0-flash-exp",
+    });
+    providerName = "Gemini";
+  } else if (deepseekKey) {
+    llmProvider = new OpenAIProvider({
+      apiKey: deepseekKey,
+      model: "deepseek-chat",
+      baseUrl: "https://api.deepseek.com",
+    });
+    providerName = "DeepSeek";
+  } else {
+    console.error(
+      "Please set one of: ANTHROPIC_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY environment variable",
+    );
     process.exit(1);
   }
 
-  // Create LLM provider
-  const llmProvider = new GeminiProvider({
-    apiKey,
-    model: "gemini-2.0-flash-exp",
-  });
+  console.log(`🤖 Using ${providerName} provider\n`);
 
   // Create and register tools
   const toolRegistry = new ToolRegistry();
@@ -76,8 +107,6 @@ async function main() {
       "You are a helpful assistant that can perform calculations and fetch data from the web.",
     maxTurns: 10,
   });
-
-  console.log("🤖 AIPex Agent started!\n");
 
   // Example 1: Simple calculation
   console.log("📝 Example 1: Calculation");
