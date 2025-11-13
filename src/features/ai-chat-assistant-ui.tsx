@@ -75,31 +75,55 @@ const AIChatSidebarAssistantUI = () => {
   return (
     <div className="fixed bottom-0 left-0 w-full h-full bg-white flex flex-col border-t border-gray-200 font-sans text-gray-900">
       {/* Header */}
-      <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0">
+      <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900">{t("common.title")}</h2>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{t("common.title")}</h2>
+          <p className="text-xs text-gray-500 mt-0.5">AI-Powered Browser Automation</p>
         </div>
-        <button
-          onClick={() => {
-            // Dispatch event to clear all messages
-            window.dispatchEvent(new CustomEvent('clear-aipex-messages'));
-          }}
-          className="absolute right-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          title={t("tooltip.newChat")}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-        </button>
-        <button
-          onClick={() => setShowSettings(s => !s)}
-          className="absolute left-4 top-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          title={t("tooltip.settings")}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M11.983 1.588a1 1 0 00-1.966 0l-.078.46a7.97 7.97 0 00-1.357.563l-.42-.243a1 1 0 00-1.366.366l-.983 1.703a1 1 0 00.366 1.366l.42.243c-.124.44-.214.9-.264 1.372l-.46.078a1 1 0 000 1.966l.46.078c.05.472.14.932.264 1.372l-.42.243a1 1 0 00-.366 1.366l.983 1.703a1 1 0 001.366.366l.42-.243c.425.242.88.44 1.357.563l.078.46a1 1 0 001.966 0l.078-.46c.472-.05.932-.14 1.372-.264l.243.42a1 1 0 001.366.366l1.703-.983a1 1 0 00.366-1.366l-.243-.42c.242-.425.44-.88.563-1.357l.46-.078a1 1 0 000-1.966l-.46-.078a7.97 7.97 0 00-.563-1.357l.243-.42a1 1 0 00-.366-1.366l-1.703-.983a1 1 0 00-1.366.366l-.243.42a7.97 7.97 0 00-1.372-.264l-.078-.46zM10 13a3 3 0 110-6 3 3 0 010 6z" />
-          </svg>
-        </button>
+
+        {/* Left buttons */}
+        <div className="absolute left-4 top-3 flex gap-1">
+          <button
+            onClick={() => setShowSettings(s => !s)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/70 transition-all duration-200 hover:shadow-sm"
+            title={t("tooltip.settings")}
+            aria-label="Settings"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M11.983 1.588a1 1 0 00-1.966 0l-.078.46a7.97 7.97 0 00-1.357.563l-.42-.243a1 1 0 00-1.366.366l-.983 1.703a1 1 0 00.366 1.366l.42.243c-.124.44-.214.9-.264 1.372l-.46.078a1 1 0 000 1.966l.46.078c.05.472.14.932.264 1.372l-.42.243a1 1 0 00-.366 1.366l.983 1.703a1 1 0 001.366.366l.42-.243c.425.242.88.44 1.357.563l.078.46a1 1 0 001.966 0l.078-.46c.472-.05.932-.14 1.372-.264l.243.42a1 1 0 001.366.366l1.703-.983a1 1 0 00.366-1.366l-.243-.42c.242-.425.44-.88.563-1.357l.46-.078a1 1 0 000-1.966l-.46-.078a7.97 7.97 0 00-.563-1.357l.243-.42a1 1 0 00-.366-1.366l-1.703-.983a1 1 0 00-1.366.366l-.243.42a7.97 7.97 0 00-1.372-.264l-.078-.46zM10 13a3 3 0 110-6 3 3 0 010 6z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Right buttons */}
+        <div className="absolute right-4 top-3 flex gap-1">
+          <button
+            onClick={() => {
+              // Dispatch event to export chat
+              window.dispatchEvent(new CustomEvent('export-aipex-chat'));
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/70 transition-all duration-200 hover:shadow-sm"
+            title="Export chat (Cmd/Ctrl+E)"
+            aria-label="Export chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              // Dispatch event to clear all messages
+              window.dispatchEvent(new CustomEvent('clear-aipex-messages'));
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/70 transition-all duration-200 hover:shadow-sm"
+            title={t("tooltip.newChat") + " (Cmd/Ctrl+L)"}
+            aria-label="New chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </button>
+        </div>
       </div>
       
       {/* Main chat interface - always visible */}

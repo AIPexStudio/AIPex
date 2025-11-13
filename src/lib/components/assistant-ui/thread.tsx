@@ -189,6 +189,22 @@ export const Thread: FC = () => {
     t("input.placeholder3")
   ];
 
+  // Message actions state
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  // Toast notification state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+
+  // Show toast notification
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
+
   // 获取所有标签页
   const fetchAvailableTabs = async () => {
     try {
@@ -318,7 +334,7 @@ export const Thread: FC = () => {
   useEffect(() => {
     const handleClearMessages = async () => {
       console.log('🔄 [DEBUG] Clearing all messages and conversation history');
-      
+
       // Stop all ongoing AI chats before clearing messages
       console.log('🛑 [DEBUG] Stopping all ongoing AI chats before clearing messages');
       try {
@@ -329,7 +345,7 @@ export const Thread: FC = () => {
       } catch (error) {
         console.error('🛑 [DEBUG] Failed to stop AI chats:', error);
       }
-      
+
       setMessages([]);
       setInputValue('');
       setLoading(false);
@@ -343,6 +359,54 @@ export const Thread: FC = () => {
       window.removeEventListener('clear-aipex-messages', handleClearMessages);
     };
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K: Focus input
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+
+      // Cmd/Ctrl + L: Clear chat
+      if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('clear-aipex-messages'));
+      }
+
+      // Cmd/Ctrl + E: Export chat
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e' && messages.length > 0) {
+        e.preventDefault();
+        handleExportChat();
+      }
+
+      // Escape: Stop AI response
+      if (e.key === 'Escape' && loading && currentMessageId) {
+        e.preventDefault();
+        handleStopAI();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [loading, currentMessageId, messages.length, handleExportChat, handleStopAI]);
+
+  // Listen for export chat event from header button
+  useEffect(() => {
+    const handleExportEvent = () => {
+      if (messages.length > 0) {
+        handleExportChat();
+      }
+    };
+
+    window.addEventListener('export-aipex-chat', handleExportEvent);
+    return () => {
+      window.removeEventListener('export-aipex-chat', handleExportEvent);
+    };
+  }, [messages.length, handleExportChat]);
 
 
 
@@ -625,6 +689,78 @@ export const Thread: FC = () => {
       chrome.runtime.onMessage.removeListener(handleProvideImages)
     }
   }, [messages])
+
+  // Copy message to clipboard
+  const handleCopyMessage = useCallback(async (messageContent: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(messageContent);
+      setCopiedMessageId(messageId);
+      showToast('Message copied to clipboard', 'success');
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+      showToast('Failed to copy message', 'error');
+    }
+  }, [showToast]);
+
+  // Delete a message
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    showToast('Message deleted', 'info');
+  }, [showToast]);
+
+  // Regenerate AI response
+  const handleRegenerateResponse = useCallback(async (messageIndex: number) => {
+    if (loading) return;
+
+    // Find the user message before this AI response
+    const userMessage = messages[messageIndex - 1];
+    if (!userMessage || userMessage.role !== 'user') {
+      console.error('Cannot find user message to regenerate from');
+      return;
+    }
+
+    // Remove the AI response and any subsequent messages
+    setMessages(prev => prev.slice(0, messageIndex));
+
+    // Regenerate the response
+    await handleSubmit(userMessage.content);
+  }, [loading, messages]);
+
+  // Export chat history
+  const handleExportChat = useCallback(() => {
+    try {
+      const chatText = messages.map(msg => {
+        const role = msg.role === 'user' ? 'You' : 'AI';
+        let content = msg.content;
+
+        // If content is empty, extract from parts
+        if (!content.trim() && msg.parts && msg.parts.length > 0) {
+          const textParts = msg.parts
+            .filter(part => part.type === 'text' && part.content)
+            .map(part => part.content)
+            .join('\n');
+          content = textParts;
+        }
+
+        return `${role}: ${content}`;
+      }).join('\n\n---\n\n');
+
+      const blob = new Blob([chatText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aipex-chat-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Chat exported successfully', 'success');
+    } catch (error) {
+      console.error('Failed to export chat:', error);
+      showToast('Failed to export chat', 'error');
+    }
+  }, [messages, showToast]);
 
   // Stop AI response
   const handleStopAI = useCallback(async () => {
@@ -1082,8 +1218,59 @@ export const Thread: FC = () => {
         <div className="max-w-2xl mx-auto">
           {messages.length === 0 ? (
             <div className="text-center py-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to AIpex</h3>
-              <p className="text-gray-600">Choose a quick action or ask anything to get started</p>
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">Welcome to AIPex</h3>
+                <p className="text-gray-600">Choose a quick action or ask anything to get started</p>
+              </div>
+
+              {/* Keyboard Shortcuts Help */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {showKeyboardHelp ? 'Hide' : 'Show'} Keyboard Shortcuts
+                </button>
+
+                {showKeyboardHelp && (
+                  <div className="mt-4 bg-gray-50 rounded-lg p-4 text-left max-w-md mx-auto">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Focus input</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">⌘/Ctrl + K</kbd>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Clear chat</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">⌘/Ctrl + L</kbd>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Export chat</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">⌘/Ctrl + E</kbd>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Stop AI response</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">Esc</kbd>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Send message</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">Enter</kbd>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">New line</span>
+                        <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono">Shift + Enter</kbd>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               
               <div className="grid gap-4 sm:grid-cols-2 mt-8">
@@ -1150,14 +1337,16 @@ export const Thread: FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <div
                   key={message.id}
-                  className={`p-4 rounded-lg ${
+                  className={`group relative p-4 rounded-lg transition-all duration-200 ${
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-gray-800 ml-12 border border-emerald-200'
-                      : 'bg-gray-100 text-gray-900 mr-12'
+                      ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-gray-800 ml-12 border border-emerald-200 hover:shadow-md'
+                      : 'bg-gray-100 text-gray-900 mr-12 hover:shadow-md'
                   }`}
+                  onMouseEnter={() => setHoveredMessageId(message.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
                 >
                   {/* Render message content - prioritize parts over content to avoid duplication */}
                   {message.parts && message.parts.length > 0 ? (
@@ -1240,6 +1429,66 @@ export const Thread: FC = () => {
                   {message.streaming && (
                     <div className="mt-2">
                       <div className="inline-block w-2 h-4 bg-gray-400 animate-pulse"></div>
+                    </div>
+                  )}
+
+                  {/* Message Actions - Show on hover */}
+                  {!message.streaming && hoveredMessageId === message.id && (
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {/* Copy Button */}
+                      <button
+                        onClick={() => {
+                          let content = message.content;
+                          if (!content.trim() && message.parts && message.parts.length > 0) {
+                            const textParts = message.parts
+                              .filter(part => part.type === 'text' && part.content)
+                              .map(part => part.content)
+                              .join('\n');
+                            content = textParts;
+                          }
+                          handleCopyMessage(content, message.id);
+                        }}
+                        className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                        title="Copy message"
+                        aria-label="Copy message"
+                      >
+                        {copiedMessageId === message.id ? (
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Regenerate Button (only for AI messages) */}
+                      {message.role === 'assistant' && index > 0 && (
+                        <button
+                          onClick={() => handleRegenerateResponse(index)}
+                          className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                          title="Regenerate response"
+                          aria-label="Regenerate response"
+                          disabled={loading}
+                        >
+                          <svg className={`w-4 h-4 ${loading ? 'text-gray-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                        title="Delete message"
+                        aria-label="Delete message"
+                      >
+                        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1394,6 +1643,34 @@ export const Thread: FC = () => {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div className={`px-6 py-3 rounded-lg shadow-lg border flex items-center gap-2 ${
+            toastType === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+            toastType === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+            'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            {toastType === 'success' && (
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            {toastType === 'error' && (
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            {toastType === 'info' && (
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            <span className="font-medium text-sm">{toastMessage}</span>
           </div>
         </div>
       )}
