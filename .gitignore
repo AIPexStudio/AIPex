@@ -37,3 +37,4 @@ keys.json
 
 # typescript
 .tsbuildinfo
+*.zip
