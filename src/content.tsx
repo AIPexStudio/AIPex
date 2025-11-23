@@ -5,7 +5,6 @@ import tailwindCss from "~/tailwind.css?inline"
 
 // Get asset URLs
 const globeUrl = chrome.runtime.getURL("assets/globe.svg")
-const iconUrl = chrome.runtime.getURL("assets/icon.png")
 
 
 const placeholderList = [
@@ -33,13 +32,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0)
   const [showCommandSuggestions, setShowCommandSuggestions] = React.useState(false)
   const [commandSuggestionIndex, setCommandSuggestionIndex] = React.useState(0)
-  const debugRef = React.useRef({ lastSelectedIndex: 0 })
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
-
-  // Debug log for selectedIndex changes
-  React.useEffect(() => {
-    debugRef.current.lastSelectedIndex = selectedIndex
-  }, [selectedIndex])
 
   // Carousel placeholder
   React.useEffect(() => {
@@ -111,7 +104,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     if (command === "/bookmarks") {
       chrome.runtime.sendMessage({ request: "get-bookmarks" }, (response) => {
         if (response && response.bookmarks) {
-          const bookmarkActions = response.bookmarks.map(bookmark => ({
+          const bookmarkActions = response.bookmarks.map((bookmark: any) => ({
             ...bookmark,
             type: "bookmark",
             action: "bookmark",  // Ensure action type is set for proper handling
@@ -131,7 +124,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     } else if (command === "/history") {
       chrome.runtime.sendMessage({ request: "get-history" }, (response) => {
         if (response && response.history) {
-          setFilteredActions(response.history.map(item => ({
+          setFilteredActions(response.history.map((item: any) => ({
             ...item,
             type: "history"
           })))
@@ -140,8 +133,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     } else if (command === "/group") {
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
         if (response && response.actions) {
-          const organizeAction = response.actions.find(a => a.action === "organize-tabs")
-          const ungroupAction = response.actions.find(a => a.action === "ungroup-tabs")
+          const organizeAction = response.actions.find((a: any) => a.action === "organize-tabs")
+          const ungroupAction = response.actions.find((a: any) => a.action === "ungroup-tabs")
           
           const groupActions = []
           
@@ -211,8 +204,8 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     if (input.startsWith("/group")) {
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
         if (response && response.actions) {
-          const organizeAction = response.actions.find(a => a.action === "organize-tabs")
-          const ungroupAction = response.actions.find(a => a.action === "ungroup-tabs")
+          const organizeAction = response.actions.find((a: any) => a.action === "organize-tabs")
+          const ungroupAction = response.actions.find((a: any) => a.action === "ungroup-tabs")
           
           const groupActions = []
           
@@ -265,7 +258,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         query: tempvalue 
       }, (response) => {
         if (response && response.bookmarks) {
-          const bookmarkActions = response.bookmarks.map(bookmark => ({
+          const bookmarkActions = response.bookmarks.map((bookmark: any) => ({
             ...bookmark,
             type: "bookmark",
             action: "bookmark",  // Ensure action type is set for proper handling
@@ -292,7 +285,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
         query: tempvalue 
       }, (response) => {
         if (response && response.history) {
-          setFilteredActions(response.history.map(item => ({
+          setFilteredActions(response.history.map((item: any) => ({
             ...item,
             type: "history"
           })))
@@ -304,7 +297,7 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
     if (input.startsWith("/tabs")) {
       chrome.runtime.sendMessage({ request: "get-actions" }, (response) => {
         if (response && response.actions) {
-          const tabActions = response.actions.filter(a => a.type === "tab")
+          const tabActions = response.actions.filter((a: any) => a.type === "tab")
           if (tabActions.length > 0) {
             setFilteredActions(tabActions)
           } else {
@@ -502,34 +495,6 @@ const Omni = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => 
       url = "http://" + url
     }
     return url
-  }
-  function validURL(str: string) {
-    var pattern = new RegExp('^(https?:\/\/)?'+ // protocol
-      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-      '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-      '(\\:\\d+)?(\/[-a-z\\d%_.~+]*)*'+ // port and path
-      '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-      '(\\#[-a-z\\d_]*)?$','i') // fragment locator
-    return !!pattern.test(str)
-  }
-  function checkShortHand(e: React.ChangeEvent<HTMLInputElement>, value: string) {
-    if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType !== 'deleteContentBackward') {
-      if (value === "/t") {
-        setInput("/tabs ")
-      } else if (value === "/b") {
-        setInput("/bookmarks ")
-      } else if (value === "/h") {
-        setInput("/history ")
-      } else if (value === "/r") {
-        setInput("/remove ")
-      } else if (value === "/a") {
-        setInput("/actions ")
-      }
-    } else {
-      if (["/tabs", "/bookmarks", "/actions", "/remove", "/history"].includes(value)) {
-        setInput("")
-      }
-    }
   }
 
   // Highlight search terms in text

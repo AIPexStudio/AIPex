@@ -30,6 +30,6 @@
     /* Chrome Extension Types */
     "types": ["chrome", "node"]
   },
-  "include": ["src"],
+  "include": ["src", "components"],
   "exclude": ["node_modules"]
 }
