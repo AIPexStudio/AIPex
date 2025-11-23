@@ -40,7 +40,7 @@ AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chro
 
 ### AIPex vs ChatGPT Atlas vs Dia/Comet vs Manus Browser Operator Solutions
 
-| Feature | AIPex | ChatGPT Atlas | Comet (Dia) | Playwright-based |
+| Feature | AIPex | ChatGPT Atlas | Comet (Dia) | Manus Browser Operator |
 |---------|-------|---------------|-------------|------------------|
 | **Pricing & Open Source** | ✅ Free and open source | ❌ Paid and closed source | ❌ Paid and closed source | ❌ Paid and closed source |
 | **Browser Migration Cost** | ✅ No migration needed, use existing browser | ❌ Requires browser migration | ❌  Install separate browser |  ✅ No migration needed, use existing browser |
