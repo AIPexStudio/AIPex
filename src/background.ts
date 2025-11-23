@@ -235,7 +235,7 @@ const clearActions = async () => {
     { title: "Start ChatGPT", desc: "Open ChatGPT for AI assistance", type: "action", action: "url", url: "https://chat.openai.com/", emoji: true, emojiChar: "🤖", keycheck: false },
     { title: "Microsoft Copilot", desc: "Access Microsoft's AI assistant", type: "action", action: "url", url: "https://copilot.microsoft.com/", emoji: true, emojiChar: "🤖", keycheck: false },
     { title: "Claude AI", desc: "Chat with Anthropic's Claude AI", type: "action", action: "url", url: "https://claude.ai/", emoji: true, emojiChar: "🧠", keycheck: false },
-    { title: "Discord Server", desc: "Join or create a Discord server", type: "action", action: "url", url: "https://discord.com/", emoji: true, emojiChar: "💬", keycheck: false },
+    { title: "Discord Server", desc: "Join or create a Discord server", type: "action", action: "url", url: "https://discord.gg/sfZC3G5qfe", emoji: true, emojiChar: "💬", keycheck: false },
     { title: "Slack Workspace", desc: "Open your Slack workspace", type: "action", action: "url", url: "https://slack.com/", emoji: true, emojiChar: "💼", keycheck: false },
     { title: "Zoom Meeting", desc: "Start or join a Zoom meeting", type: "action", action: "url", url: "https://zoom.us/", emoji: true, emojiChar: "📹", keycheck: false },
     { title: "Trello Board", desc: "Create a new Trello board", type: "action", action: "url", url: "https://trello.com/", emoji: true, emojiChar: "📋", keycheck: false },

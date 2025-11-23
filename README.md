@@ -7,6 +7,7 @@
 </div>
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+[![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-Available-blue)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 [![GitHub stars](https://img.shields.io/github/stars/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
 [![GitHub forks](https://img.shields.io/github/forks/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
 [![GitHub issues](https://img.shields.io/badge/GitHub-Issues-red)](https://github.com/buttercannfly/AIPex/issues)
@@ -17,39 +18,35 @@
 
 [![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?logo=twitter&logoColor=white)](https://x.com/weikangzhang3)
 [![YouTube](https://img.shields.io/badge/YouTube-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/@aipex-chrome-extension)
-[![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/k3aSZS7m)
+[![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/sfZC3G5qfe)
 
 <div align="center">
   **⭐ The Open Source ChatGPT Atlas Alternative ⭐**
   
   [![Chrome Web Store](https://img.shields.io/badge/Install%20on%20Chrome%20Web%20Store-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+  [![Edge Add-ons](https://img.shields.io/badge/Install%20on%20Edge%20Add--ons-blue?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 </div>
 
 ## 🤖 What is AIPex?
 
-AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task - from complex multi-step workflows to simple repetitive actions.
+AIPex is the **open source alternative to ChatGPT Atlas** - a revolutionary Chrome extension that transforms your browser into an intelligent automation platform. Using **natural language commands** and **AI-powered intelligence**, AIPex can automate virtually any browser task 
 
 **🎯 Why choose AIPex over ChatGPT Atlas?**
 - ✅ **Free & Open Source** - No subscription fees, full transparency
 - ✅ **No Browser Migration** - Use your existing browser directly
-- ✅ **All Atlas Features** - Complete feature parity with additional capabilities
-- ✅ **Better Performance** - Optimized for speed and efficiency
+- ✅ **Privacy Protection** - AIPex never records your data
 
 ## 📊 Comparison with Similar Projects
 
-### AIPex vs ChatGPT Atlas vs Dia/Comet vs Playwright-based Solutions
+### AIPex vs ChatGPT Atlas vs Dia/Comet vs Manus Browser Operator Solutions
 
 | Feature | AIPex | ChatGPT Atlas | Comet (Dia) | Playwright-based |
 |---------|-------|---------------|-------------|------------------|
-| **Pricing & Open Source** | ✅ Free and open source | ❌ Paid and closed source | ✅ Free and open source | ✅ Free and open source |
-| **Browser Migration Cost** | ✅ No migration needed, use existing browser | ❌ Requires browser migration | ⚠️ Install separate Dia browser | ❌ Launch browser + install dependencies |
-| **Setup & Resources** | ✅ One-click extension install, uses current browser | ❌ Requires browser migration | ⚠️ Install separate Dia browser | ❌ Launch browser + install dependencies |
-| **Session Reuse** | ✅ Auto-uses existing logins & settings | ✅ Preserves user environment | ✅ Preserves user environment | ❌ Clean environment, requires re-login |
+| **Pricing & Open Source** | ✅ Free and open source | ❌ Paid and closed source | ❌ Paid and closed source | ❌ Paid and closed source |
+| **Browser Migration Cost** | ✅ No migration needed, use existing browser | ❌ Requires browser migration | ❌  Install separate browser |  ✅ No migration needed, use existing browser |
 | **Ease of Use** | ✅ No technical knowledge needed | ⚠️ Adapt to new browser | ⚠️ Adapt to new browser | ⚠️ Requires technical setup |
-| **Performance** | ✅ Fast, low LLM token cost | ✅ Fast, low token cost | ✅ Fast, low token cost | ⚠️ Slower (IPC overhead, higher token cost) |
-| **Capabilities** | ✅ Full browser API, multi-tab support | ⚠️ Limited features | ⚠️ Limited API, tab selection only | ⚠️ Limited to Playwright API |
-| **Feature Coverage** | ✅ All Atlas features available | ⚠️ Multiple features implemented | ⚠️ Limited features | ⚠️ Limited features |
-| **BYOK** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Privacy** | ✅ Privacy protected | ⚠️ No | ⚠️ No | ⚠️ No |
+| **BYOK** | ✅ Yes | ❌ No | ❌ No | ❌ No |
 
 ## 🚀 Do Amazing with AIPex
 
@@ -74,6 +71,9 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 ### Quick Start
 1. **Install from Chrome Web Store** (Recommended)
    - [Click here to install](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+   
+   **Or install from Edge Add-ons**
+   - [Click here to install from Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 
 2. **Open AIPex**
    - Press `⌘+M` (Mac) or `Ctrl+M` (Windows/Linux)
@@ -192,10 +192,11 @@ Thank you to all the amazing contributors who help make AIPex better:
   
   [![GitHub](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white)](https://github.com/buttercannfly/AIPex)
   [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-4285F4?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+  [![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-0078D4?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
   
   **📱 Follow us on social media:**
   
   [![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?logo=twitter&logoColor=white)](https://x.com/weikangzhang3)
   [![YouTube](https://img.shields.io/badge/YouTube-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/@aipex-chrome-extension)
-  [![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/k3aSZS7m)
+  [![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/sfZC3G5qfe)
 </div>

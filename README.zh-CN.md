@@ -7,6 +7,7 @@
 </div>
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+[![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-Available-blue)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 [![GitHub stars](https://img.shields.io/github/stars/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
 [![GitHub forks](https://img.shields.io/github/forks/buttercannfly/AIPex?style=social)](https://github.com/buttercannfly/AIPex)
 [![GitHub issues](https://img.shields.io/badge/GitHub-Issues-red)](https://github.com/buttercannfly/AIPex/issues)
@@ -19,6 +20,7 @@
   **⭐ 开源版ChatGPT Atlas替代方案 ⭐**
   
   [![Chrome Web Store](https://img.shields.io/badge/Install%20on%20Chrome%20Web%20Store-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+  [![Edge Add-ons](https://img.shields.io/badge/Install%20on%20Edge%20Add--ons-blue?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 </div>
 
 ---
@@ -128,6 +130,9 @@ AIPex擅长通过自然语言命令自动化复杂的浏览器任务。以下是
 ### 快速开始
 1. **从Chrome网上应用店安装** (推荐)
    - [点击此处安装](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+   
+   **或从Edge加载项安装**
+   - [点击此处从Edge加载项安装](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 
 2. **打开AIPex**
    - 按 `⌘+M` (Mac) 或 `Ctrl+M` (Windows/Linux)
@@ -295,4 +300,5 @@ AIPex擅长通过自然语言命令自动化复杂的浏览器任务。以下是
   
   [![GitHub](https://img.shields.io/badge/GitHub-100000?logo=github&logoColor=white)](https://github.com/buttercannfly/AIPex)
   [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-4285F4?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar)
+  [![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-0078D4?logo=microsoft-edge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
 </div>
