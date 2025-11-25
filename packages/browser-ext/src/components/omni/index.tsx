@@ -1,4 +1,12 @@
-import * as React from "react"
+import {
+  Calculator,
+  Calendar,
+  CreditCard,
+  Settings,
+  Smile,
+  User,
+} from "lucide-react";
+import * as React from "react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -8,21 +16,25 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "@/components/ui/command"
-import { Calendar, Smile, Calculator, User, CreditCard, Settings } from "lucide-react"
+} from "@/components/ui/command";
 
-export default function Omni({ open, setOpen }: { open: boolean, setOpen: (open: boolean | ((open: boolean) => boolean)) => void }) {
-
+export default function Omni({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean | ((open: boolean) => boolean)) => void;
+}) {
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((open) => !open)
+        e.preventDefault();
+        setOpen((open) => !open);
       }
-    }
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [])
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, [setOpen]);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
@@ -63,5 +75,5 @@ export default function Omni({ open, setOpen }: { open: boolean, setOpen: (open:
         </CommandGroup>
       </CommandList>
     </CommandDialog>
-  )
+  );
 }

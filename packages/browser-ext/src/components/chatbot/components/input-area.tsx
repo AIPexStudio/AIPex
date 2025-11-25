@@ -1,0 +1,215 @@
+import type { ChatStatus } from "ai";
+import { ClockIcon } from "lucide-react";
+import { useCallback } from "react";
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputContextTag,
+  PromptInputContextTags,
+  type PromptInputMessage,
+  PromptInputModelSelect,
+  PromptInputModelSelectContent,
+  PromptInputModelSelectItem,
+  PromptInputModelSelectTrigger,
+  PromptInputModelSelectValue,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+} from "@/components/ai-elements/prompt-input";
+import { cn } from "~/lib/utils";
+import { useComponentsContext, useConfigContext } from "../core/context";
+import type { ContextItem, InputAreaProps } from "../core/types";
+
+/**
+ * Default model options
+ */
+const DEFAULT_MODELS = [
+  { name: "DeepSeek V3", value: "deepseek-chat" },
+  { name: "GPT-4", value: "gpt-4" },
+  { name: "Claude 3.5 Sonnet", value: "claude-3-5-sonnet-20241022" },
+];
+
+export interface ExtendedInputAreaProps extends InputAreaProps {
+  /** Available models for selection */
+  models?: Array<{ name: string; value: string }>;
+  /** Placeholder texts for typing animation */
+  placeholderTexts?: string[];
+  /** Message queue count */
+  queueCount?: number;
+}
+
+/**
+ * Default InputArea component
+ */
+export function DefaultInputArea({
+  value,
+  onChange,
+  onSubmit,
+  onStop,
+  status,
+  placeholder = "What would you like to know?",
+  disabled = false,
+  models = DEFAULT_MODELS,
+  placeholderTexts,
+  queueCount = 0,
+  className,
+  ...props
+}: ExtendedInputAreaProps) {
+  const { slots } = useComponentsContext();
+  const { settings, updateSetting } = useConfigContext();
+
+  const handleSubmit = useCallback(
+    (message: PromptInputMessage) => {
+      const hasText = Boolean(message.text);
+      const hasAttachments = Boolean(message.files?.length);
+      const hasContexts = Boolean(message.contexts?.length);
+
+      if (!(hasText || hasAttachments || hasContexts)) {
+        return;
+      }
+
+      // Convert files to File objects if needed
+      const files = message.files?.map((f) => {
+        // Files from PromptInput are already processed
+        return f as unknown as File;
+      });
+
+      onSubmit(
+        message.text || "",
+        files,
+        message.contexts as ContextItem[] | undefined,
+      );
+      onChange("");
+    },
+    [onSubmit, onChange],
+  );
+
+  const handleModelChange = useCallback(
+    async (newModel: string) => {
+      if (newModel?.trim()) {
+        await updateSetting("aiModel", newModel);
+      }
+    },
+    [updateSetting],
+  );
+
+  // Map status to ChatStatus type
+  const submitStatus: ChatStatus | undefined =
+    status === "idle" ? undefined : (status as ChatStatus);
+
+  return (
+    <div className={cn("border-t p-4", className)} {...props}>
+      <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+        <PromptInputBody>
+          {/* Context Tags */}
+          <PromptInputContextTags>
+            {(context) => <PromptInputContextTag data={context} />}
+          </PromptInputContextTags>
+
+          {/* Attachments */}
+          <PromptInputAttachments>
+            {(attachment) => <PromptInputAttachment data={attachment} />}
+          </PromptInputAttachments>
+
+          {/* Textarea */}
+          <PromptInputTextarea
+            placeholder={placeholder}
+            enableTypingAnimation={Boolean(placeholderTexts?.length)}
+            placeholderTexts={placeholderTexts}
+            onChange={(e) => onChange(e.target.value)}
+            value={value}
+            disabled={disabled}
+          />
+
+          {/* Queue indicator */}
+          {queueCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-muted/50 rounded-md mt-2">
+              <ClockIcon className="size-4" />
+              <span>
+                {queueCount} message{queueCount > 1 ? "s" : ""} queued
+              </span>
+            </div>
+          )}
+        </PromptInputBody>
+
+        <PromptInputToolbar>
+          <PromptInputTools>
+            {/* Action Menu */}
+            <PromptInputActionMenu>
+              <PromptInputActionMenuTrigger />
+              <PromptInputActionMenuContent>
+                <PromptInputActionAddAttachments />
+              </PromptInputActionMenuContent>
+            </PromptInputActionMenu>
+
+            {/* Model Selector */}
+            {slots.modelSelector ? (
+              slots.modelSelector({
+                value: settings.aiModel,
+                onChange: handleModelChange,
+                models,
+              })
+            ) : (
+              <PromptInputModelSelect
+                onValueChange={handleModelChange}
+                value={settings.aiModel}
+              >
+                <PromptInputModelSelectTrigger>
+                  <PromptInputModelSelectValue />
+                </PromptInputModelSelectTrigger>
+                <PromptInputModelSelectContent>
+                  {models.map((model) => (
+                    <PromptInputModelSelectItem
+                      key={model.value}
+                      value={model.value}
+                    >
+                      {model.name}
+                    </PromptInputModelSelectItem>
+                  ))}
+                </PromptInputModelSelectContent>
+              </PromptInputModelSelect>
+            )}
+          </PromptInputTools>
+
+          {/* Submit/Stop Button */}
+          {slots.inputToolbar ? (
+            slots.inputToolbar({
+              status,
+              onStop,
+              onSubmit: () => {
+                /* handled by form */
+              },
+            })
+          ) : (
+            <PromptInputSubmit
+              disabled={!value && !submitStatus}
+              status={submitStatus}
+              onClick={status === "streaming" ? onStop : undefined}
+            />
+          )}
+        </PromptInputToolbar>
+      </PromptInput>
+    </div>
+  );
+}
+
+/**
+ * InputArea - Renders either custom or default input area
+ */
+export function InputArea(props: ExtendedInputAreaProps) {
+  const { components } = useComponentsContext();
+
+  const CustomComponent = components.InputArea;
+  if (CustomComponent) {
+    return <CustomComponent {...props} />;
+  }
+
+  return <DefaultInputArea {...props} />;
+}

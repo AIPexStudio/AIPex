@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import Omni from "~/components/omni";
 // Import CSS as a string to inject into Shadow DOM
 import tailwindCss from "../tailwind.css?inline";
-import Omni from "~/components/omni";
 
 const ContentApp = () => {
   const [isOmniOpen, setIsOmniOpen] = React.useState(false);
@@ -32,11 +32,7 @@ const ContentApp = () => {
 
   // Return UI
   return (
-    <>
-      {isOmniOpen && (
-        <Omni open={isOmniOpen} setOpen={setIsOmniOpen} />
-      )}
-    </>
+    <>{isOmniOpen && <Omni open={isOmniOpen} setOpen={setIsOmniOpen} />}</>
   );
 };
 
