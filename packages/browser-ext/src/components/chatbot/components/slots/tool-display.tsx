@@ -117,7 +117,7 @@ export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
               {JSON.stringify(tool.input, null, 2)}
             </pre>
           </div>
-          {tool.output && (
+          {tool.output !== undefined && tool.output !== null && (
             <div>
               <span className="text-muted-foreground">Output:</span>
               <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-32">

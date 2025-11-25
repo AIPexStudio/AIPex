@@ -121,7 +121,7 @@ export function useChat(
         setStatus("error");
       }
     },
-    [adapter, agent],
+    [adapter],
   );
 
   // Send a new message
