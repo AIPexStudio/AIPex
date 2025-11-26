@@ -17,7 +17,10 @@
     "build": "tsc",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "example:basic": "tsx examples/basic-example.ts",
+    "example:fork": "tsx examples/fork-example.ts",
+    "example:metrics": "tsx examples/metrics-example.ts"
   },
   "keywords": [
     "ai",
@@ -30,15 +33,36 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
-    "@google/genai": "^1.28.0",
-    "lru-cache": "^11.0.2",
-    "openai": "^6.8.0",
-    "zod": "^3.24.1",
-    "zod-to-json-schema": "^3.24.1"
+    "@openai/agents": "^0.3.3",
+    "@openai/agents-extensions": "^0.3.3",
+    "lru-cache": "^11.2.2",
+    "zod": "^3.25.40"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "dotenv": "^17.2.3"
+    "@ai-sdk/google": "^2.0.43",
+    "@ai-sdk/openai": "^2.0.72",
+    "@types/node": "^24.10.1",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.20.6"
+  },
+  "peerDependencies": {
+    "@ai-sdk/anthropic": "^2.0.0",
+    "@ai-sdk/google": "^2.0.0",
+    "@ai-sdk/openai": "^2.0.0",
+    "@openrouter/ai-sdk-provider": "^0.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/openai": {
+      "optional": true
+    },
+    "@ai-sdk/anthropic": {
+      "optional": true
+    },
+    "@ai-sdk/google": {
+      "optional": true
+    },
+    "@openrouter/ai-sdk-provider": {
+      "optional": true
+    }
   }
 }

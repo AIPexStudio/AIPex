@@ -1,3 +1,6 @@
-export * from "./builder.js";
-export * from "./defaults.js";
-export * from "./types.js";
+export type { CompressionConfig, ConversationConfig } from "../types.js";
+export { ConfigBuilder } from "./builder.js";
+export {
+  DEFAULT_COMPRESSION_CONFIG,
+  DEFAULT_CONVERSATION_CONFIG,
+} from "./defaults.js";

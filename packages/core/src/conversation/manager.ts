@@ -1,8 +1,12 @@
 import { LRUCache } from "lru-cache";
+import type {
+  SessionConfig,
+  SessionStorageAdapter,
+  SessionSummary,
+  SessionTree,
+} from "../types.js";
 import { generateId } from "../utils/id-generator.js";
 import { Session } from "./session.js";
-import type { SessionSummary, StorageAdapter } from "./storage.js";
-import type { SessionConfig } from "./types.js";
 
 export interface ConversationManagerConfig {
   cacheSize?: number;
@@ -13,12 +17,12 @@ export class ConversationManager {
   private cache: LRUCache<string, Session>;
 
   constructor(
-    private storage: StorageAdapter,
+    private storage: SessionStorageAdapter,
     config: ConversationManagerConfig = {},
   ) {
     this.cache = new LRUCache<string, Session>({
-      max: config.cacheSize || 100,
-      ttl: config.cacheTTL || 1000 * 60 * 30, // 30 minutes default
+      max: config.cacheSize ?? 100,
+      ttl: config.cacheTTL ?? 1000 * 60 * 30, // 30 minutes default
       updateAgeOnGet: true,
       updateAgeOnHas: true,
     });
@@ -34,7 +38,7 @@ export class ConversationManager {
   async getSession(id: string): Promise<Session | null> {
     // Check cache first
     if (this.cache.has(id)) {
-      return this.cache.get(id) || null;
+      return this.cache.get(id) ?? null;
     }
 
     // Load from storage
@@ -74,19 +78,36 @@ export class ConversationManager {
     let filtered = summaries;
     if (options?.tags && options.tags.length > 0) {
       filtered = filtered.filter((s) =>
-        s.tags?.some((tag) => options.tags!.includes(tag)),
+        s.tags?.some((tag) => options.tags?.includes(tag) ?? false),
       );
     }
 
     // Sort
-    const sortBy = options?.sortBy || "lastActiveAt";
+    const sortBy = options?.sortBy ?? "lastActiveAt";
     filtered.sort((a, b) => b[sortBy] - a[sortBy]);
 
     // Paginate
-    const offset = options?.offset || 0;
-    const limit = options?.limit || 50;
+    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? 50;
 
     return filtered.slice(offset, offset + limit);
+  }
+
+  async forkSession(sessionId: string, atTurn?: number): Promise<Session> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    const forkedSession = session.fork(atTurn);
+    await this.storage.save(forkedSession);
+    this.cache.set(forkedSession.id, forkedSession);
+
+    return forkedSession;
+  }
+
+  async getSessionTree(rootId?: string): Promise<SessionTree[]> {
+    return this.storage.getSessionTree(rootId);
   }
 
   clearCache(): void {

@@ -1,61 +1,44 @@
-import type { UnifiedMessage } from "../llm/types.js";
-import { generateId } from "../utils/id-generator.js";
-import { extractPreview, generateDefaultPreview } from "./preview.js";
-import type { SessionSummary } from "./storage.js";
 import type {
   CompletedTurn,
+  ForkInfo,
+  Message,
   SerializedSession,
   SessionConfig,
-  SessionMetadata,
   SessionStats,
-} from "./types.js";
+  SessionSummary,
+} from "../types.js";
+import { generateId } from "../utils/id-generator.js";
 
 export class Session {
   readonly id: string;
+  readonly parentSessionId?: string;
+  readonly forkAtTurn?: number;
   private turns: CompletedTurn[] = [];
   private systemPrompt?: string;
-  private metadata: SessionMetadata;
+  private metadata: Record<string, unknown> = {};
   private config: SessionConfig;
-  private preview: string;
+  private preview?: string;
 
-  constructor(id?: string, config: SessionConfig = {}) {
-    this.id = id || generateId();
+  constructor(id?: string, config: SessionConfig = {}, forkInfo?: ForkInfo) {
+    this.id = id ?? generateId();
+    this.config = config;
     this.systemPrompt = config.systemPrompt;
-    this.config = {
-      maxHistoryLength: config.maxHistoryLength || 100,
-      maxContextTokens: config.maxContextTokens || 10000,
-      keepRecentTurns: config.keepRecentTurns || 10,
-    };
-    this.metadata = {
-      createdAt: Date.now(),
-      lastActiveAt: Date.now(),
-    };
-    this.preview = generateDefaultPreview(this.metadata.createdAt);
+    this.parentSessionId = forkInfo?.parentSessionId;
+    this.forkAtTurn = forkInfo?.forkAtTurn;
+
+    if (!this.metadata["createdAt"]) {
+      this.metadata["createdAt"] = Date.now();
+    }
   }
 
   addTurn(turn: CompletedTurn): void {
     this.turns.push(turn);
-    this.metadata.lastActiveAt = Date.now();
-    this.metadata.totalTurns = this.turns.length;
-
-    // Update preview with first user message (only on first turn)
-    if (this.turns.length === 1) {
-      this.preview = extractPreview(turn.userMessage.content);
-    }
-
-    // Simple length-based truncation - check if we exceeded the limit after adding
-    const maxLength = this.config.maxHistoryLength!;
-    if (this.turns.length > maxLength) {
-      // Keep only the most recent turns
-      const keepCount = this.config.keepRecentTurns!;
-      this.turns = this.turns.slice(-keepCount);
-    }
+    this.updatePreview();
   }
 
-  getMessages(): UnifiedMessage[] {
-    const messages: UnifiedMessage[] = [];
+  getMessages(): Message[] {
+    const messages: Message[] = [];
 
-    // Add system prompt if exists
     if (this.systemPrompt) {
       messages.push({
         role: "system",
@@ -63,30 +46,22 @@ export class Session {
       });
     }
 
-    // Convert turns to message sequence
     for (const turn of this.turns) {
-      messages.push(turn.userMessage);
+      messages.push({
+        role: "user",
+        content: turn.userMessage.content,
+      });
 
-      // Add assistant message
-      if (turn.assistantMessage.content || turn.functionCalls.length === 0) {
-        messages.push(turn.assistantMessage);
-      }
+      messages.push({
+        role: "assistant",
+        content: turn.assistantMessage.content,
+      });
 
-      // Add function calls and responses
-      for (let i = 0; i < turn.functionCalls.length; i++) {
+      for (const call of turn.functionCalls) {
         messages.push({
-          role: "assistant",
-          content: "",
-          functionCall: turn.functionCalls[i],
+          role: "function",
+          content: JSON.stringify(call),
         });
-
-        if (turn.functionResults[i]) {
-          messages.push({
-            role: "function",
-            content: JSON.stringify(turn.functionResults[i].result),
-            functionResponse: turn.functionResults[i],
-          });
-        }
       }
     }
 
@@ -102,44 +77,124 @@ export class Session {
   }
 
   getStats(): SessionStats {
-    const totalTurns = this.turns.length;
-    const totalTokens = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.tokensUsed || 0),
+    const messageCount = this.turns.reduce(
+      (sum, turn) => sum + 2 + turn.functionCalls.length,
       0,
     );
-    const totalDuration = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.duration || 0),
-      0,
-    );
-    const avgTurnDuration = totalTurns > 0 ? totalDuration / totalTurns : 0;
     const toolCallCount = this.turns.reduce(
       (sum, turn) => sum + turn.functionCalls.length,
       0,
     );
+    const totalTokens = this.turns.reduce(
+      (sum, turn) => sum + (turn.metadata?.tokensUsed ?? 0),
+      0,
+    );
+    const totalDuration = this.turns.reduce(
+      (sum, turn) => sum + (turn.metadata?.duration ?? 0),
+      0,
+    );
 
     return {
-      totalTurns,
-      totalTokens,
-      avgTurnDuration,
+      messageCount,
+      turnCount: this.turns.length,
       toolCallCount,
-      createdAt: this.metadata.createdAt,
-      lastActiveAt: this.metadata.lastActiveAt,
+      totalTokens,
+      totalDuration,
     };
   }
 
   getSummary(): SessionSummary {
+    const now = Date.now();
+    const createdAtValue = this.metadata["createdAt"];
+    const createdAt = typeof createdAtValue === "number" ? createdAtValue : now;
+
+    const lastActiveAtValue = this.metadata["lastActiveAt"];
+    let lastActiveAt =
+      typeof lastActiveAtValue === "number" ? lastActiveAtValue : now;
+
+    if (this.turns.length > 0) {
+      const lastTurn = this.turns[this.turns.length - 1];
+      lastActiveAt = lastTurn.timestamp ?? lastActiveAt;
+    }
+
+    const tagsValue = this.metadata["tags"];
+    const tags = Array.isArray(tagsValue) ? tagsValue : [];
+
     return {
       id: this.id,
-      preview: this.preview,
-      createdAt: this.metadata.createdAt,
-      lastActiveAt: this.metadata.lastActiveAt,
-      totalTurns: this.turns.length,
-      tags: this.metadata.tags,
+      preview: this.preview ?? "",
+      createdAt,
+      lastActiveAt,
+      turnCount: this.turns.length,
+      tags,
+      parentSessionId: this.parentSessionId,
+      forkAtTurn: this.forkAtTurn,
+    };
+  }
+
+  fork(atTurn?: number): Session {
+    const turnIndex = atTurn !== undefined ? atTurn : this.turns.length - 1;
+
+    if (turnIndex < 0 || turnIndex >= this.turns.length) {
+      throw new Error(
+        `Invalid turn index: ${turnIndex}. Must be between 0 and ${this.turns.length - 1}`,
+      );
+    }
+
+    const forkedSession = new Session(
+      undefined,
+      { ...this.config },
+      {
+        parentSessionId: this.id,
+        forkAtTurn: turnIndex,
+      },
+    );
+
+    forkedSession.turns = this.turns.slice(0, turnIndex + 1);
+    forkedSession.systemPrompt = this.systemPrompt;
+    forkedSession.metadata = { ...this.metadata, createdAt: Date.now() };
+    forkedSession.updatePreview();
+
+    return forkedSession;
+  }
+
+  getTurnsUpTo(turnIndex: number): CompletedTurn[] {
+    if (turnIndex < 0 || turnIndex >= this.turns.length) {
+      throw new Error(
+        `Invalid turn index: ${turnIndex}. Must be between 0 and ${this.turns.length - 1}`,
+      );
+    }
+    return this.turns.slice(0, turnIndex + 1);
+  }
+
+  getForkInfo(): ForkInfo {
+    return {
+      parentSessionId: this.parentSessionId,
+      forkAtTurn: this.forkAtTurn,
     };
   }
 
   setSystemPrompt(prompt: string): void {
     this.systemPrompt = prompt;
+  }
+
+  setMetadata(key: string, value: unknown): void {
+    this.metadata[key] = value;
+  }
+
+  getMetadata(key: string): unknown {
+    return this.metadata[key];
+  }
+
+  private updatePreview(): void {
+    if (this.turns.length > 0) {
+      const firstMessage = this.turns[0].userMessage.content.trim();
+      const maxLength = 50;
+      this.preview =
+        firstMessage.length > maxLength
+          ? `${firstMessage.slice(0, maxLength)}...`
+          : firstMessage;
+    }
   }
 
   toJSON(): SerializedSession {
@@ -149,17 +204,23 @@ export class Session {
       systemPrompt: this.systemPrompt,
       metadata: this.metadata,
       config: this.config,
-      preview: this.preview,
+      parentSessionId: this.parentSessionId,
+      forkAtTurn: this.forkAtTurn,
     };
   }
 
   static fromJSON(data: SerializedSession): Session {
-    const session = new Session(data.id, data.config);
-    session.turns = data.turns;
+    if (!data || typeof data !== "object" || !data.id) {
+      throw new Error("Invalid session data: missing required fields");
+    }
+    const session = new Session(data.id, data.config, {
+      parentSessionId: data.parentSessionId,
+      forkAtTurn: data.forkAtTurn,
+    });
+    session.turns = data.turns ?? [];
     session.systemPrompt = data.systemPrompt;
-    session.metadata = data.metadata;
-    session.preview =
-      data.preview || generateDefaultPreview(data.metadata.createdAt);
+    session.metadata = data.metadata ?? {};
+    session.updatePreview();
     return session;
   }
 }

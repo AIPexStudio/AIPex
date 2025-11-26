@@ -1,49 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { LLMProvider } from "../llm/provider.js";
+import type { CompletedTurn, SummarizerFunction } from "../types.js";
 import { ConversationCompressor } from "./compressor.js";
-import type { CompletedTurn } from "./types.js";
 
 describe("ConversationCompressor", () => {
-  let mockProvider: LLMProvider;
+  let mockSummarizer: SummarizerFunction;
   let compressor: ConversationCompressor;
 
   beforeEach(() => {
-    mockProvider = {
-      name: "test-provider",
-      capabilities: {
-        streaming: true,
-        functionCalling: true,
-      },
-      generateContent: vi.fn(),
-      generateStream: vi.fn(),
-      countTokens: vi.fn(),
-    } as any;
+    mockSummarizer = vi.fn().mockResolvedValue("Summary of conversation");
 
-    compressor = new ConversationCompressor(mockProvider);
-  });
-
-  describe("constructor", () => {
-    it("should initialize with custom config", () => {
-      const customCompressor = new ConversationCompressor(mockProvider, {
-        summarizeAfterTurns: 20,
-        keepRecentTurns: 10,
-        maxSummaryLength: 1000,
-      });
-
-      expect(customCompressor["config"].summarizeAfterTurns).toBe(20);
-      expect(customCompressor["config"].keepRecentTurns).toBe(10);
-      expect(customCompressor["config"].maxSummaryLength).toBe(1000);
-    });
-
-    it("should initialize with partial config", () => {
-      const customCompressor = new ConversationCompressor(mockProvider, {
-        summarizeAfterTurns: 15,
-      });
-
-      expect(customCompressor["config"].summarizeAfterTurns).toBe(15);
-      expect(customCompressor["config"].keepRecentTurns).toBe(5);
-      expect(customCompressor["config"].maxSummaryLength).toBe(500);
-    });
+    compressor = new ConversationCompressor(mockSummarizer);
   });
 
   describe("shouldCompress", () => {
@@ -66,7 +32,7 @@ describe("ConversationCompressor", () => {
 
       expect(result.summary).toBe("");
       expect(result.compressedTurns).toEqual(turns);
-      expect(mockProvider.generateContent).not.toHaveBeenCalled();
+      expect(mockSummarizer).not.toHaveBeenCalled();
     });
 
     it("should not compress when turns equal threshold", async () => {
@@ -76,40 +42,31 @@ describe("ConversationCompressor", () => {
 
       expect(result.summary).toBe("");
       expect(result.compressedTurns).toEqual(turns);
-      expect(mockProvider.generateContent).not.toHaveBeenCalled();
+      expect(mockSummarizer).not.toHaveBeenCalled();
     });
 
     it("should compress when turns exceed threshold", async () => {
       const turns: CompletedTurn[] = createMockTurns(15);
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary of old conversation",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue(
+        "Summary of old conversation",
+      );
 
       const result = await compressor.compressTurns(turns);
 
       expect(result.summary).toBe("Summary of old conversation");
       expect(result.compressedTurns).toHaveLength(5);
-      expect(mockProvider.generateContent).toHaveBeenCalledTimes(1);
+      expect(mockSummarizer).toHaveBeenCalledTimes(1);
 
-      const callArgs = vi.mocked(mockProvider.generateContent).mock.calls[0][0];
-      expect(callArgs.messages).toHaveLength(2);
-      expect(callArgs.messages[0].role).toBe("system");
-      expect(callArgs.messages[1].role).toBe("user");
+      const callArgs = vi.mocked(mockSummarizer).mock.calls[0][0];
+      expect(callArgs).toContain("You are a conversation summarizer");
+      expect(callArgs).toContain("under 500 characters");
     });
 
     it("should keep correct number of recent turns", async () => {
       const turns: CompletedTurn[] = createMockTurns(20);
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary");
 
       const result = await compressor.compressTurns(turns);
 
@@ -145,32 +102,23 @@ describe("ConversationCompressor", () => {
         })),
       ];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary with tools",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary with tools");
 
       await compressor.compressTurns(turns);
 
-      const callArgs = vi.mocked(mockProvider.generateContent).mock.calls[0][0];
-      const userMessage = callArgs.messages[1].content;
+      const callArgs = vi.mocked(mockSummarizer).mock.calls[0][0];
 
-      expect(userMessage).toContain("get_weather");
-      expect(userMessage).toContain("get_forecast");
-      expect(userMessage).toContain("Tools used:");
+      expect(callArgs).toContain("get_weather");
+      expect(callArgs).toContain("get_forecast");
+      expect(callArgs).toContain("Tools used:");
     });
 
     it("should trim summary text", async () => {
       const turns: CompletedTurn[] = createMockTurns(15);
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "  Summary with whitespace  \n\n",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue(
+        "  Summary with whitespace  \n\n",
+      );
 
       const result = await compressor.compressTurns(turns);
 
@@ -178,25 +126,18 @@ describe("ConversationCompressor", () => {
     });
 
     it("should respect maxSummaryLength in prompt", async () => {
-      const customCompressor = new ConversationCompressor(mockProvider, {
+      const customSummarizer = vi.fn().mockResolvedValue("Short summary");
+      const customCompressor = new ConversationCompressor(customSummarizer, {
         maxSummaryLength: 200,
       });
 
       const turns: CompletedTurn[] = createMockTurns(15);
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Short summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
-
       await customCompressor.compressTurns(turns);
 
-      const callArgs = vi.mocked(mockProvider.generateContent).mock.calls[0][0];
-      const systemMessage = callArgs.messages[0].content;
+      const callArgs = vi.mocked(customSummarizer).mock.calls[0][0];
 
-      expect(systemMessage).toContain("under 200 characters");
+      expect(callArgs).toContain("under 200 characters");
     });
   });
 
@@ -210,7 +151,7 @@ describe("ConversationCompressor", () => {
       const result = await compressor.compressMessages(messages);
 
       expect(result).toEqual(messages);
-      expect(mockProvider.generateContent).not.toHaveBeenCalled();
+      expect(mockSummarizer).not.toHaveBeenCalled();
     });
 
     it("should preserve system messages", async () => {
@@ -224,12 +165,7 @@ describe("ConversationCompressor", () => {
         ]).flat(),
       ];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary of conversation",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary of conversation");
 
       const result = await compressor.compressMessages(messages);
 
@@ -247,12 +183,7 @@ describe("ConversationCompressor", () => {
         { role: "assistant" as const, content: `Assistant ${i + 1}` },
       ]).flat();
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Compressed summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Compressed summary");
 
       const result = await compressor.compressMessages(messages);
 
@@ -275,12 +206,7 @@ describe("ConversationCompressor", () => {
         { role: "user" as const, content: "Incomplete turn" },
       ];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary");
 
       const result = await compressor.compressMessages(messages);
 
@@ -299,12 +225,7 @@ describe("ConversationCompressor", () => {
         ]).flat(),
       ];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary");
 
       const result = await compressor.compressMessages(messages);
 
@@ -326,20 +247,14 @@ describe("ConversationCompressor", () => {
         ]).flat(),
       ];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Summary");
 
       await compressor.compressMessages(messages);
 
-      const callArgs = vi.mocked(mockProvider.generateContent).mock.calls[0][0];
-      const userMessage = callArgs.messages[1].content;
+      const callArgs = vi.mocked(mockSummarizer).mock.calls[0][0];
 
-      expect(userMessage).toContain("user: Hello");
-      expect(userMessage).toContain("assistant: Hi");
+      expect(callArgs).toContain("user: Hello");
+      expect(callArgs).toContain("assistant: Hi");
     });
 
     it("should not compress when turns equal threshold", async () => {
@@ -351,7 +266,7 @@ describe("ConversationCompressor", () => {
       const result = await compressor.compressMessages(messages);
 
       expect(result).toEqual(messages);
-      expect(mockProvider.generateContent).not.toHaveBeenCalled();
+      expect(mockSummarizer).not.toHaveBeenCalled();
     });
   });
 
@@ -384,23 +299,17 @@ describe("ConversationCompressor", () => {
 
       const turns15 = [...turns, ...createMockTurns(13)];
 
-      vi.mocked(mockProvider.generateContent).mockResolvedValue({
-        text: "Generated summary",
-        functionCalls: [],
-        finishReason: "STOP",
-        usage: { totalTokens: 10, promptTokens: 5, completionTokens: 5 },
-      });
+      vi.mocked(mockSummarizer).mockResolvedValue("Generated summary");
 
       await compressor.compressTurns(turns15);
 
-      const callArgs = vi.mocked(mockProvider.generateContent).mock.calls[0][0];
-      const userMessage = callArgs.messages[1].content;
+      const callArgs = vi.mocked(mockSummarizer).mock.calls[0][0];
 
-      expect(userMessage).toContain("User: First question");
-      expect(userMessage).toContain("Assistant: First answer");
-      expect(userMessage).toContain("User: Second question");
-      expect(userMessage).toContain("Assistant: Second answer");
-      expect(userMessage).toContain("tool_name");
+      expect(callArgs).toContain("User: First question");
+      expect(callArgs).toContain("Assistant: First answer");
+      expect(callArgs).toContain("User: Second question");
+      expect(callArgs).toContain("Assistant: Second answer");
+      expect(callArgs).toContain("tool_name");
     });
   });
 });
