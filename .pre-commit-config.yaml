@@ -1,0 +1,24 @@
+fail_fast: true
+default_install_hook_types: [pre-push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.39.2
+    hooks:
+      - id: typos
+
+  - repo: local
+    hooks:
+      - id: npm-preflight
+        name: npm run preflight
+        language: node
+        types: [file]
+        files: \.(js|ts)$
+        pass_filenames: false
+        entry: npm run preflight
