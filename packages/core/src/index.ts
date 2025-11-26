@@ -5,7 +5,12 @@ export { aisdk } from "@openai/agents-extensions";
 export { AIPexAgent } from "./agent/index.js";
 
 // Config
-export { ConfigBuilder, DEFAULT_CONVERSATION_CONFIG } from "./config/index.js";
+export {
+  ConfigBuilder,
+  DEFAULT_CONVERSATION_CONFIG,
+  loadConversationConfig,
+  saveConversationConfig,
+} from "./config/index.js";
 
 // Conversation
 export { ConversationCompressor } from "./conversation/compressor.js";

@@ -42,8 +42,8 @@ export class Session implements OpenAISession {
 
   async addItems(items: AgentInputItem[]): Promise<void> {
     this.items.push(...items);
-    this.updatePreview();
     this.metadata["lastActiveAt"] = Date.now();
+    this.updatePreview();
   }
 
   async popItem(): Promise<AgentInputItem | undefined> {
@@ -104,7 +104,12 @@ export class Session implements OpenAISession {
     );
 
     forkedSession.items = this.items.slice(0, index + 1);
-    forkedSession.metadata = { ...this.metadata, createdAt: Date.now() };
+    const now = Date.now();
+    forkedSession.metadata = {
+      ...this.metadata,
+      createdAt: now,
+      lastActiveAt: now,
+    };
     forkedSession.updatePreview();
 
     return forkedSession;
@@ -126,24 +131,54 @@ export class Session implements OpenAISession {
   }
 
   private updatePreview(): void {
-    const firstUserMessage = this.items.find(
-      (item) => item.type === "message" && item.role === "user",
-    );
-    if (firstUserMessage && "content" in firstUserMessage) {
-      const content = firstUserMessage.content;
-      const text =
-        typeof content === "string"
-          ? content
-          : Array.isArray(content)
-            ? content
-                .filter((c) => c.type === "input_text")
-                .map((c) => (c as { text: string }).text)
-                .join(" ")
-            : "";
-      const maxLength = 50;
-      this.preview =
-        text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+    const latestUserMessage = [...this.items]
+      .reverse()
+      .find((item) => item.type === "message" && item.role === "user");
+
+    const previewSource =
+      this.extractContent(latestUserMessage) ??
+      this.tryGetStringMetadata("lastSummary");
+
+    if (!previewSource) {
+      this.preview = undefined;
+      return;
     }
+
+    const maxLength = 50;
+    const normalized = previewSource.trim();
+    this.preview =
+      normalized.length > maxLength
+        ? `${normalized.slice(0, maxLength)}...`
+        : normalized;
+  }
+
+  private extractContent(
+    message: AgentInputItem | undefined,
+  ): string | undefined {
+    if (!message || !("content" in message)) {
+      return undefined;
+    }
+
+    const content = message.content;
+    if (typeof content === "string") {
+      return content;
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .filter((c) => c.type === "input_text")
+        .map((c) => (c as { text: string }).text)
+        .join(" ");
+    }
+
+    return undefined;
+  }
+
+  private tryGetStringMetadata(key: string): string | undefined {
+    const value = this.metadata[key];
+    return typeof value === "string" && value.trim().length > 0
+      ? value
+      : undefined;
   }
 
   toJSON(): SerializedSession {

@@ -1,3 +1,4 @@
+import type { AgentInputItem } from "@openai/agents";
 import { LRUCache } from "lru-cache";
 import type {
   SessionConfig,
@@ -80,9 +81,14 @@ export class ConversationManager {
     const { summary, compressedItems } =
       await this.compressor!.compressItems(items);
 
+    const nextItems =
+      summary.trim().length > 0
+        ? [this.createSummaryItem(summary), ...compressedItems]
+        : compressedItems;
+
     await session.clearSession();
-    await session.addItems(compressedItems);
     session.setMetadata("lastSummary", summary);
+    await session.addItems(nextItems);
 
     return { summary };
   }
@@ -139,5 +145,13 @@ export class ConversationManager {
 
   getCacheSize(): number {
     return this.cache.size;
+  }
+
+  private createSummaryItem(summary: string): AgentInputItem {
+    return {
+      type: "message",
+      role: "system",
+      content: `Conversation summary:\n${summary}`,
+    };
   }
 }

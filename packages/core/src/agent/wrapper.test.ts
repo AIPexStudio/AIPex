@@ -18,11 +18,27 @@ function createMockRunResult(
   overrides: {
     finalOutput?: string;
     usage?: { promptTokens?: number; completionTokens?: number };
+    streamEvents?: any[];
   } = {},
 ): StreamedRunResult<unknown, any> {
+  const events = overrides.streamEvents ?? [];
   return {
-    finalOutput: "",
-    ...overrides,
+    finalOutput: overrides.finalOutput ?? "",
+    rawResponses: overrides.usage
+      ? [
+          {
+            usage: {
+              inputTokens: overrides.usage.promptTokens ?? 0,
+              outputTokens: overrides.usage.completionTokens ?? 0,
+            },
+          },
+        ]
+      : [],
+    async *[Symbol.asyncIterator]() {
+      for (const event of events) {
+        yield event;
+      }
+    },
   } as unknown as StreamedRunResult<unknown, any>;
 }
 
@@ -42,7 +58,15 @@ describe("AIPexAgent", () => {
   describe("executeStream", () => {
     it("should create session and yield events in correct order", async () => {
       vi.mocked(run).mockResolvedValue(
-        createMockRunResult({ finalOutput: "Hello!" }),
+        createMockRunResult({
+          finalOutput: "Hello!",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Hello!" },
+            },
+          ],
+        }),
       );
 
       const agent = AIPexAgent.create({
@@ -68,7 +92,15 @@ describe("AIPexAgent", () => {
 
     it("should work without conversation manager", async () => {
       vi.mocked(run).mockResolvedValue(
-        createMockRunResult({ finalOutput: "Reply" }),
+        createMockRunResult({
+          finalOutput: "Reply",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Reply" },
+            },
+          ],
+        }),
       );
 
       const agent = AIPexAgent.create({
@@ -119,7 +151,15 @@ describe("AIPexAgent", () => {
 
     it("should resume existing session", async () => {
       vi.mocked(run).mockResolvedValue(
-        createMockRunResult({ finalOutput: "Response 1" }),
+        createMockRunResult({
+          finalOutput: "Response 1",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Response 1" },
+            },
+          ],
+        }),
       );
 
       const agent = AIPexAgent.create({
@@ -136,7 +176,15 @@ describe("AIPexAgent", () => {
       }
 
       vi.mocked(run).mockResolvedValue(
-        createMockRunResult({ finalOutput: "Response 2" }),
+        createMockRunResult({
+          finalOutput: "Response 2",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Response 2" },
+            },
+          ],
+        }),
       );
 
       const events: AgentEvent[] = [];
@@ -174,6 +222,12 @@ describe("AIPexAgent", () => {
             promptTokens: 10,
             completionTokens: 20,
           },
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Response" },
+            },
+          ],
         }),
       );
 
@@ -204,6 +258,12 @@ describe("AIPexAgent", () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({
           finalOutput: "Response",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Response" },
+            },
+          ],
         }),
       );
 
@@ -234,6 +294,12 @@ describe("AIPexAgent", () => {
             promptTokens: 15,
             completionTokens: 25,
           },
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Done" },
+            },
+          ],
         }),
       );
 
@@ -252,6 +318,69 @@ describe("AIPexAgent", () => {
       if (completeEvent && completeEvent.type === "execution_complete") {
         expect(completeEvent.metrics.tokensUsed).toBe(40);
       }
+    });
+  });
+
+  describe("tools and errors", () => {
+    it("should emit tool lifecycle events", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "calculator", arguments: '{"a":1}' } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "calculator", status: "completed" },
+                output: '{"result":2}',
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPexAgent.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.executeStream("use tool")) {
+        events.push(event);
+      }
+
+      const start = events.find((event) => event.type === "tool_call_start");
+      const complete = events.find(
+        (event) => event.type === "tool_call_complete",
+      );
+      expect(start).toBeDefined();
+      expect(complete).toBeDefined();
+      if (complete?.type === "tool_call_complete") {
+        expect(complete.result).toEqual({ result: 2 });
+      }
+    });
+
+    it("should emit error event when run fails", async () => {
+      vi.mocked(run).mockRejectedValue(new Error("LLM failed"));
+
+      const agent = AIPexAgent.create({
+        instructions: "Error",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      await expect(async () => {
+        for await (const event of agent.executeStream("boom")) {
+          events.push(event);
+        }
+      }).rejects.toThrow("LLM failed");
+
+      expect(events.some((event) => event.type === "error")).toBe(true);
     });
   });
 });

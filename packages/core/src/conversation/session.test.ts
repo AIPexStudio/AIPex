@@ -124,6 +124,15 @@ describe("Session", () => {
       expect(forkInfo.parentSessionId).toBe(session.id);
       expect(forkInfo.forkAtItemIndex).toBe(3);
     });
+
+    it("should refresh timestamps when forking", () => {
+      const beforeFork = Date.now();
+      const forkedSession = session.fork(3);
+      const summary = forkedSession.getSummary();
+
+      expect(summary.createdAt).toBeGreaterThanOrEqual(beforeFork);
+      expect(summary.lastActiveAt).toBeGreaterThanOrEqual(beforeFork);
+    });
   });
 
   describe("Serialization", () => {
@@ -176,6 +185,20 @@ describe("Session", () => {
 
       expect(summary.parentSessionId).toBe(session.id);
       expect(summary.forkAtItemIndex).toBe(0);
+    });
+
+    it("should fall back to stored summary when preview text missing", async () => {
+      session.setMetadata("lastSummary", "Earlier summary text");
+      await session.addItems([
+        {
+          type: "message",
+          role: "system",
+          content: "Conversation summary:\nEarlier summary text",
+        } as AgentInputItem,
+      ]);
+
+      const summary = session.getSummary();
+      expect(summary.preview).toContain("Earlier summary text");
     });
   });
 

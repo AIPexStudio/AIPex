@@ -5,6 +5,7 @@ import type {
 } from "@openai/agents";
 import type { AiSdkModel } from "@openai/agents-extensions";
 import type { ConversationManager } from "./conversation/manager.js";
+import type { AgentError } from "./utils/errors.js";
 
 // Re-export types from @openai/agents for convenient access
 export type { FunctionTool, AiSdkModel, AgentInputItem, OpenAIAgent };
@@ -67,6 +68,7 @@ export type AgentEvent =
   | { type: "tool_call_complete"; toolName: string; result: unknown }
   | { type: "tool_call_error"; toolName: string; error: Error }
   | { type: "metrics_update"; metrics: AgentMetrics }
+  | { type: "error"; error: AgentError }
   | {
       type: "execution_complete";
       finalOutput: string;
@@ -130,7 +132,7 @@ export interface SessionStorageAdapter {
 
 export interface ConversationConfig {
   enabled?: boolean;
-  storage?: "memory" | "indexeddb";
+  storage?: "memory" | "indexeddb" | "filesystem";
 }
 
 export interface CompressionConfig {

@@ -4,7 +4,7 @@ import { DEFAULT_CONVERSATION_CONFIG } from "./defaults.js";
 export class ConfigBuilder {
   private config: Partial<ConversationConfig> = {};
 
-  withStorage(storage: "memory" | "indexeddb"): this {
+  withStorage(storage: "memory" | "indexeddb" | "filesystem"): this {
     this.config.storage = storage;
     return this;
   }

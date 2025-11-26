@@ -1,5 +1,6 @@
 import type { AgentInputItem } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { ConversationCompressor } from "./compressor.js";
 import { ConversationManager } from "./manager.js";
 import { InMemorySessionStorage } from "./memory.js";
 
@@ -146,6 +147,31 @@ describe("ConversationManager", () => {
       expect(page1.length).toBe(5);
       expect(page2.length).toBe(5);
       expect(page1[0].id).not.toBe(page2[0].id);
+    });
+  });
+
+  describe("Compression integration", () => {
+    it("should inject summary items when compressing", async () => {
+      const compressor = {
+        shouldCompress: () => false,
+        async compressItems() {
+          return { summary: "Important context", compressedItems: [] };
+        },
+      } as unknown as ConversationCompressor;
+
+      const compressionManager = new ConversationManager(storage, {
+        compressor,
+      });
+      const session = await compressionManager.createSession();
+      await session.addItems([createUserMessage("Hello world")]);
+
+      await compressionManager.compressSession(session.id);
+      const reloaded = await compressionManager.getSession(session.id);
+
+      expect(reloaded?.getMetadata("lastSummary")).toBe("Important context");
+      const items = await reloaded?.getItems();
+      expect(items?.[0]).toMatchObject({ role: "system" });
+      expect(reloaded?.getSummary().preview).toContain("Important context");
     });
   });
 });
