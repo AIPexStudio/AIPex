@@ -25,7 +25,7 @@ export class ConversationManager {
   ) {
     this.cache = new LRUCache<string, Session>({
       max: config.cacheSize ?? 100,
-      ttl: config.cacheTTL ?? 1000 * 60 * 30, // 30 minutes default
+      ttl: config.cacheTTL ?? 1000 * 60 * 30,
       updateAgeOnGet: true,
       updateAgeOnHas: true,
     });
@@ -40,12 +40,10 @@ export class ConversationManager {
   }
 
   async getSession(id: string): Promise<Session | null> {
-    // Check cache first
     if (this.cache.has(id)) {
       return this.cache.get(id) ?? null;
     }
 
-    // Load from storage
     const session = await this.storage.load(id);
     if (session) {
       this.cache.set(id, session);
@@ -54,7 +52,7 @@ export class ConversationManager {
   }
 
   async saveSession(session: Session): Promise<void> {
-    if (this.compressor?.shouldCompress(session.getTurnCount())) {
+    if (this.compressor?.shouldCompress(session.getItemCount())) {
       await this.doCompress(session);
     }
     this.cache.set(session.id, session);
@@ -78,18 +76,15 @@ export class ConversationManager {
   }
 
   private async doCompress(session: Session): Promise<{ summary: string }> {
-    const turns = session.getAllTurns();
-    const existingSummary = session.getConversationSummary();
-    const { summary, compressedTurns } =
-      await this.compressor!.compressTurns(turns);
+    const items = await session.getItems();
+    const { summary, compressedItems } =
+      await this.compressor!.compressItems(items);
 
-    const combinedSummary = existingSummary
-      ? `${existingSummary}\n\n${summary}`
-      : summary;
+    await session.clearSession();
+    await session.addItems(compressedItems);
+    session.setMetadata("lastSummary", summary);
 
-    session.setSummary(combinedSummary);
-    session.replaceTurns(compressedTurns);
-    return { summary: combinedSummary };
+    return { summary };
   }
 
   async deleteSession(id: string): Promise<void> {
@@ -97,20 +92,14 @@ export class ConversationManager {
     await this.storage.delete(id);
   }
 
-  /**
-   * List all sessions with filtering, sorting, and pagination
-   * Reference: codex-rs/app-server/src/codex_message_processor.rs:887-954
-   */
   async listSessions(options?: {
     limit?: number;
     offset?: number;
     sortBy?: "createdAt" | "lastActiveAt";
     tags?: string[];
   }): Promise<SessionSummary[]> {
-    // Get all session summaries
     const summaries = await this.storage.listAll();
 
-    // Filter (if tags provided)
     let filtered = summaries;
     if (options?.tags && options.tags.length > 0) {
       filtered = filtered.filter((s) =>
@@ -118,24 +107,22 @@ export class ConversationManager {
       );
     }
 
-    // Sort
     const sortBy = options?.sortBy ?? "lastActiveAt";
     filtered.sort((a, b) => b[sortBy] - a[sortBy]);
 
-    // Paginate
     const offset = options?.offset ?? 0;
     const limit = options?.limit ?? 50;
 
     return filtered.slice(offset, offset + limit);
   }
 
-  async forkSession(sessionId: string, atTurn?: number): Promise<Session> {
+  async forkSession(sessionId: string, atItemIndex?: number): Promise<Session> {
     const session = await this.getSession(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    const forkedSession = session.fork(atTurn);
+    const forkedSession = session.fork(atItemIndex);
     await this.storage.save(forkedSession);
     this.cache.set(forkedSession.id, forkedSession);
 

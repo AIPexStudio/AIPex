@@ -1,30 +1,21 @@
 import { Agent as OpenAIAgent, run } from "@openai/agents";
 import type { ConversationManager } from "../conversation/manager.js";
 import type { Session } from "../conversation/session.js";
-import type {
-  AgentEvent,
-  AgentMetrics,
-  AIPexAgentOptions,
-  CompletedTurn,
-} from "../types.js";
-import { generateId } from "../utils/id-generator.js";
+import type { AgentEvent, AgentMetrics, AIPexAgentOptions } from "../types.js";
 
 export class AIPexAgent {
   private agent: OpenAIAgent;
   private conversationManager?: ConversationManager;
   private maxTurns: number;
-  private maxTokens?: number;
 
   private constructor(
     agent: OpenAIAgent,
     conversationManager?: ConversationManager,
     maxTurns?: number,
-    maxTokens?: number,
   ) {
     this.agent = agent;
     this.conversationManager = conversationManager;
     this.maxTurns = maxTurns ?? 10;
-    this.maxTokens = maxTokens;
   }
 
   static create(options: AIPexAgentOptions): AIPexAgent {
@@ -35,27 +26,19 @@ export class AIPexAgent {
       tools: options.tools ?? [],
     });
 
-    return new AIPexAgent(
-      agent,
-      options.conversationManager,
-      options.maxTurns,
-      options.maxTokens,
-    );
+    return new AIPexAgent(agent, options.conversationManager, options.maxTurns);
   }
 
   private initMetrics(
     startTime: number,
     session: Session | null,
   ): AgentMetrics {
-    const sessionStats = session?.getStats();
     return {
       tokensUsed: 0,
-      maxTokens: this.maxTokens,
       promptTokens: 0,
       completionTokens: 0,
-      turnCount: session?.getTurnCount() ?? 0,
+      itemCount: session?.getItemCount() ?? 0,
       maxTurns: this.maxTurns,
-      toolCallCount: sessionStats?.toolCallCount ?? 0,
       duration: 0,
       startTime,
     };
@@ -68,18 +51,15 @@ export class AIPexAgent {
     const startTime = Date.now();
     const metrics = this.initMetrics(startTime, session);
 
-    let contentBuffer = "";
-    let turnCount = session?.getTurnCount() ?? 0;
-
     const result = await run(this.agent, input, {
       maxTurns: this.maxTurns,
+      session: session ?? undefined,
     });
 
-    contentBuffer = result.finalOutput ?? "";
-    yield { type: "content_delta", delta: contentBuffer };
+    const finalOutput = result.finalOutput ?? "";
+    yield { type: "content_delta", delta: finalOutput };
 
-    turnCount++;
-    metrics.turnCount = turnCount;
+    metrics.itemCount = session?.getItemCount() ?? 0;
     metrics.duration = Date.now() - startTime;
 
     const resultWithUsage = result as typeof result & {
@@ -94,27 +74,12 @@ export class AIPexAgent {
     yield { type: "metrics_update", metrics: { ...metrics } };
 
     if (session && this.conversationManager) {
-      const turn: CompletedTurn = {
-        id: generateId(),
-        userMessage: { role: "user", content: input },
-        assistantMessage: { role: "assistant", content: contentBuffer },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-        metadata: {
-          tokensUsed: metrics.tokensUsed,
-          duration: metrics.duration,
-        },
-      };
-      session.addTurn(turn);
       await this.conversationManager.saveSession(session);
     }
 
-    yield { type: "turn_complete", turnNumber: turnCount };
     yield {
       type: "execution_complete",
-      turns: turnCount,
-      finalOutput: contentBuffer,
+      finalOutput,
       metrics,
     };
   }
@@ -148,7 +113,7 @@ export class AIPexAgent {
     yield {
       type: "session_resumed",
       sessionId,
-      turnCount: session.getTurnCount(),
+      itemCount: session.getItemCount(),
     };
 
     yield* this.runExecution(input, session);

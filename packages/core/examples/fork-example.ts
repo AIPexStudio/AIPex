@@ -65,10 +65,10 @@ async function main() {
     }
   }
 
-  // Fork the session at turn 1 (after "favorite color" but before "favorite food")
-  console.log("\n\n🔱 Forking session at turn 0...\n");
+  // Fork the session at item 1 (after first user+assistant pair)
+  console.log("\n\n🔱 Forking session at item 1...\n");
 
-  const forkedSession = await manager.forkSession(mainSessionId, 0);
+  const forkedSession = await manager.forkSession(mainSessionId, 1);
   console.log(`[Forked session ${forkedSession.id} created]`);
 
   console.log("\n📝 Branch A (Main): Continuing with favorite food and tennis");
@@ -119,11 +119,11 @@ async function main() {
     for (const node of trees) {
       const prefix = "  ".repeat(indent);
       const forkInfo =
-        node.session.forkAtTurn !== undefined
-          ? ` (forked from turn ${node.session.forkAtTurn})`
+        node.session.forkAtItemIndex !== undefined
+          ? ` (forked at item ${node.session.forkAtItemIndex})`
           : " (root)";
       console.log(
-        `${prefix}📄 ${node.session.id}${forkInfo} - ${node.session.turnCount} turns`,
+        `${prefix}📄 ${node.session.id}${forkInfo} - ${node.session.itemCount} items`,
       );
       console.log(`${prefix}   Preview: "${node.session.preview}"`);
       if (node.children.length > 0) {
@@ -141,10 +141,8 @@ async function main() {
   console.log("\n\n📊 Session Comparison:");
   console.log("\nMain Session:");
   if (mainSession) {
-    const stats = mainSession.getStats();
     console.log(`  - ID: ${mainSession.id}`);
-    console.log(`  - Turns: ${stats.turnCount}`);
-    console.log(`  - Messages: ${stats.messageCount}`);
+    console.log(`  - Items: ${mainSession.getItemCount()}`);
     const forkInfo = mainSession.getForkInfo();
     console.log(
       `  - Fork Info: ${forkInfo.parentSessionId ? `Parent: ${forkInfo.parentSessionId}` : "Root session"}`,
@@ -153,13 +151,11 @@ async function main() {
 
   console.log("\nForked Session:");
   if (forkedSessionData) {
-    const stats = forkedSessionData.getStats();
     console.log(`  - ID: ${forkedSessionData.id}`);
-    console.log(`  - Turns: ${stats.turnCount}`);
-    console.log(`  - Messages: ${stats.messageCount}`);
+    console.log(`  - Items: ${forkedSessionData.getItemCount()}`);
     const forkInfo = forkedSessionData.getForkInfo();
     console.log(
-      `  - Fork Info: Parent: ${forkInfo.parentSessionId}, Forked at turn: ${forkInfo.forkAtTurn}`,
+      `  - Fork Info: Parent: ${forkInfo.parentSessionId}, Forked at item: ${forkInfo.forkAtItemIndex}`,
     );
   }
 

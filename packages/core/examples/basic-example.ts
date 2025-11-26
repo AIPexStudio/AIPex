@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   AIPexAgent,
   aisdk,
+  ConversationCompressor,
   ConversationManager,
   calculatorTool,
   httpFetchTool,
@@ -13,6 +14,8 @@ import {
 async function main() {
   console.log("🤖 AIPex Core - Basic Example\n");
 
+  const model = aisdk(google("gemini-2.5-flash"));
+
   // Example 1: Simple one-shot execution
   console.log("📝 Example 1: Simple Calculation (No Session)");
   console.log("User: What is 15 * 234?");
@@ -20,7 +23,7 @@ async function main() {
 
   const simpleAgent = AIPexAgent.create({
     instructions: "You are a helpful assistant that can perform calculations.",
-    model: aisdk(google("gemini-2.5-flash")),
+    model,
     tools: [calculatorTool],
   });
 
@@ -29,7 +32,7 @@ async function main() {
       process.stdout.write(event.delta);
     } else if (event.type === "tool_call_complete") {
       console.log(
-        `\n  [Tool: calculator] Result: ${JSON.stringify(event.result.data)}`,
+        `\n  [Tool: calculator] Result: ${JSON.stringify(event.result)}`,
       );
     } else if (event.type === "execution_complete") {
       console.log(`\n✅ Completed\n`);
@@ -44,7 +47,7 @@ async function main() {
 
   const agent = AIPexAgent.create({
     instructions: "You are a helpful assistant with memory.",
-    model: aisdk(google("gemini-2.5-flash")),
+    model,
     tools: [calculatorTool, httpFetchTool],
     conversationManager: manager,
   });
@@ -80,11 +83,8 @@ async function main() {
 
     const session = await manager.getSession(sessionId);
     if (session) {
-      const stats = session.getStats();
-      console.log("\n📊 Session Stats:");
-      console.log(`  - Turns: ${stats.turnCount}`);
-      console.log(`  - Messages: ${stats.messageCount}`);
-      console.log(`  - Tool Calls: ${stats.toolCallCount}`);
+      console.log("\n📊 Session Info:");
+      console.log(`  - Items: ${session.getItemCount()}`);
     }
   }
 
@@ -104,7 +104,7 @@ async function main() {
 
   const weatherAgent = AIPexAgent.create({
     instructions: "You are a weather assistant.",
-    model: aisdk(google("gemini-2.5-flash")),
+    model,
     tools: [weatherTool],
   });
 
@@ -117,8 +117,68 @@ async function main() {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     } else if (event.type === "tool_call_complete") {
-      console.log(`\n  [Tool: ${event.toolName}] ${event.result.data}`);
+      console.log(`\n  [Tool: ${event.toolName}] ${event.result}`);
     }
+  }
+
+  // Example 4: Conversation Compression
+  console.log("\n\n📝 Example 4: Conversation Compression");
+
+  const compressor = new ConversationCompressor(model, {
+    summarizeAfterItems: 4, // Low threshold for demo
+    keepRecentItems: 2,
+  });
+
+  const compressStorage = new InMemorySessionStorage();
+  const compressManager = new ConversationManager(compressStorage, {
+    compressor,
+  });
+
+  const compressAgent = AIPexAgent.create({
+    instructions: "You are a helpful assistant.",
+    model,
+    conversationManager: compressManager,
+  });
+
+  let compressSessionId: string | undefined;
+
+  // Build up conversation history
+  const messages = [
+    "My favorite color is blue",
+    "I live in Tokyo",
+    "I work as a software engineer",
+  ];
+
+  for (const msg of messages) {
+    console.log(`User: ${msg}`);
+    console.log("Assistant: ");
+
+    for await (const event of compressSessionId
+      ? compressAgent.continueConversation(compressSessionId, msg)
+      : compressAgent.executeStream(msg)) {
+      if (event.type === "session_created") {
+        compressSessionId = event.sessionId;
+      }
+      if (event.type === "content_delta") {
+        process.stdout.write(event.delta);
+      }
+    }
+    console.log("\n");
+  }
+
+  if (compressSessionId) {
+    const session = await compressManager.getSession(compressSessionId);
+    console.log(`📊 Before compression: ${session?.getItemCount()} items`);
+
+    // Manually trigger compression
+    const result = await compressManager.compressSession(compressSessionId);
+    console.log(`🗜️ Compression result: ${result.compressed}`);
+    if (result.summary) {
+      console.log(`📄 Summary: ${result.summary.slice(0, 100)}...`);
+    }
+
+    const afterSession = await compressManager.getSession(compressSessionId);
+    console.log(`📊 After compression: ${afterSession?.getItemCount()} items`);
   }
 
   console.log("\n\n✅ All examples completed!");

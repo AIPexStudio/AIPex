@@ -1,28 +1,35 @@
+import type { AgentInputItem } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { CompletedTurn } from "../types.js";
 import { InMemorySessionStorage } from "./memory.js";
 import { Session } from "./session.js";
+
+const createUserMessage = (content: string): AgentInputItem => ({
+  type: "message",
+  role: "user",
+  content,
+});
+
+const createAssistantMessage = (content: string): AgentInputItem => ({
+  type: "message",
+  role: "assistant",
+  status: "completed",
+  content: [{ type: "output_text", text: content }],
+});
 
 describe("InMemorySessionStorage", () => {
   let storage: InMemorySessionStorage;
   let session1: Session;
   let session2: Session;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     storage = new InMemorySessionStorage();
     session1 = new Session("session-1");
     session2 = new Session("session-2");
 
-    const turn: CompletedTurn = {
-      id: "turn-1",
-      userMessage: { role: "user", content: "Test" },
-      assistantMessage: { role: "assistant", content: "Response" },
-      functionCalls: [],
-      functionResults: [],
-      timestamp: Date.now(),
-    };
-
-    session1.addTurn(turn);
+    await session1.addItems([
+      createUserMessage("Test"),
+      createAssistantMessage("Response"),
+    ]);
   });
 
   it("should save and load sessions", async () => {
@@ -94,7 +101,7 @@ describe("InMemorySessionStorage", () => {
       await storage.save(forked);
 
       const tree = await storage.getSessionTree();
-      expect(tree.length).toBe(2); // Only session1 and session2, forked is a child
+      expect(tree.length).toBe(2);
     });
   });
 

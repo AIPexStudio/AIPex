@@ -14,7 +14,6 @@ async function demonstrateMetrics() {
     name: "MetricsDemo",
     instructions: "You are a helpful assistant that demonstrates metrics.",
     model: aisdk(openai("gpt-4o")),
-    maxTokens: 4096,
     maxTurns: 10,
     conversationManager: manager,
   });
@@ -39,27 +38,16 @@ async function demonstrateMetrics() {
         console.log(
           `  - Prompt Tokens: ${event.metrics.promptTokens} | Completion Tokens: ${event.metrics.completionTokens}`,
         );
-        console.log(`  - Max Tokens: ${event.metrics.maxTokens ?? "Not set"}`);
-        console.log(
-          `  - Turn: ${event.metrics.turnCount}/${event.metrics.maxTurns}`,
-        );
-        console.log(`  - Tool Calls: ${event.metrics.toolCallCount}`);
+        console.log(`  - Items: ${event.metrics.itemCount}`);
+        console.log(`  - Max Turns: ${event.metrics.maxTurns}`);
         console.log(`  - Duration: ${event.metrics.duration}ms`);
-        break;
-
-      case "turn_complete":
-        console.log(`✓ Turn ${event.turnNumber} completed`);
         break;
 
       case "execution_complete":
         console.log("\n✅ Execution Complete!");
         console.log("\n📈 Final Metrics:");
         console.log(`  - Total Tokens: ${event.metrics.tokensUsed}`);
-        console.log(`  - Total Turns: ${event.metrics.turnCount}`);
         console.log(`  - Total Duration: ${event.metrics.duration}ms`);
-        console.log(
-          `  - Average tokens per turn: ${Math.round(event.metrics.tokensUsed / event.metrics.turnCount)}`,
-        );
         break;
     }
   }

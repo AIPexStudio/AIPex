@@ -14,10 +14,6 @@ import { run } from "@openai/agents";
 
 const mockModel = {} as AiSdkModel;
 
-// Helper to create a properly typed mock result
-// Note: We use 'unknown' to bypass the private field requirement,
-// then cast to the expected type. This matches how the actual code
-// handles the usage field (see wrapper.ts line 85-87).
 function createMockRunResult(
   overrides: {
     finalOutput?: string;
@@ -63,35 +59,11 @@ describe("AIPexAgent", () => {
       expect(events[0].type).toBe("session_created");
       expect(events[1]).toEqual({ type: "content_delta", delta: "Hello!" });
       expect(events[2].type).toBe("metrics_update");
-      expect(events[3]).toEqual({ type: "turn_complete", turnNumber: 1 });
-      expect(events[4].type).toBe("execution_complete");
-      if (events[4].type === "execution_complete") {
-        expect(events[4].turns).toBe(1);
-        expect(events[4].finalOutput).toBe("Hello!");
-        expect(events[4].metrics).toBeDefined();
+      expect(events[3].type).toBe("execution_complete");
+      if (events[3].type === "execution_complete") {
+        expect(events[3].finalOutput).toBe("Hello!");
+        expect(events[3].metrics).toBeDefined();
       }
-    });
-
-    it("should persist turn to session after execution", async () => {
-      vi.mocked(run).mockResolvedValue(
-        createMockRunResult({ finalOutput: "Response" }),
-      );
-
-      const agent = AIPexAgent.create({
-        instructions: "Test",
-        model: mockModel,
-        conversationManager: manager,
-      });
-
-      let sessionId: string | undefined;
-      for await (const event of agent.executeStream("Hello")) {
-        if (event.type === "session_created") {
-          sessionId = event.sessionId;
-        }
-      }
-
-      const session = await manager.getSession(sessionId!);
-      expect(session?.getTurnCount()).toBe(1);
     });
 
     it("should work without conversation manager", async () => {
@@ -145,7 +117,7 @@ describe("AIPexAgent", () => {
       }).rejects.toThrow("Session non-existent not found");
     });
 
-    it("should resume existing session and increment turn count", async () => {
+    it("should resume existing session", async () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({ finalOutput: "Response 1" }),
       );
@@ -175,14 +147,10 @@ describe("AIPexAgent", () => {
         events.push(event);
       }
 
-      expect(events[0]).toEqual({
-        type: "session_resumed",
-        sessionId,
-        turnCount: 1,
-      });
-
-      const session = await manager.getSession(sessionId!);
-      expect(session?.getTurnCount()).toBe(2);
+      expect(events[0].type).toBe("session_resumed");
+      if (events[0].type === "session_resumed") {
+        expect(events[0].sessionId).toBe(sessionId);
+      }
     });
   });
 
@@ -212,7 +180,6 @@ describe("AIPexAgent", () => {
       const agent = AIPexAgent.create({
         instructions: "Test",
         model: mockModel,
-        maxTokens: 4096,
         maxTurns: 5,
       });
 
@@ -227,9 +194,7 @@ describe("AIPexAgent", () => {
         expect(metricsEvent.metrics.tokensUsed).toBe(30);
         expect(metricsEvent.metrics.promptTokens).toBe(10);
         expect(metricsEvent.metrics.completionTokens).toBe(20);
-        expect(metricsEvent.metrics.maxTokens).toBe(4096);
         expect(metricsEvent.metrics.maxTurns).toBe(5);
-        expect(metricsEvent.metrics.turnCount).toBe(1);
         expect(metricsEvent.metrics.startTime).toBeGreaterThan(0);
         expect(metricsEvent.metrics.duration).toBeGreaterThanOrEqual(0);
       }
@@ -275,7 +240,6 @@ describe("AIPexAgent", () => {
       const agent = AIPexAgent.create({
         instructions: "Test",
         model: mockModel,
-        maxTokens: 2000,
       });
 
       const events: AgentEvent[] = [];
@@ -287,89 +251,7 @@ describe("AIPexAgent", () => {
       expect(completeEvent).toBeDefined();
       if (completeEvent && completeEvent.type === "execution_complete") {
         expect(completeEvent.metrics.tokensUsed).toBe(40);
-        expect(completeEvent.metrics.maxTokens).toBe(2000);
-        expect(completeEvent.metrics.turnCount).toBe(1);
       }
-    });
-
-    it("should save token metadata to session turns", async () => {
-      vi.mocked(run).mockResolvedValue(
-        createMockRunResult({
-          finalOutput: "Response",
-          usage: {
-            promptTokens: 5,
-            completionTokens: 10,
-          },
-        }),
-      );
-
-      const agent = AIPexAgent.create({
-        instructions: "Test",
-        model: mockModel,
-        conversationManager: manager,
-      });
-
-      let sessionId: string | undefined;
-      for await (const event of agent.executeStream("Hello")) {
-        if (event.type === "session_created") {
-          sessionId = event.sessionId;
-        }
-      }
-
-      const session = await manager.getSession(sessionId!);
-      expect(session).toBeDefined();
-      const turns = session!.getRecentTurns(1);
-      expect(turns).toHaveLength(1);
-      expect(turns[0].metadata?.tokensUsed).toBe(15);
-      expect(turns[0].metadata?.duration).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should accumulate metrics in continueConversation", async () => {
-      vi.mocked(run).mockResolvedValue(
-        createMockRunResult({
-          finalOutput: "Response 1",
-          usage: { promptTokens: 10, completionTokens: 10 },
-        }),
-      );
-
-      const agent = AIPexAgent.create({
-        instructions: "Test",
-        model: mockModel,
-        conversationManager: manager,
-      });
-
-      let sessionId: string | undefined;
-      for await (const event of agent.executeStream("First")) {
-        if (event.type === "session_created") {
-          sessionId = event.sessionId;
-        }
-      }
-
-      vi.mocked(run).mockResolvedValue(
-        createMockRunResult({
-          finalOutput: "Response 2",
-          usage: { promptTokens: 20, completionTokens: 20 },
-        }),
-      );
-
-      const events: AgentEvent[] = [];
-      for await (const event of agent.continueConversation(
-        sessionId!,
-        "Second",
-      )) {
-        events.push(event);
-      }
-
-      const metricsEvent = events.find((e) => e.type === "metrics_update");
-      expect(metricsEvent).toBeDefined();
-      if (metricsEvent && metricsEvent.type === "metrics_update") {
-        expect(metricsEvent.metrics.turnCount).toBe(2);
-        expect(metricsEvent.metrics.tokensUsed).toBe(40);
-      }
-
-      const session = await manager.getSession(sessionId!);
-      const stats = session!.getStats();
-      expect(stats.totalTokens).toBe(60);
     });
   });
 });

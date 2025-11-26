@@ -1,23 +1,17 @@
-import type { FunctionTool, Agent as OpenAIAgent } from "@openai/agents";
+import type {
+  AgentInputItem,
+  FunctionTool,
+  Agent as OpenAIAgent,
+} from "@openai/agents";
 import type { AiSdkModel } from "@openai/agents-extensions";
 import type { ConversationManager } from "./conversation/manager.js";
-import type { Session } from "./conversation/session.js";
 
-// ============================================================================
-// Message Types
-// ============================================================================
-
-export interface Message {
-  role: "system" | "user" | "assistant" | "function";
-  content: string;
-}
+// Re-export types from @openai/agents for convenient access
+export type { FunctionTool, AiSdkModel, AgentInputItem, OpenAIAgent };
 
 // ============================================================================
 // Agent Types
 // ============================================================================
-
-// Re-export FunctionTool from @openai/agents for convenient access
-export type { FunctionTool, AiSdkModel };
 
 export interface AIPexAgentOptions<
   TTools extends readonly FunctionTool<any, any, any>[] = FunctionTool<
@@ -53,114 +47,52 @@ export interface AIPexAgentOptions<
   tools?: TTools;
   conversationManager?: ConversationManager;
   maxTurns?: number;
-  maxTokens?: number;
 }
 
 export interface AgentMetrics {
   tokensUsed: number;
-  maxTokens?: number;
   promptTokens: number;
   completionTokens: number;
-  turnCount: number;
+  itemCount: number;
   maxTurns: number;
-  toolCallCount: number;
   duration: number;
   startTime: number;
 }
 
 export type AgentEvent =
   | { type: "session_created"; sessionId: string }
-  | { type: "session_resumed"; sessionId: string; turnCount: number }
+  | { type: "session_resumed"; sessionId: string; itemCount: number }
   | { type: "content_delta"; delta: string }
   | { type: "tool_call_start"; toolName: string; params: unknown }
-  | { type: "tool_call_complete"; toolName: string; result: ToolResult }
+  | { type: "tool_call_complete"; toolName: string; result: unknown }
   | { type: "tool_call_error"; toolName: string; error: Error }
-  | { type: "turn_complete"; turnNumber: number }
   | { type: "metrics_update"; metrics: AgentMetrics }
   | {
       type: "execution_complete";
-      turns: number;
       finalOutput: string;
       metrics: AgentMetrics;
     };
 
-export interface ToolResult {
-  data: unknown;
-  tokensUsed?: number;
-  duration?: number;
-}
-
-export type { OpenAIAgent };
-
 // ============================================================================
-// Conversation Types
+// Session Types
 // ============================================================================
-
-export interface FunctionCall {
-  id: string;
-  name: string;
-  params: Record<string, unknown>;
-}
-
-export interface FunctionResponse {
-  id: string;
-  name: string;
-  result: Record<string, unknown>;
-}
-
-export interface CompletedTurn {
-  id: string;
-  userMessage: Message;
-  assistantMessage: Message;
-  functionCalls: FunctionCall[];
-  functionResults: FunctionResponse[];
-  timestamp: number;
-  metadata?: {
-    duration?: number;
-    tokensUsed?: number;
-    [key: string]: unknown;
-  };
-}
-
-export interface SessionStats {
-  messageCount: number;
-  turnCount: number;
-  toolCallCount: number;
-  totalTokens: number;
-  totalDuration: number;
-}
 
 export interface SessionConfig {
   systemPrompt?: string;
-  maxHistoryLength?: number;
-  maxContextTokens?: number;
-  keepRecentTurns?: number;
-}
-
-export interface SessionMetadata {
-  createdAt: number;
-  lastActiveAt: number;
-  totalTurns?: number;
-  totalTokens?: number;
-  tags?: string[];
-  [key: string]: unknown;
 }
 
 export interface ForkInfo {
   parentSessionId?: string;
-  forkAtTurn?: number;
+  forkAtItemIndex?: number;
 }
 
 export interface SerializedSession {
   id: string;
-  turns: CompletedTurn[];
-  systemPrompt?: string;
+  items: AgentInputItem[];
   metadata: Record<string, unknown>;
   config: SessionConfig;
-  preview?: string;
   parentSessionId?: string;
-  forkAtTurn?: number;
-  summary?: string;
+  forkAtItemIndex?: number;
 }
 
 // ============================================================================
@@ -172,10 +104,10 @@ export interface SessionSummary {
   preview: string;
   createdAt: number;
   lastActiveAt: number;
-  turnCount?: number;
+  itemCount?: number;
   tags?: string[];
   parentSessionId?: string;
-  forkAtTurn?: number;
+  forkAtItemIndex?: number;
 }
 
 export interface SessionTree {
@@ -184,8 +116,8 @@ export interface SessionTree {
 }
 
 export interface SessionStorageAdapter {
-  save(session: Session): Promise<void>;
-  load(id: string): Promise<Session | null>;
+  save(session: import("./conversation/session.js").Session): Promise<void>;
+  load(id: string): Promise<import("./conversation/session.js").Session | null>;
   delete(id: string): Promise<void>;
   listAll(): Promise<SessionSummary[]>;
   getSessionTree(rootId?: string): Promise<SessionTree[]>;
@@ -199,16 +131,10 @@ export interface SessionStorageAdapter {
 export interface ConversationConfig {
   enabled?: boolean;
   storage?: "memory" | "indexeddb";
-  maxHistoryLength?: number;
-  maxContextTokens?: number;
-  keepRecentTurns?: number;
-  compression?: CompressionConfig;
 }
 
 export interface CompressionConfig {
-  summarizeAfterTurns?: number;
-  keepRecentTurns?: number;
+  summarizeAfterItems?: number;
+  keepRecentItems?: number;
   maxSummaryLength?: number;
 }
-
-export type SummarizerFunction = (text: string) => Promise<string>;

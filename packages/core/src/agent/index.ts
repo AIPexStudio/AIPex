@@ -4,6 +4,5 @@ export type {
   AIPexAgentOptions,
   FunctionTool,
   OpenAIAgent,
-  ToolResult,
 } from "../types.js";
 export { AIPexAgent } from "./wrapper.js";

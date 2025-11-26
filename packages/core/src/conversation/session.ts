@@ -1,114 +1,64 @@
+import type { AgentInputItem, Session as OpenAISession } from "@openai/agents";
 import type {
-  CompletedTurn,
   ForkInfo,
-  Message,
   SerializedSession,
   SessionConfig,
-  SessionStats,
   SessionSummary,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
 
-export class Session {
+export class Session implements OpenAISession {
   readonly id: string;
   readonly parentSessionId?: string;
-  readonly forkAtTurn?: number;
-  private turns: CompletedTurn[] = [];
-  private systemPrompt?: string;
+  readonly forkAtItemIndex?: number;
+  private items: AgentInputItem[] = [];
   private metadata: Record<string, unknown> = {};
   private config: SessionConfig;
   private preview?: string;
-  private summary?: string;
 
   constructor(id?: string, config: SessionConfig = {}, forkInfo?: ForkInfo) {
     this.id = id ?? generateId();
     this.config = config;
-    this.systemPrompt = config.systemPrompt;
     this.parentSessionId = forkInfo?.parentSessionId;
-    this.forkAtTurn = forkInfo?.forkAtTurn;
+    this.forkAtItemIndex = forkInfo?.forkAtItemIndex;
 
     if (!this.metadata["createdAt"]) {
       this.metadata["createdAt"] = Date.now();
     }
   }
 
-  addTurn(turn: CompletedTurn): void {
-    this.turns.push(turn);
+  // OpenAI Session interface implementation
+
+  async getSessionId(): Promise<string> {
+    return this.id;
+  }
+
+  async getItems(limit?: number): Promise<AgentInputItem[]> {
+    if (limit === undefined) {
+      return [...this.items];
+    }
+    return this.items.slice(-limit);
+  }
+
+  async addItems(items: AgentInputItem[]): Promise<void> {
+    this.items.push(...items);
     this.updatePreview();
+    this.metadata["lastActiveAt"] = Date.now();
   }
 
-  getMessages(): Message[] {
-    const messages: Message[] = [];
-
-    if (this.systemPrompt) {
-      messages.push({
-        role: "system",
-        content: this.systemPrompt,
-      });
-    }
-
-    if (this.summary) {
-      messages.push({
-        role: "system",
-        content: `Previous conversation summary: ${this.summary}`,
-      });
-    }
-
-    for (const turn of this.turns) {
-      messages.push({
-        role: "user",
-        content: turn.userMessage.content,
-      });
-
-      messages.push({
-        role: "assistant",
-        content: turn.assistantMessage.content,
-      });
-
-      for (const call of turn.functionCalls) {
-        messages.push({
-          role: "function",
-          content: JSON.stringify(call),
-        });
-      }
-    }
-
-    return messages;
+  async popItem(): Promise<AgentInputItem | undefined> {
+    return this.items.pop();
   }
 
-  getRecentTurns(count: number): CompletedTurn[] {
-    return this.turns.slice(-count);
+  async clearSession(): Promise<void> {
+    this.items = [];
+    this.preview = undefined;
   }
 
-  getTurnCount(): number {
-    return this.turns.length;
-  }
+  // Extended functionality
 
-  getStats(): SessionStats {
-    const messageCount = this.turns.reduce(
-      (sum, turn) => sum + 2 + turn.functionCalls.length,
-      0,
-    );
-    const toolCallCount = this.turns.reduce(
-      (sum, turn) => sum + turn.functionCalls.length,
-      0,
-    );
-    const totalTokens = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.tokensUsed ?? 0),
-      0,
-    );
-    const totalDuration = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.duration ?? 0),
-      0,
-    );
-
-    return {
-      messageCount,
-      turnCount: this.turns.length,
-      toolCallCount,
-      totalTokens,
-      totalDuration,
-    };
+  getItemCount(): number {
+    return this.items.length;
   }
 
   getSummary(): SessionSummary {
@@ -117,13 +67,8 @@ export class Session {
     const createdAt = typeof createdAtValue === "number" ? createdAtValue : now;
 
     const lastActiveAtValue = this.metadata["lastActiveAt"];
-    let lastActiveAt =
-      typeof lastActiveAtValue === "number" ? lastActiveAtValue : now;
-
-    if (this.turns.length > 0) {
-      const lastTurn = this.turns[this.turns.length - 1];
-      lastActiveAt = lastTurn.timestamp ?? lastActiveAt;
-    }
+    const lastActiveAt =
+      typeof lastActiveAtValue === "number" ? lastActiveAtValue : createdAt;
 
     const tagsValue = this.metadata["tags"];
     const tags = Array.isArray(tagsValue) ? tagsValue : [];
@@ -133,19 +78,19 @@ export class Session {
       preview: this.preview ?? "",
       createdAt,
       lastActiveAt,
-      turnCount: this.turns.length,
+      itemCount: this.items.length,
       tags,
       parentSessionId: this.parentSessionId,
-      forkAtTurn: this.forkAtTurn,
+      forkAtItemIndex: this.forkAtItemIndex,
     };
   }
 
-  fork(atTurn?: number): Session {
-    const turnIndex = atTurn !== undefined ? atTurn : this.turns.length - 1;
+  fork(atItemIndex?: number): Session {
+    const index = atItemIndex ?? this.items.length - 1;
 
-    if (turnIndex < 0 || turnIndex >= this.turns.length) {
+    if (index < 0 || index >= this.items.length) {
       throw new Error(
-        `Invalid turn index: ${turnIndex}. Must be between 0 and ${this.turns.length - 1}`,
+        `Invalid item index: ${index}. Must be between 0 and ${this.items.length - 1}`,
       );
     }
 
@@ -154,36 +99,22 @@ export class Session {
       { ...this.config },
       {
         parentSessionId: this.id,
-        forkAtTurn: turnIndex,
+        forkAtItemIndex: index,
       },
     );
 
-    forkedSession.turns = this.turns.slice(0, turnIndex + 1);
-    forkedSession.systemPrompt = this.systemPrompt;
+    forkedSession.items = this.items.slice(0, index + 1);
     forkedSession.metadata = { ...this.metadata, createdAt: Date.now() };
     forkedSession.updatePreview();
 
     return forkedSession;
   }
 
-  getTurnsUpTo(turnIndex: number): CompletedTurn[] {
-    if (turnIndex < 0 || turnIndex >= this.turns.length) {
-      throw new Error(
-        `Invalid turn index: ${turnIndex}. Must be between 0 and ${this.turns.length - 1}`,
-      );
-    }
-    return this.turns.slice(0, turnIndex + 1);
-  }
-
   getForkInfo(): ForkInfo {
     return {
       parentSessionId: this.parentSessionId,
-      forkAtTurn: this.forkAtTurn,
+      forkAtItemIndex: this.forkAtItemIndex,
     };
-  }
-
-  setSystemPrompt(prompt: string): void {
-    this.systemPrompt = prompt;
   }
 
   setMetadata(key: string, value: unknown): void {
@@ -194,44 +125,35 @@ export class Session {
     return this.metadata[key];
   }
 
-  setSummary(summary: string): void {
-    this.summary = summary;
-  }
-
-  getConversationSummary(): string | undefined {
-    return this.summary;
-  }
-
-  getAllTurns(): CompletedTurn[] {
-    return [...this.turns];
-  }
-
-  replaceTurns(newTurns: CompletedTurn[]): void {
-    this.turns = [...newTurns];
-    this.updatePreview();
-  }
-
   private updatePreview(): void {
-    if (this.turns.length > 0) {
-      const firstMessage = this.turns[0].userMessage.content.trim();
+    const firstUserMessage = this.items.find(
+      (item) => item.type === "message" && item.role === "user",
+    );
+    if (firstUserMessage && "content" in firstUserMessage) {
+      const content = firstUserMessage.content;
+      const text =
+        typeof content === "string"
+          ? content
+          : Array.isArray(content)
+            ? content
+                .filter((c) => c.type === "input_text")
+                .map((c) => (c as { text: string }).text)
+                .join(" ")
+            : "";
       const maxLength = 50;
       this.preview =
-        firstMessage.length > maxLength
-          ? `${firstMessage.slice(0, maxLength)}...`
-          : firstMessage;
+        text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
     }
   }
 
   toJSON(): SerializedSession {
     return {
       id: this.id,
-      turns: this.turns,
-      systemPrompt: this.systemPrompt,
+      items: this.items,
       metadata: this.metadata,
       config: this.config,
       parentSessionId: this.parentSessionId,
-      forkAtTurn: this.forkAtTurn,
-      summary: this.summary,
+      forkAtItemIndex: this.forkAtItemIndex,
     };
   }
 
@@ -241,12 +163,10 @@ export class Session {
     }
     const session = new Session(data.id, data.config, {
       parentSessionId: data.parentSessionId,
-      forkAtTurn: data.forkAtTurn,
+      forkAtItemIndex: data.forkAtItemIndex,
     });
-    session.turns = data.turns ?? [];
-    session.systemPrompt = data.systemPrompt;
+    session.items = data.items ?? [];
     session.metadata = data.metadata ?? {};
-    session.summary = data.summary;
     session.updatePreview();
     return session;
   }
