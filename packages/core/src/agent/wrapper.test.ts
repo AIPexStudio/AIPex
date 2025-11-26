@@ -374,12 +374,13 @@ describe("AIPexAgent", () => {
       });
 
       const events: AgentEvent[] = [];
-      await expect(async () => {
+      const runPromise = (async () => {
         for await (const event of agent.executeStream("boom")) {
           events.push(event);
         }
-      }).rejects.toThrow("LLM failed");
+      })();
 
+      await expect(runPromise).resolves.toBeUndefined();
       expect(events.some((event) => event.type === "error")).toBe(true);
     });
   });

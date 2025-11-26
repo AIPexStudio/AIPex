@@ -8,26 +8,87 @@ export interface StoredConversationConfig {
 }
 
 const DEFAULT_CONFIG_ID = "default_conversation_config";
+const STORAGE_OPTIONS = new Set<ConversationConfig["storage"]>([
+  "memory",
+  "indexeddb",
+]);
 
 export async function saveConversationConfig(
   storage: KeyValueStorage<StoredConversationConfig>,
   config: ConversationConfig,
   id = DEFAULT_CONFIG_ID,
 ): Promise<void> {
-  await storage.save(id, { id, config });
+  const sanitizedConfig = sanitizeConfig(config);
+  await storage.save(id, { id, config: sanitizedConfig });
 }
 
 export async function loadConversationConfig(
   storage: KeyValueStorage<StoredConversationConfig>,
   id = DEFAULT_CONFIG_ID,
 ): Promise<ConversationConfig> {
-  const stored = await storage.load(id);
+  let stored: StoredConversationConfig | null = null;
+  try {
+    stored = await storage.load(id);
+  } catch {
+    return DEFAULT_CONVERSATION_CONFIG;
+  }
+
   if (!stored) {
+    return DEFAULT_CONVERSATION_CONFIG;
+  }
+
+  const normalized = sanitizeStoredConfig(stored);
+  if (!normalized) {
     return DEFAULT_CONVERSATION_CONFIG;
   }
 
   return {
     ...DEFAULT_CONVERSATION_CONFIG,
-    ...stored.config,
+    ...normalized.config,
   };
+}
+
+function sanitizeStoredConfig(value: unknown): StoredConversationConfig | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const maybeId = (value as { id?: unknown }).id;
+  const maybeConfig = (value as { config?: unknown }).config;
+
+  if (typeof maybeId !== "string" || maybeId.length === 0) {
+    return null;
+  }
+
+  const normalizedConfig = sanitizeConfig(maybeConfig);
+  return { id: maybeId, config: normalizedConfig };
+}
+
+function sanitizeConfig(value: unknown): ConversationConfig {
+  if (!value || typeof value !== "object") {
+    return { ...DEFAULT_CONVERSATION_CONFIG };
+  }
+
+  const result: ConversationConfig = {};
+
+  if (
+    "enabled" in value &&
+    typeof (value as { enabled: unknown }).enabled === "boolean"
+  ) {
+    result.enabled = (value as { enabled: boolean }).enabled;
+  }
+
+  if (
+    "storage" in value &&
+    typeof (value as { storage: unknown }).storage === "string" &&
+    STORAGE_OPTIONS.has(
+      (value as { storage: string }).storage as ConversationConfig["storage"],
+    )
+  ) {
+    result.storage = (
+      value as { storage: ConversationConfig["storage"] }
+    ).storage;
+  }
+
+  return result;
 }

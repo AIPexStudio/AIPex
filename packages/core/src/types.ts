@@ -132,7 +132,7 @@ export interface SessionStorageAdapter {
 
 export interface ConversationConfig {
   enabled?: boolean;
-  storage?: "memory" | "indexeddb" | "filesystem";
+  storage?: "memory" | "indexeddb";
 }
 
 export interface CompressionConfig {

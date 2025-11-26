@@ -20,13 +20,25 @@ describe("Conversation config storage helpers", () => {
     const storage = new InMemoryStorage<StoredConversationConfig>();
     const custom: ConversationConfig = {
       enabled: false,
-      storage: "filesystem",
+      storage: "indexeddb",
     };
 
     await saveConversationConfig(storage, custom, "custom");
     const config = await loadConversationConfig(storage, "custom");
 
     expect(config.enabled).toBe(false);
-    expect(config.storage).toBe("filesystem");
+    expect(config.storage).toBe("indexeddb");
+  });
+
+  it("should fall back to defaults when stored data is invalid", async () => {
+    const storage = new InMemoryStorage<StoredConversationConfig>();
+    await storage.save("default_conversation_config", {
+      id: "",
+      config: { storage: "unknown" },
+    } as unknown as StoredConversationConfig);
+
+    const config = await loadConversationConfig(storage);
+    expect(config.storage).toBe("memory");
+    expect(config.enabled).toBe(true);
   });
 });

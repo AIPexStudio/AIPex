@@ -109,7 +109,7 @@ export class AIPexAgent {
       if (session && this.conversationManager) {
         await this.conversationManager.saveSession(session);
       }
-      throw agentError;
+      return;
     }
   }
 

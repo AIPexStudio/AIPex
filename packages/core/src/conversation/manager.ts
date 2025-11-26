@@ -86,9 +86,18 @@ export class ConversationManager {
         ? [this.createSummaryItem(summary), ...compressedItems]
         : compressedItems;
 
+    const previousSummary = session.getMetadata("lastSummary");
+
     await session.clearSession();
-    session.setMetadata("lastSummary", summary);
-    await session.addItems(nextItems);
+    try {
+      session.setMetadata("lastSummary", summary);
+      await session.addItems(nextItems);
+    } catch (error) {
+      await session.clearSession();
+      await session.addItems(items);
+      session.setMetadata("lastSummary", previousSummary);
+      throw error;
+    }
 
     return { summary };
   }
