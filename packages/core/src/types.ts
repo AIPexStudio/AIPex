@@ -160,6 +160,7 @@ export interface SerializedSession {
   preview?: string;
   parentSessionId?: string;
   forkAtTurn?: number;
+  summary?: string;
 }
 
 // ============================================================================

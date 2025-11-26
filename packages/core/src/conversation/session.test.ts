@@ -221,4 +221,115 @@ describe("Session", () => {
       expect(summary.forkAtTurn).toBe(0);
     });
   });
+
+  describe("Conversation summary", () => {
+    it("should set and get conversation summary", () => {
+      session.setSummary("This is a test summary");
+      expect(session.getConversationSummary()).toBe("This is a test summary");
+    });
+
+    it("should return undefined when no summary is set", () => {
+      expect(session.getConversationSummary()).toBeUndefined();
+    });
+
+    it("should include summary in messages", () => {
+      session.setSummary("Previous conversation summary");
+      const turn: CompletedTurn = {
+        id: "turn-1",
+        userMessage: { role: "user", content: "Hello" },
+        assistantMessage: { role: "assistant", content: "Hi!" },
+        functionCalls: [],
+        functionResults: [],
+        timestamp: Date.now(),
+      };
+      session.addTurn(turn);
+
+      const messages = session.getMessages();
+      expect(messages[0].role).toBe("system");
+      expect(messages[0].content).toBe("Test system prompt");
+      expect(messages[1].role).toBe("system");
+      expect(messages[1].content).toContain("Previous conversation summary");
+    });
+
+    it("should serialize and deserialize summary", () => {
+      session.setSummary("Test summary");
+      const serialized = session.toJSON();
+      const deserialized = Session.fromJSON(serialized);
+
+      expect(deserialized.getConversationSummary()).toBe("Test summary");
+    });
+  });
+
+  describe("Turn management", () => {
+    it("should get all turns", () => {
+      const turns: CompletedTurn[] = [
+        {
+          id: "turn-1",
+          userMessage: { role: "user", content: "Turn 1" },
+          assistantMessage: { role: "assistant", content: "Response 1" },
+          functionCalls: [],
+          functionResults: [],
+          timestamp: Date.now(),
+        },
+        {
+          id: "turn-2",
+          userMessage: { role: "user", content: "Turn 2" },
+          assistantMessage: { role: "assistant", content: "Response 2" },
+          functionCalls: [],
+          functionResults: [],
+          timestamp: Date.now(),
+        },
+      ];
+
+      for (const turn of turns) {
+        session.addTurn(turn);
+      }
+
+      const allTurns = session.getAllTurns();
+      expect(allTurns.length).toBe(2);
+      expect(allTurns[0].id).toBe("turn-1");
+      expect(allTurns[1].id).toBe("turn-2");
+    });
+
+    it("should replace turns", () => {
+      const originalTurns: CompletedTurn[] = [
+        {
+          id: "turn-1",
+          userMessage: { role: "user", content: "Turn 1" },
+          assistantMessage: { role: "assistant", content: "Response 1" },
+          functionCalls: [],
+          functionResults: [],
+          timestamp: Date.now(),
+        },
+        {
+          id: "turn-2",
+          userMessage: { role: "user", content: "Turn 2" },
+          assistantMessage: { role: "assistant", content: "Response 2" },
+          functionCalls: [],
+          functionResults: [],
+          timestamp: Date.now(),
+        },
+      ];
+
+      for (const turn of originalTurns) {
+        session.addTurn(turn);
+      }
+
+      const newTurns: CompletedTurn[] = [
+        {
+          id: "turn-3",
+          userMessage: { role: "user", content: "New turn" },
+          assistantMessage: { role: "assistant", content: "New response" },
+          functionCalls: [],
+          functionResults: [],
+          timestamp: Date.now(),
+        },
+      ];
+
+      session.replaceTurns(newTurns);
+
+      expect(session.getTurnCount()).toBe(1);
+      expect(session.getAllTurns()[0].id).toBe("turn-3");
+    });
+  });
 });

@@ -6,15 +6,18 @@ import type {
   SessionTree,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
+import type { ConversationCompressor } from "./compressor.js";
 import { Session } from "./session.js";
 
 export interface ConversationManagerConfig {
   cacheSize?: number;
   cacheTTL?: number;
+  compressor?: ConversationCompressor;
 }
 
 export class ConversationManager {
   private cache: LRUCache<string, Session>;
+  private compressor?: ConversationCompressor;
 
   constructor(
     private storage: SessionStorageAdapter,
@@ -26,6 +29,7 @@ export class ConversationManager {
       updateAgeOnGet: true,
       updateAgeOnHas: true,
     });
+    this.compressor = config.compressor;
   }
 
   async createSession(config?: SessionConfig): Promise<Session> {
@@ -50,10 +54,42 @@ export class ConversationManager {
   }
 
   async saveSession(session: Session): Promise<void> {
-    // Update cache
+    if (this.compressor?.shouldCompress(session.getTurnCount())) {
+      await this.doCompress(session);
+    }
     this.cache.set(session.id, session);
-    // Persist to storage
     await this.storage.save(session);
+  }
+
+  async compressSession(
+    sessionId: string,
+  ): Promise<{ compressed: boolean; summary?: string }> {
+    if (!this.compressor) {
+      return { compressed: false };
+    }
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+    const { summary } = await this.doCompress(session);
+    this.cache.set(session.id, session);
+    await this.storage.save(session);
+    return { compressed: true, summary };
+  }
+
+  private async doCompress(session: Session): Promise<{ summary: string }> {
+    const turns = session.getAllTurns();
+    const existingSummary = session.getConversationSummary();
+    const { summary, compressedTurns } =
+      await this.compressor!.compressTurns(turns);
+
+    const combinedSummary = existingSummary
+      ? `${existingSummary}\n\n${summary}`
+      : summary;
+
+    session.setSummary(combinedSummary);
+    session.replaceTurns(compressedTurns);
+    return { summary: combinedSummary };
   }
 
   async deleteSession(id: string): Promise<void> {

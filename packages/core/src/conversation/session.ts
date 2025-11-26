@@ -18,6 +18,7 @@ export class Session {
   private metadata: Record<string, unknown> = {};
   private config: SessionConfig;
   private preview?: string;
+  private summary?: string;
 
   constructor(id?: string, config: SessionConfig = {}, forkInfo?: ForkInfo) {
     this.id = id ?? generateId();
@@ -43,6 +44,13 @@ export class Session {
       messages.push({
         role: "system",
         content: this.systemPrompt,
+      });
+    }
+
+    if (this.summary) {
+      messages.push({
+        role: "system",
+        content: `Previous conversation summary: ${this.summary}`,
       });
     }
 
@@ -186,6 +194,23 @@ export class Session {
     return this.metadata[key];
   }
 
+  setSummary(summary: string): void {
+    this.summary = summary;
+  }
+
+  getConversationSummary(): string | undefined {
+    return this.summary;
+  }
+
+  getAllTurns(): CompletedTurn[] {
+    return [...this.turns];
+  }
+
+  replaceTurns(newTurns: CompletedTurn[]): void {
+    this.turns = [...newTurns];
+    this.updatePreview();
+  }
+
   private updatePreview(): void {
     if (this.turns.length > 0) {
       const firstMessage = this.turns[0].userMessage.content.trim();
@@ -206,6 +231,7 @@ export class Session {
       config: this.config,
       parentSessionId: this.parentSessionId,
       forkAtTurn: this.forkAtTurn,
+      summary: this.summary,
     };
   }
 
@@ -220,6 +246,7 @@ export class Session {
     session.turns = data.turns ?? [];
     session.systemPrompt = data.systemPrompt;
     session.metadata = data.metadata ?? {};
+    session.summary = data.summary;
     session.updatePreview();
     return session;
   }
