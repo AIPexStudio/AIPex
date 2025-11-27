@@ -17,6 +17,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
 
@@ -44,3 +47,9 @@ jobs:
 
       - name: Test
         run: npm run test
+
+      - name: Coverage Report
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: packages/core
