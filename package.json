@@ -12,6 +12,7 @@
     "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
   },
   "scripts": {
+    "postinstall": "prek install",
     "preflight": "npm run format && npm run lint:fix && npm run typecheck && npm run test",
     "format": "biome format . --write",
     "lint": "biome check .",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
+    "@j178/prek": "^0.2.19",
     "@types/node": "^24.9.2",
     "@vitest/coverage-v8": "^4.0.6",
     "typescript": "5.9.3",
