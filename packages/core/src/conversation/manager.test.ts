@@ -100,6 +100,124 @@ describe("ConversationManager", () => {
       const tree = await manager.getSessionTree();
       expect(tree.length).toBeGreaterThan(0);
     });
+
+    it("should persist forked session and reload correctly", async () => {
+      const session = await manager.createSession();
+      await session.addItems([
+        createUserMessage("Turn 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Turn 2"),
+        createAssistantMessage("Response 2"),
+      ]);
+      await manager.saveSession(session);
+
+      const forked = await manager.forkSession(session.id, 1);
+      await forked.addItems([
+        createUserMessage("Forked Turn 3"),
+        createAssistantMessage("Forked Response 3"),
+      ]);
+      await manager.saveSession(forked);
+
+      manager.clearCache();
+
+      const reloaded = await manager.getSession(forked.id);
+      expect(reloaded).not.toBeNull();
+      expect(reloaded?.getItemCount()).toBe(4);
+      expect(reloaded?.parentSessionId).toBe(session.id);
+      expect(reloaded?.forkAtItemIndex).toBe(1);
+    });
+
+    it("should handle multi-level fork tree", async () => {
+      const root = await manager.createSession();
+      await root.addItems([
+        createUserMessage("Root message"),
+        createAssistantMessage("Root response"),
+      ]);
+      await manager.saveSession(root);
+
+      const child1 = await manager.forkSession(root.id, 0);
+      await child1.addItems([createUserMessage("Child 1 message")]);
+      await manager.saveSession(child1);
+
+      const child2 = await manager.forkSession(root.id, 1);
+      await child2.addItems([createUserMessage("Child 2 message")]);
+      await manager.saveSession(child2);
+
+      const grandchild = await manager.forkSession(child1.id, 1);
+      await grandchild.addItems([createUserMessage("Grandchild message")]);
+      await manager.saveSession(grandchild);
+
+      manager.clearCache();
+
+      const reloadedRoot = await manager.getSession(root.id);
+      const reloadedChild1 = await manager.getSession(child1.id);
+      const reloadedChild2 = await manager.getSession(child2.id);
+      const reloadedGrandchild = await manager.getSession(grandchild.id);
+
+      expect(reloadedRoot?.parentSessionId).toBeUndefined();
+      expect(reloadedChild1?.parentSessionId).toBe(root.id);
+      expect(reloadedChild2?.parentSessionId).toBe(root.id);
+      expect(reloadedGrandchild?.parentSessionId).toBe(child1.id);
+    });
+
+    it("should preserve metrics through fork and reload", async () => {
+      const session = await manager.createSession();
+      await session.addItems([
+        createUserMessage("Test"),
+        createAssistantMessage("Response"),
+      ]);
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+      await manager.saveSession(session);
+
+      const forked = await manager.forkSession(session.id, 0);
+      forked.addMetrics({
+        tokensUsed: 50,
+        promptTokens: 30,
+        completionTokens: 20,
+      });
+      await manager.saveSession(forked);
+
+      manager.clearCache();
+
+      const reloadedOriginal = await manager.getSession(session.id);
+      const reloadedForked = await manager.getSession(forked.id);
+
+      const originalMetrics = reloadedOriginal?.getSessionMetrics();
+      expect(originalMetrics?.totalTokensUsed).toBe(100);
+      expect(originalMetrics?.executionCount).toBe(1);
+
+      const forkedMetrics = reloadedForked?.getSessionMetrics();
+      expect(forkedMetrics?.totalTokensUsed).toBe(50);
+      expect(forkedMetrics?.executionCount).toBe(1);
+    });
+
+    it("should not affect parent session when modifying forked session", async () => {
+      const session = await manager.createSession();
+      await session.addItems([
+        createUserMessage("Original message"),
+        createAssistantMessage("Original response"),
+      ]);
+      await manager.saveSession(session);
+
+      const forked = await manager.forkSession(session.id, 0);
+      await forked.addItems([
+        createUserMessage("Forked message"),
+        createAssistantMessage("Forked response"),
+      ]);
+      await manager.saveSession(forked);
+
+      manager.clearCache();
+
+      const reloadedOriginal = await manager.getSession(session.id);
+      const reloadedForked = await manager.getSession(forked.id);
+
+      expect(reloadedOriginal?.getItemCount()).toBe(2);
+      expect(reloadedForked?.getItemCount()).toBe(3);
+    });
   });
 
   describe("Cache functionality", () => {

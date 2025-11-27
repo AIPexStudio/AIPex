@@ -236,4 +236,142 @@ describe("Session", () => {
       expect(summary.preview).toBe("Hello from array");
     });
   });
+
+  describe("Session metrics", () => {
+    it("should start with zero metrics", () => {
+      const metrics = session.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(0);
+      expect(metrics.totalPromptTokens).toBe(0);
+      expect(metrics.totalCompletionTokens).toBe(0);
+      expect(metrics.executionCount).toBe(0);
+    });
+
+    it("should accumulate metrics correctly", () => {
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+      session.addMetrics({
+        tokensUsed: 50,
+        promptTokens: 30,
+        completionTokens: 20,
+      });
+
+      const metrics = session.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(150);
+      expect(metrics.totalPromptTokens).toBe(90);
+      expect(metrics.totalCompletionTokens).toBe(60);
+      expect(metrics.executionCount).toBe(2);
+    });
+
+    it("should handle partial metrics", () => {
+      session.addMetrics({ tokensUsed: 100 });
+      session.addMetrics({ promptTokens: 50 });
+
+      const metrics = session.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(100);
+      expect(metrics.totalPromptTokens).toBe(50);
+      expect(metrics.totalCompletionTokens).toBe(0);
+      expect(metrics.executionCount).toBe(2);
+    });
+
+    it("should return a copy of metrics", () => {
+      session.addMetrics({ tokensUsed: 100 });
+      const metrics1 = session.getSessionMetrics();
+      metrics1.totalTokensUsed = 999;
+
+      const metrics2 = session.getSessionMetrics();
+      expect(metrics2.totalTokensUsed).toBe(100);
+    });
+
+    it("should reset metrics when forking", async () => {
+      await session.addItems([
+        createUserMessage("Test"),
+        createAssistantMessage("Response"),
+      ]);
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+
+      const forkedSession = session.fork(0);
+      const forkedMetrics = forkedSession.getSessionMetrics();
+
+      expect(forkedMetrics.totalTokensUsed).toBe(0);
+      expect(forkedMetrics.executionCount).toBe(0);
+    });
+
+    it("should preserve metrics through serialization", () => {
+      session.addMetrics({
+        tokensUsed: 200,
+        promptTokens: 120,
+        completionTokens: 80,
+      });
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+
+      const serialized = session.toJSON();
+      const deserialized = Session.fromJSON(serialized);
+      const metrics = deserialized.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(300);
+      expect(metrics.totalPromptTokens).toBe(180);
+      expect(metrics.totalCompletionTokens).toBe(120);
+      expect(metrics.executionCount).toBe(2);
+    });
+
+    it("should handle missing metrics in serialized data", () => {
+      const serialized = session.toJSON();
+      delete (serialized as any).metrics;
+
+      const deserialized = Session.fromJSON(serialized);
+      const metrics = deserialized.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(0);
+      expect(metrics.executionCount).toBe(0);
+    });
+  });
+
+  describe("Fork deep copy", () => {
+    it("should deep copy items when forking", async () => {
+      const item: AgentInputItem = {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "Original text" }],
+      };
+      await session.addItems([item, createAssistantMessage("Response")]);
+
+      const forkedSession = session.fork(1);
+      const forkedItems = await forkedSession.getItems();
+
+      (forkedItems[0] as any).content[0].text = "Modified text";
+
+      const originalItems = await session.getItems();
+      expect((originalItems[0] as any).content[0].text).toBe("Original text");
+    });
+
+    it("should not affect parent session when modifying forked items array", async () => {
+      await session.addItems([
+        createUserMessage("Message 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Message 2"),
+        createAssistantMessage("Response 2"),
+      ]);
+
+      const forkedSession = session.fork(1);
+      await forkedSession.popItem();
+      await forkedSession.addItems([createUserMessage("New message")]);
+
+      expect(session.getItemCount()).toBe(4);
+      expect(forkedSession.getItemCount()).toBe(2);
+    });
+  });
 });

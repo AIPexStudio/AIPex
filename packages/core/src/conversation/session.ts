@@ -1,11 +1,22 @@
 import type { AgentInputItem, Session as OpenAISession } from "@openai/agents";
 import type {
+  AgentMetrics,
   ForkInfo,
   SerializedSession,
   SessionConfig,
+  SessionMetrics,
   SessionSummary,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
+
+function createEmptySessionMetrics(): SessionMetrics {
+  return {
+    totalTokensUsed: 0,
+    totalPromptTokens: 0,
+    totalCompletionTokens: 0,
+    executionCount: 0,
+  };
+}
 
 export class Session implements OpenAISession {
   readonly id: string;
@@ -15,6 +26,7 @@ export class Session implements OpenAISession {
   private metadata: Record<string, unknown> = {};
   private config: SessionConfig;
   private preview?: string;
+  private sessionMetrics: SessionMetrics = createEmptySessionMetrics();
 
   constructor(id?: string, config: SessionConfig = {}, forkInfo?: ForkInfo) {
     this.id = id ?? generateId();
@@ -103,10 +115,10 @@ export class Session implements OpenAISession {
       },
     );
 
-    forkedSession.items = this.items.slice(0, index + 1);
+    forkedSession.items = structuredClone(this.items.slice(0, index + 1));
     const now = Date.now();
     forkedSession.metadata = {
-      ...this.metadata,
+      ...structuredClone(this.metadata),
       createdAt: now,
       lastActiveAt: now,
     };
@@ -120,6 +132,17 @@ export class Session implements OpenAISession {
       parentSessionId: this.parentSessionId,
       forkAtItemIndex: this.forkAtItemIndex,
     };
+  }
+
+  addMetrics(delta: Partial<AgentMetrics>): void {
+    this.sessionMetrics.totalTokensUsed += delta.tokensUsed ?? 0;
+    this.sessionMetrics.totalPromptTokens += delta.promptTokens ?? 0;
+    this.sessionMetrics.totalCompletionTokens += delta.completionTokens ?? 0;
+    this.sessionMetrics.executionCount += 1;
+  }
+
+  getSessionMetrics(): SessionMetrics {
+    return { ...this.sessionMetrics };
   }
 
   setMetadata(key: string, value: unknown): void {
@@ -187,6 +210,7 @@ export class Session implements OpenAISession {
       items: this.items,
       metadata: this.metadata,
       config: this.config,
+      metrics: this.sessionMetrics,
       parentSessionId: this.parentSessionId,
       forkAtItemIndex: this.forkAtItemIndex,
     };
@@ -202,6 +226,7 @@ export class Session implements OpenAISession {
     });
     session.items = data.items ?? [];
     session.metadata = data.metadata ?? {};
+    session.sessionMetrics = data.metrics ?? createEmptySessionMetrics();
     session.updatePreview();
     return session;
   }

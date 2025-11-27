@@ -2,7 +2,7 @@
 export { aisdk } from "@openai/agents-extensions";
 
 // Agent
-export { AIPexAgent } from "./agent/index.js";
+export { AIPex, AIPexAgent } from "./agent/index.js";
 
 // Config
 export {
@@ -34,8 +34,11 @@ export type {
   AgentInputItem,
   AgentMetrics,
   AIPexAgentOptions,
+  AIPexOptions,
   AiSdkModel,
+  ChatOptions,
   CompressionConfig,
+  CompressionOptions,
   ConversationConfig,
   ForkInfo,
   FunctionTool,

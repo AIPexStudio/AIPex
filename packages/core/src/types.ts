@@ -14,7 +14,7 @@ export type { FunctionTool, AiSdkModel, AgentInputItem, OpenAIAgent };
 // Agent Types
 // ============================================================================
 
-export interface AIPexAgentOptions<
+export interface AIPexOptions<
   TTools extends readonly FunctionTool<any, any, any>[] = FunctionTool<
     any,
     any,
@@ -46,9 +46,51 @@ export interface AIPexAgentOptions<
    */
   model: AiSdkModel;
   tools?: TTools;
-  conversationManager?: ConversationManager;
   maxTurns?: number;
+
+  /**
+   * Disable conversation management (stateless mode).
+   * When false, no session will be created or maintained.
+   */
+  conversation?: false;
+
+  /**
+   * Custom storage adapter for sessions.
+   * Defaults to InMemorySessionStorage if not provided.
+   */
+  storage?: SessionStorageAdapter;
+
+  /**
+   * Compression configuration for long conversations.
+   * Requires a model for generating summaries.
+   */
+  compression?: CompressionOptions;
+
+  /**
+   * Fully custom ConversationManager instance.
+   * When provided, storage and compression options are ignored.
+   */
+  conversationManager?: ConversationManager;
 }
+
+export interface CompressionOptions extends CompressionConfig {
+  model: AiSdkModel;
+}
+
+export interface ChatOptions {
+  sessionId?: string;
+}
+
+/**
+ * @deprecated Use AIPexOptions instead
+ */
+export type AIPexAgentOptions<
+  TTools extends readonly FunctionTool<any, any, any>[] = FunctionTool<
+    any,
+    any,
+    any
+  >[],
+> = AIPexOptions<TTools>;
 
 export interface AgentMetrics {
   tokensUsed: number;
@@ -88,11 +130,19 @@ export interface ForkInfo {
   forkAtItemIndex?: number;
 }
 
+export interface SessionMetrics {
+  totalTokensUsed: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  executionCount: number;
+}
+
 export interface SerializedSession {
   id: string;
   items: AgentInputItem[];
   metadata: Record<string, unknown>;
   config: SessionConfig;
+  metrics: SessionMetrics;
   parentSessionId?: string;
   forkAtItemIndex?: number;
 }

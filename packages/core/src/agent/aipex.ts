@@ -3,12 +3,20 @@ import {
   type RunItemStreamEvent,
   run,
 } from "@openai/agents";
-import type { ConversationManager } from "../conversation/manager.js";
+import { ConversationCompressor } from "../conversation/compressor.js";
+import { ConversationManager } from "../conversation/manager.js";
+import { InMemorySessionStorage } from "../conversation/memory.js";
 import type { Session } from "../conversation/session.js";
-import type { AgentEvent, AgentMetrics, AIPexAgentOptions } from "../types.js";
+import type {
+  AgentEvent,
+  AgentMetrics,
+  AIPexOptions,
+  ChatOptions,
+  SessionStorageAdapter,
+} from "../types.js";
 import { AgentError, ErrorCode } from "../utils/errors.js";
 
-export class AIPexAgent {
+export class AIPex {
   private agent: OpenAIAgent;
   private conversationManager?: ConversationManager;
   private maxTurns: number;
@@ -23,7 +31,7 @@ export class AIPexAgent {
     this.maxTurns = maxTurns ?? 10;
   }
 
-  static create(options: AIPexAgentOptions): AIPexAgent {
+  static create(options: AIPexOptions): AIPex {
     const agent = new OpenAIAgent({
       name: options.name ?? "Assistant",
       instructions: options.instructions,
@@ -31,7 +39,37 @@ export class AIPexAgent {
       tools: options.tools ?? [],
     });
 
-    return new AIPexAgent(agent, options.conversationManager, options.maxTurns);
+    const conversationManager = AIPex.buildConversationManager(options);
+    return new AIPex(agent, conversationManager, options.maxTurns);
+  }
+
+  private static buildConversationManager(
+    options: AIPexOptions,
+  ): ConversationManager | undefined {
+    // If conversationManager is provided, use it directly
+    if (options.conversationManager) {
+      return options.conversationManager;
+    }
+
+    // If conversation is explicitly disabled
+    if (options.conversation === false) {
+      return undefined;
+    }
+
+    // Build storage (default to InMemorySessionStorage)
+    const storage: SessionStorageAdapter =
+      options.storage ?? new InMemorySessionStorage();
+
+    // Build compressor if compression config is provided
+    const compressor = options.compression
+      ? new ConversationCompressor(options.compression.model, {
+          summarizeAfterItems: options.compression.summarizeAfterItems,
+          keepRecentItems: options.compression.keepRecentItems,
+          maxSummaryLength: options.compression.maxSummaryLength,
+        })
+      : undefined;
+
+    return new ConversationManager(storage, { compressor });
   }
 
   private initMetrics(
@@ -92,8 +130,11 @@ export class AIPexAgent {
 
       yield { type: "metrics_update", metrics: { ...metrics } };
 
-      if (session && this.conversationManager) {
-        await this.conversationManager.saveSession(session);
+      if (session) {
+        session.addMetrics(metrics);
+        if (this.conversationManager) {
+          await this.conversationManager.saveSession(session);
+        }
       }
 
       yield {
@@ -106,14 +147,27 @@ export class AIPexAgent {
       metrics.duration = Date.now() - startTime;
       yield { type: "metrics_update", metrics: { ...metrics } };
       yield { type: "error", error: agentError };
-      if (session && this.conversationManager) {
-        await this.conversationManager.saveSession(session);
+      if (session) {
+        session.addMetrics(metrics);
+        if (this.conversationManager) {
+          await this.conversationManager.saveSession(session);
+        }
       }
       return;
     }
   }
 
-  async *executeStream(input: string): AsyncGenerator<AgentEvent> {
+  async *chat(
+    input: string,
+    options?: ChatOptions,
+  ): AsyncGenerator<AgentEvent> {
+    // If sessionId is provided, continue existing conversation
+    if (options?.sessionId) {
+      yield* this.continueConversation(options.sessionId, input);
+      return;
+    }
+
+    // Start new conversation
     let session: Session | null = null;
 
     if (this.conversationManager) {
@@ -124,6 +178,16 @@ export class AIPexAgent {
     yield* this.runExecution(input, session);
   }
 
+  /**
+   * @deprecated Use chat() instead
+   */
+  async *executeStream(input: string): AsyncGenerator<AgentEvent> {
+    yield* this.chat(input);
+  }
+
+  /**
+   * @deprecated Use chat(input, { sessionId }) instead
+   */
   async *continueConversation(
     sessionId: string,
     input: string,
@@ -146,6 +210,10 @@ export class AIPexAgent {
     };
 
     yield* this.runExecution(input, session);
+  }
+
+  getConversationManager(): ConversationManager | undefined {
+    return this.conversationManager;
   }
 
   private transformToolEvent(
