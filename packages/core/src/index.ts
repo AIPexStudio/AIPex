@@ -6,10 +6,10 @@ export { AIPex, AIPexAgent } from "./agent/index.js";
 
 // Config
 export {
-  ConfigBuilder,
+  createConversationConfig,
   DEFAULT_CONVERSATION_CONFIG,
-  loadConversationConfig,
-  saveConversationConfig,
+  isValidConversationStorage,
+  normalizeConversationConfig,
 } from "./config/index.js";
 
 // Conversation
