@@ -1,165 +1,233 @@
-import type { UnifiedMessage } from "../llm/types.js";
-import { generateId } from "../utils/id-generator.js";
-import { extractPreview, generateDefaultPreview } from "./preview.js";
-import type { SessionSummary } from "./storage.js";
+import type { AgentInputItem, Session as OpenAISession } from "@openai/agents";
 import type {
-  CompletedTurn,
+  AgentMetrics,
+  ForkInfo,
   SerializedSession,
   SessionConfig,
-  SessionMetadata,
-  SessionStats,
-} from "./types.js";
+  SessionMetrics,
+  SessionSummary,
+} from "../types.js";
+import { generateId } from "../utils/id-generator.js";
 
-export class Session {
+function createEmptySessionMetrics(): SessionMetrics {
+  return {
+    totalTokensUsed: 0,
+    totalPromptTokens: 0,
+    totalCompletionTokens: 0,
+    executionCount: 0,
+  };
+}
+
+export class Session implements OpenAISession {
   readonly id: string;
-  private turns: CompletedTurn[] = [];
-  private systemPrompt?: string;
-  private metadata: SessionMetadata;
+  readonly parentSessionId?: string;
+  readonly forkAtItemIndex?: number;
+  private items: AgentInputItem[] = [];
+  private metadata: Record<string, unknown> = {};
   private config: SessionConfig;
-  private preview: string;
+  private preview?: string;
+  private sessionMetrics: SessionMetrics = createEmptySessionMetrics();
 
-  constructor(id?: string, config: SessionConfig = {}) {
-    this.id = id || generateId();
-    this.systemPrompt = config.systemPrompt;
-    this.config = {
-      maxHistoryLength: config.maxHistoryLength || 100,
-      maxContextTokens: config.maxContextTokens || 10000,
-      keepRecentTurns: config.keepRecentTurns || 10,
-    };
-    this.metadata = {
-      createdAt: Date.now(),
-      lastActiveAt: Date.now(),
-    };
-    this.preview = generateDefaultPreview(this.metadata.createdAt);
-  }
+  constructor(id?: string, config: SessionConfig = {}, forkInfo?: ForkInfo) {
+    this.id = id ?? generateId();
+    this.config = config;
+    this.parentSessionId = forkInfo?.parentSessionId;
+    this.forkAtItemIndex = forkInfo?.forkAtItemIndex;
 
-  addTurn(turn: CompletedTurn): void {
-    this.turns.push(turn);
-    this.metadata.lastActiveAt = Date.now();
-    this.metadata.totalTurns = this.turns.length;
-
-    // Update preview with first user message (only on first turn)
-    if (this.turns.length === 1) {
-      this.preview = extractPreview(turn.userMessage.content);
-    }
-
-    // Simple length-based truncation - check if we exceeded the limit after adding
-    const maxLength = this.config.maxHistoryLength!;
-    if (this.turns.length > maxLength) {
-      // Keep only the most recent turns
-      const keepCount = this.config.keepRecentTurns!;
-      this.turns = this.turns.slice(-keepCount);
+    if (!this.metadata["createdAt"]) {
+      this.metadata["createdAt"] = Date.now();
     }
   }
 
-  getMessages(): UnifiedMessage[] {
-    const messages: UnifiedMessage[] = [];
+  // OpenAI Session interface implementation
 
-    // Add system prompt if exists
-    if (this.systemPrompt) {
-      messages.push({
-        role: "system",
-        content: this.systemPrompt,
-      });
+  async getSessionId(): Promise<string> {
+    return this.id;
+  }
+
+  async getItems(limit?: number): Promise<AgentInputItem[]> {
+    if (limit === undefined) {
+      return [...this.items];
     }
-
-    // Convert turns to message sequence
-    for (const turn of this.turns) {
-      messages.push(turn.userMessage);
-
-      // Add assistant message
-      if (turn.assistantMessage.content || turn.functionCalls.length === 0) {
-        messages.push(turn.assistantMessage);
-      }
-
-      // Add function calls and responses
-      for (let i = 0; i < turn.functionCalls.length; i++) {
-        messages.push({
-          role: "assistant",
-          content: "",
-          functionCall: turn.functionCalls[i],
-        });
-
-        if (turn.functionResults[i]) {
-          messages.push({
-            role: "function",
-            content: JSON.stringify(turn.functionResults[i].result),
-            functionResponse: turn.functionResults[i],
-          });
-        }
-      }
-    }
-
-    return messages;
+    return this.items.slice(-limit);
   }
 
-  getRecentTurns(count: number): CompletedTurn[] {
-    return this.turns.slice(-count);
+  async addItems(items: AgentInputItem[]): Promise<void> {
+    this.items.push(...items);
+    this.metadata["lastActiveAt"] = Date.now();
+    this.updatePreview();
   }
 
-  getTurnCount(): number {
-    return this.turns.length;
+  async popItem(): Promise<AgentInputItem | undefined> {
+    return this.items.pop();
   }
 
-  getStats(): SessionStats {
-    const totalTurns = this.turns.length;
-    const totalTokens = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.tokensUsed || 0),
-      0,
-    );
-    const totalDuration = this.turns.reduce(
-      (sum, turn) => sum + (turn.metadata?.duration || 0),
-      0,
-    );
-    const avgTurnDuration = totalTurns > 0 ? totalDuration / totalTurns : 0;
-    const toolCallCount = this.turns.reduce(
-      (sum, turn) => sum + turn.functionCalls.length,
-      0,
-    );
+  async clearSession(): Promise<void> {
+    this.items = [];
+    this.preview = undefined;
+  }
 
-    return {
-      totalTurns,
-      totalTokens,
-      avgTurnDuration,
-      toolCallCount,
-      createdAt: this.metadata.createdAt,
-      lastActiveAt: this.metadata.lastActiveAt,
-    };
+  // Extended functionality
+
+  getItemCount(): number {
+    return this.items.length;
   }
 
   getSummary(): SessionSummary {
+    const now = Date.now();
+    const createdAtValue = this.metadata["createdAt"];
+    const createdAt = typeof createdAtValue === "number" ? createdAtValue : now;
+
+    const lastActiveAtValue = this.metadata["lastActiveAt"];
+    const lastActiveAt =
+      typeof lastActiveAtValue === "number" ? lastActiveAtValue : createdAt;
+
+    const tagsValue = this.metadata["tags"];
+    const tags = Array.isArray(tagsValue) ? tagsValue : [];
+
     return {
       id: this.id,
-      preview: this.preview,
-      createdAt: this.metadata.createdAt,
-      lastActiveAt: this.metadata.lastActiveAt,
-      totalTurns: this.turns.length,
-      tags: this.metadata.tags,
+      preview: this.preview ?? "",
+      createdAt,
+      lastActiveAt,
+      itemCount: this.items.length,
+      tags,
+      parentSessionId: this.parentSessionId,
+      forkAtItemIndex: this.forkAtItemIndex,
     };
   }
 
-  setSystemPrompt(prompt: string): void {
-    this.systemPrompt = prompt;
+  fork(atItemIndex?: number): Session {
+    const index = atItemIndex ?? this.items.length - 1;
+
+    if (index < 0 || index >= this.items.length) {
+      throw new Error(
+        `Invalid item index: ${index}. Must be between 0 and ${this.items.length - 1}`,
+      );
+    }
+
+    const forkedSession = new Session(
+      undefined,
+      { ...this.config },
+      {
+        parentSessionId: this.id,
+        forkAtItemIndex: index,
+      },
+    );
+
+    forkedSession.items = structuredClone(this.items.slice(0, index + 1));
+    const now = Date.now();
+    forkedSession.metadata = {
+      ...structuredClone(this.metadata),
+      createdAt: now,
+      lastActiveAt: now,
+    };
+    forkedSession.updatePreview();
+
+    return forkedSession;
+  }
+
+  getForkInfo(): ForkInfo {
+    return {
+      parentSessionId: this.parentSessionId,
+      forkAtItemIndex: this.forkAtItemIndex,
+    };
+  }
+
+  addMetrics(delta: Partial<AgentMetrics>): void {
+    this.sessionMetrics.totalTokensUsed += delta.tokensUsed ?? 0;
+    this.sessionMetrics.totalPromptTokens += delta.promptTokens ?? 0;
+    this.sessionMetrics.totalCompletionTokens += delta.completionTokens ?? 0;
+    this.sessionMetrics.executionCount += 1;
+  }
+
+  getSessionMetrics(): SessionMetrics {
+    return { ...this.sessionMetrics };
+  }
+
+  setMetadata(key: string, value: unknown): void {
+    this.metadata[key] = value;
+  }
+
+  getMetadata(key: string): unknown {
+    return this.metadata[key];
+  }
+
+  private updatePreview(): void {
+    const latestUserMessage = [...this.items]
+      .reverse()
+      .find((item) => item.type === "message" && item.role === "user");
+
+    const previewSource =
+      this.extractContent(latestUserMessage) ??
+      this.tryGetStringMetadata("lastSummary");
+
+    if (!previewSource) {
+      this.preview = undefined;
+      return;
+    }
+
+    const maxLength = 50;
+    const normalized = previewSource.trim();
+    this.preview =
+      normalized.length > maxLength
+        ? `${normalized.slice(0, maxLength)}...`
+        : normalized;
+  }
+
+  private extractContent(
+    message: AgentInputItem | undefined,
+  ): string | undefined {
+    if (!message || !("content" in message)) {
+      return undefined;
+    }
+
+    const content = message.content;
+    if (typeof content === "string") {
+      return content;
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .filter((c) => c.type === "input_text")
+        .map((c) => (c as { text: string }).text)
+        .join(" ");
+    }
+
+    return undefined;
+  }
+
+  private tryGetStringMetadata(key: string): string | undefined {
+    const value = this.metadata[key];
+    return typeof value === "string" && value.trim().length > 0
+      ? value
+      : undefined;
   }
 
   toJSON(): SerializedSession {
     return {
       id: this.id,
-      turns: this.turns,
-      systemPrompt: this.systemPrompt,
+      items: this.items,
       metadata: this.metadata,
       config: this.config,
-      preview: this.preview,
+      metrics: this.sessionMetrics,
+      parentSessionId: this.parentSessionId,
+      forkAtItemIndex: this.forkAtItemIndex,
     };
   }
 
   static fromJSON(data: SerializedSession): Session {
-    const session = new Session(data.id, data.config);
-    session.turns = data.turns;
-    session.systemPrompt = data.systemPrompt;
-    session.metadata = data.metadata;
-    session.preview =
-      data.preview || generateDefaultPreview(data.metadata.createdAt);
+    if (!data || typeof data !== "object" || !data.id) {
+      throw new Error("Invalid session data: missing required fields");
+    }
+    const session = new Session(data.id, data.config, {
+      parentSessionId: data.parentSessionId,
+      forkAtItemIndex: data.forkAtItemIndex,
+    });
+    session.items = data.items ?? [];
+    session.metadata = data.metadata ?? {};
+    session.sessionMetrics = data.metrics ?? createEmptySessionMetrics();
+    session.updatePreview();
     return session;
   }
 }
