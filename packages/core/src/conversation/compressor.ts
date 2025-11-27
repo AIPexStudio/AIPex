@@ -1,154 +1,78 @@
-import type { LLMProvider } from "../llm/provider.js";
-import type { UnifiedMessage } from "../llm/types.js";
-import type { CompletedTurn } from "./types.js";
-
-export interface CompressionConfig {
-  summarizeAfterTurns?: number;
-  keepRecentTurns?: number;
-  maxSummaryLength?: number;
-}
+import type { AgentInputItem } from "@openai/agents";
+import { Agent, run } from "@openai/agents";
+import type { AiSdkModel, CompressionConfig } from "../types.js";
 
 export class ConversationCompressor {
   private config: Required<CompressionConfig>;
+  private agent: Agent;
 
-  constructor(
-    private llmProvider: LLMProvider,
-    config: CompressionConfig = {},
-  ) {
+  constructor(model: AiSdkModel, config: CompressionConfig = {}) {
     this.config = {
-      summarizeAfterTurns: config.summarizeAfterTurns || 10,
-      keepRecentTurns: config.keepRecentTurns || 5,
-      maxSummaryLength: config.maxSummaryLength || 500,
+      summarizeAfterItems: config.summarizeAfterItems ?? 20,
+      keepRecentItems: config.keepRecentItems ?? 10,
+      maxSummaryLength: config.maxSummaryLength ?? 500,
     };
+    this.agent = new Agent({
+      name: "Summarizer",
+      instructions: `You are a conversation summarizer. Create a concise summary capturing key points, decisions, and information shared. Keep the summary under ${this.config.maxSummaryLength} characters.`,
+      model,
+    });
   }
 
-  async compressTurns(turns: CompletedTurn[]): Promise<{
+  async compressItems(items: AgentInputItem[]): Promise<{
     summary: string;
-    compressedTurns: CompletedTurn[];
+    compressedItems: AgentInputItem[];
   }> {
-    if (turns.length <= this.config.summarizeAfterTurns) {
-      return { summary: "", compressedTurns: turns };
+    if (items.length <= this.config.summarizeAfterItems) {
+      return { summary: "", compressedItems: items };
     }
 
-    // Split turns into old (to summarize) and recent (to keep)
-    const turnsToSummarize = turns.slice(
+    const itemsToSummarize = items.slice(
       0,
-      turns.length - this.config.keepRecentTurns,
+      items.length - this.config.keepRecentItems,
     );
-    const recentTurns = turns.slice(-this.config.keepRecentTurns);
+    const recentItems = items.slice(-this.config.keepRecentItems);
 
-    // Generate summary of old turns
-    const summary = await this.generateSummary(turnsToSummarize);
+    const summary = await this.generateSummary(itemsToSummarize);
 
     return {
       summary,
-      compressedTurns: recentTurns,
+      compressedItems: recentItems,
     };
   }
 
-  private async generateSummary(turns: CompletedTurn[]): Promise<string> {
-    // Convert turns to a readable format for the LLM
-    const conversationText = turns
-      .map((turn) => {
-        let text = `User: ${turn.userMessage.content}\n`;
-        text += `Assistant: ${turn.assistantMessage.content}`;
-
-        if (turn.functionCalls.length > 0) {
-          text += `\n  Tools used: ${turn.functionCalls.map((fc) => fc.name).join(", ")}`;
-        }
-
-        return text;
+  private async generateSummary(items: AgentInputItem[]): Promise<string> {
+    const conversationText = items
+      .filter((item) => item.type === "message")
+      .map((item) => {
+        const role = "role" in item ? item.role : "unknown";
+        const content = this.extractContent(item);
+        return `${role}: ${content}`;
       })
-      .join("\n\n");
+      .join("\n");
 
-    // Request summary from LLM
-    const response = await this.llmProvider.generateContent({
-      messages: [
-        {
-          role: "system",
-          content: `You are a conversation summarizer. Create a concise summary of the following conversation, capturing key points, decisions, and information shared. Keep the summary under ${this.config.maxSummaryLength} characters.`,
-        },
-        {
-          role: "user",
-          content: `Please summarize this conversation:\n\n${conversationText}`,
-        },
-      ],
-    });
-
-    return response.text.trim();
-  }
-
-  async compressMessages(
-    messages: UnifiedMessage[],
-  ): Promise<UnifiedMessage[]> {
-    if (messages.length <= this.config.summarizeAfterTurns * 2) {
-      return messages;
-    }
-
-    // Keep system messages
-    const systemMessages = messages.filter((m) => m.role === "system");
-
-    // Group remaining messages into turns (user + assistant pairs)
-    const nonSystemMessages = messages.filter((m) => m.role !== "system");
-    const turns: UnifiedMessage[][] = [];
-    let currentTurn: UnifiedMessage[] = [];
-
-    for (const message of nonSystemMessages) {
-      currentTurn.push(message);
-
-      // A turn is complete when we have an assistant response
-      if (message.role === "assistant") {
-        turns.push(currentTurn);
-        currentTurn = [];
-      }
-    }
-
-    // If there's an incomplete turn, add it
-    if (currentTurn.length > 0) {
-      turns.push(currentTurn);
-    }
-
-    // If we don't have enough turns, return as is
-    if (turns.length <= this.config.summarizeAfterTurns) {
-      return messages;
-    }
-
-    // Summarize old turns
-    const turnsToSummarize = turns.slice(
-      0,
-      turns.length - this.config.keepRecentTurns,
+    const result = await run(
+      this.agent,
+      `Summarize this conversation:\n\n${conversationText}`,
     );
-    const recentTurns = turns.slice(-this.config.keepRecentTurns);
 
-    const conversationText = turnsToSummarize
-      .map((turn) => {
-        return turn.map((msg) => `${msg.role}: ${msg.content}`).join("\n");
-      })
-      .join("\n\n");
-
-    const response = await this.llmProvider.generateContent({
-      messages: [
-        {
-          role: "system",
-          content: `You are a conversation summarizer. Create a concise summary of the following conversation, capturing key points, decisions, and information shared. Keep the summary under ${this.config.maxSummaryLength} characters.`,
-        },
-        {
-          role: "user",
-          content: `Please summarize this conversation:\n\n${conversationText}`,
-        },
-      ],
-    });
-
-    const summaryMessage: UnifiedMessage = {
-      role: "system",
-      content: `Previous conversation summary: ${response.text.trim()}`,
-    };
-
-    // Combine: system messages + summary + recent turns
-    return [...systemMessages, summaryMessage, ...recentTurns.flat()];
+    return (result.finalOutput ?? "").trim();
   }
 
-  shouldCompress(turnCount: number): boolean {
-    return turnCount > this.config.summarizeAfterTurns;
+  private extractContent(item: AgentInputItem): string {
+    if (!("content" in item)) return "";
+    const content = item.content;
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      return content
+        .filter((c) => c.type === "input_text" || c.type === "output_text")
+        .map((c) => ("text" in c ? c.text : ""))
+        .join(" ");
+    }
+    return "";
+  }
+
+  shouldCompress(itemCount: number): boolean {
+    return itemCount > this.config.summarizeAfterItems;
   }
 }

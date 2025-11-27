@@ -1,449 +1,377 @@
+import type { AgentInputItem } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Session } from "./session.js";
-import type { CompletedTurn } from "./types.js";
+
+const createUserMessage = (content: string): AgentInputItem => ({
+  type: "message",
+  role: "user",
+  content,
+});
+
+const createAssistantMessage = (content: string): AgentInputItem => ({
+  type: "message",
+  role: "assistant",
+  status: "completed",
+  content: [{ type: "output_text", text: content }],
+});
 
 describe("Session", () => {
   let session: Session;
 
   beforeEach(() => {
-    session = new Session("test-id");
+    session = new Session();
   });
 
-  describe("constructor", () => {
-    it("should accept custom config", () => {
-      const customSession = new Session("custom-id", {
-        systemPrompt: "You are a helpful assistant",
-        maxHistoryLength: 50,
-        maxContextTokens: 5000,
-        keepRecentTurns: 5,
-      });
-
-      expect(customSession.id).toBe("custom-id");
-    });
-  });
-
-  describe("addTurn", () => {
-    it("should add turn and update metadata", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-
-      expect(session.getTurnCount()).toBe(1);
-      expect(session.getSummary().totalTurns).toBe(1);
+  describe("OpenAI Session interface", () => {
+    it("should return session ID", async () => {
+      const id = await session.getSessionId();
+      expect(id).toBe(session.id);
     });
 
-    it("should truncate old turns when exceeding maxHistoryLength", () => {
-      const customSession = new Session("test", {
-        maxHistoryLength: 5,
-        keepRecentTurns: 2,
-      });
+    it("should add and get items", async () => {
+      const items: AgentInputItem[] = [
+        createUserMessage("Hello"),
+        createAssistantMessage("Hi there!"),
+      ];
 
-      for (let i = 1; i <= 10; i++) {
-        const turn: CompletedTurn = {
-          id: `turn-${i}`,
-          userMessage: { role: "user", content: `Message ${i}` },
-          assistantMessage: { role: "assistant", content: `Response ${i}` },
-          functionCalls: [],
-          functionResults: [],
-          timestamp: Date.now(),
-        };
-        customSession.addTurn(turn);
-      }
+      await session.addItems(items);
+      const retrieved = await session.getItems();
 
-      expect(customSession.getTurnCount()).toBe(2);
-      const recentTurns = customSession.getRecentTurns(2);
-      expect(recentTurns[0].id).toBe("turn-9");
-      expect(recentTurns[1].id).toBe("turn-10");
+      expect(retrieved.length).toBe(2);
+    });
+
+    it("should get items with limit", async () => {
+      const items: AgentInputItem[] = [
+        createUserMessage("Message 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Message 2"),
+        createAssistantMessage("Response 2"),
+      ];
+
+      await session.addItems(items);
+      const limited = await session.getItems(2);
+
+      expect(limited.length).toBe(2);
+    });
+
+    it("should pop item", async () => {
+      const items: AgentInputItem[] = [
+        createUserMessage("Hello"),
+        createAssistantMessage("Hi!"),
+      ];
+
+      await session.addItems(items);
+      await session.popItem();
+
+      expect(session.getItemCount()).toBe(1);
+    });
+
+    it("should clear session", async () => {
+      await session.addItems([createUserMessage("Hello")]);
+      await session.clearSession();
+
+      expect(session.getItemCount()).toBe(0);
     });
   });
 
-  describe("getMessages", () => {
-    it("should return empty array for no turns", () => {
-      const messages = session.getMessages();
-      expect(messages).toEqual([]);
+  describe("Fork functionality", () => {
+    beforeEach(async () => {
+      const items: AgentInputItem[] = [
+        createUserMessage("Turn 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Turn 2"),
+        createAssistantMessage("Response 2"),
+        createUserMessage("Turn 3"),
+        createAssistantMessage("Response 3"),
+      ];
+      await session.addItems(items);
     });
 
-    it("should include system prompt if set", () => {
-      const sessionWithPrompt = new Session("test", {
-        systemPrompt: "You are helpful",
-      });
+    it("should fork a session at specified item index", async () => {
+      const forkedSession = session.fork(3);
 
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      sessionWithPrompt.addTurn(turn);
-      const messages = sessionWithPrompt.getMessages();
-
-      expect(messages[0].role).toBe("system");
-      expect(messages[0].content).toBe("You are helpful");
+      expect(forkedSession.id).not.toBe(session.id);
+      expect(forkedSession.getItemCount()).toBe(4);
+      expect(forkedSession.parentSessionId).toBe(session.id);
+      expect(forkedSession.forkAtItemIndex).toBe(3);
     });
 
-    it("should convert turns to messages", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi there" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
+    it("should fork at last item by default", () => {
+      const forkedSession = session.fork();
 
-      session.addTurn(turn);
-      const messages = session.getMessages();
-
-      expect(messages.length).toBe(2);
-      expect(messages[0].role).toBe("user");
-      expect(messages[0].content).toBe("Hello");
-      expect(messages[1].role).toBe("assistant");
-      expect(messages[1].content).toBe("Hi there");
+      expect(forkedSession.getItemCount()).toBe(6);
+      expect(forkedSession.forkAtItemIndex).toBe(5);
     });
 
-    it("should include function calls and responses", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "What's the weather?" },
-        assistantMessage: { role: "assistant", content: "" },
-        functionCalls: [
-          {
-            id: "call-1",
-            name: "get_weather",
-            params: { city: "Tokyo" },
-          },
-        ],
-        functionResults: [
-          {
-            id: "call-1",
-            name: "get_weather",
-            result: { temperature: 25, condition: "sunny" },
-          },
-        ],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-      const messages = session.getMessages();
-
-      expect(messages.length).toBe(3);
-      expect(messages[0].role).toBe("user");
-      expect(messages[1].role).toBe("assistant");
-      expect(messages[1].functionCall).toBeDefined();
-      expect(messages[2].role).toBe("function");
-      expect(messages[2].functionResponse).toBeDefined();
+    it("should throw error for invalid item index", () => {
+      expect(() => session.fork(10)).toThrow();
+      expect(() => session.fork(-1)).toThrow();
     });
 
-    it("should handle assistant message with content and no function calls", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi, how can I help?" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
+    it("should have independent items after fork", async () => {
+      const forkedSession = session.fork(3);
 
-      session.addTurn(turn);
-      const messages = session.getMessages();
+      await forkedSession.addItems([createUserMessage("New message")]);
 
-      expect(messages.length).toBe(2);
-      expect(messages[1].content).toBe("Hi, how can I help?");
+      expect(session.getItemCount()).toBe(6);
+      expect(forkedSession.getItemCount()).toBe(5);
+    });
+
+    it("should get fork info correctly", () => {
+      const forkedSession = session.fork(3);
+      const forkInfo = forkedSession.getForkInfo();
+
+      expect(forkInfo.parentSessionId).toBe(session.id);
+      expect(forkInfo.forkAtItemIndex).toBe(3);
+    });
+
+    it("should refresh timestamps when forking", () => {
+      const beforeFork = Date.now();
+      const forkedSession = session.fork(3);
+      const summary = forkedSession.getSummary();
+
+      expect(summary.createdAt).toBeGreaterThanOrEqual(beforeFork);
+      expect(summary.lastActiveAt).toBeGreaterThanOrEqual(beforeFork);
     });
   });
 
-  describe("getRecentTurns", () => {
-    it("should return requested number of recent turns", () => {
-      for (let i = 1; i <= 5; i++) {
-        const turn: CompletedTurn = {
-          id: `turn-${i}`,
-          userMessage: { role: "user", content: `Message ${i}` },
-          assistantMessage: { role: "assistant", content: `Response ${i}` },
-          functionCalls: [],
-          functionResults: [],
-          timestamp: Date.now(),
-        };
-        session.addTurn(turn);
-      }
+  describe("Serialization", () => {
+    it("should preserve all data through serialization including fork info", async () => {
+      await session.addItems([
+        createUserMessage("Hello"),
+        createAssistantMessage("Hi!"),
+      ]);
 
-      const recent = session.getRecentTurns(3);
-      expect(recent.length).toBe(3);
-      expect(recent[0].id).toBe("turn-3");
-      expect(recent[2].id).toBe("turn-5");
+      const forkedSession = session.fork(0);
+      const serialized = forkedSession.toJSON();
+      const deserialized = Session.fromJSON(serialized);
+
+      expect(deserialized.id).toBe(forkedSession.id);
+      expect(deserialized.getItemCount()).toBe(1);
+      expect(deserialized.parentSessionId).toBe(session.id);
+      expect(deserialized.forkAtItemIndex).toBe(0);
     });
 
-    it("should return all turns if count exceeds total", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-      const recent = session.getRecentTurns(10);
-      expect(recent.length).toBe(1);
+    it("should throw error for invalid session data", () => {
+      expect(() => Session.fromJSON(null as any)).toThrow(
+        "Invalid session data",
+      );
+      expect(() => Session.fromJSON({} as any)).toThrow("Invalid session data");
     });
   });
 
-  describe("getTurnCount", () => {
-    it("should return zero for new session", () => {
-      expect(session.getTurnCount()).toBe(0);
+  describe("Session summary", () => {
+    it("should generate summary correctly", async () => {
+      await session.addItems([
+        createUserMessage("Hello world"),
+        createAssistantMessage("Hi!"),
+      ]);
+
+      const summary = session.getSummary();
+
+      expect(summary.id).toBe(session.id);
+      expect(summary.itemCount).toBe(2);
+      expect(summary.preview).toBe("Hello world");
     });
 
-    it("should return correct count after adding turns", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
+    it("should include fork info in summary", async () => {
+      await session.addItems([
+        createUserMessage("Test"),
+        createAssistantMessage("Response"),
+      ]);
 
-      session.addTurn(turn);
-      expect(session.getTurnCount()).toBe(1);
+      const forkedSession = session.fork(0);
+      const summary = forkedSession.getSummary();
 
-      session.addTurn({ ...turn, id: "turn-2" });
-      expect(session.getTurnCount()).toBe(2);
+      expect(summary.parentSessionId).toBe(session.id);
+      expect(summary.forkAtItemIndex).toBe(0);
+    });
+
+    it("should fall back to stored summary when preview text missing", async () => {
+      session.setMetadata("lastSummary", "Earlier summary text");
+      await session.addItems([
+        {
+          type: "message",
+          role: "system",
+          content: "Conversation summary:\nEarlier summary text",
+        } as AgentInputItem,
+      ]);
+
+      const summary = session.getSummary();
+      expect(summary.preview).toContain("Earlier summary text");
     });
   });
 
-  describe("getStats", () => {
-    it("should return stats for empty session", () => {
-      const stats = session.getStats();
-
-      expect(stats.totalTurns).toBe(0);
-      expect(stats.totalTokens).toBe(0);
-      expect(stats.avgTurnDuration).toBe(0);
-      expect(stats.toolCallCount).toBe(0);
-      expect(stats.createdAt).toBeGreaterThan(0);
-      expect(stats.lastActiveAt).toBeGreaterThan(0);
+  describe("Metadata", () => {
+    it("should set and get metadata", () => {
+      session.setMetadata("custom", "value");
+      expect(session.getMetadata("custom")).toBe("value");
     });
 
-    it("should calculate stats correctly", () => {
-      const turn1: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-        metadata: {
-          tokensUsed: 100,
-          duration: 1000,
+    it("should return undefined for non-existent metadata", () => {
+      expect(session.getMetadata("nonexistent")).toBeUndefined();
+    });
+  });
+
+  describe("Preview generation", () => {
+    it("should truncate long preview", async () => {
+      const longMessage = "A".repeat(100);
+      await session.addItems([createUserMessage(longMessage)]);
+
+      const summary = session.getSummary();
+      expect(summary.preview.length).toBeLessThanOrEqual(53);
+      expect(summary.preview.endsWith("...")).toBe(true);
+    });
+
+    it("should handle array content in user message", async () => {
+      await session.addItems([
+        {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: "Hello from array" }],
         },
-      };
+      ]);
 
-      const turn2: CompletedTurn = {
-        id: "turn-2",
-        userMessage: { role: "user", content: "Weather?" },
-        assistantMessage: { role: "assistant", content: "Sunny" },
-        functionCalls: [
-          { id: "call-1", name: "get_weather", params: {} },
-          { id: "call-2", name: "get_forecast", params: {} },
-        ],
-        functionResults: [],
-        timestamp: Date.now(),
-        metadata: {
-          tokensUsed: 150,
-          duration: 2000,
-        },
-      };
-
-      session.addTurn(turn1);
-      session.addTurn(turn2);
-
-      const stats = session.getStats();
-
-      expect(stats.totalTurns).toBe(2);
-      expect(stats.totalTokens).toBe(250);
-      expect(stats.avgTurnDuration).toBe(1500);
-      expect(stats.toolCallCount).toBe(2);
+      const summary = session.getSummary();
+      expect(summary.preview).toBe("Hello from array");
     });
   });
 
-  describe("setSystemPrompt", () => {
-    it("should set system prompt", () => {
-      session.setSystemPrompt("Be helpful");
+  describe("Session metrics", () => {
+    it("should start with zero metrics", () => {
+      const metrics = session.getSessionMetrics();
 
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-      const messages = session.getMessages();
-
-      expect(messages[0].role).toBe("system");
-      expect(messages[0].content).toBe("Be helpful");
-    });
-  });
-
-  describe("toJSON and fromJSON", () => {
-    it("should serialize and deserialize correctly", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "Hello" },
-        assistantMessage: { role: "assistant", content: "Hi" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-      session.setSystemPrompt("Be helpful");
-
-      const json = session.toJSON();
-      const restored = Session.fromJSON(json);
-
-      expect(restored.id).toBe(session.id);
-      expect(restored.getTurnCount()).toBe(1);
-      expect(restored.getMessages()[0].role).toBe("system");
+      expect(metrics.totalTokensUsed).toBe(0);
+      expect(metrics.totalPromptTokens).toBe(0);
+      expect(metrics.totalCompletionTokens).toBe(0);
+      expect(metrics.executionCount).toBe(0);
     });
 
-    it("should preserve all metadata", () => {
-      session["metadata"].tags = ["important"];
-
-      const json = session.toJSON();
-      const restored = Session.fromJSON(json);
-
-      expect(restored.getSummary().tags).toEqual(["important"]);
-    });
-
-    it("should generate default preview if missing", () => {
-      const json = session.toJSON();
-      delete (json as any).preview;
-
-      const restored = Session.fromJSON(json);
-      expect(restored.getSummary().preview).toMatch(/^Conversation/);
-    });
-  });
-
-  describe("getSummary", () => {
-    it("should generate preview from first user message", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "帮我分析代码" },
-        assistantMessage: { role: "assistant", content: "好的" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-
-      const summary = session.getSummary();
-      expect(summary.id).toBe("test-id");
-      expect(summary.preview).toBe("帮我分析代码");
-      expect(summary.totalTurns).toBe(1);
-      expect(summary.createdAt).toBeGreaterThan(0);
-      expect(summary.lastActiveAt).toBeGreaterThan(0);
-    });
-
-    it("should use default preview when no user message", () => {
-      const summary = session.getSummary();
-      expect(summary.preview).toMatch(/^Conversation/);
-      expect(summary.totalTurns).toBe(0);
-    });
-
-    it("should handle multiple turns correctly", () => {
-      const turn1: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "第一条消息" },
-        assistantMessage: { role: "assistant", content: "回复1" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      const turn2: CompletedTurn = {
-        id: "turn-2",
-        userMessage: { role: "user", content: "第二条消息" },
-        assistantMessage: { role: "assistant", content: "回复2" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn1);
-      session.addTurn(turn2);
-
-      const summary = session.getSummary();
-      expect(summary.preview).toBe("第一条消息");
-      expect(summary.totalTurns).toBe(2);
-    });
-
-    it("should truncate long first message", () => {
-      const longMessage = "A".repeat(150);
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: longMessage },
-        assistantMessage: { role: "assistant", content: "回复" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
-
-      session.addTurn(turn);
-
-      const summary = session.getSummary();
-      expect(summary.preview.length).toBe(103);
-      expect(summary.preview).toContain("...");
-    });
-
-    it("should include tags in summary", () => {
-      const sessionWithTags = new Session("test-id", {
-        systemPrompt: "test",
+    it("should accumulate metrics correctly", () => {
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
       });
-      sessionWithTags["metadata"].tags = ["important", "urgent"];
+      session.addMetrics({
+        tokensUsed: 50,
+        promptTokens: 30,
+        completionTokens: 20,
+      });
 
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "测试消息" },
-        assistantMessage: { role: "assistant", content: "回复" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
-      };
+      const metrics = session.getSessionMetrics();
 
-      sessionWithTags.addTurn(turn);
-
-      const summary = sessionWithTags.getSummary();
-      expect(summary.tags).toEqual(["important", "urgent"]);
+      expect(metrics.totalTokensUsed).toBe(150);
+      expect(metrics.totalPromptTokens).toBe(90);
+      expect(metrics.totalCompletionTokens).toBe(60);
+      expect(metrics.executionCount).toBe(2);
     });
 
-    it("should update totalTurns in summary", () => {
-      const turn: CompletedTurn = {
-        id: "turn-1",
-        userMessage: { role: "user", content: "测试" },
-        assistantMessage: { role: "assistant", content: "回复" },
-        functionCalls: [],
-        functionResults: [],
-        timestamp: Date.now(),
+    it("should handle partial metrics", () => {
+      session.addMetrics({ tokensUsed: 100 });
+      session.addMetrics({ promptTokens: 50 });
+
+      const metrics = session.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(100);
+      expect(metrics.totalPromptTokens).toBe(50);
+      expect(metrics.totalCompletionTokens).toBe(0);
+      expect(metrics.executionCount).toBe(2);
+    });
+
+    it("should return a copy of metrics", () => {
+      session.addMetrics({ tokensUsed: 100 });
+      const metrics1 = session.getSessionMetrics();
+      metrics1.totalTokensUsed = 999;
+
+      const metrics2 = session.getSessionMetrics();
+      expect(metrics2.totalTokensUsed).toBe(100);
+    });
+
+    it("should reset metrics when forking", async () => {
+      await session.addItems([
+        createUserMessage("Test"),
+        createAssistantMessage("Response"),
+      ]);
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+
+      const forkedSession = session.fork(0);
+      const forkedMetrics = forkedSession.getSessionMetrics();
+
+      expect(forkedMetrics.totalTokensUsed).toBe(0);
+      expect(forkedMetrics.executionCount).toBe(0);
+    });
+
+    it("should preserve metrics through serialization", () => {
+      session.addMetrics({
+        tokensUsed: 200,
+        promptTokens: 120,
+        completionTokens: 80,
+      });
+      session.addMetrics({
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+      });
+
+      const serialized = session.toJSON();
+      const deserialized = Session.fromJSON(serialized);
+      const metrics = deserialized.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(300);
+      expect(metrics.totalPromptTokens).toBe(180);
+      expect(metrics.totalCompletionTokens).toBe(120);
+      expect(metrics.executionCount).toBe(2);
+    });
+
+    it("should handle missing metrics in serialized data", () => {
+      const serialized = session.toJSON();
+      delete (serialized as any).metrics;
+
+      const deserialized = Session.fromJSON(serialized);
+      const metrics = deserialized.getSessionMetrics();
+
+      expect(metrics.totalTokensUsed).toBe(0);
+      expect(metrics.executionCount).toBe(0);
+    });
+  });
+
+  describe("Fork deep copy", () => {
+    it("should deep copy items when forking", async () => {
+      const item: AgentInputItem = {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "Original text" }],
       };
+      await session.addItems([item, createAssistantMessage("Response")]);
 
-      session.addTurn(turn);
-      expect(session.getSummary().totalTurns).toBe(1);
+      const forkedSession = session.fork(1);
+      const forkedItems = await forkedSession.getItems();
 
-      session.addTurn(turn);
-      expect(session.getSummary().totalTurns).toBe(2);
+      (forkedItems[0] as any).content[0].text = "Modified text";
+
+      const originalItems = await session.getItems();
+      expect((originalItems[0] as any).content[0].text).toBe("Original text");
+    });
+
+    it("should not affect parent session when modifying forked items array", async () => {
+      await session.addItems([
+        createUserMessage("Message 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Message 2"),
+        createAssistantMessage("Response 2"),
+      ]);
+
+      const forkedSession = session.fork(1);
+      await forkedSession.popItem();
+      await forkedSession.addItems([createUserMessage("New message")]);
+
+      expect(session.getItemCount()).toBe(4);
+      expect(forkedSession.getItemCount()).toBe(2);
     });
   });
 });
