@@ -34,7 +34,7 @@ jobs:
         run: pnpm install
 
       - name: Format check
-        run: npx biome format . --check
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
