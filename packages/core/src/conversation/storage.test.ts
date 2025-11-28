@@ -1,7 +1,9 @@
 import type { AgentInputItem } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
-import { InMemorySessionStorage } from "./memory.js";
+import { InMemoryStorage } from "../storage/memory.js";
+import type { SerializedSession } from "../types.js";
 import { Session } from "./session.js";
+import { SessionStorage } from "./storage.js";
 
 const createUserMessage = (content: string): AgentInputItem => ({
   type: "message",
@@ -16,13 +18,13 @@ const createAssistantMessage = (content: string): AgentInputItem => ({
   content: [{ type: "output_text", text: content }],
 });
 
-describe("InMemorySessionStorage", () => {
-  let storage: InMemorySessionStorage;
+describe("SessionStorage", () => {
+  let storage: SessionStorage;
   let session1: Session;
   let session2: Session;
 
   beforeEach(async () => {
-    storage = new InMemorySessionStorage();
+    storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
     session1 = new Session("session-1");
     session2 = new Session("session-2");
 
@@ -103,15 +105,5 @@ describe("InMemorySessionStorage", () => {
       const tree = await storage.getSessionTree();
       expect(tree.length).toBe(2);
     });
-  });
-
-  it("should clear all sessions", async () => {
-    await storage.save(session1);
-    await storage.save(session2);
-
-    storage.clear();
-
-    const summaries = await storage.listAll();
-    expect(summaries.length).toBe(0);
   });
 });

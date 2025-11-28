@@ -1,36 +1,54 @@
+import type { KeyValueStorage } from "../storage/index.js";
 import type {
+  SerializedSession,
   SessionStorageAdapter,
   SessionSummary,
   SessionTree,
 } from "../types.js";
-import type { Session } from "./session.js";
+import { Session } from "./session.js";
 
-export class InMemorySessionStorage implements SessionStorageAdapter {
-  private sessions = new Map<string, Session>();
+export class SessionStorage implements SessionStorageAdapter {
+  constructor(private storage: KeyValueStorage<SerializedSession>) {}
 
   async save(session: Session): Promise<void> {
-    this.sessions.set(session.id, session);
+    await this.storage.save(session.id, session.toJSON());
   }
 
   async load(id: string): Promise<Session | null> {
-    return this.sessions.get(id) ?? null;
+    const data = await this.storage.load(id);
+    if (!data) return null;
+
+    try {
+      return Session.fromJSON(data);
+    } catch (error) {
+      console.error(`Failed to deserialize session: ${error}`);
+      return null;
+    }
   }
 
   async delete(id: string): Promise<void> {
-    this.sessions.delete(id);
+    await this.storage.delete(id);
   }
 
   async listAll(): Promise<SessionSummary[]> {
-    return Array.from(this.sessions.values()).map((session) =>
-      session.getSummary(),
-    );
+    const allSessions = await this.storage.listAll();
+    const summaries: SessionSummary[] = [];
+
+    for (const data of allSessions) {
+      try {
+        const session = Session.fromJSON(data);
+        summaries.push(session.getSummary());
+      } catch (error) {
+        console.error(`Failed to deserialize session: ${error}`);
+      }
+    }
+
+    return summaries;
   }
 
   async getChildren(parentId: string): Promise<SessionSummary[]> {
     const allSummaries = await this.listAll();
-    return allSummaries.filter(
-      (summary) => summary.parentSessionId === parentId,
-    );
+    return allSummaries.filter((s) => s.parentSessionId === parentId);
   }
 
   async getSessionTree(rootId?: string): Promise<SessionTree[]> {
@@ -61,9 +79,5 @@ export class InMemorySessionStorage implements SessionStorageAdapter {
     }
 
     return buildTree(undefined);
-  }
-
-  clear(): void {
-    this.sessions.clear();
   }
 }

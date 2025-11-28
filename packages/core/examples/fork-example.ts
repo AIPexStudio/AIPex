@@ -3,13 +3,15 @@ import {
   AIPexAgent,
   aisdk,
   ConversationManager,
-  InMemorySessionStorage,
+  InMemoryStorage,
+  type SerializedSession,
+  SessionStorage,
 } from "../src/index.js";
 
 async function main() {
   console.log("🤖 AIPex Core - Session Fork Example\n");
 
-  const storage = new InMemorySessionStorage();
+  const storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
   const manager = new ConversationManager(storage);
 
   const agent = AIPexAgent.create({

@@ -1,8 +1,10 @@
 import type { AgentInputItem } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
+import { InMemoryStorage } from "../storage/memory.js";
+import type { SerializedSession } from "../types.js";
 import type { ConversationCompressor } from "./compressor.js";
 import { ConversationManager } from "./manager.js";
-import { InMemorySessionStorage } from "./memory.js";
+import { SessionStorage } from "./storage.js";
 
 const createUserMessage = (content: string): AgentInputItem => ({
   type: "message",
@@ -19,10 +21,10 @@ const createAssistantMessage = (content: string): AgentInputItem => ({
 
 describe("ConversationManager", () => {
   let manager: ConversationManager;
-  let storage: InMemorySessionStorage;
+  let storage: SessionStorage;
 
   beforeEach(() => {
-    storage = new InMemorySessionStorage();
+    storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
     manager = new ConversationManager(storage);
   });
 
