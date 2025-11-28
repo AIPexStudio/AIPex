@@ -5,8 +5,9 @@ import {
 } from "@openai/agents";
 import { ConversationCompressor } from "../conversation/compressor.js";
 import { ConversationManager } from "../conversation/manager.js";
-import { InMemorySessionStorage } from "../conversation/memory.js";
 import type { Session } from "../conversation/session.js";
+import { SessionStorage } from "../conversation/storage.js";
+import { InMemoryStorage } from "../storage/memory.js";
 import type {
   AgentEvent,
   AgentMetrics,
@@ -56,9 +57,9 @@ export class AIPex {
       return undefined;
     }
 
-    // Build storage (default to InMemorySessionStorage)
+    // Build storage (default to in-memory storage)
     const storage: SessionStorageAdapter =
-      options.storage ?? new InMemorySessionStorage();
+      options.storage ?? new SessionStorage(new InMemoryStorage());
 
     // Build compressor if compression config is provided
     const compressor = options.compression

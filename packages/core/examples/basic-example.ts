@@ -7,7 +7,9 @@ import {
   ConversationManager,
   calculatorTool,
   httpFetchTool,
-  InMemorySessionStorage,
+  InMemoryStorage,
+  type SerializedSession,
+  SessionStorage,
   tool,
 } from "../src/index.js";
 
@@ -42,7 +44,7 @@ async function main() {
   // Example 2: Conversation with session management
   console.log("\n📝 Example 2: Conversation with Session");
 
-  const storage = new InMemorySessionStorage();
+  const storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
   const manager = new ConversationManager(storage);
 
   const agent = AIPexAgent.create({
@@ -129,7 +131,9 @@ async function main() {
     keepRecentItems: 2,
   });
 
-  const compressStorage = new InMemorySessionStorage();
+  const compressStorage = new SessionStorage(
+    new InMemoryStorage<SerializedSession>(),
+  );
   const compressManager = new ConversationManager(compressStorage, {
     compressor,
   });

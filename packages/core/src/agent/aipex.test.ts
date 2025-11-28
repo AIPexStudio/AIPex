@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationManager } from "../conversation/manager.js";
-import { InMemorySessionStorage } from "../conversation/memory.js";
-import type { AgentEvent, AiSdkModel } from "../types.js";
+import { SessionStorage } from "../conversation/storage.js";
+import { InMemoryStorage } from "../storage/memory.js";
+import type { AgentEvent, AiSdkModel, SerializedSession } from "../types.js";
 import { AIPex } from "./aipex.js";
 
 vi.mock("@openai/agents", () => ({
@@ -98,7 +99,9 @@ describe("AIPex", () => {
         }),
       );
 
-      const customStorage = new InMemorySessionStorage();
+      const customStorage = new SessionStorage(
+        new InMemoryStorage<SerializedSession>(),
+      );
       const agent = AIPex.create({
         instructions: "Test",
         model: mockModel,
@@ -154,7 +157,9 @@ describe("AIPex", () => {
         }),
       );
 
-      const storage = new InMemorySessionStorage();
+      const storage = new SessionStorage(
+        new InMemoryStorage<SerializedSession>(),
+      );
       const customManager = new ConversationManager(storage);
 
       const agent = AIPex.create({
