@@ -14,10 +14,9 @@ export {
 
 // Conversation
 export { ConversationCompressor } from "./conversation/compressor.js";
-export { IndexedDBSessionStorage } from "./conversation/indexeddb.js";
 export { ConversationManager } from "./conversation/manager.js";
-export { InMemorySessionStorage } from "./conversation/memory.js";
 export { Session } from "./conversation/session.js";
+export { SessionStorage } from "./conversation/storage.js";
 
 // Generic Storage
 export type { KeyValueStorage } from "./storage/index.js";

@@ -56,7 +56,7 @@ export interface AIPexOptions<
 
   /**
    * Custom storage adapter for sessions.
-   * Defaults to InMemorySessionStorage if not provided.
+   * Defaults to SessionStorage with InMemoryStorage if not provided.
    */
   storage?: SessionStorageAdapter;
 
