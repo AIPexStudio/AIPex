@@ -3,9 +3,78 @@
  * Monitors tab changes and updates available contexts accordingly
  */
 
+import type { Context } from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useRef } from "react";
 import type { ContextItem } from "@/components/ai-elements/prompt-input";
-import { getAllAvailableContexts } from "~/lib/context-providers";
+import {
+  BookmarksProvider,
+  CurrentPageProvider,
+  TabsProvider,
+} from "~/lib/context/providers";
+
+const currentPageProvider = new CurrentPageProvider();
+const tabsProvider = new TabsProvider();
+const bookmarksProvider = new BookmarksProvider();
+
+/**
+ * Get all available contexts from providers
+ * Converts core Context to UI ContextItem
+ */
+async function getAllAvailableContexts(): Promise<ContextItem[]> {
+  const results = await Promise.allSettled([
+    currentPageProvider.getContexts(),
+    tabsProvider.getContexts(),
+    bookmarksProvider.getContexts(),
+  ]);
+
+  const contexts: Context[] = [];
+  let currentPageTabId: number | null = null;
+  let currentPageUrl: string | null = null;
+
+  // Current page - add first and record its tab ID and URL
+  if (results[0].status === "fulfilled" && results[0].value.length > 0) {
+    const currentPage = results[0].value[0];
+    contexts.push(currentPage);
+
+    // Extract tab ID from metadata
+    currentPageTabId = currentPage.metadata?.tabId as number | null;
+    currentPageUrl = currentPage.metadata?.url as string | null;
+  }
+
+  // Tabs - exclude the current page tab
+  if (results[1].status === "fulfilled") {
+    const allTabs = results[1].value;
+    const filteredTabs = allTabs.filter((tab) => {
+      const tabId = tab.metadata?.tabId as number | undefined;
+      if (currentPageTabId !== null && tabId === currentPageTabId) {
+        return false;
+      }
+      return true;
+    });
+    contexts.push(...filteredTabs);
+  }
+
+  // Bookmarks - exclude if URL matches current page
+  if (results[2].status === "fulfilled") {
+    const allBookmarks = results[2].value;
+    const filteredBookmarks = allBookmarks.filter((bookmark) => {
+      if (currentPageUrl && bookmark.metadata?.url === currentPageUrl) {
+        return false;
+      }
+      return true;
+    });
+    contexts.push(...filteredBookmarks);
+  }
+
+  // Convert core Context to UI ContextItem
+  return contexts.map((ctx) => ({
+    id: ctx.id,
+    type: ctx.type as ContextItem["type"],
+    label: ctx.label,
+    value: typeof ctx.value === "string" ? ctx.value : "",
+    metadata: ctx.metadata,
+  }));
+}
 
 interface UseTabsSyncOptions {
   /**
