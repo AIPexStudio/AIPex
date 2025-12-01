@@ -8,10 +8,26 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    reporters: ["default", "junit", "github-actions"],
+    silent: true,
+    outputFile: {
+      junit: "junit.xml",
+    },
     coverage: {
+      enabled: true,
+      reportsDirectory: "./coverage",
       provider: "v8",
-      reporter: ["text", "json", "json-summary", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/__tests__/**"],
+      reportOnFailure: true,
+      reporter: [
+        ["text", { file: "full-text-summary.txt" }],
+        "html",
+        "json",
+        "lcov",
+        "cobertura",
+        ["json-summary", { outputFile: "coverage-summary.json" }],
+      ],
     },
     css: {
       modules: {
@@ -21,9 +37,10 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
-    deps: {
-      // Inline dependencies that have CSS imports
-      inline: [/katex/, /streamdown/],
+    server: {
+      deps: {
+        inline: [/katex/, /streamdown/],
+      },
     },
   },
   resolve: {
