@@ -93,13 +93,15 @@ async function main() {
   // Example 3: Custom tool
   console.log("\n📝 Example 3: Custom Tool");
 
+  const weatherParameters = z.object({
+    city: z.string().describe("The city name"),
+  });
+
   const weatherTool = tool({
     name: "get_weather",
     description: "Get the weather for a city",
-    parameters: z.object({
-      city: z.string().describe("The city name"),
-    }),
-    execute: async (input) => {
+    parameters: weatherParameters,
+    execute: async (input: z.infer<typeof weatherParameters>) => {
       return `The weather in ${input.city} is sunny and 72°F`;
     },
   });
