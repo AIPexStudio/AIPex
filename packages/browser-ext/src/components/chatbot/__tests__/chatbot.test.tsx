@@ -434,7 +434,7 @@ describe("Chatbot Event Handlers", () => {
   it.skip("should call onNewChat when new chat button is clicked", () => {
     const onNewChat = vi.fn();
 
-    render(<Chatbot agent={mockAgent} handlers={{ onNewChat }} />);
+    render(<Chatbot agent={mockAgent} handlers={{ onNewChat } as any} />);
 
     const newChatButton = screen.getByText("New Chat");
     fireEvent.click(newChatButton);
@@ -445,7 +445,7 @@ describe("Chatbot Event Handlers", () => {
   it.skip("should call onSettingsOpen when settings button is clicked", async () => {
     const onSettingsOpen = vi.fn();
 
-    render(<Chatbot agent={mockAgent} handlers={{ onSettingsOpen }} />);
+    render(<Chatbot agent={mockAgent} handlers={{ onSettingsOpen } as any} />);
 
     const settingsButton = screen.getByText("Settings");
     fireEvent.click(settingsButton);

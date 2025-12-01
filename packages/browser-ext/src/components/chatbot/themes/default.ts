@@ -1,4 +1,4 @@
-import type { ChatbotTheme, ChatbotThemeVariables } from "../core/types";
+import type { ChatbotTheme, ChatbotThemeVariables } from "~/types";
 
 /**
  * Default theme variables
@@ -107,7 +107,7 @@ export const colorfulTheme: ChatbotTheme = {
  */
 export function createTheme(overrides: Partial<ChatbotTheme>): ChatbotTheme {
   return {
-    className: overrides.className || defaultTheme.className,
+    className: overrides.className ?? defaultTheme.className,
     variables: {
       ...defaultThemeVariables,
       ...overrides.variables,
@@ -123,7 +123,7 @@ export function mergeThemes(
   overrides: Partial<ChatbotTheme>,
 ): ChatbotTheme {
   return {
-    className: overrides.className || base.className,
+    className: overrides.className ?? base.className,
     variables: {
       ...base.variables,
       ...overrides.variables,

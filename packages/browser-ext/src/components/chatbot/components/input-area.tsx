@@ -24,9 +24,9 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { cn } from "~/lib/utils";
+import type { ContextItem, InputAreaProps } from "~/types";
 import { DEFAULT_MODELS } from "../constants";
 import { useComponentsContext, useConfigContext } from "../core/context";
-import type { ContextItem, InputAreaProps } from "../core/types";
 
 export interface ExtendedInputAreaProps extends InputAreaProps {
   /** Available models for selection */
