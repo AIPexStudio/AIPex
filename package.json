@@ -13,6 +13,7 @@
   },
   "scripts": {
     "postinstall": "prek install",
+    "dev": "pnpm --filter @aipexstudio/cool-aipex dev",
     "preflight": "npm run format && npm run lint:fix && npm run typecheck && npm run test",
     "format": "biome format . --write",
     "format:check": "biome format .",
