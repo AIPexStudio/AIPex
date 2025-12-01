@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "~/lib/utils";
-import type { ToolDisplaySlotProps } from "../../core/types";
+import type { ToolDisplaySlotProps } from "~/types";
 import { formatToolOutput, mapToolState } from "../../lib/tools";
 
 /**

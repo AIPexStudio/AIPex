@@ -29,10 +29,15 @@ export class ChromeStorageAdapter<T> implements KeyValueStorage<T> {
   async listAll(): Promise<T[]> {
     return new Promise((resolve) => {
       this.area.get(null, (items) => {
-        const values = Object.values(items || {}) as T[];
+        const values = Object.values(items ?? {}) as T[];
         resolve(values);
       });
     });
+  }
+
+  async query(predicate: (item: T) => boolean): Promise<T[]> {
+    const allItems = await this.listAll();
+    return allItems.filter(predicate);
   }
 
   async clear(): Promise<void> {
@@ -71,7 +76,7 @@ export class Storage {
   async getAll(): Promise<{ [key: string]: any }> {
     return new Promise((resolve) => {
       this.area.get(null, (items) => {
-        resolve(items || {});
+        resolve(items ?? {});
       });
     });
   }

@@ -181,6 +181,9 @@ export const duplicateTabTool = tool({
   execute: async ({ tabId }) => {
     if (tabId) {
       const newTab = await chrome.tabs.duplicate(tabId);
+      if (!newTab) {
+        throw new Error("Failed to duplicate tab");
+      }
       return {
         success: true,
         newTab: { id: newTab.id, url: newTab.url, title: newTab.title },
@@ -197,6 +200,9 @@ export const duplicateTabTool = tool({
     }
 
     const newTab = await chrome.tabs.duplicate(tab.id);
+    if (!newTab) {
+      throw new Error("Failed to duplicate tab");
+    }
     return {
       success: true,
       newTab: { id: newTab.id, url: newTab.url, title: newTab.title },

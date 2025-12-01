@@ -5,7 +5,7 @@ import {
   ThumbsUpIcon,
 } from "lucide-react";
 import { Action, Actions } from "@/components/ai-elements/actions";
-import type { MessageActionsSlotProps } from "../../core/types";
+import type { MessageActionsSlotProps } from "~/types";
 
 /**
  * Default message actions slot component
