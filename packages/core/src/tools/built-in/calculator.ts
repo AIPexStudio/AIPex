@@ -1,17 +1,21 @@
 import { z } from "zod";
 import { tool } from "../index.js";
 
+const calculatorParameters = z.object({
+  operation: z
+    .enum(["add", "subtract", "multiply", "divide"])
+    .describe("The operation to perform"),
+  a: z.number().describe("First number"),
+  b: z.number().describe("Second number"),
+});
+
+type CalculatorInput = z.infer<typeof calculatorParameters>;
+
 export const calculatorTool = tool({
   name: "calculator",
   description: "Perform basic arithmetic operations",
-  parameters: z.object({
-    operation: z
-      .enum(["add", "subtract", "multiply", "divide"])
-      .describe("The operation to perform"),
-    a: z.number().describe("First number"),
-    b: z.number().describe("Second number"),
-  }),
-  execute: async (input) => {
+  parameters: calculatorParameters,
+  execute: async (input: CalculatorInput) => {
     switch (input.operation) {
       case "add":
         return input.a + input.b;

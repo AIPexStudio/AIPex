@@ -1,18 +1,22 @@
 import { z } from "zod";
 import { tool } from "../index.js";
 
+const httpFetchParameters = z.object({
+  url: z.string().url().describe("The URL to fetch"),
+  headers: z
+    .record(z.string())
+    .optional()
+    .describe("Optional HTTP headers to include in the request"),
+});
+
+type HttpFetchInput = z.infer<typeof httpFetchParameters>;
+
 export const httpFetchTool = tool({
   name: "http_fetch",
   description:
     "Fetch data from a URL using HTTP GET request. Returns the response body as text.",
-  parameters: z.object({
-    url: z.string().url().describe("The URL to fetch"),
-    headers: z
-      .record(z.string())
-      .optional()
-      .describe("Optional HTTP headers to include in the request"),
-  }),
-  execute: async (input) => {
+  parameters: httpFetchParameters,
+  execute: async (input: HttpFetchInput) => {
     try {
       const response = await fetch(input.url, {
         method: "GET",
