@@ -1,4 +1,4 @@
-import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
+import type { AgentEvent, AIPex, Context } from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatAdapter } from "../adapters/chat-adapter";
 import type { ChatConfig, ChatStatus, ContextItem, UIMessage } from "../types";
@@ -190,19 +190,21 @@ export function useChat(
       handlersRef.current?.onMessageSent?.(userMessage);
       adapter.setStatus("submitted");
 
-      // Build the input text with context
-      let inputText = text;
-      if (contexts && contexts.length > 0) {
-        const contextText = contexts
-          .map((ctx) => `[${ctx.type}: ${ctx.label}]\n${ctx.value}`)
-          .join("\n\n");
-        inputText = `${contextText}\n\n${text}`;
-      }
+      // Convert ContextItem to core Context type
+      const coreContexts: Context[] | undefined = contexts?.map((ctx) => ({
+        id: ctx.id,
+        type: ctx.type as Context["type"],
+        providerId: "ui-selected",
+        label: ctx.label,
+        value: ctx.value,
+        metadata: ctx.metadata,
+        timestamp: Date.now(),
+      }));
 
-      const events = agent.chat(
-        inputText,
-        sessionId ? { sessionId } : undefined,
-      );
+      const events = agent.chat(text, {
+        sessionId: sessionId ?? undefined,
+        contexts: coreContexts,
+      });
       await processAgentEvents(events);
     },
     [adapter, agent, sessionId, processAgentEvents],

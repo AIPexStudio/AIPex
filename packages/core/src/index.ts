@@ -12,6 +12,22 @@ export {
   normalizeConversationConfig,
 } from "./config/index.js";
 
+// Context
+export { ContextManager } from "./context/manager.js";
+export type {
+  Context,
+  ContextManagerOptions,
+  ContextProvider,
+  ContextProviderCapabilities,
+  ContextQuery,
+  ContextType,
+} from "./context/types.js";
+export {
+  formatContextsForPrompt,
+  isContext,
+  resolveContexts,
+} from "./context/utils.js";
+
 // Conversation
 export { ConversationCompressor } from "./conversation/compressor.js";
 export { ConversationManager } from "./conversation/manager.js";
