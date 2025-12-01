@@ -1,4 +1,4 @@
-import { Storage } from "~/lib/storage";
+import { Storage } from "~/adapters/storage-adapter";
 
 export type HostAccessMode = "whitelist" | "blocklist" | "include-all";
 

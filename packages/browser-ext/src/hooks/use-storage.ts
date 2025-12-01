@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Storage } from "../adapters/storage-adapter";
 
 /**
@@ -11,9 +11,10 @@ export function useStorage<T = any>(
   const [value, setValue] = useState<T | undefined>(defaultValue);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const storage = new Storage();
+  // Create storage instance once
+  const storage = useMemo(() => new Storage(), []);
 
+  useEffect(() => {
     // Load initial value
     void storage.get<T>(key).then((storedValue: T | undefined) => {
       setValue(storedValue ?? defaultValue);
@@ -26,10 +27,9 @@ export function useStorage<T = any>(
     });
 
     return unwatch;
-  }, [key, defaultValue]);
+  }, [key, defaultValue, storage]);
 
   const setStoredValue = async (newValue: T) => {
-    const storage = new Storage();
     await storage.set(key, newValue);
     setValue(newValue);
   };
