@@ -1,4 +1,9 @@
 export {
+  type UseAgentOptions,
+  type UseAgentReturn,
+  useAgent,
+} from "./use-agent";
+export {
   type ChatbotEventHandlers,
   type UseChatOptions,
   type UseChatReturn,
