@@ -91,8 +91,8 @@ export class Storage {
     ) => {
       if (areaName === "local" && changes[key]) {
         callback({
-          newValue: changes[key].newValue,
-          oldValue: changes[key].oldValue,
+          newValue: changes[key].newValue as T | undefined,
+          oldValue: changes[key].oldValue as T | undefined,
         });
       }
     };

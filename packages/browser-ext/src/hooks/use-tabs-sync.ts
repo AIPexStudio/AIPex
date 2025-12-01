@@ -116,7 +116,7 @@ export function useTabsSync({
    * Handle tab activated event (current tab changed)
    */
   const handleTabActivated = useCallback(
-    (_activeInfo: chrome.tabs.TabActiveInfo) => {
+    (_activeInfo: { tabId: number; windowId: number }) => {
       // Rebuild contexts to update "Current Page" context
       rebuildContexts();
     },
@@ -139,7 +139,7 @@ export function useTabsSync({
   const handleTabUpdated = useCallback(
     (
       _tabId: number,
-      changeInfo: chrome.tabs.TabChangeInfo,
+      changeInfo: { title?: string; url?: string; status?: string },
       _tab: chrome.tabs.Tab,
     ) => {
       // Only rebuild if meaningful changes occurred

@@ -9,6 +9,7 @@ export type {
 
 // Chat Types
 export type {
+  AIProvider,
   ChatbotComponents,
   ChatbotEventHandlers,
   ChatbotSlots,

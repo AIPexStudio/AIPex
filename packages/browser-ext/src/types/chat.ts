@@ -9,6 +9,8 @@ import type {
 
 // ============ Chat Configuration ============
 
+export type AIProvider = "openai" | "anthropic" | "google";
+
 export interface ChatConfig {
   /** System prompt for the agent */
   systemPrompt?: string;
@@ -23,6 +25,7 @@ export interface ChatConfig {
 }
 
 export interface ChatSettings {
+  aiProvider?: AIProvider;
   aiHost?: string;
   aiToken?: string;
   aiModel?: string;

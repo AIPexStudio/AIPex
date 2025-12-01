@@ -1,4 +1,3 @@
-import { createOpenAI } from "@ai-sdk/openai";
 import {
   AIPex,
   aisdk,
@@ -7,6 +6,7 @@ import {
 } from "@aipexstudio/aipex-core";
 import { useEffect, useMemo, useState } from "react";
 import { SYSTEM_PROMPT } from "~/components/chatbot/constants";
+import { createAIProvider } from "~/lib/ai-provider";
 import { allBrowserTools } from "~/tools";
 import type { ChatSettings } from "~/types";
 
@@ -50,14 +50,11 @@ export function useAgent({
     }
 
     try {
-      // Create OpenAI compatible provider with custom baseURL
-      const openai = createOpenAI({
-        baseURL: settings.aiHost ?? "https://api.openai.com/v1",
-        apiKey: settings.aiToken,
-      });
+      // Create AI provider based on settings
+      const provider = createAIProvider(settings);
 
       // Create the model using aisdk
-      const model = aisdk(openai(settings.aiModel!));
+      const model = aisdk(provider(settings.aiModel!));
 
       // Create storage for conversation persistence
       const storage = new SessionStorage(
@@ -90,9 +87,11 @@ export function useAgent({
   }, [
     isLoading,
     isConfigured,
+    settings.aiProvider,
     settings.aiHost,
     settings.aiToken,
     settings.aiModel,
+    settings,
   ]);
 
   return {
