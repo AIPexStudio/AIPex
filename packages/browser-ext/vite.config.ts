@@ -27,6 +27,11 @@ export default defineConfig({
     alias: {
       "~": path.resolve(__dirname, "./src"),
       "@": path.resolve(__dirname, "./"),
+      // Point to core source code directly for better dev experience
+      "@aipexstudio/aipex-core": path.resolve(
+        __dirname,
+        "../core/src/index.ts",
+      ),
     },
   },
   css: {
@@ -37,7 +42,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         sidepanel: path.resolve(__dirname, "src/pages/sidepanel/index.html"),
-        content: path.resolve(__dirname, "src/pages/content/index.tsx"),
         options: path.resolve(__dirname, "src/pages/options/index.html"),
       },
     },
