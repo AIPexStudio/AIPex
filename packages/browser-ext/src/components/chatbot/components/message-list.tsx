@@ -5,8 +5,8 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Loader } from "@/components/ai-elements/loader";
 import { cn } from "~/lib/utils";
+import type { MessageListProps } from "~/types";
 import { useComponentsContext } from "../core/context";
-import type { MessageListProps } from "../core/types";
 import { MessageItem } from "./message-item";
 import { WelcomeScreen } from "./welcome-screen";
 

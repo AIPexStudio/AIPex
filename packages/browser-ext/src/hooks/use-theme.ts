@@ -20,7 +20,7 @@ export function useTheme() {
     // Determine the effective theme
     let effectiveTheme: "light" | "dark" = "light";
 
-    if (theme === "system") {
+    if (theme === "system" || !theme) {
       // Use system preference
       effectiveTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"

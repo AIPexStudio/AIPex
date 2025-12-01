@@ -87,7 +87,7 @@ export function useChat(
 
   // State
   const [messages, setMessages] = useState<UIMessage[]>(
-    config?.initialMessages || [],
+    config?.initialMessages ?? [],
   );
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -252,7 +252,7 @@ export function useChat(
     }
     activeGeneratorRef.current = null;
     setSessionId(null);
-    adapter.reset(configRef.current?.initialMessages || []);
+    adapter.reset(configRef.current?.initialMessages ?? []);
   }, [adapter, agent, sessionId]);
 
   // Regenerate last response
