@@ -134,11 +134,36 @@ export function useThemeContext(): ThemeContextValue {
 
 export { ThemeContext };
 
+// ============ Agent Context ============
+
+export interface AgentContextValue {
+  /** Whether the agent is configured and ready */
+  isReady: boolean;
+  /** Configuration error if agent creation failed */
+  configError?: Error;
+}
+
+const AgentContext = createContext<AgentContextValue>({
+  isReady: false,
+  configError: undefined,
+});
+
+/**
+ * Hook to access agent state
+ */
+export function useAgentContext(): AgentContextValue {
+  return useContext(AgentContext);
+}
+
+export { AgentContext };
+
 // ============ Provider Props ============
 
 export interface ChatbotProviderProps {
-  /** The AIPex instance from @aipexstudio/aipex-core */
-  agent: AIPex;
+  /** The AIPex instance from @aipexstudio/aipex-core (undefined when not configured) */
+  agent: AIPex | undefined;
+  /** Configuration error message */
+  configError?: Error;
   /** Chat configuration */
   config?: ChatConfig;
   /** Event handlers */

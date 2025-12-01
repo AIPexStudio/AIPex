@@ -80,7 +80,7 @@ export interface UseChatReturn {
  * ```
  */
 export function useChat(
-  agent: AIPex,
+  agent: AIPex | undefined,
   options: UseChatOptions = {},
 ): UseChatReturn {
   const { config, handlers } = options;
@@ -176,6 +176,11 @@ export function useChat(
       files?: File[],
       contexts?: ContextItem[],
     ): Promise<void> => {
+      if (!agent) {
+        console.warn("useChat: agent is not initialized");
+        return;
+      }
+
       if (!text.trim() && !files?.length && !contexts?.length) {
         return;
       }
@@ -206,6 +211,11 @@ export function useChat(
   // Continue conversation (for multi-turn without creating new user message)
   const continueConversation = useCallback(
     async (text: string): Promise<void> => {
+      if (!agent) {
+        console.warn("useChat: agent is not initialized");
+        return;
+      }
+
       if (!sessionId) {
         // No session, start new
         await sendMessage(text);
@@ -237,7 +247,7 @@ export function useChat(
 
   // Reset chat
   const reset = useCallback((): void => {
-    if (sessionId) {
+    if (sessionId && agent) {
       void agent.getConversationManager()?.deleteSession(sessionId);
     }
     activeGeneratorRef.current = null;
@@ -247,6 +257,11 @@ export function useChat(
 
   // Regenerate last response
   const regenerate = useCallback(async (): Promise<void> => {
+    if (!agent) {
+      console.warn("useChat: agent is not initialized");
+      return;
+    }
+
     // Remove last assistant message
     const removed = adapter.removeLastAssistantMessage();
     if (!removed) return;

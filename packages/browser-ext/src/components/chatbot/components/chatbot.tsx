@@ -4,12 +4,14 @@ import { cn } from "~/lib/utils";
 import type { ChatbotThemeVariables, ContextItem } from "~/types";
 import { DEFAULT_MODELS } from "../constants";
 import {
+  AgentContext,
   type ChatbotProviderProps,
   ChatContext,
   ComponentsContext,
   ConfigContext,
   ThemeContext,
 } from "../core/context";
+import { ConfigurationGuide } from "./configuration-guide";
 import { Header } from "./header";
 import { InputArea } from "./input-area";
 import { MessageList } from "./message-list";
@@ -37,6 +39,7 @@ function themeToStyle(
  */
 export function ChatbotProvider({
   agent,
+  configError,
   config,
   handlers,
   components = {},
@@ -62,6 +65,15 @@ export function ChatbotProvider({
   const themeClassName = useMemo(
     () => cn(theme.className, className),
     [theme.className, className],
+  );
+
+  // Agent context value
+  const agentContextValue = useMemo(
+    () => ({
+      isReady: Boolean(agent),
+      configError,
+    }),
+    [agent, configError],
   );
 
   // Context values
@@ -108,9 +120,11 @@ export function ChatbotProvider({
     <ThemeContext.Provider value={themeContextValue}>
       <ComponentsContext.Provider value={componentsContextValue}>
         <ConfigContext.Provider value={configContextValue}>
-          <ChatContext.Provider value={chatContextValue}>
-            {children}
-          </ChatContext.Provider>
+          <AgentContext.Provider value={agentContextValue}>
+            <ChatContext.Provider value={chatContextValue}>
+              {children}
+            </ChatContext.Provider>
+          </AgentContext.Provider>
         </ConfigContext.Provider>
       </ComponentsContext.Provider>
     </ThemeContext.Provider>
@@ -150,6 +164,7 @@ export interface ChatbotProps extends Omit<ChatbotProviderProps, "children"> {
  */
 export function Chatbot({
   agent,
+  configError,
   config,
   handlers,
   components,
@@ -164,6 +179,7 @@ export function Chatbot({
   return (
     <ChatbotProvider
       agent={agent}
+      configError={configError}
       config={config}
       handlers={handlers}
       components={components}
@@ -195,10 +211,12 @@ function ChatbotContent({
 }) {
   const themeCtx = useContext(ThemeContext);
   const chatCtx = useContext(ChatContext);
+  const agentCtx = useContext(AgentContext);
 
   const { className, style } = themeCtx;
   const { messages, status, sendMessage, interrupt, reset, regenerate } =
     chatCtx;
+  const { isReady: isAgentReady } = agentCtx;
 
   const [input, setInput] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -227,6 +245,10 @@ function ChatbotContent({
     setInput("");
   }, [reset]);
 
+  const handleOpenSettings = useCallback(() => {
+    setShowSettings(true);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -238,29 +260,39 @@ function ChatbotContent({
       {/* Header */}
       <Header
         title={title}
-        onSettingsClick={() => setShowSettings(true)}
+        onSettingsClick={handleOpenSettings}
         onNewChat={handleNewChat}
       />
 
-      {/* Message List */}
-      <MessageList
-        messages={messages}
-        status={status}
-        onRegenerate={regenerate}
-        onCopy={handleCopy}
-        onSuggestionClick={handleSuggestion}
-      />
+      {/* Show configuration guide when agent is not ready */}
+      {!isAgentReady ? (
+        <ConfigurationGuide
+          onOpenSettings={handleOpenSettings}
+          className="flex-1"
+        />
+      ) : (
+        <>
+          {/* Message List */}
+          <MessageList
+            messages={messages}
+            status={status}
+            onRegenerate={regenerate}
+            onCopy={handleCopy}
+            onSuggestionClick={handleSuggestion}
+          />
 
-      {/* Input Area */}
-      <InputArea
-        value={input}
-        onChange={setInput}
-        onSubmit={handleSubmit}
-        onStop={interrupt}
-        status={status}
-        models={models}
-        placeholderTexts={placeholderTexts}
-      />
+          {/* Input Area */}
+          <InputArea
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            onStop={interrupt}
+            status={status}
+            models={models}
+            placeholderTexts={placeholderTexts}
+          />
+        </>
+      )}
 
       {/* Settings Dialog */}
       <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />

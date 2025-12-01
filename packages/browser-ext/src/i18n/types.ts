@@ -64,6 +64,12 @@ export interface TranslationResources {
     research: string;
     comparePrice: string;
   };
+  config: {
+    title: string;
+    description: string;
+    apiTokenRequired: string;
+    openSettings: string;
+  };
   tools: {
     [key: string]: string;
   };
@@ -116,7 +122,11 @@ export type TranslationKey =
   | "welcome.organizeTabs"
   | "welcome.analyzePage"
   | "welcome.research"
-  | "welcome.comparePrice";
+  | "welcome.comparePrice"
+  | "config.title"
+  | "config.description"
+  | "config.apiTokenRequired"
+  | "config.openSettings";
 
 export interface I18nContextValue {
   language: Language;
