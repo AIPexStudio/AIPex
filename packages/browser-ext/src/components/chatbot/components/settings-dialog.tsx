@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "~/lib/utils";
-import type { ChatSettings, SettingsDialogProps } from "~/types";
+import type { AIProvider, ChatSettings, SettingsDialogProps } from "~/types";
 import { useComponentsContext, useConfigContext } from "../core/context";
 
 type SettingsTab = "general" | "security";
@@ -38,6 +38,12 @@ const DEFAULT_THEMES = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
   { value: "system", label: "System" },
+];
+
+const DEFAULT_PROVIDERS: Array<{ value: AIProvider; label: string }> = [
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "google", label: "Google" },
 ];
 
 /**
@@ -101,7 +107,7 @@ export function DefaultSettingsDialog({
               type="button"
               onClick={() => setActiveTab("general")}
               className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer",
                 activeTab === "general"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -113,7 +119,7 @@ export function DefaultSettingsDialog({
               type="button"
               onClick={() => setActiveTab("security")}
               className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer",
                 activeTab === "security"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -169,6 +175,33 @@ export function DefaultSettingsDialog({
                     {themes.map((theme) => (
                       <SelectItem key={theme.value} value={theme.value}>
                         {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* AI Provider */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="ai-provider-select"
+                  className="text-sm font-medium"
+                >
+                  AI Provider
+                </label>
+                <Select
+                  value={tempSettings.aiProvider ?? "openai"}
+                  onValueChange={(value) =>
+                    updateTempSetting("aiProvider", value as AIProvider)
+                  }
+                >
+                  <SelectTrigger id="ai-provider-select" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEFAULT_PROVIDERS.map((provider) => (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        {provider.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

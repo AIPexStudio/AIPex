@@ -1,5 +1,5 @@
 import { tool } from "@aipexstudio/aipex-core";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /**
  * Get information about the current active page

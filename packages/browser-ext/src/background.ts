@@ -3,6 +3,13 @@
  * Handles extension lifecycle events and keyboard commands
  */
 
+// Open side panel when extension icon is clicked
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
 // Listen for keyboard command to open AIPex
 chrome.commands.onCommand.addListener((command) => {
   if (command === "open-aipex") {

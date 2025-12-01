@@ -35,15 +35,15 @@
   "dependencies": {
     "@openai/agents": "^0.3.3",
     "@openai/agents-extensions": "^0.3.3",
-    "lru-cache": "^11.2.2",
-    "zod": "^3.25.40"
+    "lru-cache": "^11.2.4",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.43",
-    "@ai-sdk/openai": "^2.0.72",
+    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/openai": "^2.0.75",
     "@types/node": "^24.10.1",
     "dotenv": "^17.2.3",
-    "tsx": "^4.20.6"
+    "tsx": "^4.21.0"
   },
   "peerDependencies": {
     "@ai-sdk/anthropic": "^2.0.0",
