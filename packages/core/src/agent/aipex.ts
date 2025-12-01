@@ -3,6 +3,8 @@ import {
   type RunItemStreamEvent,
   run,
 } from "@openai/agents";
+import type { ContextManager } from "../context/manager.js";
+import { formatContextsForPrompt, resolveContexts } from "../context/utils.js";
 import { ConversationCompressor } from "../conversation/compressor.js";
 import { ConversationManager } from "../conversation/manager.js";
 import type { Session } from "../conversation/session.js";
@@ -20,15 +22,18 @@ import { AgentError, ErrorCode } from "../utils/errors.js";
 export class AIPex {
   private agent: OpenAIAgent;
   private conversationManager?: ConversationManager;
+  private contextManager?: ContextManager;
   private maxTurns: number;
 
   private constructor(
     agent: OpenAIAgent,
     conversationManager?: ConversationManager,
+    contextManager?: ContextManager,
     maxTurns?: number,
   ) {
     this.agent = agent;
     this.conversationManager = conversationManager;
+    this.contextManager = contextManager;
     this.maxTurns = maxTurns ?? 10;
   }
 
@@ -41,7 +46,12 @@ export class AIPex {
     });
 
     const conversationManager = AIPex.buildConversationManager(options);
-    return new AIPex(agent, conversationManager, options.maxTurns);
+    return new AIPex(
+      agent,
+      conversationManager,
+      options.contextManager,
+      options.maxTurns,
+    );
   }
 
   private static buildConversationManager(
@@ -162,9 +172,43 @@ export class AIPex {
     input: string,
     options?: ChatOptions,
   ): AsyncGenerator<AgentEvent> {
+    let finalInput = input;
+
+    // Handle contexts if provided
+    if (options?.contexts && options.contexts.length > 0) {
+      try {
+        // Resolve context IDs to Context objects if needed
+        const contextObjs =
+          this.contextManager &&
+          options.contexts.some((c) => typeof c === "string")
+            ? await resolveContexts(
+                options.contexts,
+                this.contextManager.getContext.bind(this.contextManager),
+              )
+            : (options.contexts.filter(
+                (c) => typeof c !== "string",
+              ) as import("../context/types.js").Context[]);
+
+        if (contextObjs.length > 0) {
+          // Format contexts and prepend to input
+          const contextText = formatContextsForPrompt(contextObjs);
+          finalInput = `${contextText}\n\n${input}`;
+
+          yield { type: "contexts_attached", contexts: contextObjs };
+        }
+      } catch (error) {
+        // Emit context error but continue with original input
+        yield {
+          type: "context_error",
+          providerId: "unknown",
+          error: error instanceof Error ? error : new Error(String(error)),
+        };
+      }
+    }
+
     // If sessionId is provided, continue existing conversation
     if (options?.sessionId) {
-      yield* this.continueConversation(options.sessionId, input);
+      yield* this.continueConversation(options.sessionId, finalInput);
       return;
     }
 
@@ -176,7 +220,7 @@ export class AIPex {
       yield { type: "session_created", sessionId: session.id };
     }
 
-    yield* this.runExecution(input, session);
+    yield* this.runExecution(finalInput, session);
   }
 
   /**
@@ -215,6 +259,10 @@ export class AIPex {
 
   getConversationManager(): ConversationManager | undefined {
     return this.conversationManager;
+  }
+
+  getContextManager(): ContextManager | undefined {
+    return this.contextManager;
   }
 
   private transformToolEvent(

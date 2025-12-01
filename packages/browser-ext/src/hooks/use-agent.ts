@@ -1,12 +1,14 @@
 import {
   AIPex,
   aisdk,
+  ContextManager,
   IndexedDBStorage,
   SessionStorage,
 } from "@aipexstudio/aipex-core";
 import { useEffect, useMemo, useState } from "react";
 import { SYSTEM_PROMPT } from "~/components/chatbot/constants";
 import { createAIProvider } from "~/lib/ai-provider";
+import { allBrowserProviders } from "~/lib/context/providers";
 import { allBrowserTools } from "~/tools";
 import type { ChatSettings } from "~/types";
 
@@ -64,6 +66,12 @@ export function useAgent({
         }),
       );
 
+      // Create context manager with browser providers
+      const contextManager = new ContextManager({
+        providers: allBrowserProviders,
+        autoInitialize: true,
+      });
+
       // Get all available tools
       const tools = [...allBrowserTools];
 
@@ -74,6 +82,7 @@ export function useAgent({
         model,
         tools,
         storage,
+        contextManager,
         maxTurns: 10,
       });
 

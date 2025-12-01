@@ -179,7 +179,10 @@ describe("useChat", () => {
       await result.current.sendMessage("Hi there");
     });
 
-    expect(agent.chat).toHaveBeenCalledWith("Hi there", undefined);
+    expect(agent.chat).toHaveBeenCalledWith("Hi there", {
+      sessionId: undefined,
+      contexts: undefined,
+    });
     expect(result.current.sessionId).toBe("session-1");
     expect(result.current.messages[0].role).toBe("user");
   });
