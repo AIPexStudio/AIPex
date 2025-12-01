@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { tool } from "../index.js";
 
 const httpFetchParameters = z.object({
@@ -20,7 +20,7 @@ export const httpFetchTool = tool({
     try {
       const response = await fetch(input.url, {
         method: "GET",
-        headers: input.headers,
+        headers: input.headers as Record<string, string> | undefined,
       });
 
       if (!response.ok) {

@@ -10,7 +10,8 @@ const STORAGE_KEY_PREFIX = "chatbot_";
  * Default chat settings
  */
 const DEFAULT_SETTINGS: ChatSettings = {
-  aiHost: "https://api.openai.com/v1/chat/completions",
+  aiProvider: "openai",
+  aiHost: "",
   aiToken: "",
   aiModel: "gpt-4",
   language: "en",
@@ -48,7 +49,7 @@ export const chromeStorageAdapter: StorageAdapter = {
     return new Promise((resolve) => {
       if (typeof chrome !== "undefined" && chrome.storage?.local) {
         chrome.storage.local.get(key, (result) => {
-          resolve(result[key] ?? undefined);
+          resolve((result[key] as T | undefined) ?? undefined);
         });
       } else {
         void defaultStorageAdapter.get<T>(key).then(resolve);
