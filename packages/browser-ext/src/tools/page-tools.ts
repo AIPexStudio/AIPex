@@ -189,7 +189,7 @@ export const clickElementTool = tool({
 
     const result = results[0]?.result;
     if (!result?.success) {
-      throw new Error(result?.error || "Failed to click element");
+      throw new Error(result?.error ?? "Failed to click element");
     }
 
     return { success: true, selector };
@@ -239,7 +239,7 @@ export const fillFormFieldTool = tool({
 
     const result = results[0]?.result;
     if (!result?.success) {
-      throw new Error(result?.error || "Failed to fill form field");
+      throw new Error(result?.error ?? "Failed to fill form field");
     }
 
     return { success: true, selector, value };

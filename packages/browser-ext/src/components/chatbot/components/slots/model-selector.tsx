@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "~/lib/utils";
-import type { ModelSelectorSlotProps } from "../../core/types";
+import type { ModelSelectorSlotProps } from "~/types";
 
 /**
  * Default model selector slot component

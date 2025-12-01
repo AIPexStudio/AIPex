@@ -32,14 +32,20 @@ function createEventGenerator(
       if (index < events.length) {
         return { value: events[index++]!, done: false };
       }
-      return { value: undefined, done: true };
+      return { value: undefined, done: true } as IteratorReturnResult<any>;
     },
-    return: vi.fn(async () => ({ value: undefined, done: true })),
+    return: vi.fn(
+      async () =>
+        ({ value: undefined, done: true }) as IteratorReturnResult<any>,
+    ),
     async throw(error) {
       throw error;
     },
     [Symbol.asyncIterator]() {
       return this;
+    },
+    async [Symbol.asyncDispose]() {
+      // No-op for test
     },
   };
 
@@ -55,12 +61,18 @@ function createThrowingGenerator(
     async next() {
       throw error;
     },
-    return: vi.fn(async () => ({ value: undefined, done: true })),
+    return: vi.fn(
+      async () =>
+        ({ value: undefined, done: true }) as IteratorReturnResult<any>,
+    ),
     async throw(err) {
       throw err;
     },
     [Symbol.asyncIterator]() {
       return this;
+    },
+    async [Symbol.asyncDispose]() {
+      // No-op for test
     },
   };
 
@@ -88,18 +100,27 @@ function createStreamingGenerator(): AsyncGenerator<AgentEvent> & {
         resolvePending = resolve;
       });
     },
-    return: vi.fn(async () => ({ value: undefined, done: true })),
+    return: vi.fn(
+      async () =>
+        ({ value: undefined, done: true }) as IteratorReturnResult<any>,
+    ),
     async throw(error) {
       throw error;
     },
     [Symbol.asyncIterator]() {
       return this;
     },
+    async [Symbol.asyncDispose]() {
+      // No-op for test
+    },
   };
 
   generator.return.mockImplementation(async () => {
     if (resolvePending) {
-      resolvePending({ value: undefined, done: true });
+      resolvePending({
+        value: undefined,
+        done: true,
+      } as IteratorReturnResult<any>);
       resolvePending = null;
     }
     return { value: undefined, done: true };

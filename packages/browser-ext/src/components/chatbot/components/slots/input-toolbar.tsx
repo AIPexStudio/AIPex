@@ -1,6 +1,6 @@
 import { Loader2Icon, SendIcon, SquareIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { InputToolbarSlotProps } from "../../core/types";
+import type { InputToolbarSlotProps } from "~/types";
 
 /**
  * Default input toolbar slot component

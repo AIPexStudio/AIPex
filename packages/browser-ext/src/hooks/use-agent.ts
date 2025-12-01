@@ -52,16 +52,19 @@ export function useAgent({
     try {
       // Create OpenAI compatible provider with custom baseURL
       const openai = createOpenAI({
-        baseURL: settings.aiHost || "https://api.openai.com/v1",
+        baseURL: settings.aiHost ?? "https://api.openai.com/v1",
         apiKey: settings.aiToken,
       });
 
       // Create the model using aisdk
-      const model = aisdk(openai(settings.aiModel));
+      const model = aisdk(openai(settings.aiModel!));
 
       // Create storage for conversation persistence
       const storage = new SessionStorage(
-        new IndexedDBStorage("aipex-sessions"),
+        new IndexedDBStorage({
+          dbName: "aipex-sessions",
+          storeName: "sessions",
+        }),
       );
 
       // Get all available tools

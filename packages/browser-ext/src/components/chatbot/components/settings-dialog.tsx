@@ -17,8 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "~/lib/utils";
+import type { ChatSettings, SettingsDialogProps } from "~/types";
 import { useComponentsContext, useConfigContext } from "../core/context";
-import type { ChatSettings, SettingsDialogProps } from "../core/types";
 
 type SettingsTab = "general" | "security";
 

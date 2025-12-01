@@ -22,7 +22,7 @@ export async function getCurrentPageContext(): Promise<ContextItem | null> {
       const result = await chrome.tabs.sendMessage(tab.id, {
         action: "getPageContent",
       });
-      content = result?.content || "";
+      content = result?.content ?? "";
     } catch (msgError) {
       // Content script not available, use tab info only
       console.warn(
@@ -35,7 +35,7 @@ export async function getCurrentPageContext(): Promise<ContextItem | null> {
     return {
       id: `page-${tab.id}`,
       type: "page",
-      label: tab.title || "Current Page",
+      label: tab.title ?? "Current Page",
       value: content,
       metadata: {
         tabId: tab.id, // Add tabId for AI to directly call tab-related tools
@@ -61,8 +61,8 @@ export async function getTabsContext(): Promise<ContextItem[]> {
       .map((tab) => ({
         id: `tab-${tab.id}`,
         type: "tab" as const,
-        label: tab.title || "Untitled",
-        value: tab.url || "",
+        label: tab.title ?? "Untitled",
+        value: tab.url ?? "",
         metadata: {
           tabId: tab.id, // Add tabId for AI to directly call tab-related tools
           url: tab.url,
@@ -121,7 +121,7 @@ export async function getBookmarksContext(): Promise<ContextItem[]> {
           bookmarks.push({
             id: `bookmark-${node.id}`,
             type: "bookmark",
-            label: node.title || "Untitled",
+            label: node.title ?? "Untitled",
             value: node.url,
             metadata: {
               url: node.url,
@@ -187,8 +187,8 @@ export async function getHistoryContext(
       .map((item) => ({
         id: `history-${item.id}`,
         type: "custom" as const,
-        label: item.title || "Untitled",
-        value: item.url || "",
+        label: item.title ?? "Untitled",
+        value: item.url ?? "",
         metadata: {
           url: item.url,
           title: item.title,
@@ -279,7 +279,7 @@ export function searchContexts(
   const lowerQuery = query.toLowerCase();
   return contexts.filter(
     (ctx) =>
-      ctx.label.toLowerCase().includes(lowerQuery) ||
+      ctx.label.toLowerCase().includes(lowerQuery) ??
       ctx.value.toLowerCase().includes(lowerQuery),
   );
 }

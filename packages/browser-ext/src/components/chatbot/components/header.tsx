@@ -1,8 +1,8 @@
 import { PlusIcon, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "~/lib/utils";
+import type { HeaderProps } from "~/types";
 import { useComponentsContext } from "../core/context";
-import type { HeaderProps } from "../core/types";
 
 /**
  * Default Header component
