@@ -4,6 +4,7 @@ import type {
   Agent as OpenAIAgent,
 } from "@openai/agents";
 import type { AiSdkModel } from "@openai/agents-extensions";
+import type { Context, ContextManager } from "./context/index.js";
 import type { ConversationManager } from "./conversation/manager.js";
 import type { AgentError } from "./utils/errors.js";
 
@@ -71,6 +72,12 @@ export interface AIPexOptions<
    * When provided, storage and compression options are ignored.
    */
   conversationManager?: ConversationManager;
+
+  /**
+   * Context manager for providing additional context to the agent.
+   * Contexts can come from various sources (browser, filesystem, database, etc.)
+   */
+  contextManager?: ContextManager;
 }
 
 export interface CompressionOptions extends CompressionConfig {
@@ -79,6 +86,12 @@ export interface CompressionOptions extends CompressionConfig {
 
 export interface ChatOptions {
   sessionId?: string;
+  /**
+   * Contexts to include with this message.
+   * Can be Context objects or context IDs (strings).
+   * Context IDs will be resolved using the ContextManager.
+   */
+  contexts?: Context[] | string[];
 }
 
 /**
@@ -109,6 +122,9 @@ export type AgentEvent =
   | { type: "tool_call_start"; toolName: string; params: unknown }
   | { type: "tool_call_complete"; toolName: string; result: unknown }
   | { type: "tool_call_error"; toolName: string; error: Error }
+  | { type: "contexts_attached"; contexts: Context[] }
+  | { type: "contexts_loaded"; providerId: string; count: number }
+  | { type: "context_error"; providerId: string; error: Error }
   | { type: "metrics_update"; metrics: AgentMetrics }
   | { type: "error"; error: AgentError }
   | {
