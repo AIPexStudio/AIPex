@@ -68,6 +68,12 @@
     "research": "请使用 Google 研究主题 'MCP'",
     "comparePrice": "比较 iPhone 17 的价格"
   },
+  "config": {
+    "title": "需要配置",
+    "description": "使用 AIPex 前，请先配置您的 AI 设置。",
+    "apiTokenRequired": "需要 API 令牌来连接 AI 服务。",
+    "openSettings": "打开设置"
+  },
   "tools": {
     "get_all_tabs": "获取所有标签页",
     "get_current_tab": "获取当前标签页",

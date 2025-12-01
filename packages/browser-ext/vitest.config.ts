@@ -30,6 +30,10 @@ export default defineConfig({
     alias: {
       "~": path.resolve(__dirname, "./src"),
       "@": path.resolve(__dirname, "./"),
+      "@aipexstudio/aipex-core": path.resolve(
+        __dirname,
+        "../core/src/index.ts",
+      ),
     },
   },
 });

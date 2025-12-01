@@ -68,6 +68,12 @@
     "research": "Please use Google to research topic 'MCP'",
     "comparePrice": "Compare the price of iPhone 17"
   },
+  "config": {
+    "title": "Setup Required",
+    "description": "To start using AIPex, please configure your AI settings.",
+    "apiTokenRequired": "API token is required to connect to the AI service.",
+    "openSettings": "Open Settings"
+  },
   "tools": {
     "get_all_tabs": "Get All Tabs",
     "get_current_tab": "Get Current Tab",
