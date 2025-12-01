@@ -3,7 +3,7 @@
  * Provides available context items from various browser sources
  */
 
-import type { ContextItem } from "@/components/ai-elements/prompt-input";
+import type { ContextItem } from "~/types";
 
 /**
  * Get current page content as context
@@ -88,7 +88,7 @@ export async function getClipboardContext(): Promise<ContextItem | null> {
   /* Uncomment if you want to enable clipboard support
   try {
     const text = await navigator.clipboard.readText();
-    
+
     if (!text) return null;
 
     return {
