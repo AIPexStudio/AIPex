@@ -1,4 +1,4 @@
-import { Storage } from "~/lib/storage";
+import { Storage } from "~/adapters/storage-adapter";
 // Language resource imports
 import enTranslations from "./locales/en.json";
 import zhTranslations from "./locales/zh.json";

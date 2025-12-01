@@ -1,5 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod/v3";
+import { executeScriptInActiveTab, getActiveTab } from "./utils";
 
 /**
  * Get information about the current active page
@@ -10,14 +11,7 @@ export const getPageInfoTool = tool({
     "Get information about the current active page (URL, title, etc.)",
   parameters: z.object({}),
   execute: async () => {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab) {
-      throw new Error("No active tab found");
-    }
+    const tab = await getActiveTab();
 
     return {
       url: tab.url,
@@ -45,18 +39,8 @@ export const scrollPageTool = tool({
       .describe("Number of pixels to scroll (for up/down)"),
   }),
   execute: async ({ direction, pixels = 500 }) => {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (dir: string, px: number) => {
+    await executeScriptInActiveTab(
+      (dir: string, px: number) => {
         switch (dir) {
           case "up":
             window.scrollBy({ top: -px, behavior: "smooth" });
@@ -75,8 +59,8 @@ export const scrollPageTool = tool({
             break;
         }
       },
-      args: [direction, pixels],
-    });
+      [direction, pixels],
+    );
 
     return { success: true, direction, scrolled: pixels };
   },
@@ -125,25 +109,14 @@ export const getPageContentTool = tool({
       .describe("CSS selector to get content from (default: body)"),
   }),
   execute: async ({ selector = "body" }) => {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (sel: string) => {
+    const content = await executeScriptInActiveTab(
+      (sel: string) => {
         const element = document.querySelector(sel);
         return element ? element.textContent : null;
       },
-      args: [selector],
-    });
+      [selector],
+    );
 
-    const content = results[0]?.result;
     if (!content) {
       throw new Error(`No content found for selector: ${selector}`);
     }
@@ -162,18 +135,8 @@ export const clickElementTool = tool({
     selector: z.string().describe("CSS selector of the element to click"),
   }),
   execute: async ({ selector }) => {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (sel: string) => {
+    const result = await executeScriptInActiveTab(
+      (sel: string) => {
         const element = document.querySelector(sel);
         if (!element) {
           return { success: false, error: "Element not found" };
@@ -184,10 +147,9 @@ export const clickElementTool = tool({
         }
         return { success: false, error: "Element is not clickable" };
       },
-      args: [selector],
-    });
+      [selector],
+    );
 
-    const result = results[0]?.result;
     if (!result?.success) {
       throw new Error(result?.error ?? "Failed to click element");
     }
@@ -207,18 +169,8 @@ export const fillFormFieldTool = tool({
     value: z.string().describe("Value to fill in the field"),
   }),
   execute: async ({ selector, value }) => {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (sel: string, val: string) => {
+    const result = await executeScriptInActiveTab(
+      (sel: string, val: string) => {
         const element = document.querySelector(sel);
         if (!element) {
           return { success: false, error: "Element not found" };
@@ -234,10 +186,9 @@ export const fillFormFieldTool = tool({
         }
         return { success: false, error: "Element is not an input field" };
       },
-      args: [selector, value],
-    });
+      [selector, value],
+    );
 
-    const result = results[0]?.result;
     if (!result?.success) {
       throw new Error(result?.error ?? "Failed to fill form field");
     }
