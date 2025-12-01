@@ -18,6 +18,7 @@ export function DefaultMessageList({
   status,
   onRegenerate,
   onCopy,
+  onSuggestionClick,
   className,
   ...props
 }: MessageListProps & {
@@ -35,11 +36,7 @@ export function DefaultMessageList({
           {displayMessages.length === 0 ? (
             <WelcomeScreen
               onSuggestionClick={(text) => {
-                // This will be handled by the parent
-                const event = new CustomEvent("chatbot:suggestion", {
-                  detail: { text },
-                });
-                window.dispatchEvent(event);
+                onSuggestionClick?.(text);
               }}
             />
           ) : (

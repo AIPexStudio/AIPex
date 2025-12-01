@@ -1,4 +1,4 @@
-import type { Agent } from "@aipexstudio/aipex-core";
+import type { AIPex } from "@aipexstudio/aipex-core";
 import { createContext, type ReactNode, useContext } from "react";
 import type {
   ChatbotComponents,
@@ -137,8 +137,8 @@ export { ThemeContext };
 // ============ Provider Props ============
 
 export interface ChatbotProviderProps {
-  /** The Agent instance from @aipexstudio/aipex-core */
-  agent: Agent;
+  /** The AIPex instance from @aipexstudio/aipex-core */
+  agent: AIPex;
   /** Chat configuration */
   config?: ChatConfig;
   /** Event handlers */

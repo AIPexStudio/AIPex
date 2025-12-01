@@ -18,43 +18,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "~/lib/utils";
-import type { ToolDisplaySlotProps, UIToolPart } from "../../core/types";
-
-/**
- * Format tool output for display
- */
-function formatToolOutput(output: unknown): string {
-  return `
-\`\`\`${typeof output === "string" ? "text" : "json"}
-${typeof output === "string" ? output : JSON.stringify(output, null, 2)}
-\`\`\`
-`;
-}
-
-/**
- * Map UI tool state to tool component state
- */
-function mapToolState(
-  state: UIToolPart["state"],
-):
-  | "input-streaming"
-  | "input-available"
-  | "executing"
-  | "output-available"
-  | "output-error" {
-  switch (state) {
-    case "pending":
-      return "input-available";
-    case "executing":
-      return "executing";
-    case "completed":
-      return "output-available";
-    case "error":
-      return "output-error";
-    default:
-      return "input-available";
-  }
-}
+import type { ToolDisplaySlotProps } from "../../core/types";
+import { formatToolOutput, mapToolState } from "../../lib/tools";
 
 /**
  * Default tool display slot component

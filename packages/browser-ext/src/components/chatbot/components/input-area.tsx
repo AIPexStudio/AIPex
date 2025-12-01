@@ -24,17 +24,9 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { cn } from "~/lib/utils";
+import { DEFAULT_MODELS } from "../constants";
 import { useComponentsContext, useConfigContext } from "../core/context";
 import type { ContextItem, InputAreaProps } from "../core/types";
-
-/**
- * Default model options
- */
-const DEFAULT_MODELS = [
-  { name: "DeepSeek V3", value: "deepseek-chat" },
-  { name: "GPT-4", value: "gpt-4" },
-  { name: "Claude 3.5 Sonnet", value: "claude-3-5-sonnet-20241022" },
-];
 
 export interface ExtendedInputAreaProps extends InputAreaProps {
   /** Available models for selection */
@@ -86,9 +78,8 @@ export function DefaultInputArea({
         files,
         message.contexts as ContextItem[] | undefined,
       );
-      onChange("");
     },
-    [onSubmit, onChange],
+    [onSubmit],
   );
 
   const handleModelChange = useCallback(

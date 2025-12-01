@@ -1,4 +1,3 @@
-import type { ToolResult } from "@aipexstudio/aipex-core";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 
 // ============ Chat Status ============
@@ -42,7 +41,7 @@ export interface UIToolPart {
   type: "tool";
   toolName: string;
   toolCallId: string;
-  input: Record<string, unknown>;
+  input: unknown;
   output?: unknown;
   state: UIToolState;
   errorText?: string;
@@ -294,9 +293,9 @@ export interface ChatbotEventHandlers {
   /** Called when status changes */
   onStatusChange?: (status: ChatStatus) => void;
   /** Called when a tool is executed */
-  onToolExecute?: (toolName: string, input: Record<string, unknown>) => void;
+  onToolExecute?: (toolName: string, input: unknown) => void;
   /** Called when a tool completes */
-  onToolComplete?: (toolName: string, result: ToolResult) => void;
+  onToolComplete?: (toolName: string, result: unknown) => void;
 }
 
 // ============ useChat Hook Types ============

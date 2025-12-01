@@ -1,21 +1,37 @@
-import type { Agent, AgentEvent } from "@aipexstudio/aipex-core";
+import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Chatbot, ChatbotProvider } from "../components/chatbot";
 import { useChatContext, useConfigContext } from "../core/context";
 
+const baseMetrics = {
+  tokensUsed: 0,
+  promptTokens: 0,
+  completionTokens: 0,
+  itemCount: 0,
+  maxTurns: 10,
+  duration: 0,
+  startTime: 0,
+};
+
+function createExecutionCompleteEvent(): AgentEvent {
+  return {
+    type: "execution_complete",
+    finalOutput: "",
+    metrics: { ...baseMetrics, startTime: Date.now() },
+  };
+}
+
 // Mock the Agent class
-function createMockAgent(): Agent {
-  const mockAgent = {
-    execute: vi.fn(),
-    continueConversation: vi.fn(),
-    interrupt: vi.fn(),
+function createMockAgent(): AIPex {
+  const conversationManager = {
     deleteSession: vi.fn(),
-    getToolRegistry: vi.fn().mockReturnValue({
-      getTool: vi.fn(),
-      getAllDeclarations: vi.fn().mockReturnValue([]),
-    }),
-  } as unknown as Agent;
+  };
+
+  const mockAgent = {
+    chat: vi.fn(),
+    getConversationManager: vi.fn(() => conversationManager),
+  } as unknown as AIPex;
 
   return mockAgent;
 }
@@ -35,17 +51,17 @@ vi.mock("~/lib/storage", () => ({
 }));
 
 describe("Chatbot Component", () => {
-  let mockAgent: Agent;
+  let mockAgent: AIPex;
 
   beforeEach(() => {
     vi.resetAllMocks();
     mockAgent = createMockAgent();
 
     // Default mock implementation
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       createEventGenerator([
         { type: "session_created", sessionId: "session-1" },
-        { type: "execution_complete", reason: "finished", turns: 0 },
+        createExecutionCompleteEvent(),
       ]),
     );
   });
@@ -121,9 +137,9 @@ describe("Chatbot Component", () => {
       );
 
       // Mock to keep in submitted state
-      (mockAgent.execute as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockAgent.chat as ReturnType<typeof vi.fn>).mockImplementation(
         async function* () {
-          yield { type: "execution_start" };
+          yield { type: "session_created", sessionId: "session-1" };
           // Don't complete - stay in loading state
           await new Promise(() => {}); // Never resolves
         },
@@ -198,18 +214,31 @@ describe("Chatbot Component", () => {
       // Verify the chat was reset (no messages)
       expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
     });
+
+    it("should send suggestion text when welcome suggestion is clicked", async () => {
+      render(<Chatbot agent={mockAgent} />);
+
+      const suggestion = screen.getByText(
+        "Help me organize my browser tabs by topic",
+      );
+      fireEvent.click(suggestion);
+
+      await waitFor(() => {
+        expect(mockAgent.chat).toHaveBeenCalled();
+      });
+    });
   });
 });
 
 describe("ChatbotProvider", () => {
-  let mockAgent: Agent;
+  let mockAgent: AIPex;
 
   beforeEach(() => {
     mockAgent = createMockAgent();
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       (async function* () {
         yield { type: "session_created", sessionId: "session-1" };
-        yield { type: "execution_complete", reason: "finished", turns: 0 };
+        yield createExecutionCompleteEvent();
       })(),
     );
   });
@@ -319,14 +348,14 @@ describe("ChatbotProvider", () => {
 });
 
 describe("Chatbot Accessibility", () => {
-  let mockAgent: Agent;
+  let mockAgent: AIPex;
 
   beforeEach(() => {
     mockAgent = createMockAgent();
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       createEventGenerator([
         { type: "session_created", sessionId: "session-1" },
-        { type: "execution_complete", reason: "finished", turns: 0 },
+        createExecutionCompleteEvent(),
       ]),
     );
   });
@@ -343,7 +372,7 @@ describe("Chatbot Accessibility", () => {
 });
 
 describe("Chatbot State Management", () => {
-  let mockAgent: Agent;
+  let mockAgent: AIPex;
 
   beforeEach(() => {
     mockAgent = createMockAgent();
@@ -352,13 +381,11 @@ describe("Chatbot State Management", () => {
   it("should handle message sending flow", async () => {
     const events: AgentEvent[] = [
       { type: "session_created", sessionId: "session-1" },
-      { type: "execution_start" },
-      { type: "turn_start", turnId: "turn-1", number: 1 },
       { type: "content_delta", delta: "Hello!" },
-      { type: "execution_complete", reason: "finished", turns: 1 },
+      createExecutionCompleteEvent(),
     ];
 
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       createEventGenerator(events),
     );
 
@@ -371,10 +398,10 @@ describe("Chatbot State Management", () => {
   it("should preserve state across re-renders", async () => {
     const events: AgentEvent[] = [
       { type: "session_created", sessionId: "session-1" },
-      { type: "execution_complete", reason: "finished", turns: 0 },
+      createExecutionCompleteEvent(),
     ];
 
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       createEventGenerator(events),
     );
 
@@ -389,14 +416,14 @@ describe("Chatbot State Management", () => {
 });
 
 describe("Chatbot Event Handlers", () => {
-  let mockAgent: Agent;
+  let mockAgent: AIPex;
 
   beforeEach(() => {
     mockAgent = createMockAgent();
-    (mockAgent.execute as ReturnType<typeof vi.fn>).mockReturnValue(
+    (mockAgent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
       createEventGenerator([
         { type: "session_created", sessionId: "session-1" },
-        { type: "execution_complete", reason: "finished", turns: 0 },
+        createExecutionCompleteEvent(),
       ]),
     );
   });

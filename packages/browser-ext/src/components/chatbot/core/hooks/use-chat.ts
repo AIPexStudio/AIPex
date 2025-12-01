@@ -1,4 +1,4 @@
-import type { Agent, AgentEvent } from "@aipexstudio/aipex-core";
+import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatAdapter } from "../adapter";
 import type {
@@ -10,7 +10,7 @@ import type {
 } from "../types";
 
 /**
- * useChat - A headless hook for managing chat state with an Agent
+ * useChat - A headless hook for managing chat state with an AIPex agent
  *
  * This hook provides all the state and actions needed to build a chat UI,
  * without any rendering logic. It uses the ChatAdapter to convert
@@ -18,7 +18,7 @@ import type {
  *
  * @example
  * ```tsx
- * const agent = Agent.create({ llm, tools });
+ * const agent = AIPex.create({ model, tools });
  *
  * function MyChatUI() {
  *   const {
@@ -39,7 +39,7 @@ import type {
  * ```
  */
 export function useChat(
-  agent: Agent,
+  agent: AIPex,
   options: UseChatOptions = {},
 ): UseChatReturn {
   const { config, handlers } = options;
@@ -58,8 +58,7 @@ export function useChat(
   const configRef = useRef(config);
   configRef.current = config;
 
-  // Track tool names by callId for tool_call_complete events
-  const toolCallNamesRef = useRef<Map<string, string>>(new Map());
+  const activeGeneratorRef = useRef<AsyncGenerator<AgentEvent> | null>(null);
 
   // Create adapter with callbacks
   const adapter = useMemo(() => {
@@ -91,26 +90,27 @@ export function useChat(
   // Process agent events
   const processAgentEvents = useCallback(
     async (eventGenerator: AsyncGenerator<AgentEvent>) => {
+      activeGeneratorRef.current = eventGenerator;
       try {
         for await (const event of eventGenerator) {
           // Handle session creation
-          if (event.type === "session_created") {
+          if (
+            event.type === "session_created" ||
+            event.type === "session_resumed"
+          ) {
             setSessionId(event.sessionId);
           }
 
-          // Handle tool events for callbacks
-          if (event.type === "tool_call_pending") {
-            // Store tool name by callId for later use in tool_call_complete
-            toolCallNamesRef.current.set(event.callId, event.toolName);
+          if (event.type === "tool_call_start") {
             handlersRef.current?.onToolExecute?.(event.toolName, event.params);
           }
 
           if (event.type === "tool_call_complete") {
-            // Retrieve tool name from our tracking map (stored during tool_call_pending)
-            const toolName = toolCallNamesRef.current.get(event.callId) || "";
-            handlersRef.current?.onToolComplete?.(toolName, event.result);
-            // Clean up the tracking entry
-            toolCallNamesRef.current.delete(event.callId);
+            handlersRef.current?.onToolComplete?.(event.toolName, event.result);
+          }
+
+          if (event.type === "tool_call_error" || event.type === "error") {
+            handlersRef.current?.onError?.(event.error);
           }
 
           // Process the event through adapter
@@ -118,7 +118,11 @@ export function useChat(
         }
       } catch (error) {
         handlersRef.current?.onError?.(error as Error);
-        setStatus("error");
+        adapter.setStatus("error");
+      } finally {
+        if (activeGeneratorRef.current === eventGenerator) {
+          activeGeneratorRef.current = null;
+        }
       }
     },
     [adapter],
@@ -138,6 +142,7 @@ export function useChat(
       // Add user message to adapter
       const userMessage = adapter.addUserMessage(text, files, contexts);
       handlersRef.current?.onMessageSent?.(userMessage);
+      adapter.setStatus("submitted");
 
       // Build the input text with context
       let inputText = text;
@@ -148,16 +153,11 @@ export function useChat(
         inputText = `${contextText}\n\n${text}`;
       }
 
-      // Execute agent
-      if (sessionId) {
-        // Continue existing conversation
-        const events = agent.continueConversation(sessionId, inputText);
-        await processAgentEvents(events);
-      } else {
-        // Start new conversation
-        const events = agent.execute(inputText);
-        await processAgentEvents(events);
-      }
+      const events = agent.chat(
+        inputText,
+        sessionId ? { sessionId } : undefined,
+      );
+      await processAgentEvents(events);
     },
     [adapter, agent, sessionId, processAgentEvents],
   );
@@ -175,8 +175,10 @@ export function useChat(
       const userMessage = adapter.addUserMessage(text);
       handlersRef.current?.onMessageSent?.(userMessage);
 
+      adapter.setStatus("submitted");
+
       // Continue conversation
-      const events = agent.continueConversation(sessionId, text);
+      const events = agent.chat(text, { sessionId });
       await processAgentEvents(events);
     },
     [adapter, agent, sessionId, processAgentEvents, sendMessage],
@@ -184,21 +186,22 @@ export function useChat(
 
   // Interrupt current operation
   const interrupt = useCallback(async (): Promise<void> => {
-    if (sessionId) {
-      await agent.interrupt(sessionId);
+    const generator = activeGeneratorRef.current;
+    if (generator && typeof generator.return === "function") {
+      await generator.return(undefined);
     }
-    setStatus("idle");
-  }, [agent, sessionId]);
+    activeGeneratorRef.current = null;
+    adapter.setStatus("idle");
+  }, [adapter]);
 
   // Reset chat
   const reset = useCallback((): void => {
     if (sessionId) {
-      agent.deleteSession(sessionId);
+      void agent.getConversationManager()?.deleteSession(sessionId);
     }
+    activeGeneratorRef.current = null;
     setSessionId(null);
     adapter.reset(configRef.current?.initialMessages || []);
-    // Clear tool name tracking
-    toolCallNamesRef.current.clear();
   }, [adapter, agent, sessionId]);
 
   // Regenerate last response
@@ -220,7 +223,8 @@ export function useChat(
     const text = textPart?.type === "text" ? textPart.text : "";
 
     if (sessionId && text) {
-      const events = agent.continueConversation(sessionId, text);
+      adapter.setStatus("submitted");
+      const events = agent.chat(text, { sessionId });
       await processAgentEvents(events);
     }
   }, [adapter, agent, sessionId, processAgentEvents]);

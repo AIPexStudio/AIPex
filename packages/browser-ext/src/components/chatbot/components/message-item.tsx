@@ -14,31 +14,10 @@ import {
   SourcesContent,
   SourcesTrigger,
 } from "@/components/ai-elements/sources";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "@/components/ai-elements/tool";
 import { cn } from "~/lib/utils";
 import { useComponentsContext } from "../core/context";
-import type {
-  MessageItemProps,
-  UISourceUrlPart,
-  UIToolPart,
-} from "../core/types";
-
-/**
- * Format tool output for display
- */
-function formatToolOutput(output: unknown): string {
-  return `
-\`\`\`${typeof output === "string" ? "text" : "json"}
-${typeof output === "string" ? output : JSON.stringify(output, null, 2)}
-\`\`\`
-`;
-}
+import type { MessageItemProps, UISourceUrlPart } from "../core/types";
+import { DefaultToolDisplay } from "./slots/tool-display";
 
 /**
  * Get icon for context type
@@ -52,31 +31,6 @@ function getContextIcon(contextType: string): string {
     screenshot: "📷",
   };
   return icons[contextType] || "📝";
-}
-
-/**
- * Map UI tool state to tool component state
- */
-function mapToolState(
-  state: UIToolPart["state"],
-):
-  | "input-streaming"
-  | "input-available"
-  | "executing"
-  | "output-available"
-  | "output-error" {
-  switch (state) {
-    case "pending":
-      return "input-available";
-    case "executing":
-      return "executing";
-    case "completed":
-      return "output-available";
-    case "error":
-      return "output-error";
-    default:
-      return "input-available";
-  }
 }
 
 /**
@@ -200,25 +154,7 @@ export function DefaultMessageItem({
               );
             }
 
-            return (
-              <Tool key={key} defaultOpen={false}>
-                <ToolHeader
-                  type={`tool-${part.toolName}`}
-                  state={mapToolState(part.state)}
-                />
-                <ToolContent>
-                  <ToolInput input={part.input} />
-                  <ToolOutput
-                    output={
-                      part.output ? (
-                        <Response>{formatToolOutput(part.output)}</Response>
-                      ) : undefined
-                    }
-                    errorText={part.errorText}
-                  />
-                </ToolContent>
-              </Tool>
-            );
+            return <DefaultToolDisplay key={key} tool={part} />;
 
           case "reasoning":
             return (

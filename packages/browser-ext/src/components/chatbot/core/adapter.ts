@@ -9,7 +9,6 @@ import type {
   UIFilePart,
   UIMessage,
   UIPart,
-  UIReasoningPart,
   UITextPart,
   UIToolPart,
 } from "./types";
@@ -27,6 +26,9 @@ export class ChatAdapter {
     currentAssistantMessageId: null,
     status: "idle",
   };
+
+  private pendingToolCalls = new Map<string, string[]>();
+  private fileObjectUrls = new Map<string, string[]>();
 
   private options: ChatAdapterOptions;
 
@@ -52,6 +54,7 @@ export class ChatAdapter {
    * Set messages directly (for initialization or reset)
    */
   setMessages(messages: UIMessage[]): void {
+    this.reconcileFileObjectUrls(messages);
     this.state.messages = [...messages];
     this.options.onMessagesUpdate?.(this.state.messages);
   }
@@ -65,6 +68,7 @@ export class ChatAdapter {
     contexts?: ContextItem[],
   ): UIMessage {
     const parts: UIPart[] = [];
+    const fileUrls: string[] = [];
 
     // Add context parts first
     if (contexts && contexts.length > 0) {
@@ -90,12 +94,14 @@ export class ChatAdapter {
     // Add file parts
     if (files && files.length > 0) {
       for (const file of files) {
+        const objectUrl = URL.createObjectURL(file);
         parts.push({
           type: "file",
           mediaType: file.type,
           filename: file.name,
-          url: URL.createObjectURL(file),
+          url: objectUrl,
         } as UIFilePart);
+        fileUrls.push(objectUrl);
       }
     }
 
@@ -109,6 +115,10 @@ export class ChatAdapter {
     this.state.messages = [...this.state.messages, userMessage];
     this.options.onMessagesUpdate?.(this.state.messages);
 
+    if (fileUrls.length > 0) {
+      this.fileObjectUrls.set(userMessage.id, fileUrls);
+    }
+
     return userMessage;
   }
 
@@ -118,75 +128,40 @@ export class ChatAdapter {
   processEvent(event: AgentEvent): void {
     switch (event.type) {
       case "session_created":
-        // Session created, nothing to do for UI
-        break;
-
-      case "execution_start":
-        this.setStatus("submitted");
-        break;
-
-      case "turn_start":
-        // Create a new assistant message for this turn
-        this.createAssistantMessage();
-        break;
-
-      case "llm_stream_start":
-        this.setStatus("streaming");
+      case "session_resumed":
+      case "metrics_update":
         break;
 
       case "content_delta":
+        this.ensureAssistantMessage();
+        this.updateStatus("streaming");
         this.appendContentDelta(event.delta);
         break;
 
-      case "thinking_delta":
-        this.appendThinkingDelta(event.delta);
-        break;
-
-      case "llm_stream_end":
-        // LLM streaming complete, but might have tools to execute
-        break;
-
-      case "tool_call_pending":
-        this.addToolCall(event.callId, event.toolName, event.params);
-        this.setStatus("executing_tools");
-        break;
-
       case "tool_call_start":
-        this.updateToolState(event.callId, "executing");
-        break;
-
-      case "tool_output_stream":
-        // Tool streaming output - could be used for progress updates
+        this.ensureAssistantMessage();
+        this.addToolCall(event.toolName, event.params);
+        this.updateStatus("executing_tools");
         break;
 
       case "tool_call_complete":
-        this.updateToolComplete(event.callId, event.result, event.duration);
+        this.updateToolComplete(event.toolName, event.result);
+        this.updateStatus("streaming");
         break;
 
       case "tool_call_error":
-        this.updateToolError(event.callId, event.error);
-        break;
-
-      case "turn_complete":
-        // Turn complete, check if we should continue
-        if (!event.shouldContinue) {
-          this.setStatus("idle");
-        }
-        this.state.currentAssistantMessageId = null;
+        this.updateToolError(event.toolName, event.error);
+        this.updateStatus("error");
         break;
 
       case "execution_complete":
-        this.setStatus("idle");
+        this.updateStatus("idle");
         this.state.currentAssistantMessageId = null;
         break;
 
-      case "execution_error":
-        this.setStatus("error");
+      case "error":
+        this.updateStatus("error");
         this.state.currentAssistantMessageId = null;
-        break;
-
-      case "rate_limit":
-        // Rate limit info - could show a warning to user
         break;
     }
   }
@@ -200,6 +175,8 @@ export class ChatAdapter {
       currentAssistantMessageId: null,
       status: "idle",
     };
+    this.pendingToolCalls.clear();
+    this.clearFileObjectUrls();
     this.options.onMessagesUpdate?.(this.state.messages);
     this.options.onStatusChange?.(this.state.status);
   }
@@ -230,14 +207,22 @@ export class ChatAdapter {
 
   // ============ Private Methods ============
 
-  private setStatus(status: ChatStatus): void {
+  public setStatus(status: ChatStatus): void {
+    this.updateStatus(status);
+  }
+
+  private updateStatus(status: ChatStatus): void {
     if (this.state.status !== status) {
       this.state.status = status;
       this.options.onStatusChange?.(status);
     }
   }
 
-  private createAssistantMessage(): void {
+  private ensureAssistantMessage(): void {
+    if (this.state.currentAssistantMessageId) {
+      return;
+    }
+
     const assistantMessage: UIMessage = {
       id: generateId(),
       role: "assistant",
@@ -281,33 +266,9 @@ export class ChatAdapter {
     });
   }
 
-  private appendThinkingDelta(delta: string): void {
-    this.updateCurrentAssistantMessage((message) => {
-      const parts = [...message.parts];
+  private addToolCall(toolName: string, params: unknown): void {
+    const callId = this.queueToolCall(toolName);
 
-      // Find or create reasoning part
-      let reasoningPart = parts.find(
-        (p): p is UIReasoningPart => p.type === "reasoning",
-      );
-
-      if (reasoningPart) {
-        reasoningPart = { ...reasoningPart, text: reasoningPart.text + delta };
-        const index = parts.findIndex((p) => p.type === "reasoning");
-        parts[index] = reasoningPart;
-      } else {
-        // Insert reasoning at the beginning
-        parts.unshift({ type: "reasoning", text: delta });
-      }
-
-      return { ...message, parts };
-    });
-  }
-
-  private addToolCall(
-    callId: string,
-    toolName: string,
-    params: Record<string, unknown>,
-  ): void {
     this.updateCurrentAssistantMessage((message) => {
       const parts = [...message.parts];
 
@@ -316,7 +277,7 @@ export class ChatAdapter {
         toolCallId: callId,
         toolName,
         input: params,
-        state: "pending",
+        state: "executing",
       };
 
       parts.push(toolPart);
@@ -325,56 +286,94 @@ export class ChatAdapter {
     });
   }
 
-  private updateToolState(callId: string, state: UIToolPart["state"]): void {
-    this.updateCurrentAssistantMessage((message) => {
-      const parts = message.parts.map((p) => {
-        if (p.type === "tool" && p.toolCallId === callId) {
-          return { ...p, state };
-        }
-        return p;
-      });
-
-      return { ...message, parts };
-    });
+  private updateToolComplete(toolName: string, result: unknown): void {
+    const callId = this.dequeueToolCall(toolName);
+    if (!callId) {
+      return;
+    }
+    this.updateToolPart(callId, (toolPart) => ({
+      ...toolPart,
+      state: "completed",
+      output: result,
+    }));
   }
 
-  private updateToolComplete(
+  private updateToolError(toolName: string, error: Error): void {
+    const callId = this.dequeueToolCall(toolName);
+    if (!callId) {
+      return;
+    }
+    this.updateToolPart(callId, (toolPart) => ({
+      ...toolPart,
+      state: "error",
+      errorText: error.message,
+    }));
+  }
+
+  private updateToolPart(
     callId: string,
-    result: { success: boolean; data?: unknown; error?: string },
-    duration: number,
+    updater: (part: UIToolPart) => UIToolPart,
   ): void {
     this.updateCurrentAssistantMessage((message) => {
-      const parts = message.parts.map((p) => {
-        if (p.type === "tool" && p.toolCallId === callId) {
-          return {
-            ...p,
-            state: "completed" as const,
-            output: result.data,
-            duration,
-          };
+      const parts = message.parts.map((part) => {
+        if (part.type === "tool" && part.toolCallId === callId) {
+          return updater(part);
         }
-        return p;
+        return part;
       });
 
       return { ...message, parts };
     });
   }
 
-  private updateToolError(callId: string, error: Error): void {
-    this.updateCurrentAssistantMessage((message) => {
-      const parts = message.parts.map((p) => {
-        if (p.type === "tool" && p.toolCallId === callId) {
-          return {
-            ...p,
-            state: "error" as const,
-            errorText: error.message,
-          };
-        }
-        return p;
-      });
+  private queueToolCall(toolName: string): string {
+    const callId = generateId();
+    const queue = this.pendingToolCalls.get(toolName) ?? [];
+    queue.push(callId);
+    this.pendingToolCalls.set(toolName, queue);
+    return callId;
+  }
 
-      return { ...message, parts };
-    });
+  private dequeueToolCall(toolName: string): string | undefined {
+    const queue = this.pendingToolCalls.get(toolName);
+    if (!queue || queue.length === 0) {
+      return undefined;
+    }
+    const callId = queue.shift();
+    if (!queue.length) {
+      this.pendingToolCalls.delete(toolName);
+    } else {
+      this.pendingToolCalls.set(toolName, queue);
+    }
+    return callId;
+  }
+
+  private clearFileObjectUrls(): void {
+    for (const urls of this.fileObjectUrls.values()) {
+      this.revokeUrls(urls);
+    }
+    this.fileObjectUrls.clear();
+  }
+
+  private reconcileFileObjectUrls(nextMessages: UIMessage[]): void {
+    const nextIds = new Set(nextMessages.map((message) => message.id));
+    for (const [messageId, urls] of this.fileObjectUrls.entries()) {
+      if (!nextIds.has(messageId)) {
+        this.revokeUrls(urls);
+        this.fileObjectUrls.delete(messageId);
+      }
+    }
+  }
+
+  private revokeUrls(urls: string[]): void {
+    for (const url of urls) {
+      if (
+        typeof URL !== "undefined" &&
+        typeof URL.revokeObjectURL === "function"
+      ) {
+        URL.revokeObjectURL(url);
+      }
+    }
   }
 }
 

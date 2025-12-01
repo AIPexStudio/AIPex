@@ -18,6 +18,9 @@ export default defineConfig({
         classNameStrategy: "non-scoped",
       },
     },
+    sequence: {
+      concurrent: false,
+    },
     deps: {
       // Inline dependencies that have CSS imports
       inline: [/katex/, /streamdown/],

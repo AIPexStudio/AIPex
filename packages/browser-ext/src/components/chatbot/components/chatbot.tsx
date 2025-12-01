@@ -1,5 +1,6 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import { cn } from "~/lib/utils";
+import { DEFAULT_MODELS } from "../constants";
 import {
   type ChatbotProviderProps,
   ChatContext,
@@ -116,15 +117,6 @@ export function ChatbotProvider({
   );
 }
 
-/**
- * Default model options
- */
-const DEFAULT_MODELS = [
-  { name: "DeepSeek V3", value: "deepseek-chat" },
-  { name: "GPT-4", value: "gpt-4" },
-  { name: "Claude 3.5 Sonnet", value: "claude-3-5-sonnet-20241022" },
-];
-
 export interface ChatbotProps extends Omit<ChatbotProviderProps, "children"> {
   /** Available models for selection */
   models?: Array<{ name: string; value: string }>;
@@ -142,7 +134,7 @@ export interface ChatbotProps extends Omit<ChatbotProviderProps, "children"> {
  *
  * @example
  * ```tsx
- * const agent = Agent.create({ llm, tools });
+ * const agent = AIPex.create({ model, tools });
  *
  * // Basic usage
  * <Chatbot agent={agent} />
@@ -211,28 +203,17 @@ function ChatbotContent({
   const [input, setInput] = useState("");
   const [showSettings, setShowSettings] = useState(false);
 
-  // Handle suggestion click from welcome screen
-  useEffect(() => {
-    const handleSuggestion = (event: CustomEvent<{ text: string }>) => {
-      void sendMessage(event.detail.text);
-    };
-
-    window.addEventListener(
-      "chatbot:suggestion",
-      handleSuggestion as EventListener,
-    );
-    return () => {
-      window.removeEventListener(
-        "chatbot:suggestion",
-        handleSuggestion as EventListener,
-      );
-    };
-  }, [sendMessage]);
-
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
       void sendMessage(text, files, contexts);
       setInput("");
+    },
+    [sendMessage],
+  );
+
+  const handleSuggestion = useCallback(
+    (text: string) => {
+      void sendMessage(text);
     },
     [sendMessage],
   );
@@ -267,6 +248,7 @@ function ChatbotContent({
         status={status}
         onRegenerate={regenerate}
         onCopy={handleCopy}
+        onSuggestionClick={handleSuggestion}
       />
 
       {/* Input Area */}

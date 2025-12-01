@@ -1,4 +1,4 @@
-export const models = [
+export const DEFAULT_MODELS: Array<{ name: string; value: string }> = [
   {
     name: "deepseek-3.2",
     value: "deepseek-chat",
@@ -12,6 +12,9 @@ export const models = [
     value: "gpt-5",
   },
 ];
+
+// Backwards compatibility for older imports
+export const models = DEFAULT_MODELS;
 
 // Unified system prompt describing AIPex product capabilities (Chinese)
 export const SYSTEM_PROMPT = [

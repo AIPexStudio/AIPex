@@ -19,7 +19,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify",
-    "test": "vitest run",
+    "test": "pnpm --filter @aipexstudio/aipex-core build && vitest run",
     "test:watch": "vitest"
   },
   "files": [
