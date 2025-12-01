@@ -1,4 +1,5 @@
 import type { KeyValueStorage } from "@aipexstudio/aipex-core";
+import type { StorageAdapter } from "../types/adapter";
 
 /**
  * ChromeStorageAdapter - Implements KeyValueStorage interface using Chrome Storage API
@@ -46,8 +47,83 @@ export class ChromeStorageAdapter<T> implements KeyValueStorage<T> {
 }
 
 /**
- * Simple Chrome Storage wrapper for non-core usage
- * This is a convenience wrapper for browser-ext specific storage needs
+ * Create a StorageAdapter implementation for Chrome extension storage
+ * This implements the StorageAdapter interface used by hooks
+ */
+export function createChromeStorageAdapter(
+  area: "local" | "sync" = "local",
+): StorageAdapter {
+  return {
+    async get<T>(key: string): Promise<T | undefined> {
+      return new Promise((resolve) => {
+        if (typeof chrome !== "undefined" && chrome.storage?.[area]) {
+          chrome.storage[area].get(key, (result) => {
+            resolve((result[key] as T | undefined) ?? undefined);
+          });
+        } else {
+          // Fallback to localStorage in non-extension environments
+          try {
+            const value = localStorage.getItem(key);
+            resolve(value ? (JSON.parse(value) as T) : undefined);
+          } catch {
+            resolve(undefined);
+          }
+        }
+      });
+    },
+    async set<T>(key: string, value: T): Promise<void> {
+      return new Promise((resolve) => {
+        if (typeof chrome !== "undefined" && chrome.storage?.[area]) {
+          chrome.storage[area].set({ [key]: value }, () => resolve());
+        } else {
+          // Fallback to localStorage
+          localStorage.setItem(key, JSON.stringify(value));
+          resolve();
+        }
+      });
+    },
+    async remove(key: string): Promise<void> {
+      return new Promise((resolve) => {
+        if (typeof chrome !== "undefined" && chrome.storage?.[area]) {
+          chrome.storage[area].remove(key, () => resolve());
+        } else {
+          // Fallback to localStorage
+          localStorage.removeItem(key);
+          resolve();
+        }
+      });
+    },
+    async clear(): Promise<void> {
+      return new Promise((resolve) => {
+        if (typeof chrome !== "undefined" && chrome.storage?.[area]) {
+          chrome.storage[area].clear(() => resolve());
+        } else {
+          // Fallback to localStorage
+          localStorage.clear();
+          resolve();
+        }
+      });
+    },
+  };
+}
+
+/**
+ * Storage - A feature-rich Chrome Storage wrapper
+ *
+ * This class provides additional features beyond the StorageAdapter interface:
+ * - Real-time change watching (watch method)
+ * - Batch operations (getAll)
+ * - Direct Chrome Storage API access
+ *
+ * Use this class when you need:
+ * 1. To watch for storage changes in real-time
+ * 2. Browser-extension specific storage needs
+ * 3. More direct control over Chrome Storage API
+ *
+ * Use StorageAdapter (createChromeStorageAdapter) when:
+ * 1. You need a simple get/set/remove interface
+ * 2. You want consistent interface for testing
+ * 3. You're working with hook-based configuration (like useChatConfig)
  */
 export class Storage {
   private area: chrome.storage.StorageArea;
@@ -81,6 +157,10 @@ export class Storage {
     });
   }
 
+  /**
+   * Watch for changes to a specific key
+   * Returns an unwatch function to stop listening
+   */
   watch<T = any>(
     key: string,
     callback: (change: { newValue?: T; oldValue?: T }) => void,

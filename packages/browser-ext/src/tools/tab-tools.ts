@@ -1,5 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod/v3";
+import { getActiveTab } from "./utils";
 
 /**
  * List all open tabs
@@ -94,16 +95,8 @@ export const closeTabTool = tool({
       return { success: true, tabId };
     }
 
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    await chrome.tabs.remove(tab.id);
+    const tab = await getActiveTab();
+    await chrome.tabs.remove(tab.id!);
     return { success: true, tabId: tab.id };
   },
 });
@@ -152,16 +145,8 @@ export const reloadTabTool = tool({
       return { success: true, tabId };
     }
 
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    await chrome.tabs.reload(tab.id, { bypassCache });
+    const tab = await getActiveTab();
+    await chrome.tabs.reload(tab.id!, { bypassCache });
     return { success: true, tabId: tab.id };
   },
 });
@@ -190,16 +175,8 @@ export const duplicateTabTool = tool({
       };
     }
 
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!tab?.id) {
-      throw new Error("No active tab found");
-    }
-
-    const newTab = await chrome.tabs.duplicate(tab.id);
+    const tab = await getActiveTab();
+    const newTab = await chrome.tabs.duplicate(tab.id!);
     if (!newTab) {
       throw new Error("Failed to duplicate tab");
     }

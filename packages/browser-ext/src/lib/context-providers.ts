@@ -279,7 +279,7 @@ export function searchContexts(
   const lowerQuery = query.toLowerCase();
   return contexts.filter(
     (ctx) =>
-      ctx.label.toLowerCase().includes(lowerQuery) ??
+      ctx.label.toLowerCase().includes(lowerQuery) ||
       ctx.value.toLowerCase().includes(lowerQuery),
   );
 }
