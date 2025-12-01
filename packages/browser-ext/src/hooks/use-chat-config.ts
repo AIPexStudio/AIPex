@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createChromeStorageAdapter } from "../adapters/storage-adapter";
 import type { ChatSettings, StorageAdapter } from "../types";
 
 /**
@@ -43,47 +44,10 @@ const defaultStorageAdapter: StorageAdapter = {
 
 /**
  * Chrome extension storage adapter
+ * Exported for use in other hooks and components
  */
-export const chromeStorageAdapter: StorageAdapter = {
-  async get<T>(key: string): Promise<T | undefined> {
-    return new Promise((resolve) => {
-      if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.get(key, (result) => {
-          resolve((result[key] as T | undefined) ?? undefined);
-        });
-      } else {
-        void defaultStorageAdapter.get<T>(key).then(resolve);
-      }
-    });
-  },
-  async set<T>(key: string, value: T): Promise<void> {
-    return new Promise((resolve) => {
-      if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.set({ [key]: value }, () => resolve());
-      } else {
-        void defaultStorageAdapter.set(key, value).then(resolve);
-      }
-    });
-  },
-  async remove(key: string): Promise<void> {
-    return new Promise((resolve) => {
-      if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.remove(key, () => resolve());
-      } else {
-        void defaultStorageAdapter.remove(key).then(resolve);
-      }
-    });
-  },
-  async clear(): Promise<void> {
-    return new Promise((resolve) => {
-      if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.clear(() => resolve());
-      } else {
-        void defaultStorageAdapter.clear().then(resolve);
-      }
-    });
-  },
-};
+export const chromeStorageAdapter: StorageAdapter =
+  createChromeStorageAdapter();
 
 export interface UseChatConfigOptions {
   /** Initial settings (will be overridden by stored values) */
