@@ -1,4 +1,4 @@
-import type { UIToolPart } from "../core/types";
+import type { UIToolPart } from "~/types";
 
 type ToolComponentState =
   | "input-streaming"

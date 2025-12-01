@@ -11,7 +11,7 @@ import type {
   UIPart,
   UITextPart,
   UIToolPart,
-} from "./types";
+} from "../types";
 
 /**
  * ChatAdapter converts AgentEvents from @aipexstudio/aipex-core into UIMessages

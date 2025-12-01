@@ -10,7 +10,7 @@ import type {
   ChatStatus,
   ContextItem,
   UIMessage,
-} from "./types";
+} from "../../../types";
 
 // ============ Chat Context ============
 

@@ -1,5 +1,7 @@
 import { useCallback, useContext, useMemo, useState } from "react";
+import { chromeStorageAdapter, useChat, useChatConfig } from "~/hooks";
 import { cn } from "~/lib/utils";
+import type { ChatbotThemeVariables, ContextItem } from "~/types";
 import { DEFAULT_MODELS } from "../constants";
 import {
   type ChatbotProviderProps,
@@ -8,8 +10,6 @@ import {
   ConfigContext,
   ThemeContext,
 } from "../core/context";
-import { chromeStorageAdapter, useChat, useChatConfig } from "../core/hooks";
-import type { ChatbotThemeVariables, ContextItem } from "../core/types";
 import { Header } from "./header";
 import { InputArea } from "./input-area";
 import { MessageList } from "./message-list";

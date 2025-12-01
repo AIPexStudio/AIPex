@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ChatSettings } from "../types";
+import type { ChatSettings, StorageAdapter } from "../types";
 
 /**
  * Storage key prefix for chat settings
@@ -18,24 +18,15 @@ const DEFAULT_SETTINGS: ChatSettings = {
 };
 
 /**
- * Storage adapter interface for persisting settings
- */
-export interface StorageAdapter {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T): Promise<void>;
-  remove(key: string): Promise<void>;
-}
-
-/**
  * Default storage adapter using localStorage
  */
-const defaultStorageAdapter: StorageAdapter = {
-  async get<T>(key: string): Promise<T | null> {
+const defaultStorageAdapter: StorageAdapter<any> = {
+  async get<T>(key: string): Promise<T | undefined> {
     try {
       const value = localStorage.getItem(key);
-      return value ? (JSON.parse(value) as T) : null;
+      return value ? (JSON.parse(value) as T) : undefined;
     } catch {
-      return null;
+      return undefined;
     }
   },
   async set<T>(key: string, value: T): Promise<void> {
@@ -44,38 +35,50 @@ const defaultStorageAdapter: StorageAdapter = {
   async remove(key: string): Promise<void> {
     localStorage.removeItem(key);
   },
+  async clear(): Promise<void> {
+    localStorage.clear();
+  },
 };
 
 /**
  * Chrome extension storage adapter
  */
-export const chromeStorageAdapter: StorageAdapter = {
-  async get<T>(key: string): Promise<T | null> {
+export const chromeStorageAdapter: StorageAdapter<any> = {
+  async get<T>(key: string): Promise<T | undefined> {
     return new Promise((resolve) => {
       if (typeof chrome !== "undefined" && chrome.storage?.local) {
         chrome.storage.local.get(key, (result) => {
-          resolve(result[key] ?? null);
+          resolve(result[key] ?? undefined);
         });
       } else {
-        resolve(defaultStorageAdapter.get<T>(key));
+        void defaultStorageAdapter.get<T>(key).then(resolve);
       }
     });
   },
   async set<T>(key: string, value: T): Promise<void> {
     return new Promise((resolve) => {
       if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.set({ [key]: value }, resolve);
+        chrome.storage.local.set({ [key]: value }, () => resolve());
       } else {
-        defaultStorageAdapter.set(key, value).then(resolve);
+        void defaultStorageAdapter.set(key, value).then(resolve);
       }
     });
   },
   async remove(key: string): Promise<void> {
     return new Promise((resolve) => {
       if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.remove(key, resolve);
+        chrome.storage.local.remove(key, () => resolve());
       } else {
-        defaultStorageAdapter.remove(key).then(resolve);
+        void defaultStorageAdapter.remove(key).then(resolve);
+      }
+    });
+  },
+  async clear(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof chrome !== "undefined" && chrome.storage?.local) {
+        chrome.storage.local.clear(() => resolve());
+      } else {
+        void defaultStorageAdapter.clear().then(resolve);
       }
     });
   },
@@ -85,7 +88,7 @@ export interface UseChatConfigOptions {
   /** Initial settings (will be overridden by stored values) */
   initialSettings?: Partial<ChatSettings>;
   /** Storage adapter for persisting settings */
-  storageAdapter?: StorageAdapter;
+  storageAdapter?: StorageAdapter<ChatSettings>;
   /** Whether to auto-load settings from storage on mount */
   autoLoad?: boolean;
 }
@@ -179,7 +182,7 @@ export function useChatConfig(
   // Auto-load on mount
   useEffect(() => {
     if (autoLoad) {
-      loadSettings();
+      void loadSettings();
     }
   }, [autoLoad, loadSettings]);
 

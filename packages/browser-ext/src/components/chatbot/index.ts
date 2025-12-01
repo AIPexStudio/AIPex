@@ -1,5 +1,52 @@
 // Main component exports
 
+// Re-export from top-level modules
+export { ChatAdapter, createChatAdapter } from "../../adapters/chat-adapter";
+export {
+  chromeStorageAdapter,
+  type UseChatConfigOptions,
+  type UseChatConfigReturn,
+  type UseChatOptions,
+  type UseChatReturn,
+  useChat,
+  useChatConfig,
+} from "../../hooks";
+export type {
+  ChatbotComponents,
+  ChatbotEventHandlers,
+  ChatbotSlots,
+  ChatbotTheme,
+  ChatbotThemeVariables,
+  ChatConfig,
+  ChatSettings,
+  ChatStatus,
+  ContextItem,
+  ContextItemType,
+  ContextTagsSlotProps,
+  FooterProps,
+  HeaderProps,
+  InputAreaProps,
+  InputToolbarSlotProps,
+  MessageActionsSlotProps,
+  MessageItemProps,
+  MessageListProps,
+  ModelSelectorSlotProps,
+  SettingsDialogProps,
+  StorageAdapter,
+  ToolDisplaySlotProps,
+  UIContextPart,
+  UIFilePart,
+  UIMessage,
+  UIPart,
+  UIReasoningPart,
+  UIRole,
+  UISourceUrlPart,
+  UITextPart,
+  UIToolPart,
+  UIToolState,
+  WelcomeScreenProps,
+  WelcomeSuggestion,
+} from "../../types";
 // Individual component exports
 export {
   DefaultHeader,
@@ -17,12 +64,13 @@ export {
   SettingsDialog,
   WelcomeScreen,
 } from "./components";
+// Default export for backward compatibility
 export {
   Chatbot,
+  Chatbot as default,
   type ChatbotProps,
   ChatbotProvider,
 } from "./components/chatbot";
-
 // Slot component exports
 export {
   CompactContextTags,
@@ -40,69 +88,22 @@ export {
 } from "./components/slots";
 // Re-export constants for backwards compatibility
 export { models, SYSTEM_PROMPT } from "./constants";
-// Core exports
+// Context exports
 export {
-  // Adapter
-  ChatAdapter,
-  type ChatbotComponents,
-  type ChatbotEventHandlers,
   type ChatbotProviderProps,
-  type ChatbotSlots,
-  type ChatbotTheme,
-  type ChatbotThemeVariables,
-  type ChatConfig,
-  // Context
   ChatContext,
   type ChatContextValue,
-  type ChatSettings,
-  // Types
-  type ChatStatus,
   ComponentsContext,
   type ComponentsContextValue,
   ConfigContext,
   type ConfigContextValue,
-  type ContextItem,
-  type ContextItemType,
-  type ContextTagsSlotProps,
-  chromeStorageAdapter,
-  createChatAdapter,
-  type FooterProps,
-  type HeaderProps,
-  type InputAreaProps,
-  type InputToolbarSlotProps,
-  type MessageActionsSlotProps,
-  type MessageItemProps,
-  type MessageListProps,
-  type ModelSelectorSlotProps,
-  type SettingsDialogProps,
-  type StorageAdapter,
   ThemeContext,
   type ThemeContextValue,
-  type ToolDisplaySlotProps,
-  type UIContextPart,
-  type UIFilePart,
-  type UIMessage,
-  type UIPart,
-  type UIReasoningPart,
-  type UIRole,
-  type UISourceUrlPart,
-  type UITextPart,
-  type UIToolPart,
-  type UIToolState,
-  type UseChatConfigOptions,
-  type UseChatConfigReturn,
-  type UseChatOptions,
-  type UseChatReturn,
-  // Hooks
-  useChat,
-  useChatConfig,
   useChatContext,
   useComponentsContext,
   useConfigContext,
   useThemeContext,
-  type WelcomeScreenProps,
-  type WelcomeSuggestion,
-} from "./core";
+} from "./core/context";
 // Theme exports
 export {
   colorfulTheme,

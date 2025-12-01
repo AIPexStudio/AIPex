@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ChatAdapter, createChatAdapter } from "../core/adapter";
-import type {
-  ChatStatus,
-  ContextItem,
-  UIMessage,
-  UIToolPart,
-} from "../core/types";
+import { ChatAdapter, createChatAdapter } from "~/adapters/chat-adapter";
+import type { ChatStatus, ContextItem, UIMessage, UIToolPart } from "~/types";
 
 // Mock generateId to return predictable IDs
 vi.mock("@aipexstudio/aipex-core", async (importOriginal) => {

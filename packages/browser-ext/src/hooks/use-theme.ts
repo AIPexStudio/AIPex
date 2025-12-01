@@ -4,7 +4,7 @@
  */
 
 import { useEffect } from "react";
-import { useStorage } from "../storage";
+import { useStorage } from "./use-storage";
 
 export type Theme = "light" | "dark" | "system";
 

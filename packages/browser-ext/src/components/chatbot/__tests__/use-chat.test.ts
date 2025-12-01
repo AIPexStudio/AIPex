@@ -1,7 +1,7 @@
 import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useChat } from "../core/hooks/use-chat";
+import { useChat } from "~/hooks/use-chat";
 
 const baseMetrics = {
   tokensUsed: 0,

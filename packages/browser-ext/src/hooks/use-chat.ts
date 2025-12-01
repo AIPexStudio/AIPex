@@ -1,13 +1,54 @@
 import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChatAdapter } from "../adapter";
-import type {
-  ChatStatus,
-  ContextItem,
-  UIMessage,
-  UseChatOptions,
-  UseChatReturn,
-} from "../types";
+import { ChatAdapter } from "../adapters/chat-adapter";
+import type { ChatConfig, ChatStatus, ContextItem, UIMessage } from "../types";
+
+export interface UseChatOptions {
+  /** Chat configuration */
+  config?: ChatConfig;
+  /** Event handlers */
+  handlers?: ChatbotEventHandlers;
+}
+
+export interface ChatbotEventHandlers {
+  /** Called when a message is sent */
+  onMessageSent?: (message: UIMessage) => void;
+  /** Called when a response is received */
+  onResponseReceived?: (message: UIMessage) => void;
+  /** Called when an error occurs */
+  onError?: (error: Error) => void;
+  /** Called when status changes */
+  onStatusChange?: (status: ChatStatus) => void;
+  /** Called when a tool is executed */
+  onToolExecute?: (toolName: string, input: unknown) => void;
+  /** Called when a tool completes */
+  onToolComplete?: (toolName: string, result: unknown) => void;
+}
+
+export interface UseChatReturn {
+  /** Current messages */
+  messages: UIMessage[];
+  /** Current chat status */
+  status: ChatStatus;
+  /** Current session ID */
+  sessionId: string | null;
+  /** Send a new message */
+  sendMessage: (
+    text: string,
+    files?: File[],
+    contexts?: ContextItem[],
+  ) => Promise<void>;
+  /** Continue the conversation */
+  continueConversation: (text: string) => Promise<void>;
+  /** Interrupt current operation */
+  interrupt: () => Promise<void>;
+  /** Reset the chat */
+  reset: () => void;
+  /** Regenerate last response */
+  regenerate: () => Promise<void>;
+  /** Set messages directly */
+  setMessages: (messages: UIMessage[]) => void;
+}
 
 /**
  * useChat - A headless hook for managing chat state with an AIPex agent

@@ -1,94 +1,11 @@
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
-
-// ============ Chat Status ============
-
-export type ChatStatus =
-  | "idle"
-  | "submitted"
-  | "streaming"
-  | "executing_tools"
-  | "error";
-
-// ============ UI Message Types ============
-
-export type UIRole = "user" | "assistant" | "tool" | "system";
-
-export interface UITextPart {
-  type: "text";
-  text: string;
-}
-
-export interface UISourceUrlPart {
-  type: "source-url";
-  url: string;
-}
-
-export interface UIReasoningPart {
-  type: "reasoning";
-  text: string;
-}
-
-export interface UIFilePart {
-  type: "file";
-  mediaType: string;
-  filename?: string;
-  url: string;
-}
-
-export type UIToolState = "pending" | "executing" | "completed" | "error";
-
-export interface UIToolPart {
-  type: "tool";
-  toolName: string;
-  toolCallId: string;
-  input: unknown;
-  output?: unknown;
-  state: UIToolState;
-  errorText?: string;
-  duration?: number;
-}
-
-export interface UIContextPart {
-  type: "context";
-  contextType: string;
-  label: string;
-  value: string;
-  metadata?: Record<string, unknown>;
-}
-
-export type UIPart =
-  | UITextPart
-  | UISourceUrlPart
-  | UIReasoningPart
-  | UIFilePart
-  | UIToolPart
-  | UIContextPart;
-
-export interface UIMessage {
-  id: string;
-  role: UIRole;
-  parts: UIPart[];
-  timestamp?: number;
-}
-
-// ============ Context Item Types ============
-
-export type ContextItemType =
-  | "page"
-  | "tab"
-  | "bookmark"
-  | "clipboard"
-  | "screenshot"
-  | "custom";
-
-export interface ContextItem {
-  id: string;
-  type: ContextItemType;
-  label: string;
-  value: string;
-  icon?: ReactNode;
-  metadata?: Record<string, unknown>;
-}
+import type {
+  ChatStatus,
+  ContextItem,
+  UIMessage,
+  UIToolPart,
+  WelcomeSuggestion,
+} from "./ui";
 
 // ============ Chat Configuration ============
 
@@ -105,16 +22,26 @@ export interface ChatConfig {
   initialMessages?: UIMessage[];
 }
 
+export interface ChatSettings {
+  aiHost?: string;
+  aiToken?: string;
+  aiModel?: string;
+  language?: string;
+  theme?: string;
+}
+
 // ============ Component Props Types ============
 
-export interface MessageListProps extends HTMLAttributes<HTMLDivElement> {
+export interface MessageListProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "onCopy"> {
   messages: UIMessage[];
   status: ChatStatus;
   onRegenerate?: () => void;
   onCopy?: (text: string) => void;
 }
 
-export interface MessageItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface MessageItemProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "onCopy"> {
   message: UIMessage;
   isLast?: boolean;
   isStreaming?: boolean;
@@ -122,7 +49,8 @@ export interface MessageItemProps extends HTMLAttributes<HTMLDivElement> {
   onCopy?: (text: string) => void;
 }
 
-export interface InputAreaProps extends HTMLAttributes<HTMLDivElement> {
+export interface InputAreaProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "onChange" | "onSubmit"> {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (text: string, files?: File[], contexts?: ContextItem[]) => void;
@@ -137,25 +65,10 @@ export interface WelcomeScreenProps extends HTMLAttributes<HTMLDivElement> {
   suggestions?: WelcomeSuggestion[];
 }
 
-export interface WelcomeSuggestion {
-  icon?: ComponentType<{ className?: string }>;
-  text: string;
-  iconColor?: string;
-  bgColor?: string;
-}
-
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave?: (settings: ChatSettings) => void;
-}
-
-export interface ChatSettings {
-  aiHost?: string;
-  aiToken?: string;
-  aiModel?: string;
-  language?: string;
-  theme?: string;
 }
 
 export interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
@@ -296,53 +209,4 @@ export interface ChatbotEventHandlers {
   onToolExecute?: (toolName: string, input: unknown) => void;
   /** Called when a tool completes */
   onToolComplete?: (toolName: string, result: unknown) => void;
-}
-
-// ============ useChat Hook Types ============
-
-export interface UseChatOptions {
-  /** Chat configuration */
-  config?: ChatConfig;
-  /** Event handlers */
-  handlers?: ChatbotEventHandlers;
-}
-
-export interface UseChatReturn {
-  /** Current messages */
-  messages: UIMessage[];
-  /** Current chat status */
-  status: ChatStatus;
-  /** Current session ID */
-  sessionId: string | null;
-  /** Send a new message */
-  sendMessage: (
-    text: string,
-    files?: File[],
-    contexts?: ContextItem[],
-  ) => Promise<void>;
-  /** Continue the conversation */
-  continueConversation: (text: string) => Promise<void>;
-  /** Interrupt current operation */
-  interrupt: () => Promise<void>;
-  /** Reset the chat */
-  reset: () => void;
-  /** Regenerate last response */
-  regenerate: () => Promise<void>;
-  /** Set messages directly */
-  setMessages: (messages: UIMessage[]) => void;
-}
-
-// ============ Adapter Types ============
-
-export interface ChatAdapterState {
-  messages: UIMessage[];
-  currentAssistantMessageId: string | null;
-  status: ChatStatus;
-}
-
-export interface ChatAdapterOptions {
-  /** Called when messages are updated */
-  onMessagesUpdate?: (messages: UIMessage[]) => void;
-  /** Called when status changes */
-  onStatusChange?: (status: ChatStatus) => void;
 }
