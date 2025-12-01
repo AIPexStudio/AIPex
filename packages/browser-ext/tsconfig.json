@@ -24,7 +24,8 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"],
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@aipexstudio/aipex-core": ["../core/src/index.ts"]
     },
 
     /* Chrome Extension Types */
