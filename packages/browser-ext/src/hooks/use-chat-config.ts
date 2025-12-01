@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
 /**
  * Default storage adapter using localStorage
  */
-const defaultStorageAdapter: StorageAdapter<any> = {
+const defaultStorageAdapter: StorageAdapter = {
   async get<T>(key: string): Promise<T | undefined> {
     try {
       const value = localStorage.getItem(key);
@@ -43,7 +43,7 @@ const defaultStorageAdapter: StorageAdapter<any> = {
 /**
  * Chrome extension storage adapter
  */
-export const chromeStorageAdapter: StorageAdapter<any> = {
+export const chromeStorageAdapter: StorageAdapter = {
   async get<T>(key: string): Promise<T | undefined> {
     return new Promise((resolve) => {
       if (typeof chrome !== "undefined" && chrome.storage?.local) {
@@ -88,7 +88,7 @@ export interface UseChatConfigOptions {
   /** Initial settings (will be overridden by stored values) */
   initialSettings?: Partial<ChatSettings>;
   /** Storage adapter for persisting settings */
-  storageAdapter?: StorageAdapter<ChatSettings>;
+  storageAdapter?: StorageAdapter;
   /** Whether to auto-load settings from storage on mount */
   autoLoad?: boolean;
 }

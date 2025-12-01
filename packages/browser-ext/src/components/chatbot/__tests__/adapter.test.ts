@@ -1,3 +1,4 @@
+import { AgentError, ErrorCode } from "@aipexstudio/aipex-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatAdapter, createChatAdapter } from "~/adapters/chat-adapter";
 import type { ChatStatus, ContextItem, UIMessage, UIToolPart } from "~/types";
@@ -237,7 +238,7 @@ describe("ChatAdapter", () => {
     it("should set error status on error event", () => {
       adapter.processEvent({
         type: "error",
-        error: new Error("Test failure"),
+        error: new AgentError("Test failure", ErrorCode.LLM_API_ERROR, false),
       });
 
       expect(adapter.getStatus()).toBe("error");
@@ -529,7 +530,11 @@ describe("ChatAdapter", () => {
       adapter.processEvent({ type: "content_delta", delta: "Starting" });
       adapter.processEvent({
         type: "error",
-        error: new Error("Connection failed"),
+        error: new AgentError(
+          "Connection failed",
+          ErrorCode.LLM_API_ERROR,
+          false,
+        ),
       });
 
       expect(adapter.getStatus()).toBe("error");

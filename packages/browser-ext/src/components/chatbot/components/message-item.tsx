@@ -15,8 +15,8 @@ import {
   SourcesTrigger,
 } from "@/components/ai-elements/sources";
 import { cn } from "~/lib/utils";
+import type { MessageItemProps, UISourceUrlPart } from "~/types";
 import { useComponentsContext } from "../core/context";
-import type { MessageItemProps, UISourceUrlPart } from "../core/types";
 import { DefaultToolDisplay } from "./slots/tool-display";
 
 /**
@@ -187,9 +187,9 @@ export function DefaultMessageItem({
                     <span className="font-medium text-foreground truncate">
                       {part.label}
                     </span>
-                    {part.metadata?.url && (
+                    {Boolean(part.metadata?.url) && (
                       <span className="text-xs text-muted-foreground truncate">
-                        {String(part.metadata.url)}
+                        {String(part.metadata?.url)}
                       </span>
                     )}
                   </div>

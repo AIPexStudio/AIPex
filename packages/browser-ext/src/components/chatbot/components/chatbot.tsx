@@ -215,15 +215,15 @@ function ChatbotContent({
 
   const { className, style } = themeCtx;
   const { messages, status, sendMessage, interrupt, reset, regenerate } =
-    chatCtx;
-  const { isReady: isAgentReady } = agentCtx;
+    chatCtx || {};
+  const { isReady: isAgentReady } = agentCtx || {};
 
   const [input, setInput] = useState("");
   const [showSettings, setShowSettings] = useState(false);
 
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
-      void sendMessage(text, files, contexts);
+      void sendMessage?.(text, files, contexts);
       setInput("");
     },
     [sendMessage],
@@ -231,7 +231,7 @@ function ChatbotContent({
 
   const handleSuggestion = useCallback(
     (text: string) => {
-      void sendMessage(text);
+      void sendMessage?.(text);
     },
     [sendMessage],
   );
@@ -241,7 +241,7 @@ function ChatbotContent({
   }, []);
 
   const handleNewChat = useCallback(() => {
-    reset();
+    reset?.();
     setInput("");
   }, [reset]);
 
@@ -274,8 +274,8 @@ function ChatbotContent({
         <>
           {/* Message List */}
           <MessageList
-            messages={messages}
-            status={status}
+            messages={messages || []}
+            status={status || "idle"}
             onRegenerate={regenerate}
             onCopy={handleCopy}
             onSuggestionClick={handleSuggestion}
@@ -287,7 +287,7 @@ function ChatbotContent({
             onChange={setInput}
             onSubmit={handleSubmit}
             onStop={interrupt}
-            status={status}
+            status={status || "idle"}
             models={models}
             placeholderTexts={placeholderTexts}
           />

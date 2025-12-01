@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { cn } from "~/lib/utils";
+import type { WelcomeScreenProps, WelcomeSuggestion } from "~/types";
 import { useComponentsContext } from "../core/context";
-import type { WelcomeScreenProps, WelcomeSuggestion } from "../core/types";
 
 /**
  * Default suggestions for the welcome screen
