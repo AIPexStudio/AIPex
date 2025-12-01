@@ -2,6 +2,10 @@
 export { Chatbot, type ChatbotProps, ChatbotProvider } from "./chatbot";
 
 // Individual components
+export {
+  ConfigurationGuide,
+  type ConfigurationGuideProps,
+} from "./configuration-guide";
 export { DefaultHeader, Header } from "./header";
 export {
   DefaultInputArea,

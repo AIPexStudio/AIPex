@@ -49,6 +49,8 @@ export type {
 } from "../../types";
 // Individual component exports
 export {
+  ConfigurationGuide,
+  type ConfigurationGuideProps,
   DefaultHeader,
   DefaultInputArea,
   DefaultMessageItem,
@@ -90,6 +92,8 @@ export {
 export { models, SYSTEM_PROMPT } from "./constants";
 // Context exports
 export {
+  AgentContext,
+  type AgentContextValue,
   type ChatbotProviderProps,
   ChatContext,
   type ChatContextValue,
@@ -99,6 +103,7 @@ export {
   type ConfigContextValue,
   ThemeContext,
   type ThemeContextValue,
+  useAgentContext,
   useChatContext,
   useComponentsContext,
   useConfigContext,

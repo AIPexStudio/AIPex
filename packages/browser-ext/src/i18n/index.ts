@@ -79,11 +79,11 @@ export const getTranslation = (
 
     // Navigate through nested object using dot notation
     const keys = key.split(".");
-    let value: unknown = resource;
+    let value: any = resource;
 
     for (const k of keys) {
       if (value && typeof value === "object" && k in value) {
-        value = value[k];
+        value = value[k] as any;
       } else {
         console.warn(
           `Translation key not found: ${key} for language: ${language}`,
