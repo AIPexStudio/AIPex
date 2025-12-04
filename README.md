@@ -1,6 +1,8 @@
 
-<a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/f95d22eb-7384-403f-921b-159974bd3245" />
+<a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/cedda5ef-9d68-4314-8d1c-5a96f3893e8a" />
 </a>
+
+<strong><p align="center">Your browser already works!</p></strong>
 
 <div align="right">
   <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
