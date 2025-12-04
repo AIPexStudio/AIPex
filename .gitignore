@@ -38,3 +38,4 @@ keys.json
 # typescript
 .tsbuildinfo
 *.zip
+.env
