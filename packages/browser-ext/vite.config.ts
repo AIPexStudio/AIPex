@@ -24,15 +24,31 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      "~": path.resolve(__dirname, "./src"),
-      "@": path.resolve(__dirname, "./"),
-      // Point to core source code directly for better dev experience
-      "@aipexstudio/aipex-core": path.resolve(
-        __dirname,
-        "../core/src/index.ts",
-      ),
-    },
+    alias: [
+      { find: "~", replacement: path.resolve(__dirname, "./src") },
+      { find: "@", replacement: path.resolve(__dirname, "./") },
+      // Point to workspace packages source code directly for better dev experience
+      {
+        find: "@aipexstudio/aipex-core",
+        replacement: path.resolve(__dirname, "../core/src/index.ts"),
+      },
+      {
+        find: /^@aipexstudio\/aipex-react\/(.*)$/,
+        replacement: path.resolve(__dirname, "../aipex-react/src/$1"),
+      },
+      {
+        find: "@aipexstudio/aipex-react",
+        replacement: path.resolve(__dirname, "../aipex-react/src/index.ts"),
+      },
+      {
+        find: /^@aipexstudio\/browser-runtime\/(.*)$/,
+        replacement: path.resolve(__dirname, "../browser-runtime/src/$1"),
+      },
+      {
+        find: "@aipexstudio/browser-runtime",
+        replacement: path.resolve(__dirname, "../browser-runtime/src/index.ts"),
+      },
+    ],
   },
   css: {
     postcss: "./postcss.config.js", // Use config file instead of inline

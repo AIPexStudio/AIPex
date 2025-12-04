@@ -47,17 +47,3 @@ jobs:
 
       - name: Test
         run: npm run test
-
-      - name: Coverage Report (core)
-        if: always()
-        uses: davelosert/vitest-coverage-report-action@v2
-        with:
-          name: core
-          working-directory: packages/core
-
-      - name: Coverage Report (browser-ext)
-        if: always()
-        uses: davelosert/vitest-coverage-report-action@v2
-        with:
-          name: browser-ext
-          working-directory: packages/browser-ext

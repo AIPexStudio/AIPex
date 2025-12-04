@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "references": [{ "path": "../browser-runtime" }],
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "lib": ["ES2023", "DOM"],
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node", "chrome", "vitest/globals", "@testing-library/jest-dom"],
+    "resolveJsonModule": true,
+    "baseUrl": "./src"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
+  "exclude": ["node_modules", "dist"]
+}

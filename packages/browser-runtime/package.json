@@ -1,0 +1,40 @@
+{
+  "name": "@aipexstudio/browser-runtime",
+  "version": "0.0.1",
+  "description": "Browser automation runtime, context providers, and extension host contracts for AIPex",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@aipexstudio/aipex-core": "workspace:*",
+    "nanoid": "^5.1.6",
+    "zod": "^4.1.13"
+  },
+  "peerDependencies": {
+    "@types/chrome": "^0.1.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7"
+  }
+}

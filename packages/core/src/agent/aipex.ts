@@ -4,6 +4,7 @@ import {
   run,
 } from "@openai/agents";
 import type { ContextManager } from "../context/manager.js";
+import type { Context } from "../context/types.js";
 import { formatContextsForPrompt, resolveContexts } from "../context/utils.js";
 import { ConversationCompressor } from "../conversation/compressor.js";
 import { ConversationManager } from "../conversation/manager.js";
@@ -11,11 +12,17 @@ import type { Session } from "../conversation/session.js";
 import { SessionStorage } from "../conversation/storage.js";
 import { InMemoryStorage } from "../storage/memory.js";
 import type {
+  AfterResponsePayload,
   AgentEvent,
   AgentMetrics,
+  AgentPlugin,
+  AgentPluginContext,
   AIPexOptions,
+  BeforeChatPayload,
   ChatOptions,
+  MetricsPayload,
   SessionStorageAdapter,
+  ToolEventPayload,
 } from "../types.js";
 import { AgentError, ErrorCode } from "../utils/errors.js";
 
@@ -24,17 +31,23 @@ export class AIPex {
   private conversationManager?: ConversationManager;
   private contextManager?: ContextManager;
   private maxTurns: number;
+  private plugins: AgentPlugin[];
+  private pluginContext: AgentPluginContext;
 
   private constructor(
     agent: OpenAIAgent,
     conversationManager?: ConversationManager,
     contextManager?: ContextManager,
     maxTurns?: number,
+    plugins: AgentPlugin[] = [],
   ) {
     this.agent = agent;
     this.conversationManager = conversationManager;
     this.contextManager = contextManager;
     this.maxTurns = maxTurns ?? 10;
+    this.plugins = plugins;
+    this.pluginContext = { agent: this };
+    this.initializePlugins();
   }
 
   static create(options: AIPexOptions): AIPex {
@@ -51,6 +64,7 @@ export class AIPex {
       conversationManager,
       options.contextManager,
       options.maxTurns,
+      options.plugins ?? [],
     );
   }
 
@@ -125,6 +139,7 @@ export class AIPex {
         if (streamEvent.type === "run_item_stream_event") {
           const toolEvent = this.transformToolEvent(streamEvent);
           if (toolEvent) {
+            await this.emitToolEventHooks({ event: toolEvent });
             yield toolEvent;
           }
         }
@@ -139,7 +154,12 @@ export class AIPex {
       metrics.duration = Date.now() - startTime;
       this.applyUsageMetrics(metrics, result);
 
-      yield { type: "metrics_update", metrics: { ...metrics } };
+      const metricsSnapshot = { ...metrics };
+      await this.emitMetricsHooks({
+        metrics: metricsSnapshot,
+        sessionId: session?.id ?? undefined,
+      });
+      yield { type: "metrics_update", metrics: metricsSnapshot };
 
       if (session) {
         session.addMetrics(metrics);
@@ -147,6 +167,13 @@ export class AIPex {
           await this.conversationManager.saveSession(session);
         }
       }
+
+      await this.runAfterResponseHooks({
+        input,
+        finalOutput,
+        metrics: { ...metrics },
+        sessionId: session?.id ?? undefined,
+      });
 
       yield {
         type: "execution_complete",
@@ -156,6 +183,11 @@ export class AIPex {
     } catch (error) {
       const agentError = this.normalizeError(error);
       metrics.duration = Date.now() - startTime;
+      const metricsSnapshot = { ...metrics };
+      await this.emitMetricsHooks({
+        metrics: metricsSnapshot,
+        sessionId: session?.id ?? undefined,
+      });
       yield { type: "metrics_update", metrics: { ...metrics } };
       yield { type: "error", error: agentError };
       if (session) {
@@ -173,23 +205,26 @@ export class AIPex {
     options?: ChatOptions,
   ): AsyncGenerator<AgentEvent> {
     let finalInput = input;
+    let chatOptions = options;
+    let resolvedContexts: Context[] | undefined;
 
     // Handle contexts if provided
-    if (options?.contexts && options.contexts.length > 0) {
+    if (chatOptions?.contexts && chatOptions.contexts.length > 0) {
       try {
         // Resolve context IDs to Context objects if needed
         const contextObjs =
           this.contextManager &&
-          options.contexts.some((c) => typeof c === "string")
+          chatOptions.contexts.some((c) => typeof c === "string")
             ? await resolveContexts(
-                options.contexts,
+                chatOptions.contexts,
                 this.contextManager.getContext.bind(this.contextManager),
               )
-            : (options.contexts.filter(
+            : (chatOptions.contexts.filter(
                 (c) => typeof c !== "string",
-              ) as import("../context/types.js").Context[]);
+              ) as Context[]);
 
         if (contextObjs.length > 0) {
+          resolvedContexts = contextObjs;
           // Format contexts and prepend to input
           const contextText = formatContextsForPrompt(contextObjs);
           finalInput = `${contextText}\n\n${input}`;
@@ -206,9 +241,23 @@ export class AIPex {
       }
     }
 
+    const beforeChat = await this.runBeforeChatHooks({
+      input: finalInput,
+      options: chatOptions,
+      contexts: resolvedContexts,
+    });
+    finalInput = beforeChat.input;
+    if (beforeChat.options) {
+      chatOptions = { ...(chatOptions ?? {}), ...beforeChat.options };
+    }
+    if (beforeChat.contexts) {
+      resolvedContexts = beforeChat.contexts;
+      chatOptions = { ...(chatOptions ?? {}), contexts: beforeChat.contexts };
+    }
+
     // If sessionId is provided, continue existing conversation
-    if (options?.sessionId) {
-      yield* this.continueConversation(options.sessionId, finalInput);
+    if (chatOptions?.sessionId) {
+      yield* this.continueConversation(chatOptions.sessionId, finalInput);
       return;
     }
 
@@ -381,6 +430,82 @@ export class AIPex {
     return new AgentError(message, ErrorCode.LLM_API_ERROR, false, {
       cause: error instanceof Error ? error.stack : error,
     });
+  }
+
+  private initializePlugins(): void {
+    for (const plugin of this.plugins) {
+      try {
+        void plugin.setup?.(this.pluginContext);
+      } catch (error) {
+        console.error(`[AIPex] Failed to setup plugin ${plugin.id}:`, error);
+      }
+    }
+  }
+
+  private async runBeforeChatHooks(
+    payload: BeforeChatPayload,
+  ): Promise<BeforeChatPayload> {
+    let current = payload;
+    for (const plugin of this.plugins) {
+      const hook = plugin.hooks?.beforeChat;
+      if (!hook) {
+        continue;
+      }
+      try {
+        const result = await hook(current, this.pluginContext);
+        if (result) {
+          current = {
+            input: result.input ?? current.input,
+            options: result.options ?? current.options,
+            contexts: result.contexts ?? current.contexts,
+          };
+        }
+      } catch (error) {
+        console.error(`[AIPex] Plugin ${plugin.id} beforeChat failed`, error);
+      }
+    }
+    return current;
+  }
+
+  private async runAfterResponseHooks(
+    payload: AfterResponsePayload,
+  ): Promise<void> {
+    for (const plugin of this.plugins) {
+      const hook = plugin.hooks?.afterResponse;
+      if (!hook) continue;
+      try {
+        await hook(payload, this.pluginContext);
+      } catch (error) {
+        console.error(
+          `[AIPex] Plugin ${plugin.id} afterResponse failed`,
+          error,
+        );
+      }
+    }
+  }
+
+  private async emitToolEventHooks(payload: ToolEventPayload): Promise<void> {
+    for (const plugin of this.plugins) {
+      const hook = plugin.hooks?.onToolEvent;
+      if (!hook) continue;
+      try {
+        await hook(payload, this.pluginContext);
+      } catch (error) {
+        console.error(`[AIPex] Plugin ${plugin.id} onToolEvent failed`, error);
+      }
+    }
+  }
+
+  private async emitMetricsHooks(payload: MetricsPayload): Promise<void> {
+    for (const plugin of this.plugins) {
+      const hook = plugin.hooks?.onMetrics;
+      if (!hook) continue;
+      try {
+        await hook(payload, this.pluginContext);
+      } catch (error) {
+        console.error(`[AIPex] Plugin ${plugin.id} onMetrics failed`, error);
+      }
+    }
   }
 }
 

@@ -23,9 +23,11 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./src/*"],
-      "@/*": ["./*"],
-      "@aipexstudio/aipex-core": ["../core/src/index.ts"]
+      "@aipexstudio/aipex-core": ["../core/src/index.ts"],
+      "@aipexstudio/aipex-react": ["../aipex-react/src/index.ts"],
+      "@aipexstudio/aipex-react/*": ["../aipex-react/src/*"],
+      "@aipexstudio/browser-runtime": ["../browser-runtime/src/index.ts"],
+      "@aipexstudio/browser-runtime/*": ["../browser-runtime/src/*"]
     },
 
     /* Chrome Extension Types */
