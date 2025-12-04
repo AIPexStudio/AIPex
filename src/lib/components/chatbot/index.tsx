@@ -16,11 +16,6 @@ import {
   PromptInputBody,
   PromptInputContextTag,
   PromptInputContextTags,
-  PromptInputModelSelect,
-  PromptInputModelSelectContent,
-  PromptInputModelSelectItem,
-  PromptInputModelSelectTrigger,
-  PromptInputModelSelectValue,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputToolbar,
@@ -55,22 +50,20 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ChatStatus } from "ai";
-import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, LayersIcon, FileTextIcon, SearchIcon, DollarSignIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { models, SYSTEM_PROMPT } from "./constants";
-import { MessageHandler, type MessageHandlerConfig } from "./message-handler";
+import { models, SYSTEM_PROMPT, agents } from "./constants";
+import { MessageHandler, type MessageHandlerConfig, type AgentModelConfig } from "./message-handler";
 import type { UIMessage } from "./types";
 import { Action, Actions } from "@/components/ai-elements/actions";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources";
-import { Suggestions, Suggestion } from "@/components/ai-elements/suggestion";
-import { useStorage } from "~/lib/storage";
+import { Storage, useStorage } from "~/lib/storage";
 import { getAllTools } from "~/lib/services/tool-registry";
-import { useTranslation, useLanguageChanger } from "~/lib/i18n/hooks";
-import type { Language } from "~/lib/i18n/types";
 import { useTheme, type Theme } from "~/lib/hooks/use-theme";
 import { useTabsSync } from "~/lib/hooks/use-tabs-sync";
-import { hostAccessManager, type HostAccessMode, type HostAccessConfig } from "~/lib/services/host-access-manager";
+import { hostAccessManager, type HostAccessMode } from "~/lib/services/host-access-manager";
+import { OPENROUTER_CONFIG, OPENROUTER_MODELS, getDefaultAgentModels } from "~/lib/config/openrouter-agents";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -99,85 +92,23 @@ const getContextIcon = (contextType: string) => {
   }
 };
 
-// Welcome screen component
-const WelcomeScreen = ({ onSuggestionClick }: { onSuggestionClick: (text: string) => void }) => {
-  const { t } = useTranslation();
-  
-  const suggestions = [
-    {
-      icon: LayersIcon,
-      text: t("welcome.organizeTabs"),
-      iconColor: "text-blue-600",
-      bgColor: "bg-blue-100",
-    },
-    {
-      icon: FileTextIcon,
-      text: t("welcome.analyzePage"),
-      iconColor: "text-green-600",
-      bgColor: "bg-green-100",
-    },
-    {
-      icon: SearchIcon,
-      text: t("welcome.research"),
-      iconColor: "text-purple-600",
-      bgColor: "bg-purple-100",
-    },
-    {
-      icon: DollarSignIcon,
-      text: t("welcome.comparePrice"),
-      iconColor: "text-orange-600",
-      bgColor: "bg-orange-100",
-    },
-  ];
-
+// Welcome screen component - simplified without use cases
+const WelcomeScreen = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-4 sm:p-8">
-      <div className="text-center mb-6 sm:mb-8">
+      <div className="text-center">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          {t("welcome.title")}
+          Welcome to AIPex
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {t("welcome.subtitle")}
+        <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+          Your AI-powered browser assistant. Ask me anything about managing tabs, bookmarks, history, or analyzing web pages.
         </p>
-      </div>
-
-      <div className="w-full max-w-2xl">
-        <Suggestions className="grid gap-3 sm:gap-4 sm:grid-cols-2 w-full">
-          {suggestions.map((suggestion, index) => {
-            const Icon = suggestion.icon;
-            return (
-              <Suggestion
-                key={index}
-                suggestion={suggestion.text}
-                onClick={onSuggestionClick}
-                variant="outline"
-                size="lg"
-                className={cn(
-                  "w-full h-auto justify-start items-center p-4 sm:p-5 rounded-xl border transition-all duration-200",
-                  "hover:shadow-md bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm",
-                  "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
-                )}
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", suggestion.bgColor)}>
-                    <Icon className={cn("w-5 h-5", suggestion.iconColor)} />
-                  </div>
-                  <div className="text-xs text-left text-gray-700 dark:text-gray-300 flex-1 line-clamp-2 break-words whitespace-normal">
-                    {suggestion.text}
-                  </div>
-                </div>
-              </Suggestion>
-            );
-          })}
-        </Suggestions>
       </div>
     </div>
   );
 };
 
 const ChatBot = () => {
-  const { t, language } = useTranslation()
-  const changeLanguage = useLanguageChanger()
   const { theme, setTheme } = useTheme()
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UIMessage[]>([]);
@@ -185,15 +116,24 @@ const ChatBot = () => {
   const [messageQueue, setMessageQueue] = useState<UIMessage[]>([]);
   const messageHandlerRef = useRef<MessageHandler | null>(null);
 
-  const [aiHost, setAiHost, isLoadingHost] = useStorage("aiHost", import.meta.env.VITE_AI_HOST || "https://api.openai.com/v1/chat/completions");
-  const [aiToken, setAiToken, isLoadingToken] = useStorage("aiToken", import.meta.env.VITE_AI_TOKEN);
-  const [aiModel, setAiModel, isLoadingModel] = useStorage("aiModel", import.meta.env.VITE_AI_MODEL || "deepseek-chat");
+  // OpenRouter API configuration
+  const [aiToken, setAiToken, isLoadingToken] = useStorage("openrouter_api_key", import.meta.env.VITE_OPENROUTER_API_KEY || "");
+
+  // Agent model configuration - stored as JSON string
+  const [agentModelsJson, setAgentModelsJson, isLoadingAgentModels] = useStorage<string>(
+    "openrouter_agent_models",
+    JSON.stringify(getDefaultAgentModels())
+  );
+
+  // Parse agent models from storage
+  const agentModels: AgentModelConfig = agentModelsJson
+    ? JSON.parse(agentModelsJson)
+    : getDefaultAgentModels();
 
   // Settings dialog state
   const [showSettings, setShowSettings] = useState(false);
-  const [tempAiHost, setTempAiHost] = useState("");
   const [tempAiToken, setTempAiToken] = useState("");
-  const [tempAiModel, setTempAiModel] = useState("");
+  const [tempAgentModels, setTempAgentModels] = useState<AgentModelConfig>(agentModels);
   const [isSaving, setIsSaving] = useState(false);
 
   // Host access configuration
@@ -205,9 +145,9 @@ const ChatBot = () => {
   const [activeTab, setActiveTab] = useState("general");
 
   const placeholderList = [
-    t("input.placeholder1"),
-    t("input.placeholder2"),
-    t("input.placeholder3")
+    "Search or ask anything...",
+    "Try: organize my tabs by topic",
+    "Try: summarize this page"
   ];
  
 
@@ -218,7 +158,7 @@ const ChatBot = () => {
   // Initialize message handler ONCE on mount (wait for settings to load first)
   useEffect(() => {
     // Wait for all settings to load from storage
-    if (isLoadingHost || isLoadingToken || isLoadingModel) {
+    if (isLoadingToken || isLoadingAgentModels) {
       return;
     }
 
@@ -226,9 +166,9 @@ const ChatBot = () => {
     if (isInitializedRef.current || messageHandlerRef.current) {
       return;
     }
-    
+
     const config: MessageHandlerConfig = {
-      initialModel: aiModel || "deepseek-chat",
+      initialModel: "anthropic/claude-sonnet-4",
       initialTools: getAllTools().map((tool) => ({
         type: "function",
         function: {
@@ -237,9 +177,10 @@ const ChatBot = () => {
           parameters: tool.inputSchema,
         },
       })),
-      initialAiHost: aiHost || "https://api.openai.com/v1/chat/completions",
+      initialAiHost: OPENROUTER_CONFIG.baseUrl,
       initialAiToken: aiToken || "",
       initialMessages: [{ role: "system", id: "system", parts: [{ type: "text", text: SYSTEM_PROMPT }] }],
+      agentModels: agentModels,
     };
 
     messageHandlerRef.current = new MessageHandler(config);
@@ -268,7 +209,7 @@ const ChatBot = () => {
     setMessages(messageHandlerRef.current.getMessages());
     setStatus(messageHandlerRef.current.getStatus());
     setMessageQueue(messageHandlerRef.current.getQueue());
-  }, [isLoadingHost, isLoadingToken, isLoadingModel, aiModel, aiHost, aiToken]); // ✅ 包含配置值但使用 ref 防止重复初始化
+  }, [isLoadingToken, isLoadingAgentModels, aiToken, agentModels]);
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -286,16 +227,16 @@ const ChatBot = () => {
   // Update configuration when settings change (after initial load)
   useEffect(() => {
     // Skip if still loading or if handler not yet created
-    if (isLoadingHost || isLoadingToken || isLoadingModel || !messageHandlerRef.current) {
+    if (isLoadingToken || isLoadingAgentModels || !messageHandlerRef.current) {
       return;
     }
-    
+
     messageHandlerRef.current.updateConfig({
-      initialModel: aiModel || "deepseek-chat",
-      initialAiHost: aiHost || "https://api.openai.com/v1/chat/completions",
+      initialAiHost: OPENROUTER_CONFIG.baseUrl,
       initialAiToken: aiToken || "",
+      agentModels: agentModels,
     });
-  }, [aiModel, aiHost, aiToken, isLoadingHost, isLoadingToken, isLoadingModel]);
+  }, [aiToken, agentModels, isLoadingToken, isLoadingAgentModels]);
 
   const handleSubmit = (message: PromptInputMessage | string) => {
     // Handle string input (from welcome suggestions)
@@ -361,33 +302,27 @@ const ChatBot = () => {
   }, []);
 
   const handleOpenSettings = () => {
-    setTempAiHost(aiHost || "");
     setTempAiToken(aiToken || "");
-    setTempAiModel(aiModel || "");
+    setTempAgentModels(agentModels);
     setShowSettings(true);
   };
 
   const handleSaveSettings = async () => {
-    // Validate AI Model is not empty
-    if (!tempAiModel || !tempAiModel.trim()) {
-      console.error("AI Model cannot be empty!");
-      return;
-    }
-    
     setIsSaving(true);
     try {
-      // Save AI settings
-      setAiHost(tempAiHost);
+      // Save OpenRouter API key
       setAiToken(tempAiToken);
-      setAiModel(tempAiModel);
-      
+
+      // Save agent model configuration
+      setAgentModelsJson(JSON.stringify(tempAgentModels));
+
       // Save host access settings
       await hostAccessManager.updateConfig({
         mode: hostAccessMode,
         whitelist,
         blocklist
       });
-      
+
       setShowSettings(false);
       console.log("All settings saved successfully");
     } catch (error) {
@@ -395,6 +330,14 @@ const ChatBot = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Helper to update a specific agent's model
+  const updateAgentModel = (agentId: string, modelId: string) => {
+    setTempAgentModels((prev) => ({
+      ...prev,
+      [agentId]: modelId,
+    }));
   };
 
   const addToWhitelist = () => {
@@ -434,9 +377,9 @@ const ChatBot = () => {
           className="gap-2"
         >
           <SettingsIcon className="size-4" />
-          {t("common.settings")}
+          Settings
         </Button>
-        <div className="text-sm font-medium">{t("common.title")}</div>
+        <div className="text-sm font-medium">AIPex</div>
         <Button
           variant="ghost"
           size="sm"
@@ -444,7 +387,7 @@ const ChatBot = () => {
           className="gap-2"
         >
           <PlusIcon className="size-4" />
-          {t("common.newChat")}
+          New Chat
         </Button>
       </div>
 
@@ -452,7 +395,7 @@ const ChatBot = () => {
         <Conversation className="h-full">
           <ConversationContent>
             {messages.filter((message) => message.role !== "system").length === 0 ? (
-              <WelcomeScreen onSuggestionClick={handleSubmit} />
+              <WelcomeScreen />
             ) : (
               messages.filter((message) => message.role !== "system").map((message, messageIndex) => (
               <div key={message.id}>
@@ -610,12 +553,12 @@ const ChatBot = () => {
             
             <ContextLoader />
             
-            <PromptInputTextarea 
-              placeholder={t("input.newLine")} 
-              enableTypingAnimation={true} 
-              placeholderTexts={placeholderList} 
-              onChange={(e) => setInput(e.target.value)} 
-              value={input} 
+            <PromptInputTextarea
+              placeholder="Shift+Enter for new line"
+              enableTypingAnimation={true}
+              placeholderTexts={placeholderList}
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
             />
             
             {/* Queue indicator */}
@@ -636,25 +579,6 @@ const ChatBot = () => {
                   <PromptInputActionAddAttachments />
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
-              <PromptInputModelSelect
-                onValueChange={(value) => {
-                  if (value && value.trim()) {
-                    setAiModel(value);
-                  }
-                }}
-                value={aiModel}
-              >
-                <PromptInputModelSelectTrigger>
-                  <PromptInputModelSelectValue />
-                </PromptInputModelSelectTrigger>
-                <PromptInputModelSelectContent>
-                  {models.map((model) => (
-                    <PromptInputModelSelectItem key={model.value} value={model.value}>
-                      {model.name}
-                    </PromptInputModelSelectItem>
-                  ))}
-                </PromptInputModelSelectContent>
-              </PromptInputModelSelect>
             </PromptInputTools>
             {(() => {
               const submitStatus: ChatStatus | undefined =
@@ -673,12 +597,12 @@ const ChatBot = () => {
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("settings.title")}</DialogTitle>
-            <DialogDescription>{t("settings.subtitle")}</DialogDescription>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>Configure OpenRouter API and agent models</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {/* Tab Navigation */}
             <div className="flex border-b">
@@ -692,7 +616,7 @@ const ChatBot = () => {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                General
+                API & Agents
               </button>
               <button
                 type="button"
@@ -707,68 +631,97 @@ const ChatBot = () => {
                 Security
               </button>
             </div>
-            
+
             {/* General Tab Content */}
             {activeTab === "general" && (
-              <div className="space-y-4 py-4">
-                {/* Language Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("settings.language")}</label>
-                  <Select value={language} onValueChange={(value) => changeLanguage(value as Language)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">{t("language.en")}</SelectItem>
-                      <SelectItem value="zh">{t("language.zh")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              <div className="space-y-6 py-4">
                 {/* Theme Selection */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("settings.theme")}</label>
+                  <label className="text-sm font-medium">Theme</label>
                   <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="light">{t("theme.light")}</SelectItem>
-                      <SelectItem value="dark">{t("theme.dark")}</SelectItem>
-                      <SelectItem value="system">{t("theme.system")}</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* AI Host */}
+                {/* OpenRouter API Key */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("settings.aiHost")}</label>
-                  <Input
-                    value={tempAiHost}
-                    onChange={(e) => setTempAiHost(e.target.value)}
-                    placeholder={t("settings.hostPlaceholder")}
-                  />
-                </div>
-
-                {/* AI Token */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("settings.aiToken")}</label>
+                  <label className="text-sm font-medium">OpenRouter API Key</label>
                   <Input
                     type="password"
                     value={tempAiToken}
                     onChange={(e) => setTempAiToken(e.target.value)}
-                    placeholder={t("settings.tokenPlaceholder")}
+                    placeholder="sk-or-v1-..."
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Get your API key from{" "}
+                    <a
+                      href="https://openrouter.ai/keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      openrouter.ai/keys
+                    </a>
+                  </p>
                 </div>
 
-                {/* AI Model */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("settings.aiModel")}</label>
-                  <Input
-                    value={tempAiModel}
-                    onChange={(e) => setTempAiModel(e.target.value)}
-                    placeholder={t("settings.modelPlaceholder")}
-                  />
+                {/* Agent Model Configuration */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Agent Models</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Configure which model each agent uses. Models marked with eye emoji support vision/image input.
+                    </p>
+                  </div>
+
+                  {Object.entries(agents).map(([agentId, agentConfig]) => (
+                    <div key={agentId} className="space-y-2 p-3 rounded-lg border bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            {agentConfig.name}
+                            {agentConfig.requiresVision && (
+                              <span title="This agent benefits from vision/multimodal models">
+                                👁️
+                              </span>
+                            )}
+                          </label>
+                          <p className="text-xs text-muted-foreground">{agentConfig.description}</p>
+                        </div>
+                      </div>
+                      <Select
+                        value={tempAgentModels[agentId as keyof AgentModelConfig] || agentConfig.defaultModel}
+                        onValueChange={(value) => updateAgentModel(agentId, value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OPENROUTER_MODELS.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <span className="flex items-center gap-2">
+                                {model.requiresVision && <span>👁️</span>}
+                                {model.name}
+                                <span className="text-xs text-muted-foreground">({model.provider})</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Temp: {agentConfig.temperature}</span>
+                        <span>Top-P: {agentConfig.topP}</span>
+                        <span>Max Tokens: {agentConfig.maxTokens}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -877,13 +830,13 @@ const ChatBot = () => {
               variant="outline"
               onClick={() => setShowSettings(false)}
             >
-              {t("common.cancel")}
+              Cancel
             </Button>
             <Button
               onClick={handleSaveSettings}
               disabled={isSaving}
             >
-              {isSaving ? t("common.saving") : t("common.save")}
+              {isSaving ? "Saving..." : "Save Settings"}
             </Button>
           </DialogFooter>
         </DialogContent>

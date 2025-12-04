@@ -1,4 +1,4 @@
-export type Language = 'en' | 'zh'
+export type Language = 'en'
 
 export interface TranslationResources {
   common: {
@@ -48,7 +48,6 @@ export interface TranslationResources {
   }
   language: {
     en: string
-    zh: string
   }
   input: {
     newLine: string
@@ -106,7 +105,6 @@ export type TranslationKey =
   | 'ai.planningAgent'
   | 'ai.enhancedPlanning'
   | 'language.en'
-  | 'language.zh'
   | 'input.newLine'
   | 'input.placeholder1'
   | 'input.placeholder2'

@@ -4,10 +4,18 @@ import type { UIMessage, UITextPart, UIToolPart, UIFilePart, UIContextPart } fro
 import type { AITool } from "~/lib/services/tool-registry";
 import type { FileUIPart } from "ai";
 import type { ContextItem } from "@/components/ai-elements/prompt-input";
+import { OPENROUTER_CONFIG, AGENTS, type AgentConfig } from "~/lib/config/openrouter-agents";
 
 export type ChatStatus = "idle" | "submitted" | "streaming" | "error";
 export type EventType = "messages_updated" | "status_changed" | "queue_changed";
 type Subscriber = (data: any) => void;
+
+export interface AgentModelConfig {
+  planner: string;
+  navigator: string;
+  analyzer: string;
+  summarizer: string;
+}
 
 export interface MessageHandlerConfig {
   // Initial state
@@ -16,6 +24,8 @@ export interface MessageHandlerConfig {
   initialTools?: AITool[];
   initialAiHost?: string;
   initialAiToken?: string;
+  // Agent-specific model overrides
+  agentModels?: AgentModelConfig;
 }
 
 export class MessageHandler {
@@ -32,6 +42,8 @@ export class MessageHandler {
   private tools: AITool[];
   private aiHost: string;
   private aiToken: string;
+  private agentModels: AgentModelConfig;
+  private currentAgent: string = "planner"; // Default agent
   // Pub/Sub
   private subscribers: Map<EventType, Set<Subscriber>> = new Map();
 
@@ -42,10 +54,31 @@ export class MessageHandler {
   constructor(config: MessageHandlerConfig) {
     this.initialMessages = config.initialMessages || [];
     this.messages = config.initialMessages || [];
-    this.model = config.initialModel || "deepseek-chat";
+    this.model = config.initialModel || "anthropic/claude-sonnet-4";
     this.tools = config.initialTools || [];
-    this.aiHost = config.initialAiHost || "https://api.deepseek.com/chat/completions";
+    this.aiHost = config.initialAiHost || OPENROUTER_CONFIG.baseUrl;
     this.aiToken = config.initialAiToken || "";
+    this.agentModels = config.agentModels || {
+      planner: "anthropic/claude-sonnet-4",
+      navigator: "anthropic/claude-sonnet-4",
+      analyzer: "anthropic/claude-sonnet-4",
+      summarizer: "anthropic/claude-sonnet-4",
+    };
+  }
+
+  /**
+   * Get the agent configuration for the current task
+   */
+  private getAgentConfig(): AgentConfig {
+    return AGENTS[this.currentAgent] || AGENTS.planner;
+  }
+
+  /**
+   * Get the model for the current agent
+   */
+  private getCurrentModel(): string {
+    const agentModel = this.agentModels[this.currentAgent as keyof AgentModelConfig];
+    return agentModel || this.model;
   }
 
   // --- Pub/Sub Methods ---
@@ -133,6 +166,18 @@ export class MessageHandler {
     }
     if (config.initialAiToken) {
       this.aiToken = config.initialAiToken;
+    }
+    if (config.agentModels) {
+      this.agentModels = { ...this.agentModels, ...config.agentModels };
+    }
+  }
+
+  /**
+   * Set the current agent for the next API call
+   */
+  public setAgent(agentId: string): void {
+    if (AGENTS[agentId]) {
+      this.currentAgent = agentId;
     }
   }
 
@@ -873,17 +918,29 @@ export class MessageHandler {
     }
 
     try {
+      // Get current agent configuration for parameters
+      const agentConfig = this.getAgentConfig();
+      const currentModel = this.getCurrentModel();
+
       const resp = await fetch(this.aiHost, {
         method: "POST",
         headers: {
           "content-type": "application/json",
           accept: "text/event-stream",
           Authorization: `Bearer ${this.aiToken}`,
+          // OpenRouter-specific headers
+          ...OPENROUTER_CONFIG.headers,
         },
         body: JSON.stringify({
-          model: this.model,
+          model: currentModel,
           stream: true,
           messages: this.buildOpenAIMessages(history),
+          // Agent-specific parameters
+          temperature: agentConfig.temperature,
+          top_p: agentConfig.topP,
+          max_tokens: agentConfig.maxTokens,
+          frequency_penalty: agentConfig.frequencyPenalty,
+          presence_penalty: agentConfig.presencePenalty,
           ...(this.tools && this.tools.length > 0 && { tools: this.tools, tool_choice: "auto" }),
         }),
         signal: this.processingToken?.signal,
