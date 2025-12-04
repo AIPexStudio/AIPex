@@ -32,11 +32,11 @@
 
 ---
 
-|  |  |
-|---|---|
-| **Zero Migration** | Use your existing browser. No new app to learn. |
-| **Open Source** | MIT licensed. Audit the code. Extend it yourself. |
-| **Privacy First** | Your data never leaves your machine. BYOK supported. |
+**AIPex** — An open-source browser agent that lives in your existing browser.
+
+- **Zero Migration**: No new browser to install. No new workflow to learn.
+- **Open Source**: MIT licensed. Fully transparent, auditable, and extensible.
+- **Privacy First**: Your data never leaves your machine. Bring Your Own Key (BYOK).
 
 ---
 
@@ -61,7 +61,7 @@ AIPex is the answer. Install the extension, bring your own API key, and automate
 
 ---
 
-## See It In Action
+## Demos
 
 ### "I have 100 tabs open. Help."
 
@@ -93,16 +93,7 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 | **Privacy** | Full | Partial | Partial | Partial |
 | **BYOK** | Yes | No | No | No |
 
----
 
-## Roadmap
-
-- [ ] Multi-step workflow builder
-- [ ] Scheduled automation
-- [ ] More LLM providers (Claude, Gemini, local models)
-- [ ] Firefox support
-
-[View full roadmap →](https://github.com/buttercannfly/AIPex/issues)
 
 ---
 
@@ -110,51 +101,6 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructions.
 
----
-
-<details>
-<summary><strong>Tool Categories Overview</strong></summary>
-
-### Tab Management — 8 tools
-- `get_all_tabs` - Get all open tabs across all windows
-- `get_current_tab` - Get information about the currently active tab  
-- `switch_to_tab` - Switch to a specific tab by ID
-- `create_new_tab` - Create a new tab with the specified URL
-- `get_tab_info` - Get detailed information about a specific tab
-- `duplicate_tab` - Duplicate an existing tab
-- `close_tab` - Close a specific tab
-- `get_current_tab_content` - Get the visible text content of the current tab
-
-### Page Content & Interaction — 14 tools
-- `get_page_metadata` - Get page metadata including title, description, keywords
-- `extract_page_text` - Extract text content with word count and reading time
-- `get_page_links` - Get all links from the current page
-- `search_page_text` - Search for text on the current page
-- `get_interactive_elements` - Get all interactive elements (links, buttons, inputs)
-- `click_element` - Click an element using CSS selector
-- `summarize_page` - Summarize page content with key points
-- `fill_input` - Fill an input field with text
-- `clear_input` - Clear the content of an input field
-- `get_input_value` - Get the current value of an input field
-- `submit_form` - Submit a form using CSS selector
-- `get_form_elements` - Get all form elements and input fields
-- `scroll_to_element` - Scroll to a DOM element and center it
-- `highlight_element` - Permanently highlight DOM elements
-
-### Downloads & Files — 4 tools
-- `download_text_as_markdown` - Download text content as markdown file
-- `download_image` - Download an image from base64 data
-- `download_chat_images` - Download multiple images from chat messages
-- `download_current_chat_images` - Download all images from current AI chat
-
-### Screenshots — 3 tools
-- `capture_screenshot` - Capture screenshot of current visible tab
-- `capture_tab_screenshot` - Capture screenshot of a specific tab by ID
-- `capture_screenshot_to_clipboard` - Capture screenshot and save to clipboard
-
-</details>
-
----
 
 ## Contributors
 
