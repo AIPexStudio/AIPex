@@ -1,8 +1,6 @@
-# AIPex
 
-> **Your next AI browser — why switch browsers?**
-> 
-> Open source. Free. Private. Runs in the browser you already use.
+<a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/f95d22eb-7384-403f-921b-159974bd3245" />
+</a>
 
 <div align="right">
   <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
