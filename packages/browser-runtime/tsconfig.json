@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node", "chrome"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

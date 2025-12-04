@@ -34,6 +34,8 @@
     "@ai-sdk/google": "^2.0.44",
     "@ai-sdk/openai": "^2.0.75",
     "@aipexstudio/aipex-core": "workspace:*",
+    "@aipexstudio/aipex-react": "workspace:*",
+    "@aipexstudio/browser-runtime": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.23.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",

@@ -4,8 +4,10 @@ import type {
   Agent as OpenAIAgent,
 } from "@openai/agents";
 import type { AiSdkModel } from "@openai/agents-extensions";
+import type { AIPex } from "./agent/aipex.js";
 import type { Context, ContextManager } from "./context/index.js";
 import type { ConversationManager } from "./conversation/manager.js";
+import type { Session } from "./conversation/session.js";
 import type { AgentError } from "./utils/errors.js";
 
 // Re-export types from @openai/agents for convenient access
@@ -78,6 +80,10 @@ export interface AIPexOptions<
    * Contexts can come from various sources (browser, filesystem, database, etc.)
    */
   contextManager?: ContextManager;
+  /**
+   * Optional runtime plugins that can observe conversations.
+   */
+  plugins?: AgentPlugin[];
 }
 
 export interface CompressionOptions extends CompressionConfig {
@@ -134,6 +140,61 @@ export type AgentEvent =
     };
 
 // ============================================================================
+// Plugin Types
+// ============================================================================
+
+export interface BeforeChatPayload {
+  input: string;
+  options?: ChatOptions;
+  contexts?: Context[];
+}
+
+export interface AfterResponsePayload {
+  input: string;
+  finalOutput: string;
+  metrics: AgentMetrics;
+  sessionId?: string;
+}
+
+export interface ToolEventPayload {
+  event: AgentEvent;
+}
+
+export interface MetricsPayload {
+  metrics: AgentMetrics;
+  sessionId?: string;
+}
+
+export interface AgentPluginContext {
+  agent: AIPex;
+}
+
+export interface AgentPluginHooks {
+  beforeChat?: (
+    payload: BeforeChatPayload,
+    ctx: AgentPluginContext,
+  ) => Promise<BeforeChatPayload | undefined> | BeforeChatPayload | undefined;
+  afterResponse?: (
+    payload: AfterResponsePayload,
+    ctx: AgentPluginContext,
+  ) => Promise<void> | void;
+  onToolEvent?: (
+    payload: ToolEventPayload,
+    ctx: AgentPluginContext,
+  ) => Promise<void> | void;
+  onMetrics?: (
+    payload: MetricsPayload,
+    ctx: AgentPluginContext,
+  ) => Promise<void> | void;
+}
+
+export interface AgentPlugin {
+  id: string;
+  setup?: (ctx: AgentPluginContext) => Promise<void> | void;
+  hooks?: AgentPluginHooks;
+}
+
+// ============================================================================
 // Session Types
 // ============================================================================
 
@@ -184,8 +245,8 @@ export interface SessionTree {
 }
 
 export interface SessionStorageAdapter {
-  save(session: import("./conversation/session.js").Session): Promise<void>;
-  load(id: string): Promise<import("./conversation/session.js").Session | null>;
+  save(session: Session): Promise<void>;
+  load(id: string): Promise<Session | null>;
   delete(id: string): Promise<void>;
   listAll(): Promise<SessionSummary[]>;
   getSessionTree(rootId?: string): Promise<SessionTree[]>;

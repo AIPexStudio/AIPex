@@ -4,13 +4,13 @@
  */
 
 import type { Context } from "@aipexstudio/aipex-core";
-import { useCallback, useEffect, useRef } from "react";
-import type { ContextItem } from "@/components/ai-elements/prompt-input";
+import type { ContextItem } from "@aipexstudio/aipex-react/components/ai-elements/prompt-input";
 import {
   BookmarksProvider,
   CurrentPageProvider,
   TabsProvider,
-} from "~/lib/context/providers";
+} from "@aipexstudio/browser-runtime";
+import { useCallback, useEffect, useRef } from "react";
 
 const currentPageProvider = new CurrentPageProvider();
 const tabsProvider = new TabsProvider();
@@ -126,11 +126,6 @@ export function useTabsSync({
       if (immediate) {
         getAllAvailableContexts()
           .then((contexts) => {
-            console.log(
-              "[useTabsSync] Initial contexts loaded:",
-              contexts.length,
-              "items",
-            );
             onContextsUpdate(contexts);
           })
           .catch((error) => {
@@ -143,11 +138,6 @@ export function useTabsSync({
       debounceTimerRef.current = setTimeout(async () => {
         try {
           const contexts = await getAllAvailableContexts();
-          console.log(
-            "[useTabsSync] Contexts updated (debounced):",
-            contexts.length,
-            "items",
-          );
           onContextsUpdate(contexts);
         } catch (error) {
           console.error("[useTabsSync] Failed to rebuild contexts:", error);
@@ -171,7 +161,6 @@ export function useTabsSync({
       );
 
       if (hasTabContext) {
-        console.log(`Removing context for closed tab: ${tabId}`);
         onContextRemove(tabContextId);
       }
 
