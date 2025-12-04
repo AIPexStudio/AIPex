@@ -1,5 +1,5 @@
 
-<p align="center"><a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/67eea9fa-c1fb-4d61-aad4-e3b5885a78f4" width="100%" />
+<p align="center"><a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/039768c0-1765-4a98-b020-57955e4a224a" width="100%" />
 </a></p>
 
 <strong><p align="center">Your browser already works!</p></strong>
