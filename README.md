@@ -1,12 +1,9 @@
 
-<a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/cedda5ef-9d68-4314-8d1c-5a96f3893e8a" />
-</a>
+<p align="center"><a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/67eea9fa-c1fb-4d61-aad4-e3b5885a78f4" width="100%" />
+</a></p>
 
 <strong><p align="center">Your browser already works!</p></strong>
 
-<div align="right">
-  <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
-</div>
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar">
@@ -18,9 +15,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/buttercannfly/AIPex"><img src="https://img.shields.io/github/stars/buttercannfly/AIPex?style=social" alt="GitHub stars"></a>
-  <a href="https://github.com/buttercannfly/AIPex"><img src="https://img.shields.io/github/forks/buttercannfly/AIPex?style=social" alt="GitHub forks"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <br>
+  <a href="https://discord.gg/sfZC3G5qfe"><img src="https://img.shields.io/badge/-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://x.com/weikangzhang3"><img src="https://img.shields.io/badge/-000000?style=for-the-badge&logo=x&logoColor=white" alt="X/Twitter"></a>
+  <a href="https://www.youtube.com/@aipex-chrome-extension"><img src="https://img.shields.io/badge/-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"></a>
+  <br>
+  <br>
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
 </p>
 
 <!-- TODO: Add a hero GIF here showing the core automation flow -->
@@ -101,24 +103,6 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 - [ ] Firefox support
 
 [View full roadmap →](https://github.com/buttercannfly/AIPex/issues)
-
----
-
-## Join the Community
-
-Have questions? Want to share your automation workflows?
-
-<p align="center">
-  <a href="https://discord.gg/sfZC3G5qfe">
-    <img src="https://img.shields.io/badge/Join%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
-  </a>
-  <a href="https://x.com/weikangzhang3">
-    <img src="https://img.shields.io/badge/Follow%20on%20X-000000?style=for-the-badge&logo=x&logoColor=white" alt="X/Twitter">
-  </a>
-  <a href="https://www.youtube.com/@aipex-chrome-extension">
-    <img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
-  </a>
-</p>
 
 ---
 
