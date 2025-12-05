@@ -997,6 +997,10 @@ export class MessageHandler {
         temperature: agentConfig.temperature,
         top_p: agentConfig.topP,
         max_tokens: agentConfig.maxTokens,
+        // Explicit provider configuration - required by OpenRouter
+        provider: {
+          allow_fallbacks: true,
+        },
       };
 
       // Only add penalty parameters if they're non-zero (some models don't support them)
