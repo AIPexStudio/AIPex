@@ -4,7 +4,7 @@ import type { UIMessage, UITextPart, UIToolPart, UIFilePart, UIContextPart } fro
 import type { AITool } from "~/lib/services/tool-registry";
 import type { FileUIPart } from "ai";
 import type { ContextItem } from "@/components/ai-elements/prompt-input";
-import { OPENROUTER_CONFIG, AGENTS, type AgentConfig } from "~/lib/config/openrouter-agents";
+import { AGENTS, type AgentConfig } from "~/lib/config/openrouter-agents";
 
 export type ChatStatus = "idle" | "submitted" | "streaming" | "error";
 export type EventType = "messages_updated" | "status_changed" | "queue_changed";
@@ -988,35 +988,18 @@ export class MessageHandler {
         return;
       }
 
-      // Build request body - keep it simple, only essential fields
+      // Build request body - minimal, like original
       const requestBody: Record<string, any> = {
         model: currentModel,
-        messages: this.buildOpenAIMessages(history),
         stream: true,
+        messages: this.buildOpenAIMessages(history),
+        ...(this.tools && this.tools.length > 0 && { tools: this.tools, tool_choice: "auto" }),
       };
-
-      // Only add optional parameters if needed
-      if (agentConfig.temperature !== undefined) {
-        requestBody.temperature = agentConfig.temperature;
-      }
-      if (agentConfig.maxTokens) {
-        requestBody.max_tokens = agentConfig.maxTokens;
-      }
-
-      // Add tools if available and model might support them
-      if (this.tools && this.tools.length > 0) {
-        requestBody.tools = this.tools;
-        requestBody.tool_choice = "auto";
-      }
 
       console.log("OpenRouter request:", {
         model: currentModel,
-        agent: this.currentAgent,
         host: this.aiHost,
-        agentModels: this.agentModels,
         hasToken: !!this.aiToken,
-        tokenPrefix: this.aiToken ? this.aiToken.substring(0, 10) + "..." : "none",
-        requestBodyKeys: Object.keys(requestBody),
       });
 
       const resp = await fetch(this.aiHost, {
@@ -1025,8 +1008,6 @@ export class MessageHandler {
           "content-type": "application/json",
           accept: "text/event-stream",
           Authorization: `Bearer ${this.aiToken}`,
-          // OpenRouter-specific headers
-          ...OPENROUTER_CONFIG.headers,
         },
         body: JSON.stringify(requestBody),
         signal: this.processingToken?.signal,
