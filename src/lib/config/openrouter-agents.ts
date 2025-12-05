@@ -46,9 +46,9 @@ export const AGENTS: Record<string, AgentConfig> = {
   navigator: {
     id: "navigator",
     name: "Navigator",
-    description: "Executes browser actions with precision and reliability",
+    description: "Executes browser actions with precision (uses DOM, vision optional)",
     defaultModel: "anthropic/claude-3.5-sonnet",
-    requiresVision: true,
+    requiresVision: false,
     temperature: 0.1,
     topP: 0.95,
     maxTokens: 2048,
@@ -58,9 +58,9 @@ export const AGENTS: Record<string, AgentConfig> = {
   analyzer: {
     id: "analyzer",
     name: "Analyzer",
-    description: "Analyzes page content, extracts information, and provides insights",
+    description: "Analyzes page content and extracts information (uses DOM, vision optional)",
     defaultModel: "anthropic/claude-3.5-sonnet",
-    requiresVision: true,
+    requiresVision: false,
     temperature: 0.3,
     topP: 0.9,
     maxTokens: 4096,
