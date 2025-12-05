@@ -988,30 +988,22 @@ export class MessageHandler {
         return;
       }
 
-      // Build request body
+      // Build request body - keep it simple, only essential fields
       const requestBody: Record<string, any> = {
         model: currentModel,
-        stream: true,
         messages: this.buildOpenAIMessages(history),
-        // Agent-specific parameters
-        temperature: agentConfig.temperature,
-        top_p: agentConfig.topP,
-        max_tokens: agentConfig.maxTokens,
-        // Explicit provider configuration - required by OpenRouter
-        provider: {
-          allow_fallbacks: true,
-        },
+        stream: true,
       };
 
-      // Only add penalty parameters if they're non-zero (some models don't support them)
-      if (agentConfig.frequencyPenalty !== 0) {
-        requestBody.frequency_penalty = agentConfig.frequencyPenalty;
+      // Only add optional parameters if needed
+      if (agentConfig.temperature !== undefined) {
+        requestBody.temperature = agentConfig.temperature;
       }
-      if (agentConfig.presencePenalty !== 0) {
-        requestBody.presence_penalty = agentConfig.presencePenalty;
+      if (agentConfig.maxTokens) {
+        requestBody.max_tokens = agentConfig.maxTokens;
       }
 
-      // Add tools if available
+      // Add tools if available and model might support them
       if (this.tools && this.tools.length > 0) {
         requestBody.tools = this.tools;
         requestBody.tool_choice = "auto";
