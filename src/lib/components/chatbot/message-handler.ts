@@ -906,6 +906,35 @@ export class MessageHandler {
     }
   }
 
+  /**
+   * Validate that a model ID is properly formatted for OpenRouter
+   * Model IDs should follow the format: provider/model-name
+   */
+  private validateModelId(modelId: string): { valid: boolean; error?: string } {
+    if (!modelId || modelId.trim() === "") {
+      return { valid: false, error: "Model ID is empty or undefined" };
+    }
+
+    if (modelId === "undefined" || modelId === "null") {
+      return { valid: false, error: `Model ID is the literal string "${modelId}"` };
+    }
+
+    if (!modelId.includes("/")) {
+      return { valid: false, error: `Model ID "${modelId}" does not follow the provider/model format` };
+    }
+
+    const [provider, model] = modelId.split("/");
+    if (!provider || provider.trim() === "") {
+      return { valid: false, error: `Model ID "${modelId}" has an empty provider` };
+    }
+
+    if (!model || model.trim() === "") {
+      return { valid: false, error: `Model ID "${modelId}" has an empty model name` };
+    }
+
+    return { valid: true };
+  }
+
   // Start streaming assistant response
   private async _startStream(history: UIMessage[]): Promise<void> {
     // Stop any existing stream but keep processing flag
@@ -922,10 +951,76 @@ export class MessageHandler {
       const agentConfig = this.getAgentConfig();
       const currentModel = this.getCurrentModel();
 
+      // Validate model ID before making the request
+      const modelValidation = this.validateModelId(currentModel);
+      if (!modelValidation.valid) {
+        console.error("Invalid model ID:", modelValidation.error);
+        this.setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-assistant-error`,
+            role: "assistant",
+            parts: [{
+              type: "text",
+              text: `Configuration Error: ${modelValidation.error}\n\nPlease go to Settings and select a valid model for the "${this.currentAgent}" agent.\n\nExpected format: provider/model-name (e.g., anthropic/claude-3.5-sonnet)`
+            }],
+          },
+        ]);
+        this.setStatus("error");
+        return;
+      }
+
+      // Validate API token
+      if (!this.aiToken || this.aiToken.trim() === "") {
+        console.error("Missing API token");
+        this.setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-assistant-error`,
+            role: "assistant",
+            parts: [{
+              type: "text",
+              text: "Configuration Error: OpenRouter API key is missing.\n\nPlease go to Settings and enter your OpenRouter API key.\n\nGet your API key from: https://openrouter.ai/keys"
+            }],
+          },
+        ]);
+        this.setStatus("error");
+        return;
+      }
+
+      // Build request body
+      const requestBody: Record<string, any> = {
+        model: currentModel,
+        stream: true,
+        messages: this.buildOpenAIMessages(history),
+        // Agent-specific parameters
+        temperature: agentConfig.temperature,
+        top_p: agentConfig.topP,
+        max_tokens: agentConfig.maxTokens,
+      };
+
+      // Only add penalty parameters if they're non-zero (some models don't support them)
+      if (agentConfig.frequencyPenalty !== 0) {
+        requestBody.frequency_penalty = agentConfig.frequencyPenalty;
+      }
+      if (agentConfig.presencePenalty !== 0) {
+        requestBody.presence_penalty = agentConfig.presencePenalty;
+      }
+
+      // Add tools if available
+      if (this.tools && this.tools.length > 0) {
+        requestBody.tools = this.tools;
+        requestBody.tool_choice = "auto";
+      }
+
       console.log("OpenRouter request:", {
         model: currentModel,
         agent: this.currentAgent,
         host: this.aiHost,
+        agentModels: this.agentModels,
+        hasToken: !!this.aiToken,
+        tokenPrefix: this.aiToken ? this.aiToken.substring(0, 10) + "..." : "none",
+        requestBodyKeys: Object.keys(requestBody),
       });
 
       const resp = await fetch(this.aiHost, {
@@ -937,31 +1032,32 @@ export class MessageHandler {
           // OpenRouter-specific headers
           ...OPENROUTER_CONFIG.headers,
         },
-        body: JSON.stringify({
-          model: currentModel,
-          stream: true,
-          messages: this.buildOpenAIMessages(history),
-          // Agent-specific parameters
-          temperature: agentConfig.temperature,
-          top_p: agentConfig.topP,
-          max_tokens: agentConfig.maxTokens,
-          frequency_penalty: agentConfig.frequencyPenalty,
-          presence_penalty: agentConfig.presencePenalty,
-          ...(this.tools && this.tools.length > 0 && { tools: this.tools, tool_choice: "auto" }),
-        }),
+        body: JSON.stringify(requestBody),
         signal: this.processingToken?.signal,
       });
 
       if (!resp.body || resp.status >= 400) {
         // Try to get detailed error message from response
         let errorDetails = "";
+        let rawErrorBody = "";
         try {
-          const errorBody = await resp.text();
-          const errorJson = JSON.parse(errorBody);
-          errorDetails = errorJson.error?.message || errorJson.message || errorBody;
+          rawErrorBody = await resp.text();
+          const errorJson = JSON.parse(rawErrorBody);
+          errorDetails = errorJson.error?.message || errorJson.message || rawErrorBody;
         } catch {
-          errorDetails = resp.statusText || "Unknown error";
+          errorDetails = rawErrorBody || resp.statusText || "Unknown error";
         }
+
+        // Log detailed error information for debugging
+        console.error("OpenRouter API Error:", {
+          status: resp.status,
+          statusText: resp.statusText,
+          details: errorDetails,
+          rawBody: rawErrorBody,
+          model: currentModel,
+          agent: this.currentAgent,
+          host: this.aiHost,
+        });
 
         // Create an error assistant message to prevent infinite loop
         let errorMessage = "";
@@ -972,16 +1068,17 @@ export class MessageHandler {
         } else if (resp.status === 429) {
           errorMessage = `Rate Limited: Too many requests. Please wait a moment and try again.\n\nDetails: ${errorDetails}`;
         } else if (resp.status === 400) {
-          errorMessage = `Bad Request: ${errorDetails}\n\nThis may be a model compatibility issue. Try selecting a different model in Settings.`;
+          errorMessage = `Bad Request: ${errorDetails}\n\nModel: ${currentModel}\nAgent: ${this.currentAgent}\n\nThis may be a model compatibility issue. Try selecting a different model in Settings.`;
+        } else if (resp.status === 404) {
+          // Special handling for 404 - often means model not found
+          errorMessage = `Model Not Found (404): ${errorDetails}\n\nModel: ${currentModel}\nAgent: ${this.currentAgent}\n\nThe model "${currentModel}" may not exist or may be temporarily unavailable on OpenRouter. Please try:\n1. Go to Settings and select a different model\n2. Click "Refresh" to reload the available models list\n3. Try a common model like "anthropic/claude-3.5-sonnet"`;
         } else if (resp.status >= 500) {
           errorMessage = `Server Error (${resp.status}): OpenRouter is experiencing issues. Please try again later.\n\nDetails: ${errorDetails}`;
         } else if (resp.status >= 400) {
-          errorMessage = `API Error (${resp.status}): ${errorDetails}`;
+          errorMessage = `API Error (${resp.status}): ${errorDetails}\n\nModel: ${currentModel}\nAgent: ${this.currentAgent}`;
         } else {
           errorMessage = "Failed to get response from API. Please check your network connection.";
         }
-
-        console.error("OpenRouter API Error:", { status: resp.status, details: errorDetails });
 
         this.setMessages((prev) => [
           ...prev,

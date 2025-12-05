@@ -372,6 +372,38 @@ const ChatBot = () => {
     }));
   };
 
+  // Reset agent models to defaults
+  const resetAgentModels = () => {
+    const defaults = getDefaultAgentModels();
+    setTempAgentModels(defaults as AgentModelConfig);
+  };
+
+  // Clear all settings and reset to defaults
+  const clearAllSettings = async () => {
+    if (confirm("This will clear all settings including API key and agent models. Continue?")) {
+      const storage = new Storage();
+      await storage.remove("openrouter_api_key");
+      await storage.remove("openrouter_agent_models");
+
+      // Reset to defaults
+      const defaults = getDefaultAgentModels();
+      setTempAiToken("");
+      setTempAgentModels(defaults as AgentModelConfig);
+      setAiToken("");
+      setAgentModelsJson(JSON.stringify(defaults));
+
+      // Update message handler
+      if (messageHandlerRef.current) {
+        messageHandlerRef.current.updateConfig({
+          initialAiToken: "",
+          agentModels: defaults as AgentModelConfig,
+        });
+      }
+
+      alert("Settings cleared! Please enter your API key again.");
+    }
+  };
+
   const addToWhitelist = () => {
     if (whitelistInput.trim() && !whitelist.includes(whitelistInput.trim())) {
       setWhitelist([...whitelist, whitelistInput.trim()]);
@@ -713,17 +745,45 @@ const ChatBot = () => {
                         Configure which model each agent uses. 👁️ = vision/multimodal support.
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadModels}
-                      disabled={isLoadingModels}
-                      className="gap-1"
-                    >
-                      <RefreshCwIcon className={cn("size-3", isLoadingModels && "animate-spin")} />
-                      {isLoadingModels ? "Loading..." : "Refresh Models"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllSettings}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >
+                        Clear All
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetAgentModels}
+                        className="text-xs"
+                      >
+                        Reset Models
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadModels}
+                        disabled={isLoadingModels}
+                        className="gap-1"
+                      >
+                        <RefreshCwIcon className={cn("size-3", isLoadingModels && "animate-spin")} />
+                        {isLoadingModels ? "Loading..." : "Refresh"}
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Debug: Show currently configured model IDs */}
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      Debug: Current Model IDs (click to expand)
+                    </summary>
+                    <pre className="mt-2 p-2 bg-muted/50 rounded text-xs overflow-x-auto">
+                      {JSON.stringify(tempAgentModels, null, 2)}
+                    </pre>
+                  </details>
 
                   {modelsError && (
                     <p className="text-xs text-amber-600 dark:text-amber-400">{modelsError}</p>
