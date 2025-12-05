@@ -35,7 +35,7 @@ export const AGENTS: Record<string, AgentConfig> = {
     id: "planner",
     name: "Planner",
     description: "Plans and decomposes complex tasks into actionable steps",
-    defaultModel: "anthropic/claude-sonnet-4",
+    defaultModel: "anthropic/claude-3.5-sonnet",
     requiresVision: false,
     temperature: 0.7,
     topP: 0.9,
@@ -47,7 +47,7 @@ export const AGENTS: Record<string, AgentConfig> = {
     id: "navigator",
     name: "Navigator",
     description: "Executes browser actions with precision and reliability",
-    defaultModel: "anthropic/claude-sonnet-4",
+    defaultModel: "anthropic/claude-3.5-sonnet",
     requiresVision: true,
     temperature: 0.1,
     topP: 0.95,
@@ -59,7 +59,7 @@ export const AGENTS: Record<string, AgentConfig> = {
     id: "analyzer",
     name: "Analyzer",
     description: "Analyzes page content, extracts information, and provides insights",
-    defaultModel: "anthropic/claude-sonnet-4",
+    defaultModel: "anthropic/claude-3.5-sonnet",
     requiresVision: true,
     temperature: 0.3,
     topP: 0.9,
@@ -71,7 +71,7 @@ export const AGENTS: Record<string, AgentConfig> = {
     id: "summarizer",
     name: "Summarizer",
     description: "Creates concise, accurate summaries of content",
-    defaultModel: "anthropic/claude-sonnet-4",
+    defaultModel: "anthropic/claude-3.5-sonnet",
     requiresVision: false,
     temperature: 0.2,
     topP: 0.9,
@@ -100,20 +100,26 @@ export const OPENROUTER_CONFIG = {
 export const OPENROUTER_MODELS = [
   // Anthropic Claude Models
   {
-    id: "anthropic/claude-sonnet-4",
-    name: "Claude Sonnet 4",
+    id: "anthropic/claude-3.5-sonnet",
+    name: "Claude 3.5 Sonnet",
     provider: "Anthropic",
     requiresVision: true,
   },
   {
-    id: "anthropic/claude-sonnet-4-5",
-    name: "Claude 4.5 Sonnet",
+    id: "anthropic/claude-3.5-sonnet:beta",
+    name: "Claude 3.5 Sonnet (Beta)",
     provider: "Anthropic",
     requiresVision: true,
   },
   {
-    id: "anthropic/claude-opus-4",
-    name: "Claude Opus 4",
+    id: "anthropic/claude-3-opus",
+    name: "Claude 3 Opus",
+    provider: "Anthropic",
+    requiresVision: true,
+  },
+  {
+    id: "anthropic/claude-3-haiku",
+    name: "Claude 3 Haiku",
     provider: "Anthropic",
     requiresVision: true,
   },
@@ -138,8 +144,8 @@ export const OPENROUTER_MODELS = [
   },
   // Google Models
   {
-    id: "google/gemini-2.0-flash-001",
-    name: "Gemini 2.0 Flash",
+    id: "google/gemini-2.0-flash-exp:free",
+    name: "Gemini 2.0 Flash (Free)",
     provider: "Google",
     requiresVision: true,
   },
@@ -159,7 +165,7 @@ export const OPENROUTER_MODELS = [
   // DeepSeek Models
   {
     id: "deepseek/deepseek-chat",
-    name: "DeepSeek Chat",
+    name: "DeepSeek V3",
     provider: "DeepSeek",
     requiresVision: false,
   },
@@ -171,7 +177,7 @@ export const OPENROUTER_MODELS = [
   },
   // Mistral Models
   {
-    id: "mistralai/mistral-large-2411",
+    id: "mistralai/mistral-large",
     name: "Mistral Large",
     provider: "Mistral",
     requiresVision: false,

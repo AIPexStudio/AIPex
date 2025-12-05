@@ -54,15 +54,15 @@ export class MessageHandler {
   constructor(config: MessageHandlerConfig) {
     this.initialMessages = config.initialMessages || [];
     this.messages = config.initialMessages || [];
-    this.model = config.initialModel || "anthropic/claude-sonnet-4";
+    this.model = config.initialModel || "anthropic/claude-3.5-sonnet";
     this.tools = config.initialTools || [];
     this.aiHost = config.initialAiHost || OPENROUTER_CONFIG.baseUrl;
     this.aiToken = config.initialAiToken || "";
     this.agentModels = config.agentModels || {
-      planner: "anthropic/claude-sonnet-4",
-      navigator: "anthropic/claude-sonnet-4",
-      analyzer: "anthropic/claude-sonnet-4",
-      summarizer: "anthropic/claude-sonnet-4",
+      planner: "anthropic/claude-3.5-sonnet",
+      navigator: "anthropic/claude-3.5-sonnet",
+      analyzer: "anthropic/claude-3.5-sonnet",
+      summarizer: "anthropic/claude-3.5-sonnet",
     };
   }
 
@@ -947,11 +947,35 @@ export class MessageHandler {
       });
 
       if (!resp.body || resp.status >= 400) {
+        // Try to get detailed error message from response
+        let errorDetails = "";
+        try {
+          const errorBody = await resp.text();
+          const errorJson = JSON.parse(errorBody);
+          errorDetails = errorJson.error?.message || errorJson.message || errorBody;
+        } catch {
+          errorDetails = resp.statusText || "Unknown error";
+        }
+
         // Create an error assistant message to prevent infinite loop
-        const errorMessage =
-          resp.status >= 400
-            ? `API Error: ${resp.status} ${resp.statusText}`
-            : "Failed to get response from API";
+        let errorMessage = "";
+        if (resp.status === 401) {
+          errorMessage = `Authentication Error: Invalid or missing API key. Please check your OpenRouter API key in Settings.\n\nDetails: ${errorDetails}`;
+        } else if (resp.status === 402) {
+          errorMessage = `Payment Required: Your OpenRouter account has insufficient credits. Please add credits at openrouter.ai.\n\nDetails: ${errorDetails}`;
+        } else if (resp.status === 429) {
+          errorMessage = `Rate Limited: Too many requests. Please wait a moment and try again.\n\nDetails: ${errorDetails}`;
+        } else if (resp.status === 400) {
+          errorMessage = `Bad Request: ${errorDetails}\n\nThis may be a model compatibility issue. Try selecting a different model in Settings.`;
+        } else if (resp.status >= 500) {
+          errorMessage = `Server Error (${resp.status}): OpenRouter is experiencing issues. Please try again later.\n\nDetails: ${errorDetails}`;
+        } else if (resp.status >= 400) {
+          errorMessage = `API Error (${resp.status}): ${errorDetails}`;
+        } else {
+          errorMessage = "Failed to get response from API. Please check your network connection.";
+        }
+
+        console.error("OpenRouter API Error:", { status: resp.status, details: errorDetails });
 
         this.setMessages((prev) => [
           ...prev,

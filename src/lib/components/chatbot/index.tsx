@@ -168,7 +168,7 @@ const ChatBot = () => {
     }
 
     const config: MessageHandlerConfig = {
-      initialModel: "anthropic/claude-sonnet-4",
+      initialModel: "anthropic/claude-3.5-sonnet",
       initialTools: getAllTools().map((tool) => ({
         type: "function",
         function: {
