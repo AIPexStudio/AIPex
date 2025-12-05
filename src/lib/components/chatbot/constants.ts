@@ -1,12 +1,4 @@
-import { OPENROUTER_MODELS, AGENTS } from "~/lib/config/openrouter-agents";
-
-// Export models from OpenRouter configuration for backward compatibility
-export const models = OPENROUTER_MODELS.map((model) => ({
-  name: model.name,
-  value: model.id,
-  provider: model.provider,
-  requiresVision: model.requiresVision,
-}));
+import { AGENTS } from "~/lib/config/openrouter-agents";
 
 // Export agents configuration
 export const agents = AGENTS;

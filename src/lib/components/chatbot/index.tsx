@@ -44,9 +44,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -54,7 +52,7 @@ import { cn } from "@/lib/utils";
 import type { ChatStatus } from "ai";
 import { ClockIcon, CopyIcon, RefreshCcwIcon, SettingsIcon, PlusIcon, GlobeIcon, BookmarkIcon, ClipboardIcon, CameraIcon, FileIcon } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { models, SYSTEM_PROMPT, agents } from "./constants";
+import { SYSTEM_PROMPT, agents } from "./constants";
 import { MessageHandler, type MessageHandlerConfig, type AgentModelConfig } from "./message-handler";
 import type { UIMessage } from "./types";
 import { Action, Actions } from "@/components/ai-elements/actions";
@@ -65,8 +63,7 @@ import { getAllTools } from "~/lib/services/tool-registry";
 import { useTheme, type Theme } from "~/lib/hooks/use-theme";
 import { useTabsSync } from "~/lib/hooks/use-tabs-sync";
 import { hostAccessManager, type HostAccessMode } from "~/lib/services/host-access-manager";
-import { OPENROUTER_CONFIG, OPENROUTER_MODELS, getDefaultAgentModels, fetchOpenRouterModels, groupModelsByProvider, type OpenRouterModel } from "~/lib/config/openrouter-agents";
-import { RefreshCwIcon } from "lucide-react";
+import { OPENROUTER_CONFIG, getDefaultAgentModels } from "~/lib/config/openrouter-agents";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -145,7 +142,6 @@ const ChatBot = () => {
   const [blocklist, setBlocklist] = useState<string[]>([]);
   const [whitelistInput, setWhitelistInput] = useState("");
   const [blocklistInput, setBlocklistInput] = useState("");
-  const [activeTab, setActiveTab] = useState("general");
 
   const placeholderList = [
     "Search or ask anything...",
@@ -153,35 +149,6 @@ const ChatBot = () => {
     "Try: summarize this page"
   ];
 
-  // Available models from OpenRouter API
-  const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>(OPENROUTER_MODELS);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [modelsError, setModelsError] = useState<string | null>(null);
-
-  // Fetch models from OpenRouter API
-  const loadModels = async () => {
-    setIsLoadingModels(true);
-    setModelsError(null);
-    try {
-      const models = await fetchOpenRouterModels();
-      setAvailableModels(models);
-    } catch (error) {
-      console.error("Failed to load models:", error);
-      setModelsError("Failed to load models. Using fallback list.");
-      setAvailableModels(OPENROUTER_MODELS);
-    } finally {
-      setIsLoadingModels(false);
-    }
-  };
-
-  // Load models on mount
-  useEffect(() => {
-    loadModels();
-  }, []);
-
-  // Group models by provider for the dropdown
-  const groupedModels = groupModelsByProvider(availableModels);
- 
 
   // Track cleanup functions outside of the handler
   const unsubscribeFunctionsRef = useRef<(() => void)[]>([]);
@@ -376,32 +343,6 @@ const ChatBot = () => {
   const resetAgentModels = () => {
     const defaults = getDefaultAgentModels();
     setTempAgentModels(defaults as AgentModelConfig);
-  };
-
-  // Clear all settings and reset to defaults
-  const clearAllSettings = async () => {
-    if (confirm("This will clear all settings including API key and agent models. Continue?")) {
-      const storage = new Storage();
-      await storage.remove("openrouter_api_key");
-      await storage.remove("openrouter_agent_models");
-
-      // Reset to defaults
-      const defaults = getDefaultAgentModels();
-      setTempAiToken("");
-      setTempAgentModels(defaults as AgentModelConfig);
-      setAiToken("");
-      setAgentModelsJson(JSON.stringify(defaults));
-
-      // Update message handler
-      if (messageHandlerRef.current) {
-        messageHandlerRef.current.updateConfig({
-          initialAiToken: "",
-          agentModels: defaults as AgentModelConfig,
-        });
-      }
-
-      alert("Settings cleared! Please enter your API key again.");
-    }
   };
 
   const addToWhitelist = () => {
@@ -659,302 +600,139 @@ const ChatBot = () => {
         </PromptInput>
       </div>
 
-      {/* Settings Dialog */}
+      {/* Settings Dialog - Compact for sidebar */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>Configure OpenRouter API and agent models</DialogDescription>
+        <DialogContent className="sm:max-w-[380px] p-4">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base">Settings</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Tab Navigation */}
-            <div className="flex border-b">
-              <button
-                type="button"
-                onClick={() => setActiveTab("general")}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                  activeTab === "general"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                API & Agents
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("security")}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                  activeTab === "security"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Security
-              </button>
+          <div className="space-y-3 text-sm">
+            {/* Theme + API Key row */}
+            <div className="flex gap-2">
+              <div className="w-24">
+                <label className="text-xs text-muted-foreground">Theme</label>
+                <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground">
+                  API Key (<a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">get one</a>)
+                </label>
+                <Input
+                  type="password"
+                  value={tempAiToken}
+                  onChange={(e) => setTempAiToken(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="h-8 text-xs"
+                />
+              </div>
             </div>
 
-            {/* General Tab Content */}
-            {activeTab === "general" && (
-              <div className="space-y-6 py-4">
-                {/* Theme Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Theme</label>
-                  <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Agent Models - Compact layout */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">Agent Models</span>
+                <Button variant="ghost" size="sm" onClick={resetAgentModels} className="h-6 text-xs px-2">
+                  Reset
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter model slugs (e.g., anthropic/claude-sonnet-4)
+              </p>
 
-                {/* OpenRouter API Key */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">OpenRouter API Key</label>
+              {Object.entries(agents).map(([agentId, agentConfig]) => (
+                <div key={agentId} className="flex items-center gap-2">
+                  <label className="w-20 text-xs truncate flex items-center gap-1" title={agentConfig.description}>
+                    {agentConfig.name}
+                    {agentConfig.requiresVision && <span>👁️</span>}
+                  </label>
                   <Input
-                    type="password"
-                    value={tempAiToken}
-                    onChange={(e) => setTempAiToken(e.target.value)}
-                    placeholder="sk-or-v1-..."
+                    value={tempAgentModels[agentId as keyof AgentModelConfig] || ""}
+                    onChange={(e) => updateAgentModel(agentId, e.target.value)}
+                    placeholder={agentConfig.defaultModel}
+                    className="h-7 text-xs flex-1"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Get your API key from{" "}
-                    <a
-                      href="https://openrouter.ai/keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      openrouter.ai/keys
-                    </a>
-                  </p>
                 </div>
+              ))}
+            </div>
 
-                {/* Agent Model Configuration */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold mb-1">Agent Models</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Configure which model each agent uses. 👁️ = vision/multimodal support.
-                      </p>
+            {/* Security - Collapsible */}
+            <details className="border rounded p-2">
+              <summary className="text-xs font-medium cursor-pointer">Security Settings</summary>
+              <div className="mt-2 space-y-2">
+                <Select value={hostAccessMode} onValueChange={(value) => setHostAccessMode(value as HostAccessMode)}>
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="include-all">Allow All Hosts</SelectItem>
+                    <SelectItem value="whitelist">Whitelist Only</SelectItem>
+                    <SelectItem value="blocklist">Blocklist</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {hostAccessMode === "whitelist" && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      <Input
+                        value={whitelistInput}
+                        onChange={(e) => setWhitelistInput(e.target.value)}
+                        placeholder="example.com"
+                        className="h-7 text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
+                      />
+                      <Button onClick={addToWhitelist} size="sm" className="h-7 px-2 text-xs">+</Button>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAllSettings}
-                        className="text-xs text-red-600 hover:text-red-700"
-                      >
-                        Clear All
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={resetAgentModels}
-                        className="text-xs"
-                      >
-                        Reset Models
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadModels}
-                        disabled={isLoadingModels}
-                        className="gap-1"
-                      >
-                        <RefreshCwIcon className={cn("size-3", isLoadingModels && "animate-spin")} />
-                        {isLoadingModels ? "Loading..." : "Refresh"}
-                      </Button>
+                    <div className="flex flex-wrap gap-1">
+                      {whitelist.map((host, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded text-xs">
+                          {host}
+                          <button onClick={() => removeFromWhitelist(host)} className="text-red-500 hover:text-red-700">×</button>
+                        </span>
+                      ))}
                     </div>
                   </div>
+                )}
 
-                  {/* Debug: Show currently configured model IDs */}
-                  <details className="text-xs">
-                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                      Debug: Current Model IDs (click to expand)
-                    </summary>
-                    <pre className="mt-2 p-2 bg-muted/50 rounded text-xs overflow-x-auto">
-                      {JSON.stringify(tempAgentModels, null, 2)}
-                    </pre>
-                  </details>
-
-                  {modelsError && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">{modelsError}</p>
-                  )}
-
-                  <p className="text-xs text-muted-foreground">
-                    {availableModels.length} models available from {Object.keys(groupedModels).length} providers
-                  </p>
-
-                  {Object.entries(agents).map(([agentId, agentConfig]) => (
-                    <div key={agentId} className="space-y-2 p-3 rounded-lg border bg-muted/30">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label className="text-sm font-medium flex items-center gap-2">
-                            {agentConfig.name}
-                            {agentConfig.requiresVision && (
-                              <span title="This agent benefits from vision/multimodal models">
-                                👁️
-                              </span>
-                            )}
-                          </label>
-                          <p className="text-xs text-muted-foreground">{agentConfig.description}</p>
-                        </div>
-                      </div>
-                      <Select
-                        value={tempAgentModels[agentId as keyof AgentModelConfig] || agentConfig.defaultModel}
-                        onValueChange={(value) => updateAgentModel(agentId, value)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a model..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {Object.entries(groupedModels).map(([provider, providerModels]) => (
-                            <SelectGroup key={provider}>
-                              <SelectLabel className="font-semibold text-xs uppercase tracking-wider text-muted-foreground px-2 py-1.5 bg-muted/50">
-                                {provider} ({providerModels.length})
-                              </SelectLabel>
-                              {providerModels.map((model) => (
-                                <SelectItem key={model.id} value={model.id}>
-                                  <span className="flex items-center gap-2">
-                                    {model.requiresVision && <span>👁️</span>}
-                                    <span className="truncate">{model.name}</span>
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>Temp: {agentConfig.temperature}</span>
-                        <span>Top-P: {agentConfig.topP}</span>
-                        <span>Max Tokens: {agentConfig.maxTokens}</span>
-                      </div>
+                {hostAccessMode === "blocklist" && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      <Input
+                        value={blocklistInput}
+                        onChange={(e) => setBlocklistInput(e.target.value)}
+                        placeholder="example.com"
+                        className="h-7 text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && addToBlocklist()}
+                      />
+                      <Button onClick={addToBlocklist} size="sm" className="h-7 px-2 text-xs">+</Button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Security Tab Content */}
-            {activeTab === "security" && (
-              <div className="space-y-4 py-4">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Host Access Security</h3>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Host Access Mode</label>
-                    <Select value={hostAccessMode} onValueChange={(value) => setHostAccessMode(value as HostAccessMode)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="include-all">Include All Hosts</SelectItem>
-                        <SelectItem value="whitelist">Whitelist Mode</SelectItem>
-                        <SelectItem value="blocklist">Blocklist Mode</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {hostAccessMode === "include-all" && "AI can access any website"}
-                      {hostAccessMode === "whitelist" && "AI can only access whitelisted hosts"}
-                      {hostAccessMode === "blocklist" && "AI cannot access blocklisted hosts"}
-                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {blocklist.map((host, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded text-xs">
+                          {host}
+                          <button onClick={() => removeFromBlocklist(host)} className="text-red-500 hover:text-red-700">×</button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
-
-                  {hostAccessMode === "whitelist" && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Whitelist</label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={whitelistInput}
-                          onChange={(e) => setWhitelistInput(e.target.value)}
-                          placeholder="example.com"
-                          onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
-                        />
-                        <Button
-                          onClick={addToWhitelist}
-                          size="sm"
-                        >
-                          Add
-                        </Button>
-                      </div>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {whitelist.map((host, index) => (
-                          <div key={index} className="flex items-center justify-between bg-muted/50 px-3 py-2 rounded-md">
-                            <span className="text-sm">{host}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFromWhitelist(host)}
-                              className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {hostAccessMode === "blocklist" && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Blocklist</label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={blocklistInput}
-                          onChange={(e) => setBlocklistInput(e.target.value)}
-                          placeholder="example.com"
-                          onKeyPress={(e) => e.key === 'Enter' && addToBlocklist()}
-                        />
-                        <Button
-                          onClick={addToBlocklist}
-                          size="sm"
-                        >
-                          Add
-                        </Button>
-                      </div>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {blocklist.map((host, index) => (
-                          <div key={index} className="flex items-center justify-between bg-muted/50 px-3 py-2 rounded-md">
-                            <span className="text-sm">{host}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFromBlocklist(host)}
-                              className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            )}
+            </details>
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowSettings(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveSettings}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Settings"}
+          <DialogFooter className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowSettings(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleSaveSettings} disabled={isSaving}>
+              {isSaving ? "..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
