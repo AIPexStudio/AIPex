@@ -941,6 +941,10 @@ export class MessageHandler {
           max_tokens: agentConfig.maxTokens,
           frequency_penalty: agentConfig.frequencyPenalty,
           presence_penalty: agentConfig.presencePenalty,
+          // OpenRouter provider configuration
+          provider: {
+            allow_fallbacks: true,
+          },
           ...(this.tools && this.tools.length > 0 && { tools: this.tools, tool_choice: "auto" }),
         }),
         signal: this.processingToken?.signal,
