@@ -96,6 +96,7 @@ export const OPENROUTER_CONFIG = {
 /**
  * Popular models available on OpenRouter
  * Models marked with requiresVision: true support image inputs
+ * This is a fallback list - prefer fetching from API
  */
 export const OPENROUTER_MODELS = [
   // Anthropic Claude Models
@@ -190,6 +191,108 @@ export const OPENROUTER_MODELS = [
     requiresVision: false,
   },
 ];
+
+/**
+ * OpenRouter model from API response
+ */
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  provider: string;
+  requiresVision: boolean;
+  contextLength?: number;
+  pricing?: {
+    prompt: number;
+    completion: number;
+  };
+}
+
+/**
+ * Fetch all available models from OpenRouter API
+ */
+export async function fetchOpenRouterModels(): Promise<OpenRouterModel[]> {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/models");
+    if (!response.ok) {
+      throw new Error(`Failed to fetch models: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const models: OpenRouterModel[] = data.data.map((model: any) => {
+      // Extract provider from model ID (e.g., "anthropic/claude-3" -> "Anthropic")
+      const providerSlug = model.id.split("/")[0];
+      const provider = providerSlug
+        .split("-")
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      // Check if model supports vision based on architecture or modality
+      const requiresVision =
+        model.architecture?.modality?.includes("image") ||
+        model.architecture?.input_modalities?.includes("image") ||
+        model.id.includes("vision") ||
+        model.id.includes("gpt-4o") ||
+        model.id.includes("claude-3") ||
+        model.id.includes("gemini");
+
+      return {
+        id: model.id,
+        name: model.name || model.id,
+        provider,
+        requiresVision,
+        contextLength: model.context_length,
+        pricing: model.pricing
+          ? {
+              prompt: parseFloat(model.pricing.prompt) || 0,
+              completion: parseFloat(model.pricing.completion) || 0,
+            }
+          : undefined,
+      };
+    });
+
+    // Sort by provider, then by name
+    models.sort((a, b) => {
+      const providerCompare = a.provider.localeCompare(b.provider);
+      if (providerCompare !== 0) return providerCompare;
+      return a.name.localeCompare(b.name);
+    });
+
+    return models;
+  } catch (error) {
+    console.error("Failed to fetch OpenRouter models:", error);
+    // Return fallback models on error
+    return OPENROUTER_MODELS;
+  }
+}
+
+/**
+ * Group models by provider
+ */
+export function groupModelsByProvider(
+  models: OpenRouterModel[]
+): Record<string, OpenRouterModel[]> {
+  const grouped: Record<string, OpenRouterModel[]> = {};
+
+  for (const model of models) {
+    if (!grouped[model.provider]) {
+      grouped[model.provider] = [];
+    }
+    grouped[model.provider].push(model);
+  }
+
+  // Sort providers alphabetically
+  const sortedGrouped: Record<string, OpenRouterModel[]> = {};
+  const sortedProviders = Object.keys(grouped).sort();
+
+  for (const provider of sortedProviders) {
+    // Sort models within each provider
+    sortedGrouped[provider] = grouped[provider].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }
+
+  return sortedGrouped;
+}
 
 /**
  * Get agent configuration by ID

@@ -44,7 +44,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -63,7 +65,8 @@ import { getAllTools } from "~/lib/services/tool-registry";
 import { useTheme, type Theme } from "~/lib/hooks/use-theme";
 import { useTabsSync } from "~/lib/hooks/use-tabs-sync";
 import { hostAccessManager, type HostAccessMode } from "~/lib/services/host-access-manager";
-import { OPENROUTER_CONFIG, OPENROUTER_MODELS, getDefaultAgentModels } from "~/lib/config/openrouter-agents";
+import { OPENROUTER_CONFIG, OPENROUTER_MODELS, getDefaultAgentModels, fetchOpenRouterModels, groupModelsByProvider, type OpenRouterModel } from "~/lib/config/openrouter-agents";
+import { RefreshCwIcon } from "lucide-react";
 
 const formatToolOutput = (output: any) => {
   return `
@@ -149,6 +152,35 @@ const ChatBot = () => {
     "Try: organize my tabs by topic",
     "Try: summarize this page"
   ];
+
+  // Available models from OpenRouter API
+  const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>(OPENROUTER_MODELS);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState<string | null>(null);
+
+  // Fetch models from OpenRouter API
+  const loadModels = async () => {
+    setIsLoadingModels(true);
+    setModelsError(null);
+    try {
+      const models = await fetchOpenRouterModels();
+      setAvailableModels(models);
+    } catch (error) {
+      console.error("Failed to load models:", error);
+      setModelsError("Failed to load models. Using fallback list.");
+      setAvailableModels(OPENROUTER_MODELS);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
+  // Load models on mount
+  useEffect(() => {
+    loadModels();
+  }, []);
+
+  // Group models by provider for the dropdown
+  const groupedModels = groupModelsByProvider(availableModels);
  
 
   // Track cleanup functions outside of the handler
@@ -674,12 +706,32 @@ const ChatBot = () => {
 
                 {/* Agent Model Configuration */}
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold mb-1">Agent Models</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Configure which model each agent uses. Models marked with eye emoji support vision/image input.
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Agent Models</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Configure which model each agent uses. 👁️ = vision/multimodal support.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadModels}
+                      disabled={isLoadingModels}
+                      className="gap-1"
+                    >
+                      <RefreshCwIcon className={cn("size-3", isLoadingModels && "animate-spin")} />
+                      {isLoadingModels ? "Loading..." : "Refresh Models"}
+                    </Button>
                   </div>
+
+                  {modelsError && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{modelsError}</p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    {availableModels.length} models available from {Object.keys(groupedModels).length} providers
+                  </p>
 
                   {Object.entries(agents).map(([agentId, agentConfig]) => (
                     <div key={agentId} className="space-y-2 p-3 rounded-lg border bg-muted/30">
@@ -701,17 +753,23 @@ const ChatBot = () => {
                         onValueChange={(value) => updateAgentModel(agentId, value)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue placeholder="Select a model..." />
                         </SelectTrigger>
-                        <SelectContent>
-                          {OPENROUTER_MODELS.map((model) => (
-                            <SelectItem key={model.id} value={model.id}>
-                              <span className="flex items-center gap-2">
-                                {model.requiresVision && <span>👁️</span>}
-                                {model.name}
-                                <span className="text-xs text-muted-foreground">({model.provider})</span>
-                              </span>
-                            </SelectItem>
+                        <SelectContent className="max-h-[300px]">
+                          {Object.entries(groupedModels).map(([provider, providerModels]) => (
+                            <SelectGroup key={provider}>
+                              <SelectLabel className="font-semibold text-xs uppercase tracking-wider text-muted-foreground px-2 py-1.5 bg-muted/50">
+                                {provider} ({providerModels.length})
+                              </SelectLabel>
+                              {providerModels.map((model) => (
+                                <SelectItem key={model.id} value={model.id}>
+                                  <span className="flex items-center gap-2">
+                                    {model.requiresVision && <span>👁️</span>}
+                                    <span className="truncate">{model.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
                           ))}
                         </SelectContent>
                       </Select>
