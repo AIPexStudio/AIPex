@@ -5,6 +5,7 @@
  * configuration (browser tools, context providers, storage).
  */
 
+import type { FunctionTool } from "@aipexstudio/aipex-core";
 import { aisdk, SessionStorage } from "@aipexstudio/aipex-core";
 import {
   createAIProvider,
@@ -67,7 +68,7 @@ export function useAgent({
 
   // Stable references for context providers and tools to prevent infinite loops
   const contextProvidersRef = useRef(allBrowserProviders);
-  const toolsRef = useRef(allBrowserTools);
+  const toolsRef = useRef<FunctionTool[]>(allBrowserTools);
 
   // Use the generic hook with browser-specific configuration
   return useAgentCore({
@@ -76,7 +77,7 @@ export function useAgent({
     modelFactory: modelFactoryRef.current,
     storage,
     contextProviders: contextProvidersRef.current,
-    tools: toolsRef.current as any,
+    tools: toolsRef.current,
     instructions: SYSTEM_PROMPT,
     name: "AIPex Browser Assistant",
     maxTurns: 10,

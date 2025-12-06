@@ -1,3 +1,5 @@
+import type { FunctionTool } from "@aipexstudio/aipex-core";
+
 // Re-export all tool modules
 export * from "./bookmark";
 export * from "./element";
@@ -55,7 +57,7 @@ import {
   switchToTabTool,
 } from "./tab";
 
-export const allBrowserTools = [
+export const allBrowserTools: FunctionTool[] = [
   // Page tools
   getPageInfoTool,
   scrollPageTool,

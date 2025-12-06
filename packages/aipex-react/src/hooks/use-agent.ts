@@ -9,8 +9,8 @@ import {
   AIPex,
   ContextManager,
   type ContextProvider,
+  type FunctionTool,
   type SessionStorageAdapter,
-  type UnifiedToolDefinition,
 } from "@aipexstudio/aipex-core";
 import { useEffect, useRef, useState } from "react";
 import type { ChatSettings } from "../types";
@@ -32,7 +32,7 @@ export interface UseAgentOptions {
   contextProviders?: ContextProvider[];
 
   /** Tools to register with the agent (optional) */
-  tools?: UnifiedToolDefinition[];
+  tools?: FunctionTool[];
 
   /** System instructions (optional) */
   instructions?: string;
@@ -162,8 +162,7 @@ export function useAgent({
         name,
         instructions: instructions ?? "You are a helpful AI assistant.",
         model,
-        tools:
-          toolsRef.current.length > 0 ? (toolsRef.current as any) : undefined,
+        tools: toolsRef.current.length > 0 ? toolsRef.current : undefined,
         storage: storageRef.current,
         contextManager,
         maxTurns,

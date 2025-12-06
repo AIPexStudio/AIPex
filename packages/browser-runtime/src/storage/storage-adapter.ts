@@ -1,4 +1,4 @@
-import type { KeyValueStorage } from "@aipexstudio/aipex-core";
+import { type KeyValueStorage, safeJsonParse } from "@aipexstudio/aipex-core";
 
 export type WatchCallback<T> = (change: { newValue?: T; oldValue?: T }) => void;
 
@@ -40,12 +40,8 @@ export class ChromeStorageAdapter<T = unknown> implements KeyValueStorage<T> {
       const result = await area.get(key);
       return (result[key] as T) ?? null;
     }
-    try {
-      const value = localStorage.getItem(key);
-      return value ? (JSON.parse(value) as T) : null;
-    } catch {
-      return null;
-    }
+    const parsed = safeJsonParse<T>(localStorage.getItem(key));
+    return parsed ?? null;
   }
 
   async delete(key: string): Promise<void> {
@@ -72,9 +68,9 @@ export class ChromeStorageAdapter<T = unknown> implements KeyValueStorage<T> {
       const key = localStorage.key(i);
       if (key) {
         try {
-          const value = localStorage.getItem(key);
-          if (value) {
-            values.push(JSON.parse(value) as T);
+          const value = safeJsonParse<T>(localStorage.getItem(key));
+          if (value !== undefined) {
+            values.push(value);
           }
         } catch {
           // Skip non-JSON values
@@ -139,9 +135,9 @@ export class ChromeStorageAdapter<T = unknown> implements KeyValueStorage<T> {
       const key = localStorage.key(i);
       if (key) {
         try {
-          const value = localStorage.getItem(key);
-          if (value) {
-            result[key] = JSON.parse(value) as T;
+          const value = safeJsonParse<T>(localStorage.getItem(key));
+          if (value !== undefined) {
+            result[key] = value;
           }
         } catch {
           // Skip non-JSON values

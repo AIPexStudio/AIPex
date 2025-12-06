@@ -10,11 +10,14 @@ export const translatedToolName = (
   toolName: string,
 ): string => {
   try {
+    const translationKey = `tools.${toolName}` as const;
     // Try to get translation from tools namespace
-    const translatedName = t(`tools.${toolName}` as any);
+    const translatedName = t(translationKey, {
+      defaultValue: translationKey,
+    });
 
     // If the translated name is the same as the key, it means no translation was found
-    if (translatedName === `tools.${toolName}`) {
+    if (translatedName === translationKey) {
       // Return formatted original name as fallback
       return formatToolName(toolName);
     }
