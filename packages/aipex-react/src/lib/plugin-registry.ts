@@ -132,4 +132,3 @@ export class PluginRegistry {
  * Default global plugin registry
  */
 export const globalPluginRegistry = new PluginRegistry();
-

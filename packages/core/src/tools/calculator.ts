@@ -33,4 +33,3 @@ export const calculatorTool = tool({
     }
   },
 });
-
