@@ -3,7 +3,7 @@
  * Virtual cursor for UI automation guidance
  */
 
-export { FakeMouse } from "./FakeMouse";
+export { FakeMouse } from "./fake-mouse";
 export type {
   AnimationSpeed,
   FakeMouseController,

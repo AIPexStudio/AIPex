@@ -129,7 +129,7 @@ export const getBookmarkTool = tool({
       };
     }
 
-    const bookmark = bookmarks[0];
+    const bookmark = bookmarks[0]!;
     return {
       success: true,
       bookmark: {

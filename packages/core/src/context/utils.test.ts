@@ -222,8 +222,8 @@ describe("resolveContexts", () => {
     const result = await resolveContexts([ctx1, ctx2], getContext);
 
     expect(result).toHaveLength(2);
-    expect(result[0].id).toBe("ctx1");
-    expect(result[1].id).toBe("ctx2");
+    expect(result[0]?.id).toBe("ctx1");
+    expect(result[1]?.id).toBe("ctx2");
     expect(getContext).not.toHaveBeenCalled();
   });
 
@@ -234,7 +234,7 @@ describe("resolveContexts", () => {
     const result = await resolveContexts(["ctx1"], getContext);
 
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("ctx1");
+    expect(result[0]?.id).toBe("ctx1");
     expect(getContext).toHaveBeenCalledWith("ctx1");
   });
 
@@ -247,8 +247,8 @@ describe("resolveContexts", () => {
     const result = await resolveContexts([ctx1, "ctx2"], getContext);
 
     expect(result).toHaveLength(2);
-    expect(result[0].id).toBe("ctx1");
-    expect(result[1].id).toBe("ctx2");
+    expect(result[0]?.id).toBe("ctx1");
+    expect(result[1]?.id).toBe("ctx2");
     expect(getContext).toHaveBeenCalledWith("ctx2");
     expect(getContext).toHaveBeenCalledTimes(1);
   });
@@ -260,7 +260,7 @@ describe("resolveContexts", () => {
     const result = await resolveContexts([ctx1, "ctx2"], getContext);
 
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("ctx1");
+    expect(result[0]?.id).toBe("ctx1");
     expect(getContext).toHaveBeenCalledWith("ctx2");
   });
 
@@ -280,7 +280,7 @@ describe("resolveContexts", () => {
     const result = await resolveContexts([ctx1, invalid as any], getContext);
 
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("ctx1");
+    expect(result[0]?.id).toBe("ctx1");
   });
 
   it("should call getContext sequentially for multiple IDs", async () => {
@@ -295,8 +295,8 @@ describe("resolveContexts", () => {
     const result = await resolveContexts(["ctx1", "ctx2"], getContext);
 
     expect(result).toHaveLength(2);
-    expect(result[0].id).toBe("ctx1");
-    expect(result[1].id).toBe("ctx2");
+    expect(result[0]?.id).toBe("ctx1");
+    expect(result[1]?.id).toBe("ctx2");
     expect(getContext).toHaveBeenCalledTimes(2);
   });
 
@@ -314,8 +314,8 @@ describe("resolveContexts", () => {
     const result = await resolveContexts([ctx1, "ctx2", "ctx3"], getContext);
 
     expect(result).toHaveLength(3);
-    expect(result[0].label).toBe("First");
-    expect(result[1].label).toBe("Second");
-    expect(result[2].label).toBe("Third");
+    expect(result[0]?.label).toBe("First");
+    expect(result[1]?.label).toBe("Second");
+    expect(result[2]?.label).toBe("Third");
   });
 });

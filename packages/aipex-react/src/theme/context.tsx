@@ -66,12 +66,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
     void initializeTheme();
 
-    const unwatch = storageAdapter.watch(THEME_STORAGE_KEY, (change) => {
-      if (isValidTheme(change.newValue)) {
-        setTheme(change.newValue);
-        updateEffectiveTheme(change.newValue);
-      }
-    });
+    const unwatch = storageAdapter.watch(
+      THEME_STORAGE_KEY,
+      (change: { newValue?: Theme; oldValue?: Theme }) => {
+        if (isValidTheme(change.newValue)) {
+          setTheme(change.newValue);
+          updateEffectiveTheme(change.newValue);
+        }
+      },
+    );
 
     return unwatch;
   }, [storageAdapter, updateEffectiveTheme]);

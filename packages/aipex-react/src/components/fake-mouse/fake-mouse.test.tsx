@@ -4,7 +4,7 @@
 
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { FakeMouse } from "./FakeMouse";
+import { FakeMouse } from "./fake-mouse";
 import type { FakeMouseController } from "./types";
 
 describe("FakeMouse", () => {
@@ -18,7 +18,9 @@ describe("FakeMouse", () => {
     render(<FakeMouse onReady={onReady} />);
 
     expect(onReady).toHaveBeenCalled();
-    const controller: FakeMouseController = onReady.mock.calls[0][0];
+    const call = onReady.mock.calls[0];
+    expect(call?.[0]).toBeDefined();
+    const controller: FakeMouseController = call?.[0];
     expect(controller.show).toBeDefined();
     expect(controller.hide).toBeDefined();
     expect(controller.moveTo).toBeDefined();

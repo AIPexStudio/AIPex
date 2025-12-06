@@ -52,7 +52,7 @@ describe("ToolRegistry", () => {
 
     const functions = registry.toOpenAIFunctions();
     expect(functions).toHaveLength(1);
-    expect(functions[0].name).toBe("sum");
-    expect(functions[0].description).toContain("Add numbers");
+    expect(functions[0]?.name).toBe("sum");
+    expect(functions[0]?.description).toContain("Add numbers");
   });
 });

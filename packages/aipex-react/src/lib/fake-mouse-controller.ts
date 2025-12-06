@@ -275,7 +275,11 @@ export class FakeMouseControllerImpl {
 
     if (matches.length < 2) return text;
 
-    const secondSentenceEnd = matches[1].index! + matches[1][0].length;
+    const secondMatch = matches[1];
+    if (!secondMatch || secondMatch.index === undefined) {
+      return text;
+    }
+    const secondSentenceEnd = secondMatch.index + secondMatch[0].length;
     return text.substring(0, secondSentenceEnd).trim();
   }
 

@@ -114,6 +114,9 @@ export function searchSnapshotText(
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    if (line === undefined) {
+      continue;
+    }
     if (matchLine(line, searchTerms, caseSensitive, shouldUseGlob)) {
       matchedLines.push(i);
     }
@@ -163,6 +166,9 @@ function expandLineContext(
     let beforeCount = 0;
     for (let i = lineNum - 1; i >= 0 && beforeCount < levels; i--) {
       const line = lines[i];
+      if (line === undefined) {
+        continue;
+      }
       if (!shouldSkipLine(line)) {
         contextLines.add(i);
         beforeCount++;
@@ -172,6 +178,9 @@ function expandLineContext(
     let afterCount = 0;
     for (let i = lineNum + 1; i < lines.length && afterCount < levels; i++) {
       const line = lines[i];
+      if (line === undefined) {
+        continue;
+      }
       if (!shouldSkipLine(line)) {
         contextLines.add(i);
         afterCount++;

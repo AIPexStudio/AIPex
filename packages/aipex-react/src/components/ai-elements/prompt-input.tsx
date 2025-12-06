@@ -17,7 +17,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { nanoid } from "nanoid";
-import {
+import React, {
   type ChangeEvent,
   type ChangeEventHandler,
   Children,
@@ -115,7 +115,7 @@ export function useTypingPlaceholder(
     if (texts.length === 0) return;
 
     let timeout: NodeJS.Timeout;
-    const currentText = texts[currentTextIndex];
+    const currentText = texts[currentTextIndex] ?? "";
 
     const executeTypingAnimation = () => {
       if (isDeleting) {
@@ -839,7 +839,11 @@ export const PromptInputTextarea = ({
 
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleContextSelect(filteredContexts[selectedIndex]);
+        const selectedContext = filteredContexts[selectedIndex];
+        if (!selectedContext) {
+          return;
+        }
+        handleContextSelect(selectedContext);
         return;
       }
 
@@ -948,9 +952,9 @@ export const PromptInputTextarea = ({
     // Match @ followed by any characters (not just \w)
     // Supports: @page, @tab, @current page, @github-repo, etc.
     const match = beforeCursor.match(/@([^\s]*)$/);
+    const query = match?.[1];
 
-    if (match) {
-      const query = match[1]; // Text after @
+    if (query !== undefined) {
       setAtPosition(beforeCursor.lastIndexOf("@"));
       setSearchQuery(query);
       setShowContextMenu(true);
@@ -1009,18 +1013,22 @@ export const PromptInputTextarea = ({
 
   // Reset selected index when filtered contexts change
   useEffect(() => {
-    setSelectedIndex(0);
-  }, []);
+    setSelectedIndex(filteredContexts.length ? 0 : -1);
+  }, [filteredContexts]);
 
   // Auto-scroll to selected item when navigating with keyboard
   useEffect(() => {
+    if (selectedIndex < 0) {
+      return;
+    }
+
     if (selectedItemRef.current && scrollContainerRef.current) {
       selectedItemRef.current.scrollIntoView({
         block: "nearest",
         behavior: "smooth",
       });
     }
-  }, []);
+  }, [selectedIndex]);
 
   // Calculate menu position when showing context menu
   useEffect(() => {
