@@ -90,9 +90,9 @@ describe("SessionStorage", () => {
       const tree = await storage.getSessionTree("session-1");
 
       expect(tree.length).toBe(1);
-      expect(tree[0].session.id).toBe("session-1");
-      expect(tree[0].children.length).toBe(1);
-      expect(tree[0].children[0].children.length).toBe(1);
+      expect(tree[0]?.session.id).toBe("session-1");
+      expect(tree[0]?.children.length).toBe(1);
+      expect(tree[0]?.children[0]?.children.length).toBe(1);
     });
 
     it("should get all root sessions when no rootId provided", async () => {

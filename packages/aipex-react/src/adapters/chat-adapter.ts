@@ -190,8 +190,9 @@ export class ChatAdapter {
 
     // Find and remove the last assistant message
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "assistant") {
-        removed = messages[i];
+      const message = messages[i];
+      if (message && message.role === "assistant") {
+        removed = message;
         messages.splice(i, 1);
         break;
       }

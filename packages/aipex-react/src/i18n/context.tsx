@@ -50,11 +50,14 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({
 
     void initializeLanguage();
 
-    const unwatch = storageAdapter.watch(LANGUAGE_STORAGE_KEY, (change) => {
-      if (isValidLanguage(change.newValue)) {
-        setLanguage(change.newValue);
-      }
-    });
+    const unwatch = storageAdapter.watch(
+      LANGUAGE_STORAGE_KEY,
+      (change: { newValue?: Language; oldValue?: Language }) => {
+        if (isValidLanguage(change.newValue)) {
+          setLanguage(change.newValue);
+        }
+      },
+    );
 
     return unwatch;
   }, [storageAdapter]);

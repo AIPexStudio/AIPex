@@ -126,8 +126,10 @@ export function useAgent({
 
     // Check configuration
     if (!isConfigured) {
-      setAgent((prev) => (prev === undefined ? prev : undefined));
-      setError((prev) =>
+      setAgent((prev: AIPex | undefined) =>
+        prev === undefined ? prev : undefined,
+      );
+      setError((prev: Error | undefined) =>
         prev?.message === NOT_CONFIGURED_ERROR_MESSAGE
           ? prev
           : new Error(NOT_CONFIGURED_ERROR_MESSAGE),
@@ -172,7 +174,9 @@ export function useAgent({
       setError((prev) => (prev === undefined ? prev : undefined));
     } catch (err) {
       console.error("Failed to create agent:", err);
-      setAgent((prev) => (prev === undefined ? prev : undefined));
+      setAgent((prev: AIPex | undefined) =>
+        prev === undefined ? prev : undefined,
+      );
       setError(err instanceof Error ? err : new Error(String(err)));
     }
   }, [

@@ -85,7 +85,7 @@ export function useChatConfig(
     try {
       const stored = await storageAdapter.load(STORAGE_KEYS.SETTINGS);
       if (stored) {
-        setSettings((prev) => ({ ...prev, ...stored }));
+        setSettings((prev: ChatSettings) => ({ ...prev, ...stored }));
       }
     } catch (error) {
       console.error("Failed to load chat settings:", error);

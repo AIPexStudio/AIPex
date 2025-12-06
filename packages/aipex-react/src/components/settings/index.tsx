@@ -129,7 +129,7 @@ export function SettingsPage({
           }
           setSelectedProvider(detectedProvider);
 
-          setProviderConfigs((prev) => ({
+          setProviderConfigs((prev: ProviderConfigs) => ({
             ...prev,
             [detectedProvider]: {
               host: loadedSettings.aiHost || "",
@@ -150,7 +150,7 @@ export function SettingsPage({
 
   const handleProviderChange = useCallback(
     (provider: AIProviderKey) => {
-      setProviderConfigs((prev) => ({
+      setProviderConfigs((prev: ProviderConfigs) => ({
         ...prev,
         [selectedProvider]: {
           host: settings.aiHost || "",
@@ -162,7 +162,7 @@ export function SettingsPage({
       setSelectedProvider(provider);
 
       const savedConfig = providerConfigs[provider];
-      setSettings((prev) => ({
+      setSettings((prev: ChatSettings) => ({
         ...prev,
         aiHost: savedConfig.host,
         aiToken: savedConfig.token,

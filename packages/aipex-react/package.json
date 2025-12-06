@@ -109,8 +109,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -b && tsc-alias",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --project tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "npm run build"
   },

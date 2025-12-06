@@ -110,11 +110,12 @@ export function CompactContextTags({
   }
 
   if (contexts.length === 1) {
+    const firstContext = contexts[0]!;
     return (
       <div className="flex flex-wrap gap-2 p-3 pb-0">
         <ContextTag
-          context={contexts[0]}
-          onRemove={onRemove ? () => onRemove(contexts[0].id) : undefined}
+          context={firstContext}
+          onRemove={onRemove ? () => onRemove(firstContext.id) : undefined}
         />
       </div>
     );
@@ -122,7 +123,7 @@ export function CompactContextTags({
 
   return (
     <div className="flex items-center gap-2 p-3 pb-0">
-      <ContextTag context={contexts[0]} />
+      <ContextTag context={contexts[0]!} />
       <span className="text-xs text-muted-foreground">
         +{contexts.length - 1} more
       </span>

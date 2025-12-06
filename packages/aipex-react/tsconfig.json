@@ -1,16 +1,14 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "dist",
-    "lib": ["ES2023", "DOM"],
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
-    "resolveJsonModule": true,
-    "baseUrl": "./src"
+    "jsx": "react-jsx",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node", "chrome"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "vitest.setup.ts", "src/i18n/locales/*.json"],
+  "references": [
+    {
+      "path": "../core/tsconfig.json"
+    }
+  ]
 }

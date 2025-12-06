@@ -120,7 +120,7 @@ describe("ChatAdapter", () => {
       const message = adapter.addUserMessage("", undefined, contexts);
 
       expect(message.parts).toHaveLength(1);
-      expect(message.parts[0].type).toBe("context");
+      expect(message.parts[0]?.type).toBe("context");
     });
 
     it("should handle whitespace-only text", () => {
@@ -138,9 +138,9 @@ describe("ChatAdapter", () => {
       const message = adapter.addUserMessage("Test", undefined, contexts);
 
       expect(message.parts).toHaveLength(3);
-      expect(message.parts[0].type).toBe("context");
-      expect(message.parts[1].type).toBe("context");
-      expect(message.parts[2].type).toBe("text");
+      expect(message.parts[0]?.type).toBe("context");
+      expect(message.parts[1]?.type).toBe("context");
+      expect(message.parts[2]?.type).toBe("text");
     });
 
     it("should include context metadata", () => {
@@ -157,9 +157,12 @@ describe("ChatAdapter", () => {
       const message = adapter.addUserMessage("Test", undefined, contexts);
 
       const contextPart = message.parts[0];
-      expect(contextPart.type === "context" && contextPart.metadata).toEqual({
-        url: "https://example.com",
-      });
+      expect(contextPart?.type).toBe("context");
+      if (contextPart?.type === "context") {
+        expect(contextPart.metadata).toEqual({
+          url: "https://example.com",
+        });
+      }
     });
 
     it("should generate unique message IDs", () => {
@@ -197,7 +200,7 @@ describe("ChatAdapter", () => {
       expect(messages).toHaveLength(1);
       expect(messages[0]).toMatchObject({ role: "assistant" });
 
-      const textPart = messages[0].parts[0];
+      const textPart = messages[0]?.parts[0];
       expect(textPart).toMatchObject({ type: "text", text: "Hello" });
       expect(adapter.getStatus()).toBe("streaming");
     });
@@ -207,7 +210,7 @@ describe("ChatAdapter", () => {
       adapter.processEvent({ type: "content_delta", delta: " world" });
 
       const messages = adapter.getMessages();
-      const textPart = messages[0].parts[0];
+      const textPart = messages[0]?.parts[0];
       expect(textPart).toMatchObject({ text: "Hello world" });
     });
 
@@ -267,7 +270,7 @@ describe("ChatAdapter", () => {
       });
 
       const messages = adapter.getMessages();
-      const toolPart = messages[0].parts.find((p) => p.type === "tool");
+      const toolPart = messages[0]?.parts.find((p) => p.type === "tool");
       expect(toolPart).toMatchObject({
         toolName: "search",
         input: { query: "test" },
@@ -290,7 +293,7 @@ describe("ChatAdapter", () => {
 
       const toolPart = adapter
         .getMessages()[0]
-        .parts.find((p) => p.type === "tool");
+        ?.parts.find((p) => p.type === "tool");
       expect(toolPart).toMatchObject({
         toolName: "search",
         state: "completed",
@@ -313,7 +316,7 @@ describe("ChatAdapter", () => {
 
       const toolPart = adapter
         .getMessages()[0]
-        .parts.find((p) => p.type === "tool");
+        ?.parts.find((p) => p.type === "tool");
       expect(toolPart).toMatchObject({
         state: "error",
         errorText: "failed",
@@ -344,9 +347,10 @@ describe("ChatAdapter", () => {
         result: { query: "second" },
       });
 
-      const toolParts = adapter
-        .getMessages()[0]
-        .parts.filter((p): p is UIToolPart => p.type === "tool");
+      const toolParts =
+        adapter
+          .getMessages()[0]
+          ?.parts.filter((p): p is UIToolPart => p.type === "tool") ?? [];
       expect(toolParts).toHaveLength(2);
       expect(toolParts[0]).toMatchObject({
         toolName: "search",
@@ -367,9 +371,8 @@ describe("ChatAdapter", () => {
         result: { orphan: true },
       });
 
-      const toolParts = adapter
-        .getMessages()[0]
-        .parts.filter((p) => p.type === "tool");
+      const toolParts =
+        adapter.getMessages()[0]?.parts.filter((p) => p.type === "tool") ?? [];
       expect(toolParts).toHaveLength(0);
     });
   });
@@ -410,7 +413,7 @@ describe("ChatAdapter", () => {
       expect(removed).not.toBeNull();
       expect(removed?.role).toBe("assistant");
       expect(adapter.getMessages()).toHaveLength(1);
-      expect(adapter.getMessages()[0].role).toBe("user");
+      expect(adapter.getMessages()[0]?.role).toBe("user");
     });
 
     it("should return null if no assistant message exists", () => {
@@ -511,7 +514,7 @@ describe("ChatAdapter", () => {
       expect(messages).toHaveLength(4);
 
       const firstAssistant = messages[1];
-      const toolPart = firstAssistant.parts.find((p) => p.type === "tool");
+      const toolPart = firstAssistant?.parts.find((p) => p.type === "tool");
       expect(toolPart).toMatchObject({
         toolName: "search",
         state: "completed",
@@ -519,7 +522,7 @@ describe("ChatAdapter", () => {
       });
 
       const secondAssistant = messages[3];
-      expect(secondAssistant.parts[0]).toMatchObject({
+      expect(secondAssistant?.parts[0]).toMatchObject({
         type: "text",
         text: "You're welcome",
       });
@@ -567,7 +570,7 @@ describe("ChatAdapter", () => {
 
       const messages = adapter.getMessages();
       expect(messages).toHaveLength(2);
-      const textPart = messages[1].parts.find((p) => p.type === "text");
+      const textPart = messages[1]?.parts.find((p) => p.type === "text");
       expect(textPart).toMatchObject({ text: "Hello! How can I help?" });
     });
   });

@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --project tsconfig.json",
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",

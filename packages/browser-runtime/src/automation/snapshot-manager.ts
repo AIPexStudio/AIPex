@@ -363,7 +363,7 @@ export class SnapshotManager {
       }
 
       if (serializedChildren.length === 1) {
-        return serializedChildren[0];
+        return serializedChildren[0]!;
       }
 
       const role = axNode.role?.value || axNode.chromeRole?.value || "generic";
@@ -796,6 +796,9 @@ export class SnapshotManager {
     for (const lineNum of contextLines) {
       if (lineNum >= 0 && lineNum < lines.length) {
         const line = lines[lineNum];
+        if (line === undefined) {
+          continue;
+        }
 
         if (currentGroup.length > 0 && lineNum - lastContextLine > 2) {
           resultGroups.push(currentGroup);

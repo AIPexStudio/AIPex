@@ -1,13 +1,6 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "lib": ["DOM", "DOM.Iterable", "ES2023"],
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "types": ["node", "vitest/globals"]
-  },
-  "include": ["src/**/*.ts", "examples/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+    "lib": ["esnext", "dom", "dom.iterable"]
+  }
 }

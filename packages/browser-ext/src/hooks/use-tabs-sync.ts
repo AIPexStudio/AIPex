@@ -33,7 +33,7 @@ async function getAllAvailableContexts(): Promise<ContextItem[]> {
 
   // Current page - add first and record its tab ID and URL
   if (results[0].status === "fulfilled" && results[0].value.length > 0) {
-    const currentPage = results[0].value[0];
+    const currentPage = results[0].value[0]!;
     contexts.push(currentPage);
 
     // Extract tab ID from metadata
