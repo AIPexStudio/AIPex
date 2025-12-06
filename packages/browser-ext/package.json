@@ -19,7 +19,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/style.css --minify",
-    "typecheck": "tsc --project tsconfig.json",
+    "typecheck": "tsgo --project tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -14,8 +14,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b",
-    "typecheck": "tsc --project tsconfig.json",
+    "typecheck": "tsgo --project tsconfig.json",
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",
