@@ -4,8 +4,13 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { PluginRegistry } from "../../lib/plugin-registry";
+import {
+  getRuntime,
+  type RuntimeApi,
+  type RuntimeMessageSender,
+} from "../../lib/runtime";
 import type {
   Action,
   ActionProvider,
@@ -37,6 +42,15 @@ export interface ContentScriptProps {
 
   /** Message handlers for chrome.runtime.onMessage */
   messageHandlers?: MessageHandlers;
+
+  /** Browser runtime-like API (defaults to global chrome.runtime if available) */
+  runtime?: RuntimeApi;
+
+  /** Container element used for plugin context (defaults to document.body) */
+  container?: HTMLElement;
+
+  /** Shadow root used for plugin context (defaults to container shadow root if any) */
+  shadowRoot?: ShadowRoot;
 
   /** Called when Omni is opened */
   onOpen?: () => void;
@@ -128,53 +142,108 @@ export function ContentScript(props: ContentScriptProps) {
     onOpen,
     onClose,
     initialOpen = false,
+    runtime: runtimeProp,
+    container,
+    shadowRoot: shadowRootProp,
   } = props;
 
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [actions, setActions] = useState<Action[]>([]);
   const pluginRegistryRef = useRef<PluginRegistry | null>(null);
+  const sharedStateRef = useRef<Record<string, any>>({});
+  const eventHandlersRef = useRef<Map<string, Set<(data: any) => void>>>(
+    new Map(),
+  );
+  const runtime = runtimeProp ?? getRuntime();
+  const resolvedContainer = container ?? document.body;
 
-  // Initialize plugin registry
+  // Initialize plugin registry and context
   useEffect(() => {
+    let cleanupHost: HTMLElement | null = null;
+    let effectiveShadowRoot: ShadowRoot | null = shadowRootProp ?? null;
+
+    if (!effectiveShadowRoot) {
+      const rootNode = resolvedContainer.getRootNode();
+      if (rootNode instanceof ShadowRoot) {
+        effectiveShadowRoot = rootNode;
+      }
+    }
+
+    if (!effectiveShadowRoot && resolvedContainer.attachShadow) {
+      try {
+        effectiveShadowRoot = resolvedContainer.attachShadow({ mode: "open" });
+      } catch {
+        // Some hosts (e.g., <body>) may reject shadow roots; fall back below.
+      }
+    }
+
+    if (!effectiveShadowRoot) {
+      cleanupHost = document.createElement("div");
+      cleanupHost.style.display = "none";
+      document.body.appendChild(cleanupHost);
+      effectiveShadowRoot = cleanupHost.attachShadow({ mode: "open" });
+    }
+
+    if (!effectiveShadowRoot) return;
+
     const registry = new PluginRegistry();
     pluginRegistryRef.current = registry;
+
+    const emit = (event: string, data: any) => {
+      registry.emitEvent(event, data);
+      const handlers = eventHandlersRef.current.get(event);
+      if (!handlers) return;
+      handlers.forEach((handler) => {
+        handler(data);
+      });
+    };
+
+    const on = (event: string, handler: (data: any) => void) => {
+      const handlers = eventHandlersRef.current.get(event) ?? new Set();
+      handlers.add(handler);
+      eventHandlersRef.current.set(event, handlers);
+      return () => {
+        const current = eventHandlersRef.current.get(event);
+        if (!current) return;
+        current.delete(handler);
+        if (current.size === 0) {
+          eventHandlersRef.current.delete(event);
+        }
+      };
+    };
+
+    const context: ContentScriptContext = {
+      shadowRoot: effectiveShadowRoot,
+      container: resolvedContainer,
+      state: sharedStateRef.current,
+      emit,
+      on,
+      getPlugin: (name) => registry.get(name),
+    };
 
     for (const plugin of plugins) {
       registry.register(plugin);
     }
 
+    void registry.setup(context);
+
     return () => {
+      eventHandlersRef.current.clear();
       registry.cleanup();
+      pluginRegistryRef.current = null;
+      if (cleanupHost && cleanupHost !== resolvedContainer) {
+        cleanupHost.remove();
+      }
     };
-  }, [plugins]);
-
-  // Setup plugins with context
-  useEffect(() => {
-    if (!pluginRegistryRef.current) return;
-
-    // Create context (in real implementation, this would have proper values)
-    const context: ContentScriptContext = {
-      shadowRoot: document.body as any, // Placeholder
-      container: document.body,
-      state: {},
-      emit: (event, data) => {
-        pluginRegistryRef.current?.emitEvent(event, data);
-      },
-      on: (_event, _handler) => {
-        // Event subscription logic
-        return () => {};
-      },
-      getPlugin: (name) => pluginRegistryRef.current?.get(name),
-    };
-
-    pluginRegistryRef.current.setup(context);
-  }, []);
+  }, [plugins, resolvedContainer, shadowRootProp]);
 
   // Handle runtime messages
   useEffect(() => {
+    if (!runtime?.onMessage) return;
+
     const handleMessage = async (
       message: any,
-      sender: chrome.runtime.MessageSender,
+      sender: RuntimeMessageSender,
       sendResponse: (response: any) => void,
     ) => {
       // Handle built-in messages
@@ -210,12 +279,12 @@ export function ContentScript(props: ContentScriptProps) {
       return false;
     };
 
-    chrome.runtime.onMessage.addListener(handleMessage);
+    runtime.onMessage.addListener(handleMessage);
 
     return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage);
+      runtime.onMessage?.removeListener(handleMessage);
     };
-  }, [messageHandlers, onOpen, onClose]);
+  }, [messageHandlers, onOpen, onClose, runtime]);
 
   const refreshActions = useCallback(async () => {
     if (actionProvider) {
@@ -288,8 +357,14 @@ export function initContentScript(
   }
 
   // Render React app
-  const root = ReactDOM.createRoot(shadowContainer);
-  root.render(React.createElement(ContentScript, props));
+  const root = createRoot(shadowContainer);
+  root.render(
+    React.createElement(ContentScript, {
+      ...props,
+      container: shadowContainer,
+      shadowRoot,
+    }),
+  );
 
   // Return cleanup function
   return () => {

@@ -1,6 +1,5 @@
 {
   "extends": "../../tsconfig.json",
-  "references": [{ "path": "../browser-runtime" }],
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "dist",
@@ -8,7 +7,7 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "types": ["node", "chrome", "vitest/globals", "@testing-library/jest-dom"],
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
     "resolveJsonModule": true,
     "baseUrl": "./src"
   },

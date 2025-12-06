@@ -1,6 +1,7 @@
 import { PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "../../../i18n/context";
+import { getRuntime } from "../../../lib/runtime";
 import { cn } from "../../../lib/utils";
 import type { HeaderProps } from "../../../types";
 import { Button } from "../../ui/button";
@@ -19,17 +20,15 @@ export function DefaultHeader({
 }: HeaderProps) {
   const { t } = useTranslation();
   const { slots } = useComponentsContext();
+  const runtime = getRuntime();
 
   const handleOpenOptions = useCallback(() => {
     if (onSettingsClick) {
       onSettingsClick();
-    } else if (
-      typeof chrome !== "undefined" &&
-      chrome.runtime?.openOptionsPage
-    ) {
-      chrome.runtime.openOptionsPage();
+    } else if (runtime?.openOptionsPage) {
+      runtime.openOptionsPage();
     }
-  }, [onSettingsClick]);
+  }, [onSettingsClick, runtime]);
 
   return (
     <div
