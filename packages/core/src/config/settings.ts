@@ -16,4 +16,3 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   language: "en",
   theme: "system",
 };
-
