@@ -240,17 +240,10 @@ describe("useChat", () => {
     let sendPromise: Promise<void> | null = null;
 
     await act(async () => {
-      sendPromise = result.current.sendMessage("Processing");
-    });
-
-    await act(async () => {
+      const localPromise = result.current.sendMessage("Processing");
+      sendPromise = localPromise;
       await result.current.interrupt();
-    });
-
-    expect(sendPromise).not.toBeNull();
-
-    await act(async () => {
-      await sendPromise!;
+      await localPromise;
     });
 
     expect(streamingGenerator.return).toHaveBeenCalled();
