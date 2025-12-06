@@ -1,8 +1,4 @@
-/**
- * Snapshot Query and Search System
- *
- * Provides search functionality for snapshot text with glob pattern support
- */
+import { matcher } from "micromatch";
 
 export const SKIP_ROLES = [
   "generic",
@@ -21,59 +17,7 @@ export const SKIP_ROLES = [
 ];
 
 function hasGlobPattern(str: string): boolean {
-  return /[*?[\]{}]/.test(str);
-}
-
-function matchGlob(
-  pattern: string,
-  text: string,
-  caseSensitive: boolean = false,
-): boolean {
-  if (!caseSensitive) {
-    pattern = pattern.toLowerCase();
-    text = text.toLowerCase();
-  }
-
-  if (pattern.includes("{") && pattern.includes("}")) {
-    const braceStart = pattern.indexOf("{");
-    const braceEnd = pattern.indexOf("}");
-    if (braceStart < braceEnd) {
-      const prefix = pattern.substring(0, braceStart);
-      const suffix = pattern.substring(braceEnd + 1);
-      const alternatives = pattern
-        .substring(braceStart + 1, braceEnd)
-        .split(",");
-
-      for (const alt of alternatives) {
-        const fullPattern = prefix + alt.trim() + suffix;
-        if (matchGlob(fullPattern, text, caseSensitive)) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }
-
-  let regexPattern = pattern
-    .replace(/[.*+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\\\*/g, ".*")
-    .replace(/\\\?/g, ".")
-    .replace(/\\\[/g, "[")
-    .replace(/\\\]/g, "]");
-
-  regexPattern = regexPattern.replace(/\[([^\]]+)\]/g, (_, chars) => {
-    if (chars.includes("-") && chars.length === 3) {
-      return `[${chars}]`;
-    }
-    return `[${chars.replace(/[.*+^${}()|[\]\\]/g, "\\$&")}]`;
-  });
-
-  try {
-    const regex = new RegExp(`${regexPattern}`, "i");
-    return regex.test(text);
-  } catch {
-    return false;
-  }
+  return /[*?[{\]}]/.test(str);
 }
 
 export interface SearchOptions {
@@ -108,6 +52,9 @@ export function searchSnapshotText(
     useGlob !== undefined
       ? useGlob
       : searchTerms.some((term) => hasGlobPattern(term));
+  const matcherFns = shouldUseGlob
+    ? searchTerms.map((term) => matcher(term, { nocase: !caseSensitive }))
+    : [];
 
   const lines = snapshotText.split("\n");
   const matchedLines: number[] = [];
@@ -117,7 +64,9 @@ export function searchSnapshotText(
     if (line === undefined) {
       continue;
     }
-    if (matchLine(line, searchTerms, caseSensitive, shouldUseGlob)) {
+    if (
+      matchLine(line, searchTerms, matcherFns, caseSensitive, shouldUseGlob)
+    ) {
       matchedLines.push(i);
     }
   }
@@ -134,23 +83,19 @@ export function searchSnapshotText(
 function matchLine(
   line: string,
   searchTerms: string[],
+  matchers: Array<(value: string) => boolean>,
   caseSensitive: boolean,
   useGlob: boolean,
 ): boolean {
-  for (const term of searchTerms) {
-    if (useGlob) {
-      if (matchGlob(term, line, caseSensitive)) {
-        return true;
-      }
-    } else {
-      const lineValue = caseSensitive ? line : line.toLowerCase();
-      const searchTerm = caseSensitive ? term : term.toLowerCase();
-      if (lineValue.includes(searchTerm)) {
-        return true;
-      }
-    }
+  if (useGlob) {
+    return matchers.some((match) => match(line));
   }
-  return false;
+
+  const lineValue = caseSensitive ? line : line.toLowerCase();
+  return searchTerms.some((term) => {
+    const searchTerm = caseSensitive ? term : term.toLowerCase();
+    return lineValue.includes(searchTerm);
+  });
 }
 
 function expandLineContext(

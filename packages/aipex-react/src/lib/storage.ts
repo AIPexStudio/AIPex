@@ -3,7 +3,11 @@
  * Provides a simple browser localStorage backend for settings and data persistence
  */
 
-import type { KeyValueStorage, WatchCallback } from "@aipexstudio/aipex-core";
+import {
+  type KeyValueStorage,
+  safeJsonParse,
+  type WatchCallback,
+} from "@aipexstudio/aipex-core";
 
 export class LocalStorageKeyValueAdapter<T = unknown>
   implements KeyValueStorage<T>
@@ -22,24 +26,8 @@ export class LocalStorageKeyValueAdapter<T = unknown>
       if (event.key && this.watchers.has(event.key)) {
         const callbacks = this.watchers.get(event.key);
         if (callbacks) {
-          let newValue: T | undefined;
-          let oldValue: T | undefined;
-
-          try {
-            newValue = event.newValue
-              ? (JSON.parse(event.newValue) as T)
-              : undefined;
-          } catch {
-            newValue = undefined;
-          }
-
-          try {
-            oldValue = event.oldValue
-              ? (JSON.parse(event.oldValue) as T)
-              : undefined;
-          } catch {
-            oldValue = undefined;
-          }
+          const newValue = safeJsonParse<T>(event.newValue);
+          const oldValue = safeJsonParse<T>(event.oldValue);
 
           for (const callback of callbacks) {
             callback({ newValue, oldValue });
@@ -76,8 +64,8 @@ export class LocalStorageKeyValueAdapter<T = unknown>
   async load(key: string): Promise<T | null> {
     if (typeof localStorage === "undefined") return null;
     try {
-      const value = localStorage.getItem(key);
-      return value ? (JSON.parse(value) as T) : null;
+      const value = safeJsonParse<T>(localStorage.getItem(key));
+      return value ?? null;
     } catch {
       return null;
     }
@@ -99,9 +87,9 @@ export class LocalStorageKeyValueAdapter<T = unknown>
       const key = localStorage.key(i);
       if (key) {
         try {
-          const value = localStorage.getItem(key);
-          if (value) {
-            results.push(JSON.parse(value) as T);
+          const value = safeJsonParse<T>(localStorage.getItem(key));
+          if (value !== undefined) {
+            results.push(value);
           }
         } catch {
           // Skip non-JSON values

@@ -104,7 +104,7 @@ export interface TranslationResources {
   };
 }
 
-export type TranslationKey =
+export type BaseTranslationKey =
   | "common.title"
   | "common.settings"
   | "common.newChat"
@@ -185,6 +185,8 @@ export type TranslationKey =
   | "config.description"
   | "config.apiTokenRequired"
   | "config.openSettings";
+
+export type TranslationKey = BaseTranslationKey | `tools.${string}`;
 
 export interface I18nContextValue {
   language: Language;

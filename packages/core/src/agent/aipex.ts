@@ -25,6 +25,7 @@ import type {
   ToolEventPayload,
 } from "../types.js";
 import { AgentError, ErrorCode } from "../utils/errors.js";
+import { safeJsonParse } from "../utils/json.js";
 
 export class AIPex {
   private agent: OpenAIAgent;
@@ -366,11 +367,9 @@ export class AIPex {
     const raw = item as unknown as { rawItem?: { arguments?: unknown } };
     const args = raw.rawItem?.arguments;
     if (typeof args === "string") {
-      try {
-        return JSON.parse(args);
-      } catch {
-        return args;
-      }
+      const parsed = safeJsonParse<unknown>(args);
+      if (parsed !== undefined) return parsed;
+      return args;
     }
     return args;
   }
@@ -378,11 +377,9 @@ export class AIPex {
   private extractToolOutput(item: RunItemStreamEvent["item"]): unknown {
     const outputCarrier = item as unknown as { output?: unknown };
     if (typeof outputCarrier.output === "string") {
-      try {
-        return JSON.parse(outputCarrier.output);
-      } catch {
-        return outputCarrier.output;
-      }
+      const parsed = safeJsonParse<unknown>(outputCarrier.output);
+      if (parsed !== undefined) return parsed;
+      return outputCarrier.output;
     }
     if (outputCarrier.output !== undefined) {
       return outputCarrier.output;
@@ -391,11 +388,9 @@ export class AIPex {
     const rawOutput = (item as unknown as { rawItem?: { output?: unknown } })
       .rawItem?.output;
     if (typeof rawOutput === "string") {
-      try {
-        return JSON.parse(rawOutput);
-      } catch {
-        return rawOutput;
-      }
+      const parsed = safeJsonParse<unknown>(rawOutput);
+      if (parsed !== undefined) return parsed;
+      return rawOutput;
     }
     return rawOutput;
   }

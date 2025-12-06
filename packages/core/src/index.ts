@@ -100,3 +100,4 @@ export {
   TurnCancelledError,
 } from "./utils/errors.js";
 export { generateId } from "./utils/id-generator.js";
+export { safeJsonParse } from "./utils/json.js";

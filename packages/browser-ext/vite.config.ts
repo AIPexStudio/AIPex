@@ -1,5 +1,5 @@
 import path from "node:path";
-import { crx } from "@crxjs/vite-plugin";
+import { crx, type ManifestV3Export } from "@crxjs/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
@@ -9,7 +9,7 @@ import manifest from "./manifest.json";
 export default defineConfig({
   plugins: [
     react(),
-    crx({ manifest: manifest as any }),
+    crx({ manifest: manifest as unknown as ManifestV3Export }),
     viteStaticCopy({
       targets: [
         {
