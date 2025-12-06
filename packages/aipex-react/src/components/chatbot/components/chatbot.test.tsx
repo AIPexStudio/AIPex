@@ -1,6 +1,13 @@
 import type { AgentEvent, AIPex } from "@aipexstudio/aipex-core";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 import {
   useChatContext,
   useComponentsContext,
@@ -50,6 +57,16 @@ async function* createEventGenerator(
   }
 }
 
+async function renderWithAct(
+  ui: ReactElement,
+): Promise<ReturnType<typeof render>> {
+  let renderResult: ReturnType<typeof render>;
+  await act(async () => {
+    renderResult = render(ui);
+  });
+  return renderResult!;
+}
+
 describe("Chatbot Component", () => {
   let mockAgent: AIPex;
 
@@ -71,43 +88,43 @@ describe("Chatbot Component", () => {
   });
 
   describe("rendering", () => {
-    it("should render the chatbot component", () => {
-      render(<Chatbot agent={mockAgent} />);
+    it("should render the chatbot component", async () => {
+      await renderWithAct(<Chatbot agent={mockAgent} />);
 
       // Should show header with title
       expect(screen.getByText("AIPex")).toBeInTheDocument();
     });
 
-    it("should render with custom title", () => {
-      render(<Chatbot agent={mockAgent} title="My Chat" />);
+    it("should render with custom title", async () => {
+      await renderWithAct(<Chatbot agent={mockAgent} title="My Chat" />);
 
       expect(screen.getByText("My Chat")).toBeInTheDocument();
     });
 
-    it("should render welcome screen when no messages", () => {
-      render(<Chatbot agent={mockAgent} />);
+    it("should render welcome screen when no messages", async () => {
+      await renderWithAct(<Chatbot agent={mockAgent} />);
 
       expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
     });
   });
 
   describe("component customization", () => {
-    it("should render custom Header component", () => {
+    it("should render custom Header component", async () => {
       const CustomHeader = () => <div data-testid="custom-header">Custom</div>;
 
-      render(
+      await renderWithAct(
         <Chatbot agent={mockAgent} components={{ Header: CustomHeader }} />,
       );
 
       expect(screen.getByTestId("custom-header")).toBeInTheDocument();
     });
 
-    it("should render custom WelcomeScreen component", () => {
+    it("should render custom WelcomeScreen component", async () => {
       const CustomWelcome = () => (
         <div data-testid="custom-welcome">Welcome!</div>
       );
 
-      render(
+      await renderWithAct(
         <Chatbot
           agent={mockAgent}
           components={{ WelcomeScreen: CustomWelcome }}
@@ -119,12 +136,12 @@ describe("Chatbot Component", () => {
   });
 
   describe("slot customization", () => {
-    it("should render custom emptyState slot", () => {
+    it("should render custom emptyState slot", async () => {
       const customEmptyState = () => (
         <div data-testid="custom-empty">No messages yet</div>
       );
 
-      render(
+      await renderWithAct(
         <Chatbot agent={mockAgent} slots={{ emptyState: customEmptyState }} />,
       );
 
@@ -145,7 +162,7 @@ describe("Chatbot Component", () => {
         },
       );
 
-      render(
+      await renderWithAct(
         <Chatbot
           agent={mockAgent}
           slots={{ loadingIndicator: customLoader }}
@@ -158,8 +175,8 @@ describe("Chatbot Component", () => {
   });
 
   describe("theme customization", () => {
-    it("should apply custom className", () => {
-      const { container } = render(
+    it("should apply custom className", async () => {
+      const { container } = await renderWithAct(
         <Chatbot agent={mockAgent} className="my-custom-class" />,
       );
 
@@ -167,8 +184,8 @@ describe("Chatbot Component", () => {
       expect(chatbot.className).toContain("my-custom-class");
     });
 
-    it("should apply theme className", () => {
-      const { container } = render(
+    it("should apply theme className", async () => {
+      const { container } = await renderWithAct(
         <Chatbot agent={mockAgent} theme={{ className: "theme-dark" }} />,
       );
 
@@ -176,8 +193,8 @@ describe("Chatbot Component", () => {
       expect(chatbot.className).toContain("theme-dark");
     });
 
-    it("should apply theme CSS variables", () => {
-      const { container } = render(
+    it("should apply theme CSS variables", async () => {
+      const { container } = await renderWithAct(
         <Chatbot
           agent={mockAgent}
           theme={{
@@ -194,13 +211,13 @@ describe("Chatbot Component", () => {
   });
 
   describe("interactions", () => {
-    it("should call chrome.runtime.openOptionsPage when settings button is clicked", () => {
+    it("should call chrome.runtime.openOptionsPage when settings button is clicked", async () => {
       const openOptionsPage = vi.fn();
       vi.stubGlobal("chrome", {
         runtime: { openOptionsPage },
       });
 
-      render(<Chatbot agent={mockAgent} />);
+      await renderWithAct(<Chatbot agent={mockAgent} />);
 
       const settingsButton = screen.getByText("Settings");
       fireEvent.click(settingsButton);
@@ -209,8 +226,8 @@ describe("Chatbot Component", () => {
       vi.unstubAllGlobals();
     });
 
-    it("should call reset when new chat button is clicked", () => {
-      render(<Chatbot agent={mockAgent} />);
+    it("should call reset when new chat button is clicked", async () => {
+      await renderWithAct(<Chatbot agent={mockAgent} />);
 
       const newChatButton = screen.getByText("New Chat");
       fireEvent.click(newChatButton);
@@ -220,7 +237,7 @@ describe("Chatbot Component", () => {
     });
 
     it("should send suggestion text when welcome suggestion is clicked", async () => {
-      render(<Chatbot agent={mockAgent} />);
+      await renderWithAct(<Chatbot agent={mockAgent} />);
 
       const suggestion = screen.getByText(
         "Help me organize my browser tabs by topic",
@@ -247,7 +264,7 @@ describe("ChatbotProvider", () => {
     );
   });
 
-  it("should provide chat context to children", () => {
+  it("should provide chat context to children", async () => {
     const TestChild = () => {
       const { status, messages } = useChatContext();
       return (
@@ -258,7 +275,7 @@ describe("ChatbotProvider", () => {
       );
     };
 
-    render(
+    await renderWithAct(
       <ChatbotProvider agent={mockAgent}>
         <TestChild />
       </ChatbotProvider>,
@@ -268,7 +285,7 @@ describe("ChatbotProvider", () => {
     expect(screen.getByTestId("count")).toHaveTextContent("0");
   });
 
-  it("should provide config context to children", () => {
+  it("should provide config context to children", async () => {
     const TestChild = () => {
       const { settings, isLoading } = useConfigContext();
       return (
@@ -279,7 +296,7 @@ describe("ChatbotProvider", () => {
       );
     };
 
-    render(
+    await renderWithAct(
       <ChatbotProvider agent={mockAgent} initialSettings={{ aiModel: "gpt-4" }}>
         <TestChild />
       </ChatbotProvider>,
@@ -299,7 +316,7 @@ describe("ChatbotProvider", () => {
     );
   });
 
-  it("should provide components context to children", () => {
+  it("should provide components context to children", async () => {
     const CustomHeader = () => <div>Custom Header</div>;
 
     const TestChild = () => {
@@ -309,7 +326,7 @@ describe("ChatbotProvider", () => {
       );
     };
 
-    render(
+    await renderWithAct(
       <ChatbotProvider agent={mockAgent} components={{ Header: CustomHeader }}>
         <TestChild />
       </ChatbotProvider>,
@@ -318,7 +335,7 @@ describe("ChatbotProvider", () => {
     expect(screen.getByTestId("has-header")).toHaveTextContent("yes");
   });
 
-  it("should provide theme context to children", () => {
+  it("should provide theme context to children", async () => {
     const TestChild = () => {
       const { theme, className } = useThemeContext();
       return (
@@ -329,7 +346,7 @@ describe("ChatbotProvider", () => {
       );
     };
 
-    render(
+    await renderWithAct(
       <ChatbotProvider
         agent={mockAgent}
         theme={{
@@ -359,8 +376,8 @@ describe("Chatbot Accessibility", () => {
     );
   });
 
-  it("should have accessible buttons", () => {
-    render(<Chatbot agent={mockAgent} />);
+  it("should have accessible buttons", async () => {
+    await renderWithAct(<Chatbot agent={mockAgent} />);
 
     const settingsButton = screen.getByText("Settings");
     const newChatButton = screen.getByText("New Chat");
@@ -388,7 +405,7 @@ describe("Chatbot State Management", () => {
       createEventGenerator(events),
     );
 
-    render(<Chatbot agent={mockAgent} />);
+    await renderWithAct(<Chatbot agent={mockAgent} />);
 
     // Initially should show welcome screen
     expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
@@ -404,10 +421,12 @@ describe("Chatbot State Management", () => {
       createEventGenerator(events),
     );
 
-    const { rerender } = render(<Chatbot agent={mockAgent} />);
+    const { rerender } = await renderWithAct(<Chatbot agent={mockAgent} />);
 
     // Re-render with same props
-    rerender(<Chatbot agent={mockAgent} />);
+    await act(async () => {
+      rerender(<Chatbot agent={mockAgent} />);
+    });
 
     // Should still show the same content
     expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
@@ -430,10 +449,12 @@ describe("Chatbot Event Handlers", () => {
   // Note: These tests are skipped because the handlers prop structure
   // may differ from the current implementation. The handlers are passed
   // to the useChat hook, not directly to UI event handlers.
-  it.skip("should call onNewChat when new chat button is clicked", () => {
+  it.skip("should call onNewChat when new chat button is clicked", async () => {
     const onNewChat = vi.fn();
 
-    render(<Chatbot agent={mockAgent} handlers={{ onNewChat } as any} />);
+    await renderWithAct(
+      <Chatbot agent={mockAgent} handlers={{ onNewChat } as any} />,
+    );
 
     const newChatButton = screen.getByText("New Chat");
     fireEvent.click(newChatButton);
@@ -444,7 +465,9 @@ describe("Chatbot Event Handlers", () => {
   it.skip("should call onSettingsOpen when settings button is clicked", async () => {
     const onSettingsOpen = vi.fn();
 
-    render(<Chatbot agent={mockAgent} handlers={{ onSettingsOpen } as any} />);
+    await renderWithAct(
+      <Chatbot agent={mockAgent} handlers={{ onSettingsOpen } as any} />,
+    );
 
     const settingsButton = screen.getByText("Settings");
     fireEvent.click(settingsButton);
