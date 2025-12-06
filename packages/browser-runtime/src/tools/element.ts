@@ -37,7 +37,13 @@ export const clickElementByUidTool = tool({
       .optional()
       .describe("Whether to double click"),
   }),
-  execute: async ({ uid, doubleClick = false }) => {
+  execute: async ({
+    uid,
+    doubleClick = false,
+  }: {
+    uid: string;
+    doubleClick?: boolean | null;
+  }) => {
     const tab = await getActiveTab();
 
     if (!tab.id) {
@@ -76,7 +82,7 @@ export const fillElementByUidTool = tool({
     uid: z.string().describe("The element UID from the snapshot"),
     value: z.string().describe("The value to fill"),
   }),
-  execute: async ({ uid, value }) => {
+  execute: async ({ uid, value }: { uid: string; value: string }) => {
     const tab = await getActiveTab();
 
     if (!tab.id) {
@@ -114,7 +120,7 @@ export const hoverElementByUidTool = tool({
   parameters: z.object({
     uid: z.string().describe("The element UID from the snapshot"),
   }),
-  execute: async ({ uid }) => {
+  execute: async ({ uid }: { uid: string }) => {
     const tab = await getActiveTab();
 
     if (!tab.id) {
@@ -152,7 +158,7 @@ export const getEditorValueByUidTool = tool({
   parameters: z.object({
     uid: z.string().describe("The element UID from the snapshot"),
   }),
-  execute: async ({ uid }) => {
+  execute: async ({ uid }: { uid: string }) => {
     const tab = await getActiveTab();
 
     if (!tab.id) {

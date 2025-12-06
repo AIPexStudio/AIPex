@@ -46,7 +46,7 @@ export const takeScreenshotTool = tool({
       .optional()
       .describe("Whether to compress the image for LLM consumption"),
   }),
-  execute: async ({ compress = false }) => {
+  execute: async ({ compress = false }: { compress?: boolean | null }) => {
     const tab = await getActiveTab();
 
     if (!tab.id || !tab.windowId) {
@@ -102,7 +102,13 @@ export const takeScreenshotOfTabTool = tool({
       .optional()
       .describe("Whether to compress the image for LLM consumption"),
   }),
-  execute: async ({ tabId, compress = false }) => {
+  execute: async ({
+    tabId,
+    compress = false,
+  }: {
+    tabId: number;
+    compress?: boolean | null;
+  }) => {
     const tab = await chrome.tabs.get(tabId);
     if (!tab || !tab.windowId) {
       throw new Error("Tab not found");

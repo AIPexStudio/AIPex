@@ -1,6 +1,7 @@
 import { SettingsIcon } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "../../../i18n/context";
+import { getRuntime } from "../../../lib/runtime";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../ui/button";
 
@@ -14,17 +15,15 @@ export function ConfigurationGuide({
   className,
 }: ConfigurationGuideProps) {
   const { t } = useTranslation();
+  const runtime = getRuntime();
 
   const handleOpenOptions = useCallback(() => {
     if (onOpenSettings) {
       onOpenSettings();
-    } else if (
-      typeof chrome !== "undefined" &&
-      chrome.runtime?.openOptionsPage
-    ) {
-      chrome.runtime.openOptionsPage();
+    } else if (runtime?.openOptionsPage) {
+      runtime.openOptionsPage();
     }
-  }, [onOpenSettings]);
+  }, [onOpenSettings, runtime]);
 
   return (
     <div

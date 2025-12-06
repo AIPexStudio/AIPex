@@ -49,7 +49,7 @@ export const searchBookmarksTool = tool({
   parameters: z.object({
     query: z.string().describe("Search query"),
   }),
-  execute: async ({ query }) => {
+  execute: async ({ query }: { query: string }) => {
     const results = await chrome.bookmarks.search(query);
     return {
       success: true,
@@ -75,7 +75,15 @@ export const createBookmarkTool = tool({
       .optional()
       .describe("Parent folder ID (defaults to bookmarks bar)"),
   }),
-  execute: async ({ title, url, parentId }) => {
+  execute: async ({
+    title,
+    url,
+    parentId,
+  }: {
+    title: string;
+    url: string;
+    parentId?: string | null;
+  }) => {
     const bookmark = await chrome.bookmarks.create({
       title,
       url,
@@ -96,7 +104,7 @@ export const deleteBookmarkTool = tool({
   parameters: z.object({
     bookmarkId: z.string().describe("The bookmark ID to delete"),
   }),
-  execute: async ({ bookmarkId }) => {
+  execute: async ({ bookmarkId }: { bookmarkId: string }) => {
     await chrome.bookmarks.remove(bookmarkId);
 
     return {
@@ -112,7 +120,7 @@ export const getBookmarkTool = tool({
   parameters: z.object({
     bookmarkId: z.string().describe("The bookmark ID"),
   }),
-  execute: async ({ bookmarkId }) => {
+  execute: async ({ bookmarkId }: { bookmarkId: string }) => {
     const bookmarks = await chrome.bookmarks.get(bookmarkId);
     if (bookmarks.length === 0) {
       return {
@@ -142,8 +150,19 @@ export const updateBookmarkTool = tool({
     title: z.string().nullable().optional().describe("New title"),
     url: z.string().nullable().optional().describe("New URL"),
   }),
-  execute: async ({ bookmarkId, title, url }) => {
-    await chrome.bookmarks.update(bookmarkId, { title, url });
+  execute: async ({
+    bookmarkId,
+    title,
+    url,
+  }: {
+    bookmarkId: string;
+    title?: string | null;
+    url?: string | null;
+  }) => {
+    await chrome.bookmarks.update(bookmarkId, {
+      title: title ?? undefined,
+      url: url ?? undefined,
+    });
 
     return {
       success: true,
@@ -163,7 +182,13 @@ export const createBookmarkFolderTool = tool({
       .optional()
       .describe("Parent folder ID (defaults to bookmarks bar)"),
   }),
-  execute: async ({ title, parentId }) => {
+  execute: async ({
+    title,
+    parentId,
+  }: {
+    title: string;
+    parentId?: string | null;
+  }) => {
     const folder = await chrome.bookmarks.create({
       title,
       parentId: parentId || "1",
@@ -183,7 +208,7 @@ export const deleteBookmarkFolderTool = tool({
   parameters: z.object({
     folderId: z.string().describe("The folder ID to delete"),
   }),
-  execute: async ({ folderId }) => {
+  execute: async ({ folderId }: { folderId: string }) => {
     await chrome.bookmarks.removeTree(folderId);
 
     return {

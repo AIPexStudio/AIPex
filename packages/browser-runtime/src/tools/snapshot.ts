@@ -45,18 +45,21 @@ export const searchSnapshotTool = tool({
       .default(1)
       .describe("Number of context lines around matches"),
   }),
-  execute: async ({ query, contextLevels }) => {
+  execute: async ({
+    query,
+    contextLevels,
+  }: {
+    query: string;
+    contextLevels?: number | null;
+  }) => {
     const tab = await getActiveTab();
+    const levels = contextLevels ?? 1;
 
     if (!tab.id) {
       throw new Error("No active tab found");
     }
 
-    const result = await snapshotManager.searchAndFormat(
-      tab.id,
-      query,
-      contextLevels,
-    );
+    const result = await snapshotManager.searchAndFormat(tab.id, query, levels);
 
     return {
       success: true,

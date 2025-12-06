@@ -15,7 +15,7 @@ export const listTabsTool = tool({
       .optional()
       .describe("Whether to include tabs from all windows"),
   }),
-  execute: async ({ allWindows = false }) => {
+  execute: async ({ allWindows = false }: { allWindows?: boolean | null }) => {
     const query = allWindows ? {} : { currentWindow: true };
     const tabs = await chrome.tabs.query(query);
 
@@ -46,10 +46,19 @@ export const switchToTabTool = tool({
       .optional()
       .describe("URL pattern to match (e.g., 'github.com')"),
   }),
-  execute: async ({ tabId, urlPattern }) => {
-    if (tabId) {
+  execute: async ({
+    tabId,
+    urlPattern,
+  }: {
+    tabId?: number | null;
+    urlPattern?: string | null;
+  }) => {
+    if (tabId != null) {
       await chrome.tabs.update(tabId, { active: true });
       const tab = await chrome.tabs.get(tabId);
+      if (!tab.id) {
+        throw new Error("Tab not found");
+      }
       return {
         success: true,
         tab: { id: tab.id, url: tab.url, title: tab.title },
@@ -92,8 +101,8 @@ export const closeTabTool = tool({
       .optional()
       .describe("Tab ID to close (defaults to current tab)"),
   }),
-  execute: async ({ tabId }) => {
-    if (tabId) {
+  execute: async ({ tabId }: { tabId?: number | null }) => {
+    if (tabId != null) {
       await chrome.tabs.remove(tabId);
       return { success: true, tabId };
     }
@@ -118,8 +127,18 @@ export const createTabTool = tool({
       .optional()
       .describe("Whether to make the new tab active"),
   }),
-  execute: async ({ url, active = true }) => {
-    const tab = await chrome.tabs.create({ url, active });
+  execute: async ({
+    url,
+    active = true,
+  }: {
+    url: string;
+    active?: boolean | null;
+  }) => {
+    const isActive = active ?? true;
+    const tab = await chrome.tabs.create({ url, active: isActive });
+    if (!tab.id) {
+      throw new Error("Failed to create tab");
+    }
     return {
       success: true,
       tab: { id: tab.id, url: tab.url, title: tab.title },
@@ -145,14 +164,24 @@ export const reloadTabTool = tool({
       .optional()
       .describe("Whether to bypass the cache when reloading"),
   }),
-  execute: async ({ tabId, bypassCache = false }) => {
-    if (tabId) {
-      await chrome.tabs.reload(tabId, { bypassCache });
+  execute: async ({
+    tabId,
+    bypassCache = false,
+  }: {
+    tabId?: number | null;
+    bypassCache?: boolean | null;
+  }) => {
+    const shouldBypassCache = bypassCache ?? false;
+    if (tabId != null) {
+      await chrome.tabs.reload(tabId, { bypassCache: shouldBypassCache });
       return { success: true, tabId };
     }
 
     const tab = await getActiveTab();
-    await chrome.tabs.reload(tab.id!, { bypassCache });
+    if (!tab.id) {
+      throw new Error("No active tab found");
+    }
+    await chrome.tabs.reload(tab.id, { bypassCache: shouldBypassCache });
     return { success: true, tabId: tab.id };
   },
 });
@@ -170,8 +199,8 @@ export const duplicateTabTool = tool({
       .optional()
       .describe("Tab ID to duplicate (defaults to current tab)"),
   }),
-  execute: async ({ tabId }) => {
-    if (tabId) {
+  execute: async ({ tabId }: { tabId?: number | null }) => {
+    if (tabId != null) {
       const newTab = await chrome.tabs.duplicate(tabId);
       if (!newTab) {
         throw new Error("Failed to duplicate tab");

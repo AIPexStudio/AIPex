@@ -39,7 +39,14 @@ export const scrollPageTool = tool({
       .optional()
       .describe("Number of pixels to scroll (for up/down)"),
   }),
-  execute: async ({ direction, pixels = 500 }) => {
+  execute: async ({
+    direction,
+    pixels = 500,
+  }: {
+    direction: "up" | "down" | "top" | "bottom";
+    pixels?: number | null;
+  }) => {
+    const scrollPixels = pixels ?? 500;
     await executeScriptInActiveTab(
       (dir: string, px: number) => {
         switch (dir) {
@@ -60,10 +67,10 @@ export const scrollPageTool = tool({
             break;
         }
       },
-      [direction, pixels],
+      [direction, scrollPixels],
     );
 
-    return { success: true, direction, scrolled: pixels };
+    return { success: true, direction, scrolled: scrollPixels };
   },
 });
 
@@ -81,7 +88,13 @@ export const navigateToUrlTool = tool({
       .optional()
       .describe("Whether to open in a new tab"),
   }),
-  execute: async ({ url, newTab = false }) => {
+  execute: async ({
+    url,
+    newTab = false,
+  }: {
+    url: string;
+    newTab?: boolean | null;
+  }) => {
     if (newTab) {
       const tab = await chrome.tabs.create({ url });
       return { success: true, tabId: tab.id, url };
@@ -115,20 +128,21 @@ export const getPageContentTool = tool({
       .optional()
       .describe("CSS selector to get content from (default: body)"),
   }),
-  execute: async ({ selector = "body" }) => {
+  execute: async ({ selector = "body" }: { selector?: string | null }) => {
+    const resolvedSelector = selector ?? "body";
     const content = await executeScriptInActiveTab(
       (sel: string) => {
         const element = document.querySelector(sel);
         return element ? element.textContent : null;
       },
-      [selector],
+      [resolvedSelector],
     );
 
     if (!content) {
-      throw new Error(`No content found for selector: ${selector}`);
+      throw new Error(`No content found for selector: ${resolvedSelector}`);
     }
 
-    return { content, selector };
+    return { content, selector: resolvedSelector };
   },
 });
 
@@ -141,7 +155,7 @@ export const clickElementTool = tool({
   parameters: z.object({
     selector: z.string().describe("CSS selector of the element to click"),
   }),
-  execute: async ({ selector }) => {
+  execute: async ({ selector }: { selector: string }) => {
     const result = await executeScriptInActiveTab(
       (sel: string) => {
         const element = document.querySelector(sel);
@@ -175,7 +189,7 @@ export const fillFormFieldTool = tool({
     selector: z.string().describe("CSS selector of the input field"),
     value: z.string().describe("Value to fill in the field"),
   }),
-  execute: async ({ selector, value }) => {
+  execute: async ({ selector, value }: { selector: string; value: string }) => {
     const result = await executeScriptInActiveTab(
       (sel: string, val: string) => {
         const element = document.querySelector(sel);
