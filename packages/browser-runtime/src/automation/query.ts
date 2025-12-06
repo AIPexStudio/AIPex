@@ -1,5 +1,3 @@
-import { matcher } from "micromatch";
-
 export const SKIP_ROLES = [
   "generic",
   "none",
@@ -18,6 +16,72 @@ export const SKIP_ROLES = [
 
 function hasGlobPattern(str: string): boolean {
   return /[*?[{\]}]/.test(str);
+}
+
+/**
+ * Simple glob pattern matcher supporting basic patterns:
+ * - * matches any characters
+ * - ? matches single character
+ * - [abc] matches a, b, or c
+ * - [a-z] matches character range
+ * - {pattern1,pattern2} matches either pattern
+ */
+function matchGlob(
+  pattern: string,
+  text: string,
+  caseSensitive: boolean = false,
+): boolean {
+  if (!caseSensitive) {
+    pattern = pattern.toLowerCase();
+    text = text.toLowerCase();
+  }
+
+  // Handle brace expansion {pattern1,pattern2}
+  if (pattern.includes("{") && pattern.includes("}")) {
+    const braceStart = pattern.indexOf("{");
+    const braceEnd = pattern.indexOf("}");
+    if (braceStart < braceEnd) {
+      const prefix = pattern.substring(0, braceStart);
+      const suffix = pattern.substring(braceEnd + 1);
+      const alternatives = pattern
+        .substring(braceStart + 1, braceEnd)
+        .split(",");
+
+      for (const alt of alternatives) {
+        const fullPattern = prefix + alt.trim() + suffix;
+        if (matchGlob(fullPattern, text, caseSensitive)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  // Convert glob pattern to regex
+  let regexPattern = pattern
+    .replace(/[.*+^${}()|[\]\\]/g, "\\$&") // Escape regex special chars
+    .replace(/\\\*/g, ".*") // * -> .*
+    .replace(/\\\?/g, ".") // ? -> .
+    .replace(/\\\[/g, "[") // Restore [ for char class
+    .replace(/\\\]/g, "]"); // Restore ] for char class
+
+  // Handle character classes [abc] and [a-z]
+  regexPattern = regexPattern.replace(/\[([^\]]+)\]/g, (_, chars) => {
+    // Handle ranges like [a-z]
+    if (chars.includes("-") && chars.length === 3) {
+      return `[${chars}]`;
+    }
+    // Handle character sets like [abc]
+    return `[${chars.replace(/[.*+^${}()|[\]\\]/g, "\\$&")}]`;
+  });
+
+  try {
+    const regex = new RegExp(`${regexPattern}`, "i");
+    return regex.test(text);
+  } catch (error) {
+    console.warn(`Invalid glob pattern: ${pattern}`, error);
+    return false;
+  }
 }
 
 export interface SearchOptions {
@@ -53,7 +117,9 @@ export function searchSnapshotText(
       ? useGlob
       : searchTerms.some((term) => hasGlobPattern(term));
   const matcherFns = shouldUseGlob
-    ? searchTerms.map((term) => matcher(term, { nocase: !caseSensitive }))
+    ? searchTerms.map(
+        (term) => (line: string) => matchGlob(term, line, caseSensitive),
+      )
     : [];
 
   const lines = snapshotText.split("\n");
