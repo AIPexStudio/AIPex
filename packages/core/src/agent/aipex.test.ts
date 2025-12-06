@@ -76,13 +76,14 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_created");
+      expect(events[0]?.type).toBe("session_created");
       expect(events[1]).toEqual({ type: "content_delta", delta: "Hello!" });
-      expect(events[2].type).toBe("metrics_update");
-      expect(events[3].type).toBe("execution_complete");
-      if (events[3].type === "execution_complete") {
-        expect(events[3].finalOutput).toBe("Hello!");
-        expect(events[3].metrics).toBeDefined();
+      expect(events[2]?.type).toBe("metrics_update");
+      const executionComplete = events[3];
+      expect(executionComplete?.type).toBe("execution_complete");
+      if (executionComplete?.type === "execution_complete") {
+        expect(executionComplete.finalOutput).toBe("Hello!");
+        expect(executionComplete.metrics).toBeDefined();
       }
     });
 
@@ -113,7 +114,7 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_created");
+      expect(events[0]?.type).toBe("session_created");
     });
 
     it("should work with conversation disabled (stateless)", async () => {
@@ -141,7 +142,7 @@ describe("AIPex", () => {
       }
 
       expect(events.find((e) => e.type === "session_created")).toBeUndefined();
-      expect(events[0].type).toBe("content_delta");
+      expect(events[0]?.type).toBe("content_delta");
     });
 
     it("should work with custom conversationManager", async () => {
@@ -173,7 +174,7 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_created");
+      expect(events[0]?.type).toBe("session_created");
       expect(agent.getConversationManager()).toBe(customManager);
     });
   });
@@ -250,9 +251,10 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_resumed");
-      if (events[0].type === "session_resumed") {
-        expect(events[0].sessionId).toBe(sessionId);
+      const sessionResumed = events[0];
+      expect(sessionResumed?.type).toBe("session_resumed");
+      if (sessionResumed?.type === "session_resumed") {
+        expect(sessionResumed.sessionId).toBe(sessionId);
       }
     });
   });
@@ -281,7 +283,7 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_created");
+      expect(events[0]?.type).toBe("session_created");
     });
 
     it("continueConversation should work for continuing sessions", async () => {
@@ -329,7 +331,7 @@ describe("AIPex", () => {
         events.push(event);
       }
 
-      expect(events[0].type).toBe("session_resumed");
+      expect(events[0]?.type).toBe("session_resumed");
     });
   });
 

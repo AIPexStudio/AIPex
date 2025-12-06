@@ -1,8 +1,20 @@
+/**
+ * Browser Extension App Root
+ * Simple wrapper using browser-specific hooks
+ */
+
+import ChatBot from "@aipexstudio/aipex-react/components/chatbot";
+import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
+import type { Language } from "@aipexstudio/aipex-react/i18n/types";
+import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
+import type { Theme } from "@aipexstudio/aipex-react/theme/types";
+import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import ChatBot from "~/components/chatbot";
-import { chromeStorageAdapter, useAgent, useChatConfig } from "~/hooks";
-import { I18nProvider } from "~/i18n/context";
+import { chromeStorageAdapter, useAgent, useChatConfig } from "../../hooks";
+
+const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
+const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
 
 function ChatApp() {
   const { settings, isLoading } = useChatConfig({
@@ -20,8 +32,14 @@ function ChatApp() {
     );
   }
 
-  // Pass agent and configError to ChatBot - it will show configuration guide if needed
-  return <ChatBot agent={agent} configError={error} />;
+  return (
+    <ChatBot
+      agent={agent}
+      configError={error}
+      initialSettings={settings}
+      storageAdapter={chromeStorageAdapter}
+    />
+  );
 }
 
 export function renderChatApp() {
@@ -31,8 +49,10 @@ export function renderChatApp() {
   }
 
   const App = () => (
-    <I18nProvider>
-      <ChatApp />
+    <I18nProvider storageAdapter={i18nStorageAdapter}>
+      <ThemeProvider storageAdapter={themeStorageAdapter}>
+        <ChatApp />
+      </ThemeProvider>
     </I18nProvider>
   );
 

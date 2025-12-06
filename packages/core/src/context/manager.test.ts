@@ -68,7 +68,7 @@ describe("ContextManager", () => {
       await manager.registerProvider(provider1);
       const providers = manager.getProviders();
       expect(providers).toHaveLength(1);
-      expect(providers[0].id).toBe("provider1");
+      expect(providers[0]?.id).toBe("provider1");
     });
 
     it("should not initialize provider if autoInitialize is false", async () => {
@@ -167,7 +167,7 @@ describe("ContextManager", () => {
 
       const contexts = await manager.getContexts({ providerId: "provider1" });
       expect(contexts).toHaveLength(1);
-      expect(contexts[0].id).toBe("ctx1");
+      expect(contexts[0]?.id).toBe("ctx1");
       expect(provider1.getContexts).toHaveBeenCalled();
       expect(provider2.getContexts).not.toHaveBeenCalled();
     });
@@ -181,7 +181,7 @@ describe("ContextManager", () => {
 
       const contexts = await manager.getContexts({ types: ["page"] });
       expect(contexts).toHaveLength(1);
-      expect(contexts[0].type).toBe("page");
+      expect(contexts[0]?.type).toBe("page");
     });
 
     it("should filter by search query", async () => {
@@ -197,7 +197,7 @@ describe("ContextManager", () => {
 
       const contexts = await manager.getContexts({ search: "hello" });
       expect(contexts).toHaveLength(1);
-      expect(contexts[0].label).toBe("Hello World");
+      expect(contexts[0]?.label).toBe("Hello World");
     });
 
     it("should filter by search in value", async () => {
@@ -213,7 +213,7 @@ describe("ContextManager", () => {
 
       const contexts = await manager.getContexts({ search: "test" });
       expect(contexts).toHaveLength(1);
-      expect(contexts[0].value).toContain("test");
+      expect(contexts[0]?.value).toContain("test");
     });
 
     it("should apply limit", async () => {
@@ -239,7 +239,7 @@ describe("ContextManager", () => {
 
       const contexts = await manager.getContexts();
       expect(contexts).toHaveLength(1);
-      expect(contexts[0].id).toBe("ctx2");
+      expect(contexts[0]?.id).toBe("ctx2");
     });
 
     it("should pass query to providers", async () => {

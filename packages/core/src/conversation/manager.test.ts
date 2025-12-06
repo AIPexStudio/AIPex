@@ -266,7 +266,7 @@ describe("ConversationManager", () => {
 
       expect(page1.length).toBe(5);
       expect(page2.length).toBe(5);
-      expect(page1[0].id).not.toBe(page2[0].id);
+      expect(page1[0]?.id).not.toBe(page2[0]?.id);
     });
   });
 

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node", "chrome"]
+  },
+  "include": ["src/**/*", "vitest.setup.ts", "src/i18n/locales/*.json"],
+  "references": [
+    {
+      "path": "../core/tsconfig.json"
+    }
+  ]
+}

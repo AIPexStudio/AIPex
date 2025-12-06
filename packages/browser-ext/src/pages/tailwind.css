@@ -3,6 +3,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Include workspace packages source files for Tailwind to scan */
+@source "../../src";
+@source "../../../aipex-react/src";
+@source "../../../browser-runtime/src";
+@source "../../../core/src";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

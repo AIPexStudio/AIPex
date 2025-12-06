@@ -8,27 +8,8 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    reporters: ["default", "junit", "github-actions"],
+    passWithNoTests: true,
     silent: true,
-    outputFile: {
-      junit: "junit.xml",
-    },
-    coverage: {
-      enabled: true,
-      reportsDirectory: "./coverage",
-      provider: "v8",
-      include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/**/__tests__/**"],
-      reportOnFailure: true,
-      reporter: [
-        ["text", { file: "full-text-summary.txt" }],
-        "html",
-        "json",
-        "lcov",
-        "cobertura",
-        ["json-summary", { outputFile: "coverage-summary.json" }],
-      ],
-    },
     css: {
       modules: {
         classNameStrategy: "non-scoped",

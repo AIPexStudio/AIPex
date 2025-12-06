@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node", "chrome"]
+  },
+  "include": ["src/**/*"],
+  "references": [
+    {
+      "path": "../core/tsconfig.json"
+    }
+  ]
+}

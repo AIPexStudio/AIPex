@@ -1,111 +1,85 @@
+/**
+ * Browser-specific useAgent wrapper
+ *
+ * This wraps the generic useAgent hook from aipex-react with browser-specific
+ * configuration (browser tools, context providers, storage).
+ */
+
+import type { FunctionTool } from "@aipexstudio/aipex-core";
+import { aisdk, SessionStorage } from "@aipexstudio/aipex-core";
 import {
-  AIPex,
-  aisdk,
-  ContextManager,
+  createAIProvider,
+  type UseAgentReturn,
+  useAgent as useAgentCore,
+} from "@aipexstudio/aipex-react";
+import { SYSTEM_PROMPT } from "@aipexstudio/aipex-react/components/chatbot/constants";
+import type { ChatSettings } from "@aipexstudio/aipex-react/types";
+import {
+  allBrowserProviders,
+  allBrowserTools,
   IndexedDBStorage,
-  SessionStorage,
-} from "@aipexstudio/aipex-core";
-import { useEffect, useMemo, useState } from "react";
-import { SYSTEM_PROMPT } from "~/components/chatbot/constants";
-import { createAIProvider } from "~/lib/ai-provider";
-import { allBrowserProviders } from "~/lib/context/providers";
-import { allBrowserTools } from "~/tools";
-import type { ChatSettings } from "~/types";
+} from "@aipexstudio/browser-runtime";
+import { useMemo, useRef } from "react";
 
 export interface UseAgentOptions {
   settings: ChatSettings;
   isLoading: boolean;
 }
 
-export interface UseAgentReturn {
-  agent: AIPex | undefined;
-  isReady: boolean;
-  error: Error | undefined;
-}
+export type { UseAgentReturn };
 
 /**
- * useAgent - Hook for creating and managing the AIPex agent instance
+ * Browser extension specific useAgent hook
  *
- * Creates an agent based on the provided settings (aiHost, aiToken, aiModel).
- * The agent is recreated when settings change.
+ * Automatically configures the agent with:
+ * - Browser context providers (bookmarks, history, tabs, etc.)
+ * - Browser tools (screenshot, click, scroll, etc.)
+ * - IndexedDB storage for conversation persistence
+ *
+ * @example
+ * ```typescript
+ * const { agent, isReady, error } = useAgent({
+ *   settings: { aiProvider: "openai", aiToken: "...", aiModel: "gpt-4" },
+ *   isLoading: false,
+ * });
+ * ```
  */
 export function useAgent({
   settings,
   isLoading,
 }: UseAgentOptions): UseAgentReturn {
-  const [agent, setAgent] = useState<AIPex | undefined>(undefined);
-  const [error, setError] = useState<Error | undefined>(undefined);
-
-  const isConfigured = useMemo(() => {
-    return Boolean(settings.aiToken && settings.aiModel);
-  }, [settings.aiToken, settings.aiModel]);
-
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
-    if (!isConfigured) {
-      setAgent(undefined);
-      setError(new Error("API token or model not configured"));
-      return;
-    }
-
-    try {
-      // Create AI provider based on settings
-      const provider = createAIProvider(settings);
-
-      // Create the model using aisdk
-      const model = aisdk(provider(settings.aiModel!));
-
-      // Create storage for conversation persistence
-      const storage = new SessionStorage(
+  // Create storage instance (memoized)
+  const storage = useMemo(
+    () =>
+      new SessionStorage(
         new IndexedDBStorage({
           dbName: "aipex-sessions",
           storeName: "sessions",
         }),
-      );
+      ),
+    [],
+  );
 
-      // Create context manager with browser providers
-      const contextManager = new ContextManager({
-        providers: allBrowserProviders,
-        autoInitialize: true,
-      });
+  // Model factory function - use useRef to maintain stable reference
+  const modelFactoryRef = useRef((settings: ChatSettings) => {
+    const provider = createAIProvider(settings);
+    return aisdk(provider(settings.aiModel!));
+  });
 
-      // Get all available tools
-      const tools = [...allBrowserTools];
+  // Stable references for context providers and tools to prevent infinite loops
+  const contextProvidersRef = useRef(allBrowserProviders);
+  const toolsRef = useRef<FunctionTool[]>(allBrowserTools);
 
-      // Create the agent
-      const newAgent = AIPex.create({
-        name: "AIPex Assistant",
-        instructions: SYSTEM_PROMPT,
-        model,
-        tools,
-        storage,
-        contextManager,
-        maxTurns: 10,
-      });
-
-      setAgent(newAgent);
-      setError(undefined);
-    } catch (err) {
-      console.error("Failed to create agent:", err);
-      setAgent(undefined);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    }
-  }, [
-    isLoading,
-    isConfigured,
-    settings.aiProvider,
-    settings.aiHost,
-    settings.aiToken,
-    settings.aiModel,
+  // Use the generic hook with browser-specific configuration
+  return useAgentCore({
     settings,
-  ]);
-
-  return {
-    agent,
-    isReady: Boolean(agent) && !isLoading,
-    error,
-  };
+    isLoading,
+    modelFactory: modelFactoryRef.current,
+    storage,
+    contextProviders: contextProvidersRef.current,
+    tools: toolsRef.current,
+    instructions: SYSTEM_PROMPT,
+    name: "AIPex Browser Assistant",
+    maxTurns: 10,
+  });
 }
