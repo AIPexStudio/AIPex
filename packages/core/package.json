@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --project tsconfig.json",
     "prepublishOnly": "npm run build",
     "example:basic": "tsx examples/basic-example.ts",
     "example:fork": "tsx examples/fork-example.ts",

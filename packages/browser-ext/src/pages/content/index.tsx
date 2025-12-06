@@ -1,6 +1,6 @@
+import { Omni } from "@aipexstudio/aipex-react/components/omni";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Omni from "~/components/omni";
 // Import CSS as a string to inject into Shadow DOM
 import tailwindCss from "../tailwind.css?inline";
 

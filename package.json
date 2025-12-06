@@ -19,15 +19,17 @@
     "format:check": "biome format .",
     "lint": "biome check .",
     "lint:fix": "biome check . --fix --unsafe",
+    "lint:dependencies": "knip --strict",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "tsc --build",
+    "knip": "knip"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
     "@j178/prek": "^0.2.19",
+    "@types/chrome": "0.1.31",
     "@types/node": "^24.10.1",
-    "@typescript/native-preview": "7.0.0-dev.20251201.1",
-    "@vitest/coverage-v8": "^4.0.14",
+    "knip": "^5.71.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"
   }

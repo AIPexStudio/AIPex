@@ -1,5 +1,16 @@
 export type { ConversationConfig } from "../types.js";
+export {
+  AI_PROVIDERS,
+  type AIProviderConfig,
+  type AIProviderKey,
+  detectProviderFromHost,
+} from "./ai-providers.js";
 export { DEFAULT_CONVERSATION_CONFIG } from "./defaults.js";
+export {
+  type AppSettings,
+  DEFAULT_APP_SETTINGS,
+} from "./settings.js";
+export { STORAGE_KEYS, type StorageKey } from "./storage-keys.js";
 export {
   createConversationConfig,
   isValidConversationStorage,

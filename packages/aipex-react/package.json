@@ -1,0 +1,174 @@
+{
+  "name": "@aipexstudio/aipex-react",
+  "version": "0.0.1",
+  "description": "React UI toolkit, hooks, and adapters for building AIPex-powered chat experiences",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./adapters/*": {
+      "types": "./dist/adapters/*.d.ts",
+      "import": "./dist/adapters/*.js"
+    },
+    "./hooks/*": {
+      "types": "./dist/hooks/*.d.ts",
+      "import": "./dist/hooks/*.js"
+    },
+    "./components/chatbot": {
+      "types": "./dist/components/chatbot/index.d.ts",
+      "import": "./dist/components/chatbot/index.js"
+    },
+    "./components/chatbot/*": {
+      "types": "./dist/components/chatbot/*.d.ts",
+      "import": "./dist/components/chatbot/*.js"
+    },
+    "./components/omni": {
+      "types": "./dist/components/omni/index.d.ts",
+      "import": "./dist/components/omni/index.js"
+    },
+    "./components/ai-elements/*": {
+      "types": "./dist/components/ai-elements/*.d.ts",
+      "import": "./dist/components/ai-elements/*.js"
+    },
+    "./components/*": {
+      "types": "./dist/components/*/index.d.ts",
+      "import": "./dist/components/*/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/types/*.js"
+    },
+    "./i18n/context": {
+      "types": "./dist/i18n/context.d.ts",
+      "import": "./dist/i18n/context.js"
+    },
+    "./i18n/*": {
+      "types": "./dist/i18n/*.d.ts",
+      "import": "./dist/i18n/*.js"
+    },
+    "./theme/types": {
+      "types": "./dist/theme/types.d.ts",
+      "import": "./dist/theme/types.js"
+    },
+    "./theme/*": {
+      "types": "./dist/theme/*.d.ts",
+      "import": "./dist/theme/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "typesVersions": {
+    "*": {
+      "adapters/*": [
+        "dist/adapters/*"
+      ],
+      "hooks/*": [
+        "dist/hooks/*"
+      ],
+      "components/chatbot": [
+        "dist/components/chatbot/index.d.ts"
+      ],
+      "components/chatbot/*": [
+        "dist/components/chatbot/*"
+      ],
+      "components/omni": [
+        "dist/components/omni/index.d.ts"
+      ],
+      "components/ai-elements/*": [
+        "dist/components/ai-elements/*"
+      ],
+      "components/*": [
+        "dist/components/*/index.d.ts"
+      ],
+      "types": [
+        "dist/types/index.d.ts"
+      ],
+      "types/*": [
+        "dist/types/*"
+      ],
+      "i18n/context": [
+        "dist/i18n/context.d.ts"
+      ],
+      "i18n/*": [
+        "dist/i18n/*"
+      ],
+      "theme/types": [
+        "dist/theme/types.d.ts"
+      ],
+      "theme/*": [
+        "dist/theme/*"
+      ]
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.51",
+    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/openai-compatible": "^1.0.28",
+    "@aipexstudio/aipex-core": "workspace:*",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-hover-card": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
+    "ai": "^5.0.105",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.23.25",
+    "lucide-react": "^0.555.0",
+    "markdown-to-jsx": "^9.3.0",
+    "nanoid": "^5.1.6",
+    "react-syntax-highlighter": "^16.1.0",
+    "remark-gfm": "^4.0.1",
+    "streamdown": "^1.6.9",
+    "tailwind-merge": "^3.4.0",
+    "tokenlens": "^1.3.1",
+    "use-stick-to-bottom": "^1.1.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "jsdom": "^27.2.0",
+    "tsc-alias": "^1.8.13",
+    "vitest": "^4.0.14"
+  }
+}

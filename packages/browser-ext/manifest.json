@@ -28,6 +28,10 @@
   "side_panel": {
     "default_path": "src/sidepanel.html"
   },
+  "options_ui": {
+    "page": "src/pages/options/index.html",
+    "open_in_tab": true
+  },
   "web_accessible_resources": [
     {
       "resources": ["assets/*"],
