@@ -22,7 +22,6 @@
   "type": "module",
   "dependencies": {
     "@aipexstudio/aipex-core": "workspace:*",
-    "micromatch": "^4.0.8",
     "nanoid": "^5.1.6",
     "zod": "^4.1.13"
   },
@@ -36,7 +35,6 @@
     }
   },
   "devDependencies": {
-    "@types/micromatch": "^4.0.10",
     "@types/react": "19.2.7"
   }
 }
