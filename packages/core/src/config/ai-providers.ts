@@ -1,3 +1,5 @@
+import type { ProviderType } from "./settings.js";
+
 export interface AIProviderConfig {
   name: string;
   icon: string;
@@ -5,6 +7,7 @@ export interface AIProviderConfig {
   models: readonly string[];
   tokenPlaceholder: string;
   docs: string;
+  providerType: ProviderType;
 }
 
 export const AI_PROVIDERS = {
@@ -15,6 +18,7 @@ export const AI_PROVIDERS = {
     models: [] as const,
     tokenPlaceholder: "Your API Key",
     docs: "",
+    providerType: "openai",
   },
   openai: {
     name: "OpenAI",
@@ -23,6 +27,7 @@ export const AI_PROVIDERS = {
     models: ["gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"] as const,
     tokenPlaceholder: "sk-...",
     docs: "https://platform.openai.com/api-keys",
+    providerType: "openai",
   },
   anthropic: {
     name: "Anthropic",
@@ -35,6 +40,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "sk-ant-...",
     docs: "https://console.anthropic.com/settings/keys",
+    providerType: "claude",
   },
   google: {
     name: "Google",
@@ -47,6 +53,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "AIza...",
     docs: "https://aistudio.google.com/app/apikey",
+    providerType: "google",
   },
   openrouter: {
     name: "OpenRouter",
@@ -61,6 +68,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "sk-or-v1-...",
     docs: "https://openrouter.ai/keys",
+    providerType: "openai",
   },
   deepseek: {
     name: "DeepSeek",
@@ -69,6 +77,7 @@ export const AI_PROVIDERS = {
     models: ["deepseek-chat", "deepseek-coder"] as const,
     tokenPlaceholder: "sk-...",
     docs: "https://platform.deepseek.com/api_keys",
+    providerType: "openai",
   },
   groq: {
     name: "Groq",
@@ -81,6 +90,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "gsk_...",
     docs: "https://console.groq.com/keys",
+    providerType: "openai",
   },
   together: {
     name: "Together AI",
@@ -93,6 +103,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "...",
     docs: "https://api.together.xyz/settings/api-keys",
+    providerType: "openai",
   },
   mistral: {
     name: "Mistral AI",
@@ -105,6 +116,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "...",
     docs: "https://console.mistral.ai/api-keys",
+    providerType: "openai",
   },
   cohere: {
     name: "Cohere",
@@ -113,6 +125,7 @@ export const AI_PROVIDERS = {
     models: ["command-r-plus", "command-r", "command"] as const,
     tokenPlaceholder: "...",
     docs: "https://dashboard.cohere.com/api-keys",
+    providerType: "openai",
   },
   perplexity: {
     name: "Perplexity",
@@ -124,6 +137,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "pplx-...",
     docs: "https://www.perplexity.ai/settings/api",
+    providerType: "openai",
   },
   fireworks: {
     name: "Fireworks AI",
@@ -135,6 +149,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "fw_...",
     docs: "https://fireworks.ai/api-keys",
+    providerType: "openai",
   },
   replicate: {
     name: "Replicate",
@@ -146,6 +161,7 @@ export const AI_PROVIDERS = {
     ] as const,
     tokenPlaceholder: "r8_...",
     docs: "https://replicate.com/account/api-tokens",
+    providerType: "openai",
   },
   azure: {
     name: "Azure OpenAI",
@@ -154,6 +170,7 @@ export const AI_PROVIDERS = {
     models: ["gpt-4", "gpt-35-turbo"] as const,
     tokenPlaceholder: "YOUR-API-KEY",
     docs: "https://portal.azure.com",
+    providerType: "openai",
   },
 } as const satisfies Record<string, AIProviderConfig>;
 

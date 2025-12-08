@@ -1,6 +1,7 @@
+import type { CustomModelConfig } from "@aipexstudio/aipex-core";
 import type { ChatStatus } from "ai";
 import { ClockIcon } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../../i18n/context";
 import { cn } from "../../../lib/utils";
 import type { ContextItem, InputAreaProps } from "../../../types";
@@ -57,28 +58,56 @@ export function DefaultInputArea({
 }: ExtendedInputAreaProps) {
   const { t } = useTranslation();
   const { slots } = useComponentsContext();
-  const { settings, updateSetting } = useConfigContext();
+  const { settings } = useConfigContext();
 
   const effectivePlaceholder = placeholder ?? t("input.placeholder1");
 
-  // Compute effective models list, including custom model if byokEnabled
-  const effectiveModels = useMemo(() => {
-    const currentModel = settings.aiModel;
-    const isCustomEnabled = settings.byokEnabled;
+  const enabledCustomModels = useMemo(() => {
+    if (!settings.byokEnabled) return [] as CustomModelConfig[];
+    return (settings.customModels ?? []).filter((model) => model.enabled);
+  }, [settings.byokEnabled, settings.customModels]);
 
-    if (!isCustomEnabled || !currentModel) {
+  // Compute effective models list, including all enabled custom models
+  const effectiveModels = useMemo(() => {
+    if (!enabledCustomModels.length) {
       return models;
     }
 
-    // When BYOK is enabled, always show custom model with "(Custom)" tag at the top
-    return [
-      {
-        name: `${currentModel} (Custom)`,
-        value: currentModel,
-      },
-      ...models.filter((model) => model.value !== currentModel),
-    ];
-  }, [models, settings.aiModel, settings.byokEnabled]);
+    const customOptions = enabledCustomModels.map((model) => ({
+      name:
+        model.name?.trim() || `${model.aiModel} (custom-${model.providerType})`,
+      value: model.aiModel,
+    }));
+
+    const baseModels = models.filter(
+      (model) => !customOptions.some((custom) => custom.value === model.value),
+    );
+
+    return [...customOptions, ...baseModels];
+  }, [enabledCustomModels, models]);
+
+  const resolvedDefaultModel = useMemo(() => {
+    const candidates = [
+      settings.defaultModel?.trim(),
+      settings.aiModel?.trim(),
+      effectiveModels[0]?.value,
+    ].filter(Boolean) as string[];
+
+    for (const candidate of candidates) {
+      if (effectiveModels.some((model) => model.value === candidate)) {
+        return candidate;
+      }
+    }
+
+    return "";
+  }, [effectiveModels, settings.aiModel, settings.defaultModel]);
+
+  const [selectedModel, setSelectedModel] =
+    useState<string>(resolvedDefaultModel);
+
+  useEffect(() => {
+    setSelectedModel(resolvedDefaultModel);
+  }, [resolvedDefaultModel]);
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
@@ -105,14 +134,11 @@ export function DefaultInputArea({
     [onSubmit],
   );
 
-  const handleModelChange = useCallback(
-    async (newModel: string) => {
-      if (newModel?.trim()) {
-        await updateSetting("aiModel", newModel);
-      }
-    },
-    [updateSetting],
-  );
+  const handleModelChange = useCallback((newModel: string) => {
+    const trimmed = newModel?.trim();
+    if (!trimmed) return;
+    setSelectedModel(trimmed);
+  }, []);
 
   // Map status to ChatStatus type
   const submitStatus: ChatStatus | undefined =
@@ -166,14 +192,14 @@ export function DefaultInputArea({
             {/* Model Selector */}
             {slots.modelSelector ? (
               slots.modelSelector({
-                value: settings.aiModel,
+                value: selectedModel,
                 onChange: handleModelChange,
                 models: effectiveModels,
               })
             ) : (
               <PromptInputModelSelect
                 onValueChange={handleModelChange}
-                value={settings.aiModel}
+                value={selectedModel}
               >
                 <PromptInputModelSelectTrigger>
                   <PromptInputModelSelectValue />

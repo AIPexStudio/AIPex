@@ -1,4 +1,3 @@
-import type { AppSettings } from "@aipexstudio/aipex-core";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 import type {
   ChatStatus,
@@ -24,12 +23,6 @@ export interface ChatConfig {
   /** Initial messages to display */
   initialMessages?: UIMessage[];
 }
-
-/**
- * ChatSettings is an alias for AppSettings from @core
- * @deprecated Use AppSettings from @aipexstudio/aipex-core directly
- */
-export type ChatSettings = AppSettings;
 
 // ============ Component Props Types ============
 
