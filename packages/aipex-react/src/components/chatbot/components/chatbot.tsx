@@ -221,6 +221,7 @@ function ChatbotContent({
   const { isReady: isAgentReady } = agentCtx || {};
 
   const [input, setInput] = useState("");
+  const [inputResetCount, setInputResetCount] = useState(0);
 
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
@@ -244,6 +245,7 @@ function ChatbotContent({
   const handleNewChat = useCallback(() => {
     reset?.();
     setInput("");
+    setInputResetCount((count) => count + 1);
   }, [reset]);
 
   return (
@@ -273,6 +275,7 @@ function ChatbotContent({
 
           {/* Input Area */}
           <InputArea
+            key={inputResetCount}
             value={input}
             onChange={setInput}
             onSubmit={handleSubmit}

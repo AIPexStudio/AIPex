@@ -8,7 +8,9 @@ export {
 export { DEFAULT_CONVERSATION_CONFIG } from "./defaults.js";
 export {
   type AppSettings,
+  type CustomModelConfig,
   DEFAULT_APP_SETTINGS,
+  type ProviderType,
 } from "./settings.js";
 export { STORAGE_KEYS, type StorageKey } from "./storage-keys.js";
 export {

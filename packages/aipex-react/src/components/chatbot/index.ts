@@ -4,13 +4,13 @@
 export { ChatAdapter, createChatAdapter } from "../../adapters/chat-adapter";
 export { useChat, useChatConfig } from "../../hooks";
 export type {
+  AppSettings,
   ChatbotComponents,
   ChatbotEventHandlers,
   ChatbotSlots,
   ChatbotTheme,
   ChatbotThemeVariables,
   ChatConfig,
-  ChatSettings,
   ChatStatus,
   ContextItem,
   ContextItemType,

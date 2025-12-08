@@ -1,12 +1,15 @@
-import type { AIProviderKey, KeyValueStorage } from "@aipexstudio/aipex-core";
-import type { ChatSettings } from "../../types";
+import type {
+  AIProviderKey,
+  AppSettings,
+  KeyValueStorage,
+} from "@aipexstudio/aipex-core";
 
 export interface SettingsPageProps {
   storageAdapter: KeyValueStorage<unknown>;
   storageKey?: string;
   className?: string;
-  onSave?: (settings: ChatSettings) => void;
-  onTestConnection?: (settings: ChatSettings) => Promise<boolean>;
+  onSave?: (settings: AppSettings) => void;
+  onTestConnection?: (settings: AppSettings) => Promise<boolean>;
 }
 
 export interface ProviderConfig {

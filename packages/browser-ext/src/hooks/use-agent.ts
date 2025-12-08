@@ -6,14 +6,17 @@
  */
 
 import type { FunctionTool } from "@aipexstudio/aipex-core";
-import { aisdk, SessionStorage } from "@aipexstudio/aipex-core";
+import {
+  type AppSettings,
+  aisdk,
+  SessionStorage,
+} from "@aipexstudio/aipex-core";
 import {
   createAIProvider,
   type UseAgentReturn,
   useAgent as useAgentCore,
 } from "@aipexstudio/aipex-react";
 import { SYSTEM_PROMPT } from "@aipexstudio/aipex-react/components/chatbot/constants";
-import type { ChatSettings } from "@aipexstudio/aipex-react/types";
 import {
   allBrowserProviders,
   allBrowserTools,
@@ -22,7 +25,7 @@ import {
 import { useMemo, useRef } from "react";
 
 export interface UseAgentOptions {
-  settings: ChatSettings;
+  settings: AppSettings;
   isLoading: boolean;
 }
 
@@ -61,7 +64,7 @@ export function useAgent({
   );
 
   // Model factory function - use useRef to maintain stable reference
-  const modelFactoryRef = useRef((settings: ChatSettings) => {
+  const modelFactoryRef = useRef((settings: AppSettings) => {
     const provider = createAIProvider(settings);
     return aisdk(provider(settings.aiModel!));
   });

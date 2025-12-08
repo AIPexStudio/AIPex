@@ -5,6 +5,7 @@
  * For browser extensions, use the browser-specific wrapper that provides browser tools and providers.
  */
 
+import type { AppSettings } from "@aipexstudio/aipex-core";
 import {
   AIPex,
   ContextManager,
@@ -13,17 +14,16 @@ import {
   type SessionStorageAdapter,
 } from "@aipexstudio/aipex-core";
 import { useEffect, useRef, useState } from "react";
-import type { ChatSettings } from "../types";
 
 export interface UseAgentOptions {
   /** Chat settings (provider, token, model, etc.) */
-  settings: ChatSettings;
+  settings: AppSettings;
 
   /** Whether settings are still loading */
   isLoading: boolean;
 
   /** Model factory function - creates the AI model from settings */
-  modelFactory: (settings: ChatSettings) => any;
+  modelFactory: (settings: AppSettings) => any;
 
   /** Session storage adapter */
   storage: SessionStorageAdapter;

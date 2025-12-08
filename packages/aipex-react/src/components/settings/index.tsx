@@ -1,7 +1,10 @@
 import {
   AI_PROVIDERS,
   type AIProviderKey,
+  type AppSettings,
+  type CustomModelConfig,
   detectProviderFromHost,
+  type ProviderType,
   STORAGE_KEYS,
 } from "@aipexstudio/aipex-core";
 import {
@@ -17,17 +20,19 @@ import {
   MessageCircle,
   MessageSquare,
   Palette,
+  Plus,
   Search,
   Settings,
+  Trash2,
   Twitter,
   Users,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/context";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../theme/context";
-import type { ChatSettings } from "../../types";
+import { DEFAULT_MODELS } from "../chatbot/constants";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -50,25 +55,86 @@ import {
 import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import type {
-  ProviderConfigs,
-  SaveStatus,
-  SettingsPageProps,
-  SettingsTab,
-} from "./types";
+import type { SaveStatus, SettingsPageProps, SettingsTab } from "./types";
 
-function createInitialProviderConfigs(): ProviderConfigs {
-  const configs = {} as ProviderConfigs;
-  for (const key of Object.keys(AI_PROVIDERS) as AIProviderKey[]) {
-    const provider = AI_PROVIDERS[key];
-    configs[key] = {
-      host: provider.host,
-      token: "",
-      model: provider.models[0] || "",
-    };
+const PROVIDER_TYPE_TO_KEY: Record<ProviderType, AIProviderKey> = {
+  openai: "openai",
+  google: "google",
+  claude: "anthropic",
+};
+
+const PROVIDER_KEY_TO_TYPE: Partial<Record<AIProviderKey, ProviderType>> = {
+  openai: "openai",
+  google: "google",
+  anthropic: "claude",
+};
+
+const buildDefaultProviderModels = (): CustomModelConfig[] =>
+  (
+    Object.entries(AI_PROVIDERS) as [
+      AIProviderKey,
+      (typeof AI_PROVIDERS)[AIProviderKey],
+    ][]
+  ).map(([key, provider]) => ({
+    id: `builtin-${key}`,
+    name: provider.name,
+    providerType: provider.providerType,
+    aiHost: provider.host,
+    aiToken: "",
+    aiModel: provider.models[0] ?? "",
+    enabled: false,
+  }));
+
+const mergeWithDefaultProviders = (
+  models: CustomModelConfig[],
+): CustomModelConfig[] => {
+  const existingIds = new Set(models.map((model) => model.id));
+  const merged = [...models];
+  for (const model of buildDefaultProviderModels()) {
+    if (!existingIds.has(model.id)) {
+      merged.push(model);
+    }
   }
-  return configs;
-}
+  return merged;
+};
+
+const resolveProviderKey = (
+  model: Pick<CustomModelConfig, "aiHost" | "providerType"> &
+    Partial<Pick<CustomModelConfig, "id">>,
+): AIProviderKey => {
+  if (model.id?.startsWith("builtin-")) {
+    const key = model.id.slice("builtin-".length) as AIProviderKey;
+    if (AI_PROVIDERS[key]) return key;
+  }
+  const detected = model.aiHost ? detectProviderFromHost(model.aiHost) : null;
+  if (detected && AI_PROVIDERS[detected]) {
+    return detected;
+  }
+  return PROVIDER_TYPE_TO_KEY[model.providerType] ?? "openai";
+};
+
+const DEFAULT_MODEL_AUTO_VALUE = "__use-first-available__";
+
+const generateId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `custom-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const createEmptyCustomModel = (
+  providerType: ProviderType = "openai",
+): CustomModelConfig => {
+  const providerKey = PROVIDER_TYPE_TO_KEY[providerType];
+  const providerMeta = AI_PROVIDERS[providerKey];
+  return {
+    id: generateId(),
+    name: "",
+    providerType,
+    aiHost: providerMeta?.host ?? "",
+    aiToken: "",
+    aiModel: providerMeta?.models?.[0] ?? "",
+    enabled: false,
+  };
+};
 
 export function SettingsPage({
   storageAdapter,
@@ -91,9 +157,9 @@ export function SettingsPage({
     }
   }, [effectiveTheme]);
 
-  const [settings, setSettings] = useState<ChatSettings>({});
-  const [selectedProvider, setSelectedProvider] =
-    useState<AIProviderKey>("custom");
+  const [settings, setSettings] = useState<AppSettings>({});
+  const [customModels, setCustomModels] = useState<CustomModelConfig[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -105,38 +171,62 @@ export function SettingsPage({
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [searchTerm, setSearchTerm] = useState("");
   const [dataSharingEnabled, setDataSharingEnabled] = useState(true);
-  const [providerConfigs, setProviderConfigs] = useState<ProviderConfigs>(
-    createInitialProviderConfigs,
-  );
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const result = await storageAdapter.load(storageKey);
         if (result) {
-          const loadedSettings = result as ChatSettings;
-          setSettings(loadedSettings);
+          const loadedSettings = result as AppSettings;
+          let loadedCustomModels = loadedSettings.customModels ?? [];
+          const resolvedProviderType =
+            loadedSettings.providerType ??
+            PROVIDER_KEY_TO_TYPE[loadedSettings.aiProvider as AIProviderKey] ??
+            "openai";
+
+          if (
+            loadedSettings.byokEnabled &&
+            loadedCustomModels.length === 0 &&
+            (loadedSettings.aiHost ||
+              loadedSettings.aiToken ||
+              loadedSettings.aiModel)
+          ) {
+            loadedCustomModels = [
+              {
+                id: generateId(),
+                name: loadedSettings.aiModel,
+                providerType: resolvedProviderType,
+                aiHost: loadedSettings.aiHost ?? "",
+                aiToken: loadedSettings.aiToken ?? "",
+                aiModel: loadedSettings.aiModel ?? "",
+                enabled: true,
+              },
+            ];
+          }
+
+          const mergedCustomModels =
+            mergeWithDefaultProviders(loadedCustomModels);
+
+          setSettings({
+            ...loadedSettings,
+            customModels: mergedCustomModels,
+            providerType: resolvedProviderType,
+            providerEnabled: loadedSettings.providerEnabled ?? false,
+          });
+
+          setCustomModels(mergedCustomModels);
+          const initialSelection = loadedSettings.byokEnabled
+            ? mergedCustomModels.find((model) => model.enabled)?.id ||
+              mergedCustomModels[0]?.id ||
+              null
+            : null;
+          setSelectedModelId(initialSelection);
 
           const loadedDataSharing =
             loadedSettings.dataSharingEnabled !== undefined
               ? loadedSettings.dataSharingEnabled
               : true;
           setDataSharingEnabled(loadedDataSharing);
-
-          let detectedProvider: AIProviderKey = "custom";
-          if (loadedSettings.aiHost) {
-            detectedProvider = detectProviderFromHost(loadedSettings.aiHost);
-          }
-          setSelectedProvider(detectedProvider);
-
-          setProviderConfigs((prev: ProviderConfigs) => ({
-            ...prev,
-            [detectedProvider]: {
-              host: loadedSettings.aiHost || "",
-              token: loadedSettings.aiToken || "",
-              model: loadedSettings.aiModel || "",
-            },
-          }));
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -148,36 +238,201 @@ export function SettingsPage({
     loadSettings();
   }, [storageAdapter, storageKey]);
 
-  const handleProviderChange = useCallback(
-    (provider: AIProviderKey) => {
-      setProviderConfigs((prev: ProviderConfigs) => ({
-        ...prev,
-        [selectedProvider]: {
-          host: settings.aiHost || "",
-          token: settings.aiToken || "",
-          model: settings.aiModel || "",
-        },
-      }));
+  const updateSettingsFromModel = useCallback((model: CustomModelConfig) => {
+    const providerKey = resolveProviderKey(model);
+    setSettings((prev: AppSettings) => ({
+      ...prev,
+      aiHost: model.aiHost,
+      aiToken: model.aiToken,
+      aiModel: model.aiModel,
+      aiProvider: providerKey,
+      providerType: model.providerType,
+      providerEnabled: (prev.byokEnabled ?? false) && model.enabled,
+    }));
+  }, []);
 
-      setSelectedProvider(provider);
-
-      const savedConfig = providerConfigs[provider];
-      setSettings((prev: ChatSettings) => ({
+  useEffect(() => {
+    setSettings((prev: AppSettings) => {
+      const byok = prev.byokEnabled ?? false;
+      const anyEnabled = byok && customModels.some((model) => model.enabled);
+      return {
         ...prev,
-        aiHost: savedConfig.host,
-        aiToken: savedConfig.token,
-        aiModel: savedConfig.model,
-      }));
+        customModels,
+        providerEnabled: anyEnabled,
+      };
+    });
+  }, [customModels]);
+
+  useEffect(() => {
+    if (!selectedModelId) return;
+    const selected = customModels.find((model) => model.id === selectedModelId);
+    if (selected) {
+      updateSettingsFromModel(selected);
+    }
+  }, [customModels, selectedModelId, updateSettingsFromModel]);
+
+  const handleSelectModel = useCallback(
+    (id: string) => {
+      setSelectedModelId(id);
+      const target = customModels.find((model) => model.id === id);
+      if (target) {
+        updateSettingsFromModel(target);
+      }
     },
-    [selectedProvider, settings, providerConfigs],
+    [customModels, updateSettingsFromModel],
   );
+
+  const handleModelFieldChange = useCallback(
+    <K extends keyof CustomModelConfig>(
+      key: K,
+      value: CustomModelConfig[K],
+    ) => {
+      if (!selectedModelId) return;
+      setCustomModels((prev) => {
+        const next = prev.map((model) =>
+          model.id === selectedModelId ? { ...model, [key]: value } : model,
+        );
+        const updated = next.find((model) => model.id === selectedModelId);
+        if (updated) {
+          updateSettingsFromModel(updated);
+        }
+        return next;
+      });
+    },
+    [selectedModelId, updateSettingsFromModel],
+  );
+
+  const handleAddModel = useCallback(() => {
+    const providerType = settings.providerType ?? "openai";
+    const newModel = createEmptyCustomModel(providerType);
+    setCustomModels((prev) => [...prev, newModel]);
+    setSelectedModelId(newModel.id);
+    updateSettingsFromModel(newModel);
+  }, [settings.providerType, updateSettingsFromModel]);
+
+  const handleDeleteModel = useCallback(
+    (id: string) => {
+      setCustomModels((prev) => {
+        const remaining = prev.filter((model) => model.id !== id);
+        const deletedModel = prev.find((model) => model.id === id);
+        const nextSelected =
+          selectedModelId === id ? (remaining[0]?.id ?? null) : selectedModelId;
+        setSelectedModelId(nextSelected);
+        if (nextSelected) {
+          const nextModel = remaining.find(
+            (model) => model.id === nextSelected,
+          );
+          if (nextModel) {
+            updateSettingsFromModel(nextModel);
+          }
+        } else {
+          setSettings((prevSettings: AppSettings) => ({
+            ...prevSettings,
+            aiHost: "",
+            aiToken: "",
+            aiModel: "",
+            providerEnabled: false,
+            defaultModel:
+              prevSettings.defaultModel &&
+              deletedModel &&
+              prevSettings.defaultModel === deletedModel.aiModel
+                ? undefined
+                : prevSettings.defaultModel,
+          }));
+        }
+        return remaining;
+      });
+    },
+    [selectedModelId, updateSettingsFromModel],
+  );
+
+  const handleToggleByok = useCallback(
+    (checked: boolean) => {
+      setSettings((prev: AppSettings) => ({
+        ...prev,
+        byokEnabled: checked,
+        providerEnabled:
+          checked && (prev.customModels ?? customModels).some((m) => m.enabled),
+      }));
+
+      if (checked) {
+        const seeded = mergeWithDefaultProviders(customModels);
+        setCustomModels(seeded);
+        if ((!selectedModelId || customModels.length === 0) && seeded[0]) {
+          setSelectedModelId(seeded[0].id);
+          updateSettingsFromModel(seeded[0]);
+        }
+      }
+
+      if (!checked) {
+        setSelectedModelId(null);
+      }
+    },
+    [customModels, selectedModelId, updateSettingsFromModel],
+  );
+
+  const defaultModelOptions = useMemo(() => {
+    const baseOptions = DEFAULT_MODELS.map(
+      (model: { name: string; value: string }) => ({
+        value: model.value,
+        label: model.name,
+      }),
+    );
+
+    const customOptions = customModels
+      .filter((model) => model.enabled && model.aiModel.trim())
+      .map((model) => ({
+        value: model.aiModel,
+        label:
+          model.name?.trim() ||
+          `${model.aiModel} (custom-${model.providerType})`,
+      }));
+
+    const seen = new Set<string>();
+    const options = [...customOptions, ...baseOptions].filter((option) => {
+      if (seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    });
+
+    if (settings.defaultModel && !seen.has(settings.defaultModel)) {
+      options.push({
+        value: settings.defaultModel,
+        label: settings.defaultModel,
+      });
+    }
+
+    return options;
+  }, [customModels, settings.defaultModel]);
+
+  const handleDefaultModelChange = useCallback((value: string) => {
+    setSettings((prev: AppSettings) => ({
+      ...prev,
+      defaultModel: value === DEFAULT_MODEL_AUTO_VALUE ? undefined : value,
+    }));
+  }, []);
 
   const handleSaveSettings = useCallback(async () => {
     setIsSaving(true);
     setSaveStatus({ type: "", message: "" });
 
+    const enabledModels = settings.byokEnabled
+      ? customModels.filter((model) => model.enabled)
+      : [];
+
+    const availableDefaultModels = new Set(
+      defaultModelOptions.map((option) => option.value),
+    );
+    const resolvedDefaultModel =
+      settings.defaultModel && availableDefaultModels.has(settings.defaultModel)
+        ? settings.defaultModel
+        : undefined;
+
     if (settings.byokEnabled) {
-      if (!settings.aiHost || !settings.aiToken || !settings.aiModel) {
+      const hasIncomplete = enabledModels.some(
+        (model) => !model.aiHost || !model.aiToken || !model.aiModel,
+      );
+      if (hasIncomplete) {
         setSaveStatus({
           type: "error",
           message:
@@ -191,9 +446,29 @@ export function SettingsPage({
     }
 
     try {
+      const selected = selectedModelId
+        ? customModels.find((model) => model.id === selectedModelId)
+        : undefined;
+      const activeModel =
+        settings.byokEnabled && selected?.enabled ? selected : enabledModels[0];
+
       const settingsToSave = {
         ...settings,
+        aiHost: activeModel?.aiHost ?? settings.aiHost,
+        aiToken: activeModel?.aiToken ?? settings.aiToken,
+        aiModel: activeModel?.aiModel ?? settings.aiModel,
+        aiProvider: activeModel
+          ? resolveProviderKey(activeModel)
+          : settings.aiProvider,
+        providerType:
+          activeModel?.providerType ?? settings.providerType ?? "openai",
+        providerEnabled:
+          settings.byokEnabled && enabledModels.length > 0
+            ? (activeModel?.enabled ?? false)
+            : false,
+        customModels,
         dataSharingEnabled,
+        defaultModel: resolvedDefaultModel,
       };
       await storageAdapter.save(storageKey, settingsToSave);
       onSave?.(settingsToSave);
@@ -213,21 +488,82 @@ export function SettingsPage({
     }
   }, [
     settings,
+    customModels,
+    selectedModelId,
     dataSharingEnabled,
     storageAdapter,
     storageKey,
     onSave,
     language,
     t,
+    defaultModelOptions,
   ]);
 
   const handleTestConnection = useCallback(async () => {
     setIsTesting(true);
     setSaveStatus({ type: "", message: "" });
 
+    const enabledModels = settings.byokEnabled
+      ? customModels.filter((model) => model.enabled)
+      : [];
+    const selected = selectedModelId
+      ? customModels.find((model) => model.id === selectedModelId)
+      : undefined;
+    const activeModel =
+      settings.byokEnabled && selected?.enabled
+        ? selected
+        : settings.byokEnabled
+          ? enabledModels[0]
+          : undefined;
+
+    const aiHost = activeModel?.aiHost ?? settings.aiHost;
+    const aiToken = activeModel?.aiToken ?? settings.aiToken;
+    const aiModel = activeModel?.aiModel ?? settings.aiModel;
+    const providerType =
+      activeModel?.providerType ?? settings.providerType ?? "openai";
+    const providerKey: AIProviderKey =
+      activeModel !== undefined
+        ? resolveProviderKey({
+            aiHost: aiHost ?? "",
+            providerType: providerType as ProviderType,
+          })
+        : (settings.aiProvider ?? "openai");
+
+    if (settings.byokEnabled && !activeModel) {
+      setSaveStatus({
+        type: "error",
+        message:
+          language === "zh"
+            ? "请先启用至少一个模型"
+            : "Please enable at least one model",
+      });
+      setIsTesting(false);
+      return;
+    }
+
+    if (!aiHost || !aiToken || !aiModel) {
+      setSaveStatus({
+        type: "error",
+        message:
+          language === "zh"
+            ? "请填写所有必填字段"
+            : "Please fill in all required fields",
+      });
+      setIsTesting(false);
+      return;
+    }
+
     try {
       if (onTestConnection) {
-        const success = await onTestConnection(settings);
+        const success = await onTestConnection({
+          ...settings,
+          aiHost,
+          aiToken,
+          aiModel,
+          aiProvider: providerKey,
+          providerType,
+          customModels,
+        });
         if (success) {
           setSaveStatus({
             type: "success",
@@ -241,16 +577,16 @@ export function SettingsPage({
         }
       } else {
         // Default test implementation
-        if (selectedProvider === "anthropic") {
-          const response = await fetch(settings.aiHost || "", {
+        if (providerKey === "anthropic") {
+          const response = await fetch(aiHost || "", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-api-key": settings.aiToken || "",
+              "x-api-key": aiToken || "",
               "anthropic-version": "2023-06-01",
             },
             body: JSON.stringify({
-              model: settings.aiModel,
+              model: aiModel,
               messages: [{ role: "user", content: "Hi" }],
               max_tokens: 10,
             }),
@@ -261,15 +597,15 @@ export function SettingsPage({
             throw new Error(`HTTP ${response.status}: ${errorText}`);
           }
         } else {
-          const response = await fetch(settings.aiHost || "", {
+          const response = await fetch(aiHost || "", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${settings.aiToken}`,
-              "x-api-key": settings.aiToken || "",
+              Authorization: `Bearer ${aiToken}`,
+              "x-api-key": aiToken || "",
             },
             body: JSON.stringify({
-              model: settings.aiModel,
+              model: aiModel,
               messages: [{ role: "user", content: "Hi" }],
               max_tokens: 10,
             }),
@@ -303,13 +639,13 @@ export function SettingsPage({
     } finally {
       setIsTesting(false);
     }
-  }, [settings, selectedProvider, onTestConnection, t]);
+  }, [settings, customModels, selectedModelId, onTestConnection, t, language]);
 
   const handleReset = useCallback(() => {
     if (confirm(t("settings.resetConfirm"))) {
-      setProviderConfigs(createInitialProviderConfigs());
+      setCustomModels([]);
       setSettings({});
-      setSelectedProvider("custom");
+      setSelectedModelId(null);
       setSaveStatus({
         type: "info",
         message:
@@ -337,6 +673,42 @@ export function SettingsPage({
     [storageAdapter, storageKey, settings],
   );
 
+  const filteredModels = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    if (!term) return customModels;
+    return customModels.filter((model) => {
+      const name = model.name?.toLowerCase() ?? "";
+      const modelName = model.aiModel?.toLowerCase() ?? "";
+      return name.includes(term) || modelName.includes(term);
+    });
+  }, [customModels, searchTerm]);
+
+  const selectedModel = selectedModelId
+    ? customModels.find((model) => model.id === selectedModelId)
+    : undefined;
+
+  const selectedProviderKey: AIProviderKey = selectedModel
+    ? resolveProviderKey(selectedModel)
+    : ("openai" as AIProviderKey);
+
+  const selectedProviderMeta = AI_PROVIDERS[selectedProviderKey];
+  const enabledCustomModelsForActions = customModels.filter(
+    (model) => model.enabled,
+  );
+  const actionModel = selectedModel?.enabled
+    ? selectedModel
+    : enabledCustomModelsForActions[0];
+  const canTest =
+    !!actionModel &&
+    actionModel.enabled &&
+    Boolean(actionModel.aiHost) &&
+    Boolean(actionModel.aiToken) &&
+    Boolean(actionModel.aiModel);
+  const canSave =
+    !settings.byokEnabled ||
+    enabledCustomModelsForActions.length === 0 ||
+    canTest;
+
   if (isLoading) {
     return (
       <div
@@ -356,13 +728,6 @@ export function SettingsPage({
       </div>
     );
   }
-
-  const filteredProviders = (
-    Object.keys(AI_PROVIDERS) as AIProviderKey[]
-  ).filter((key) => {
-    const provider = AI_PROVIDERS[key];
-    return provider.name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
 
   return (
     <div className={cn("min-h-screen bg-background", className)}>
@@ -663,6 +1028,49 @@ export function SettingsPage({
 
           {/* AI Configuration Tab */}
           <TabsContent value="ai" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">
+                      {language === "zh" ? "默认模型" : "Default model"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {language === "zh"
+                        ? "新建会话优先使用该模型；未选择时使用列表首个可用模型"
+                        : "New chats start with this model; otherwise use the first available"}
+                    </p>
+                  </div>
+                  <Select
+                    value={settings.defaultModel || DEFAULT_MODEL_AUTO_VALUE}
+                    onValueChange={handleDefaultModelChange}
+                  >
+                    <SelectTrigger className="w-full sm:w-64">
+                      <SelectValue
+                        placeholder={
+                          language === "zh"
+                            ? "使用列表首个模型"
+                            : "Use first available"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DEFAULT_MODEL_AUTO_VALUE}>
+                        {language === "zh"
+                          ? "使用列表首个模型"
+                          : "Use first available"}
+                      </SelectItem>
+                      {defaultModelOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* BYOK Toggle */}
             <Card>
               <CardContent className="pt-6">
@@ -678,9 +1086,7 @@ export function SettingsPage({
                   <div className="ml-6">
                     <Switch
                       checked={settings.byokEnabled || false}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, byokEnabled: checked })
-                      }
+                      onCheckedChange={handleToggleByok}
                     />
                   </div>
                 </div>
@@ -691,10 +1097,10 @@ export function SettingsPage({
             {settings.byokEnabled && (
               <Card className="overflow-hidden">
                 <div className="flex" style={{ minHeight: "500px" }}>
-                  {/* Left Sidebar - Provider List */}
-                  <div className="w-64 border-r flex flex-col">
-                    {/* Search Bar */}
-                    <div className="p-3 border-b">
+                  {/* Left Sidebar - Custom Model List */}
+                  <div className="w-72 border-r flex flex-col">
+                    {/* Search + Add */}
+                    <div className="p-3 border-b space-y-3">
                       <div className="relative">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -705,55 +1111,90 @@ export function SettingsPage({
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
                       </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleAddModel}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {language === "zh" ? "新增模型" : "Add Model"}
+                      </Button>
                     </div>
 
-                    {/* Provider List */}
+                    {/* Model List */}
                     <div className="flex-1 overflow-y-auto">
-                      {filteredProviders.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                          <Search className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                      {filteredModels.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground space-y-3">
+                          <Search className="w-12 h-12 mx-auto text-muted-foreground" />
                           <p className="text-sm">
                             {t("settings.noProvidersFound")}
                           </p>
+                          <Button size="sm" onClick={handleAddModel}>
+                            {language === "zh" ? "创建模型" : "Create model"}
+                          </Button>
                         </div>
                       ) : (
-                        filteredProviders.map((key) => {
-                          const provider = AI_PROVIDERS[key];
-                          const isSelected = selectedProvider === key;
+                        filteredModels.map((model) => {
+                          const providerKey = resolveProviderKey(model);
+                          const provider = AI_PROVIDERS[providerKey];
+                          const isSelected = selectedModelId === model.id;
+                          const displayName =
+                            model.name?.trim() ||
+                            model.aiModel ||
+                            provider.name ||
+                            t("settings.aiModel");
 
                           return (
-                            <Button
-                              key={key}
-                              variant="ghost"
-                              onClick={() => handleProviderChange(key)}
+                            <div
+                              key={model.id}
                               className={cn(
-                                "w-full justify-start h-auto p-4 border-l-2 rounded-none",
-                                isSelected
-                                  ? "border-primary bg-primary/5"
-                                  : "border-transparent",
+                                "flex items-center group border-b border-border/40",
+                                isSelected ? "bg-primary/5" : "",
                               )}
                             >
-                              <div
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleSelectModel(model.id)}
                                 className={cn(
-                                  "w-8 h-8 rounded-lg flex items-center justify-center text-lg mr-3",
-                                  isSelected ? "bg-primary/10" : "bg-muted",
+                                  "w-full justify-start h-auto p-4 border-l-2 rounded-none text-left",
+                                  isSelected
+                                    ? "border-primary bg-primary/5"
+                                    : "border-transparent",
                                 )}
                               >
-                                {provider.icon}
-                              </div>
-
-                              <div className="flex-1 text-left">
-                                <div className="text-sm font-medium">
-                                  {provider.name}
+                                <div className="flex items-center w-full gap-3">
+                                  <div
+                                    className={cn(
+                                      "w-8 h-8 rounded-lg flex items-center justify-center text-lg",
+                                      isSelected ? "bg-primary/10" : "bg-muted",
+                                    )}
+                                  >
+                                    {provider.icon}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium">
+                                      {displayName}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {provider.name}
+                                    </div>
+                                  </div>
+                                  {model.enabled && (
+                                    <Badge variant="default">
+                                      {t("settings.current")}
+                                    </Badge>
+                                  )}
                                 </div>
-                              </div>
-
-                              {isSelected && (
-                                <Badge variant="default" className="ml-2">
-                                  {t("settings.current")}
-                                </Badge>
-                              )}
-                            </Button>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDeleteModel(model.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           );
                         })
                       )}
@@ -765,142 +1206,193 @@ export function SettingsPage({
                     {/* Header */}
                     <div className="p-6 border-b">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-3xl">
-                            {AI_PROVIDERS[selectedProvider].icon}
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold">
-                              {AI_PROVIDERS[selectedProvider].name}
-                            </h3>
-                            {selectedProvider !== "custom" &&
-                              AI_PROVIDERS[selectedProvider].docs && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  asChild
-                                  className="h-auto p-0"
-                                >
-                                  <a
-                                    href={AI_PROVIDERS[selectedProvider].docs}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1"
+                        {selectedModel ? (
+                          <>
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-3xl">
+                                {selectedProviderMeta.icon}
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-semibold">
+                                  {selectedModel.name?.trim() ||
+                                    selectedModel.aiModel ||
+                                    t("settings.aiModel")}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {selectedProviderMeta.name}
+                                </p>
+                                {selectedProviderMeta.docs && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    asChild
+                                    className="h-auto p-0"
                                   >
-                                    {t("settings.getApiKey")}
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </Button>
-                              )}
+                                    <a
+                                      href={selectedProviderMeta.docs}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1"
+                                    >
+                                      {t("settings.getApiKey")}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                {language === "zh" ? "启用" : "Enable"}
+                              </span>
+                              <Switch
+                                checked={selectedModel.enabled}
+                                onCheckedChange={(checked) =>
+                                  handleModelFieldChange("enabled", checked)
+                                }
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-muted-foreground">
+                            {language === "zh"
+                              ? "选择或创建一个模型以开始配置"
+                              : "Select or create a model to configure"}
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Configuration Form */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                      {/* API Host */}
-                      <div className="space-y-2">
-                        <Label htmlFor="aiHost">
-                          {t("settings.aiHost")}
-                          <span className="text-destructive ml-1">*</span>
-                        </Label>
-                        <Input
-                          id="aiHost"
-                          type="url"
-                          value={settings.aiHost || ""}
-                          onChange={(e) =>
-                            setSettings({ ...settings, aiHost: e.target.value })
-                          }
-                          placeholder={AI_PROVIDERS[selectedProvider].host}
-                        />
-                      </div>
+                      {selectedModel ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="modelName">
+                              {language === "zh" ? "展示名称" : "Display Name"}
+                            </Label>
+                            <Input
+                              id="modelName"
+                              type="text"
+                              value={selectedModel.name || ""}
+                              onChange={(e) =>
+                                handleModelFieldChange("name", e.target.value)
+                              }
+                              placeholder={
+                                language === "zh"
+                                  ? "可选，用于下拉展示"
+                                  : "Optional display name"
+                              }
+                            />
+                          </div>
 
-                      {/* API Token */}
-                      <div className="space-y-2">
-                        <Label htmlFor="aiToken">
-                          {t("settings.aiToken")}
-                          <span className="text-destructive ml-1">*</span>
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="aiToken"
-                            type={showToken ? "text" : "password"}
-                            value={settings.aiToken || ""}
-                            onChange={(e) =>
-                              setSettings({
-                                ...settings,
-                                aiToken: e.target.value,
-                              })
-                            }
-                            placeholder={
-                              AI_PROVIDERS[selectedProvider].tokenPlaceholder
-                            }
-                            className="pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowToken(!showToken)}
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          >
-                            {showToken ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
+                          {/* Provider Type */}
+                          <div className="space-y-2">
+                            <Label>
+                              {language === "zh"
+                                ? "Provider 类型"
+                                : "Provider Type"}
+                              <span className="text-destructive ml-1">*</span>
+                            </Label>
+                            <Select
+                              value={selectedModel.providerType}
+                              onValueChange={(value: ProviderType) =>
+                                handleModelFieldChange("providerType", value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="openai">OpenAI</SelectItem>
+                                <SelectItem value="claude">Claude</SelectItem>
+                                <SelectItem value="google">Google</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      {/* Model Selection */}
-                      <div className="space-y-2">
-                        <Label htmlFor="aiModel">
-                          {t("settings.aiModel")}
-                          <span className="text-destructive ml-1">*</span>
-                        </Label>
-                        {AI_PROVIDERS[selectedProvider].models.length > 0 ? (
-                          <Select
-                            value={settings.aiModel || ""}
-                            onValueChange={(value: string) =>
-                              setSettings({ ...settings, aiModel: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={
-                                  language === "zh"
-                                    ? "选择模型"
-                                    : "Select a model"
+                          {/* API Host */}
+                          <div className="space-y-2">
+                            <Label htmlFor="aiHost">
+                              {t("settings.aiHost")}
+                              <span className="text-destructive ml-1">*</span>
+                            </Label>
+                            <Input
+                              id="aiHost"
+                              type="url"
+                              value={selectedModel.aiHost || ""}
+                              onChange={(e) =>
+                                handleModelFieldChange("aiHost", e.target.value)
+                              }
+                              placeholder={selectedProviderMeta.host}
+                            />
+                          </div>
+
+                          {/* API Token */}
+                          <div className="space-y-2">
+                            <Label htmlFor="aiToken">
+                              {t("settings.aiToken")}
+                              <span className="text-destructive ml-1">*</span>
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="aiToken"
+                                type={showToken ? "text" : "password"}
+                                value={selectedModel.aiToken || ""}
+                                onChange={(e) =>
+                                  handleModelFieldChange(
+                                    "aiToken",
+                                    e.target.value,
+                                  )
                                 }
+                                placeholder={
+                                  selectedProviderMeta.tokenPlaceholder
+                                }
+                                className="pr-10"
                               />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {AI_PROVIDERS[selectedProvider].models.map(
-                                (model: string) => (
-                                  <SelectItem key={model} value={model}>
-                                    {model}
-                                  </SelectItem>
-                                ),
-                              )}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            id="aiModel"
-                            type="text"
-                            value={settings.aiModel || ""}
-                            onChange={(e) =>
-                              setSettings({
-                                ...settings,
-                                aiModel: e.target.value,
-                              })
-                            }
-                            placeholder={t("settings.modelPlaceholder")}
-                          />
-                        )}
-                      </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowToken(!showToken)}
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              >
+                                {showToken ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Model Selection */}
+                          <div className="space-y-2">
+                            <Label htmlFor="aiModel">
+                              {t("settings.aiModel")}
+                              <span className="text-destructive ml-1">*</span>
+                            </Label>
+                            <Input
+                              id="aiModel"
+                              type="text"
+                              value={selectedModel.aiModel || ""}
+                              onChange={(e) =>
+                                handleModelFieldChange(
+                                  "aiModel",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder={t("settings.modelPlaceholder")}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center text-muted-foreground py-12">
+                          {language === "zh"
+                            ? "左侧选择或创建模型以配置"
+                            : "Select or create a model on the left to configure"}
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Buttons - Footer */}
@@ -909,12 +1401,7 @@ export function SettingsPage({
                         <Button
                           variant="outline"
                           onClick={handleTestConnection}
-                          disabled={
-                            isTesting ||
-                            !settings.aiHost ||
-                            !settings.aiToken ||
-                            !settings.aiModel
-                          }
+                          disabled={isTesting || !canTest}
                           className="flex-1"
                         >
                           {isTesting ? (
@@ -929,12 +1416,7 @@ export function SettingsPage({
 
                         <Button
                           onClick={handleSaveSettings}
-                          disabled={
-                            isSaving ||
-                            !settings.aiHost ||
-                            !settings.aiToken ||
-                            !settings.aiModel
-                          }
+                          disabled={isSaving || !canSave}
                           className="flex-1"
                         >
                           {isSaving ? (

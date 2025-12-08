@@ -1,5 +1,6 @@
 // UI Types
 
+export type { AppSettings } from "@aipexstudio/aipex-core";
 // Adapter Types
 export type { ChatAdapterOptions, ChatAdapterState } from "./adapter";
 
@@ -12,7 +13,6 @@ export type {
   ChatbotTheme,
   ChatbotThemeVariables,
   ChatConfig,
-  ChatSettings,
   ContextTagsSlotProps,
   FooterProps,
   HeaderProps,

@@ -6,8 +6,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { AIProviderKey } from "@aipexstudio/aipex-core";
-import type { ChatSettings } from "../types";
+import type { AIProviderKey, AppSettings } from "@aipexstudio/aipex-core";
 
 export interface ProviderConfig {
   provider: AIProviderKey;
@@ -40,7 +39,7 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
  * const model = provider("gpt-4");
  * ```
  */
-export function createAIProvider(settings: ChatSettings) {
+export function createAIProvider(settings: AppSettings) {
   const provider = settings.aiProvider ?? "openai";
   const apiKey = settings.aiToken ?? "";
   const defaults =

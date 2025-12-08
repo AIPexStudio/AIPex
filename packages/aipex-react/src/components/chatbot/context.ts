@@ -1,4 +1,8 @@
-import type { AIPex, KeyValueStorage } from "@aipexstudio/aipex-core";
+import type {
+  AIPex,
+  AppSettings,
+  KeyValueStorage,
+} from "@aipexstudio/aipex-core";
 import { createContext, type ReactNode, useContext } from "react";
 import type {
   ChatbotComponents,
@@ -6,7 +10,6 @@ import type {
   ChatbotSlots,
   ChatbotTheme,
   ChatConfig,
-  ChatSettings,
   ChatStatus,
   ContextItem,
   UIMessage,
@@ -58,16 +61,16 @@ export { ChatContext };
 
 export interface ConfigContextValue {
   /** Current settings */
-  settings: ChatSettings;
+  settings: AppSettings;
   /** Whether settings are loading */
   isLoading: boolean;
   /** Update a setting */
-  updateSetting: <K extends keyof ChatSettings>(
+  updateSetting: <K extends keyof AppSettings>(
     key: K,
-    value: ChatSettings[K],
+    value: AppSettings[K],
   ) => Promise<void>;
   /** Update multiple settings */
-  updateSettings: (updates: Partial<ChatSettings>) => Promise<void>;
+  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
 }
 
 const ConfigContext = createContext<ConfigContextValue | null>(null);
@@ -192,7 +195,7 @@ export interface ChatbotProviderProps {
   /** Additional CSS class name */
   className?: string;
   /** Initial settings */
-  initialSettings?: Partial<ChatSettings>;
+  initialSettings?: Partial<AppSettings>;
   /** Storage adapter for persisting settings (defaults to localStorage) */
   storageAdapter?: KeyValueStorage<unknown>;
   /** Children */

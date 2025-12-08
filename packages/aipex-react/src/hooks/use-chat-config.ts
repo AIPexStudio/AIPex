@@ -1,22 +1,25 @@
 import {
+  type AppSettings,
   DEFAULT_APP_SETTINGS,
   type KeyValueStorage,
   STORAGE_KEYS,
 } from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useState } from "react";
 import { localStorageKeyValueAdapter } from "../lib/storage";
-import type { ChatSettings } from "../types";
 
-const DEFAULT_SETTINGS: ChatSettings = {
+const DEFAULT_SETTINGS: AppSettings = {
   ...DEFAULT_APP_SETTINGS,
   aiHost: "",
   aiToken: "",
   aiModel: "gpt-4",
+  providerEnabled: false,
+  providerType: "openai",
+  customModels: [],
 };
 
 export interface UseChatConfigOptions {
   /** Initial settings (will be overridden by stored values) */
-  initialSettings?: Partial<ChatSettings>;
+  initialSettings?: Partial<AppSettings>;
   /** Storage adapter for persisting settings (KeyValueStorage from @aipexstudio/aipex-core) */
   storageAdapter?: KeyValueStorage<unknown>;
   /** Whether to auto-load settings from storage on mount */
@@ -25,16 +28,16 @@ export interface UseChatConfigOptions {
 
 export interface UseChatConfigReturn {
   /** Current settings */
-  settings: ChatSettings;
+  settings: AppSettings;
   /** Whether settings are being loaded */
   isLoading: boolean;
   /** Update a single setting */
-  updateSetting: <K extends keyof ChatSettings>(
+  updateSetting: <K extends keyof AppSettings>(
     key: K,
-    value: ChatSettings[K],
+    value: AppSettings[K],
   ) => Promise<void>;
   /** Update multiple settings at once */
-  updateSettings: (updates: Partial<ChatSettings>) => Promise<void>;
+  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   /** Reset settings to defaults */
   resetSettings: () => Promise<void>;
   /** Reload settings from storage */
@@ -74,7 +77,7 @@ export function useChatConfig(
     autoLoad = true,
   } = options;
 
-  const [settings, setSettings] = useState<ChatSettings>({
+  const [settings, setSettings] = useState<AppSettings>({
     ...DEFAULT_SETTINGS,
     ...initialSettings,
   });
@@ -85,7 +88,13 @@ export function useChatConfig(
     try {
       const stored = await storageAdapter.load(STORAGE_KEYS.SETTINGS);
       if (stored) {
-        setSettings((prev: ChatSettings) => ({ ...prev, ...stored }));
+        setSettings((prev: AppSettings) => ({
+          ...prev,
+          ...stored,
+          customModels: (stored as AppSettings).customModels ?? [],
+          providerType: (stored as AppSettings).providerType ?? "openai",
+          providerEnabled: (stored as AppSettings).providerEnabled ?? false,
+        }));
       }
     } catch (error) {
       console.error("Failed to load chat settings:", error);
@@ -95,7 +104,7 @@ export function useChatConfig(
   }, [storageAdapter]);
 
   const saveSettings = useCallback(
-    async (newSettings: ChatSettings) => {
+    async (newSettings: AppSettings) => {
       try {
         await storageAdapter.save(STORAGE_KEYS.SETTINGS, newSettings);
       } catch (error) {
@@ -112,9 +121,9 @@ export function useChatConfig(
   }, [autoLoad, loadSettings]);
 
   const updateSetting = useCallback(
-    async <K extends keyof ChatSettings>(
+    async <K extends keyof AppSettings>(
       key: K,
-      value: ChatSettings[K],
+      value: AppSettings[K],
     ): Promise<void> => {
       const newSettings = { ...settings, [key]: value };
       setSettings(newSettings);
@@ -124,7 +133,7 @@ export function useChatConfig(
   );
 
   const updateSettings = useCallback(
-    async (updates: Partial<ChatSettings>): Promise<void> => {
+    async (updates: Partial<AppSettings>): Promise<void> => {
       const newSettings = { ...settings, ...updates };
       setSettings(newSettings);
       await saveSettings(newSettings);
