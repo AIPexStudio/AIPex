@@ -24,10 +24,9 @@
   <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a> | <a href="README.de.md">Deutsch</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.ja.md">日本語</a> | <a href="README.ko.md">한국어</a> | <a href="README.pt.md">Português</a> | <a href="README.ru.md">Русский</a>
 </p>
 
-<!-- TODO: Add a hero GIF here showing the core automation flow -->
-<!-- <p align="center">
-  <img src="assets/demo.gif" alt="AIPex Demo" width="600">
-</p> -->
+<p align="center">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/Q_KmyMJ11wc?si=NSZp--QxIKyWl88C" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</p>
 
 ---
 
