@@ -23,10 +23,9 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-<!-- TODO: 添加一个展示核心自动化流程的 Hero GIF -->
-<!-- <p align="center">
-  <img src="assets/demo.gif" alt="AIPex Demo" width="600">
-</p> -->
+<p align="center">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/Q_KmyMJ11wc?si=NSZp--QxIKyWl88C" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</p>
 
 ---
 
