@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import {
-  AIPexAgent,
+  AIPex,
   aisdk,
   ConversationManager,
   InMemoryStorage,
@@ -14,7 +14,7 @@ async function main() {
   const storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
   const manager = new ConversationManager(storage);
 
-  const agent = AIPexAgent.create({
+  const agent = AIPex.create({
     instructions: "You are a helpful assistant that remembers conversations.",
     model: aisdk(openai("gpt-4o")),
     conversationManager: manager,
@@ -28,7 +28,7 @@ async function main() {
   console.log("User: My favorite color is blue");
   console.log("Assistant: ");
 
-  for await (const event of agent.executeStream("My favorite color is blue")) {
+  for await (const event of agent.chat("My favorite color is blue")) {
     if (event.type === "session_created") {
       mainSessionId = event.sessionId;
       console.log(`[Session ${mainSessionId} created]`);
@@ -46,10 +46,9 @@ async function main() {
   console.log("\n\nUser: My favorite food is sushi");
   console.log("Assistant: ");
 
-  for await (const event of agent.continueConversation(
-    mainSessionId,
-    "My favorite food is sushi",
-  )) {
+  for await (const event of agent.chat("My favorite food is sushi", {
+    sessionId: mainSessionId,
+  })) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     }
@@ -58,10 +57,9 @@ async function main() {
   console.log("\n\nUser: I like playing tennis");
   console.log("Assistant: ");
 
-  for await (const event of agent.continueConversation(
-    mainSessionId,
-    "I like playing tennis",
-  )) {
+  for await (const event of agent.chat("I like playing tennis", {
+    sessionId: mainSessionId,
+  })) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     }
@@ -77,10 +75,9 @@ async function main() {
   console.log("User: What do I like?");
   console.log("Assistant: ");
 
-  for await (const event of agent.continueConversation(
-    mainSessionId,
-    "What do I like?",
-  )) {
+  for await (const event of agent.chat("What do I like?", {
+    sessionId: mainSessionId,
+  })) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     }
@@ -92,10 +89,9 @@ async function main() {
   console.log("User: My favorite food is pizza (different answer!)");
   console.log("Assistant: ");
 
-  for await (const event of agent.continueConversation(
-    forkedSession.id,
-    "My favorite food is pizza",
-  )) {
+  for await (const event of agent.chat("My favorite food is pizza", {
+    sessionId: forkedSession.id,
+  })) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     }
@@ -104,10 +100,9 @@ async function main() {
   console.log("\n\nUser (in fork): What do I like?");
   console.log("Assistant: ");
 
-  for await (const event of agent.continueConversation(
-    forkedSession.id,
-    "What do I like?",
-  )) {
+  for await (const event of agent.chat("What do I like?", {
+    sessionId: forkedSession.id,
+  })) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     }

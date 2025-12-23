@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import {
-  AIPexAgent,
+  AIPex,
   aisdk,
   ConversationManager,
   InMemoryStorage,
@@ -12,7 +12,7 @@ async function demonstrateMetrics() {
   const storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
   const manager = new ConversationManager(storage);
 
-  const agent = AIPexAgent.create({
+  const agent = AIPex.create({
     name: "MetricsDemo",
     instructions: "You are a helpful assistant that demonstrates metrics.",
     model: aisdk(openai("gpt-4o")),
@@ -22,7 +22,7 @@ async function demonstrateMetrics() {
 
   console.log("Starting agent execution...\n");
 
-  for await (const event of agent.executeStream(
+  for await (const event of agent.chat(
     "Hello! Can you help me understand how metrics work?",
   )) {
     switch (event.type) {

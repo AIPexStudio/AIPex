@@ -100,17 +100,6 @@ export interface ChatOptions {
   contexts?: Context[] | string[];
 }
 
-/**
- * @deprecated Use AIPexOptions instead
- */
-export type AIPexAgentOptions<
-  TTools extends readonly FunctionTool<any, any, any>[] = FunctionTool<
-    any,
-    any,
-    any
-  >[],
-> = AIPexOptions<TTools>;
-
 export interface AgentMetrics {
   tokensUsed: number;
   promptTokens: number;

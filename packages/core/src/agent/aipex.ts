@@ -258,7 +258,26 @@ export class AIPex {
 
     // If sessionId is provided, continue existing conversation
     if (chatOptions?.sessionId) {
-      yield* this.continueConversation(chatOptions.sessionId, finalInput);
+      if (!this.conversationManager) {
+        throw new Error(
+          "ConversationManager is required for continuing conversations",
+        );
+      }
+
+      const session = await this.conversationManager.getSession(
+        chatOptions.sessionId,
+      );
+      if (!session) {
+        throw new Error(`Session ${chatOptions.sessionId} not found`);
+      }
+
+      yield {
+        type: "session_resumed",
+        sessionId: chatOptions.sessionId,
+        itemCount: session.getItemCount(),
+      };
+
+      yield* this.runExecution(finalInput, session);
       return;
     }
 
@@ -271,40 +290,6 @@ export class AIPex {
     }
 
     yield* this.runExecution(finalInput, session);
-  }
-
-  /**
-   * @deprecated Use chat() instead
-   */
-  async *executeStream(input: string): AsyncGenerator<AgentEvent> {
-    yield* this.chat(input);
-  }
-
-  /**
-   * @deprecated Use chat(input, { sessionId }) instead
-   */
-  async *continueConversation(
-    sessionId: string,
-    input: string,
-  ): AsyncGenerator<AgentEvent> {
-    if (!this.conversationManager) {
-      throw new Error(
-        "ConversationManager is required for continuing conversations",
-      );
-    }
-
-    const session = await this.conversationManager.getSession(sessionId);
-    if (!session) {
-      throw new Error(`Session ${sessionId} not found`);
-    }
-
-    yield {
-      type: "session_resumed",
-      sessionId,
-      itemCount: session.getItemCount(),
-    };
-
-    yield* this.runExecution(input, session);
   }
 
   getConversationManager(): ConversationManager | undefined {

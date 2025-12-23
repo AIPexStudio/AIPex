@@ -46,7 +46,7 @@ export const AI_PROVIDERS = {
     name: "Google",
     icon: "🔍",
     models: [
-      "gemini-2.0-flash-exp",
+      "gemini-2.5-flash-exp",
       "gemini-1.5-pro",
       "gemini-1.5-flash",
     ] as const,
