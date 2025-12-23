@@ -5,6 +5,7 @@
 
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { AIProviderKey, AppSettings } from "@aipexstudio/aipex-core";
 
@@ -13,14 +14,6 @@ export interface ProviderConfig {
   apiKey: string;
   baseURL?: string;
 }
-
-const PROVIDER_DEFAULTS = {
-  openai: { baseURL: "https://api.openai.com/v1" },
-  anthropic: { baseURL: "https://api.anthropic.com" },
-  google: { baseURL: "https://generativelanguage.googleapis.com/v1beta" },
-} as const;
-
-const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
 /**
  * Create an AI SDK provider instance based on settings
@@ -33,7 +26,6 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
  * const provider = createAIProvider({
  *   aiProvider: "openai",
  *   aiToken: "sk-...",
- *   aiHost: "https://api.openai.com/v1"
  * });
  *
  * const model = provider("gpt-4");
@@ -42,16 +34,22 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 export function createAIProvider(settings: AppSettings) {
   const provider = settings.aiProvider ?? "openai";
   const apiKey = settings.aiToken ?? "";
-  const defaults =
-    PROVIDER_DEFAULTS[provider as keyof typeof PROVIDER_DEFAULTS];
-  const baseURL = settings.aiHost || defaults?.baseURL || DEFAULT_BASE_URL;
+  const baseURL = settings.aiHost || undefined;
 
   switch (provider) {
     case "anthropic":
       return createAnthropic({ apiKey, baseURL });
     case "google":
       return createGoogleGenerativeAI({ apiKey, baseURL });
+    case "openai":
+      return createOpenAI({ apiKey, baseURL });
     default:
+      // For custom providers, baseURL is required
+      if (!baseURL) {
+        throw new Error(
+          `Custom provider "${provider}" requires aiHost to be specified`,
+        );
+      }
       return createOpenAICompatible({ apiKey, baseURL, name: provider });
   }
 }

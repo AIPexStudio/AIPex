@@ -79,7 +79,7 @@ const buildDefaultProviderModels = (): CustomModelConfig[] =>
     id: `builtin-${key}`,
     name: provider.name,
     providerType: provider.providerType,
-    aiHost: provider.host,
+    aiHost: "host" in provider ? (provider.host ?? "") : "",
     aiToken: "",
     aiModel: provider.models[0] ?? "",
     enabled: false,
@@ -129,11 +129,86 @@ const createEmptyCustomModel = (
     id: generateId(),
     name: "",
     providerType,
-    aiHost: providerMeta?.host ?? "",
+    aiHost:
+      providerMeta && "host" in providerMeta ? (providerMeta.host ?? "") : "",
     aiToken: "",
     aiModel: providerMeta?.models?.[0] ?? "",
     enabled: false,
   };
+};
+
+interface ResolvedModelConfig {
+  activeModel: CustomModelConfig | undefined;
+  aiHost: string;
+  aiToken: string;
+  aiModel: string;
+  providerType: ProviderType;
+  providerKey: AIProviderKey;
+}
+
+const resolveActiveModel = (
+  settings: AppSettings,
+  customModels: CustomModelConfig[],
+  selectedModelId: string | null,
+): ResolvedModelConfig => {
+  const enabledModels = settings.byokEnabled
+    ? customModels.filter((model) => model.enabled)
+    : [];
+  const selected = selectedModelId
+    ? customModels.find((model) => model.id === selectedModelId)
+    : undefined;
+  const activeModel =
+    settings.byokEnabled && selected?.enabled
+      ? selected
+      : settings.byokEnabled
+        ? enabledModels[0]
+        : undefined;
+
+  const providerType =
+    activeModel?.providerType ?? settings.providerType ?? "openai";
+  const providerKey: AIProviderKey =
+    activeModel !== undefined
+      ? resolveProviderKey({
+          aiHost: activeModel.aiHost ?? "",
+          providerType: providerType as ProviderType,
+        })
+      : (settings.aiProvider ?? "openai");
+  const providerMeta = AI_PROVIDERS[providerKey];
+
+  const aiHost =
+    activeModel?.aiHost ??
+    (providerMeta && "host" in providerMeta ? (providerMeta.host ?? "") : "") ??
+    settings.aiHost ??
+    "";
+  const aiToken = activeModel?.aiToken ?? settings.aiToken ?? "";
+  const aiModel = activeModel?.aiModel ?? settings.aiModel ?? "";
+
+  return {
+    activeModel,
+    aiHost,
+    aiToken,
+    aiModel,
+    providerType: providerType as ProviderType,
+    providerKey,
+  };
+};
+
+const ERROR_MESSAGES = {
+  enableOneModel: {
+    zh: "请先启用至少一个模型",
+    en: "Please enable at least one model",
+  },
+  fillRequired: {
+    zh: "请填写所有必填字段",
+    en: "Please fill in all required fields",
+  },
+} as const;
+
+const createErrorMessage = (
+  key: keyof typeof ERROR_MESSAGES,
+  language: string,
+): string => {
+  return ERROR_MESSAGES[key][language as "zh" | "en"] ?? ERROR_MESSAGES[key].en;
 };
 
 export function SettingsPage({
@@ -430,15 +505,12 @@ export function SettingsPage({
 
     if (settings.byokEnabled) {
       const hasIncomplete = enabledModels.some(
-        (model) => !model.aiHost || !model.aiToken || !model.aiModel,
+        (model) => !model.aiToken || !model.aiModel,
       );
       if (hasIncomplete) {
         setSaveStatus({
           type: "error",
-          message:
-            language === "zh"
-              ? "请填写所有必填字段"
-              : "Please fill in all required fields",
+          message: createErrorMessage("fillRequired", language),
         });
         setIsSaving(false);
         return;
@@ -446,22 +518,22 @@ export function SettingsPage({
     }
 
     try {
-      const selected = selectedModelId
-        ? customModels.find((model) => model.id === selectedModelId)
-        : undefined;
-      const activeModel =
-        settings.byokEnabled && selected?.enabled ? selected : enabledModels[0];
+      const {
+        activeModel,
+        aiHost,
+        aiToken,
+        aiModel,
+        providerType,
+        providerKey,
+      } = resolveActiveModel(settings, customModels, selectedModelId);
 
       const settingsToSave = {
         ...settings,
-        aiHost: activeModel?.aiHost ?? settings.aiHost,
-        aiToken: activeModel?.aiToken ?? settings.aiToken,
-        aiModel: activeModel?.aiModel ?? settings.aiModel,
-        aiProvider: activeModel
-          ? resolveProviderKey(activeModel)
-          : settings.aiProvider,
-        providerType:
-          activeModel?.providerType ?? settings.providerType ?? "openai",
+        aiHost,
+        aiToken,
+        aiModel,
+        aiProvider: providerKey,
+        providerType,
         providerEnabled:
           settings.byokEnabled && enabledModels.length > 0
             ? (activeModel?.enabled ?? false)
@@ -503,51 +575,22 @@ export function SettingsPage({
     setIsTesting(true);
     setSaveStatus({ type: "", message: "" });
 
-    const enabledModels = settings.byokEnabled
-      ? customModels.filter((model) => model.enabled)
-      : [];
-    const selected = selectedModelId
-      ? customModels.find((model) => model.id === selectedModelId)
-      : undefined;
-    const activeModel =
-      settings.byokEnabled && selected?.enabled
-        ? selected
-        : settings.byokEnabled
-          ? enabledModels[0]
-          : undefined;
-
-    const aiHost = activeModel?.aiHost ?? settings.aiHost;
-    const aiToken = activeModel?.aiToken ?? settings.aiToken;
-    const aiModel = activeModel?.aiModel ?? settings.aiModel;
-    const providerType =
-      activeModel?.providerType ?? settings.providerType ?? "openai";
-    const providerKey: AIProviderKey =
-      activeModel !== undefined
-        ? resolveProviderKey({
-            aiHost: aiHost ?? "",
-            providerType: providerType as ProviderType,
-          })
-        : (settings.aiProvider ?? "openai");
+    const { activeModel, aiHost, aiToken, aiModel, providerType, providerKey } =
+      resolveActiveModel(settings, customModels, selectedModelId);
 
     if (settings.byokEnabled && !activeModel) {
       setSaveStatus({
         type: "error",
-        message:
-          language === "zh"
-            ? "请先启用至少一个模型"
-            : "Please enable at least one model",
+        message: createErrorMessage("enableOneModel", language),
       });
       setIsTesting(false);
       return;
     }
 
-    if (!aiHost || !aiToken || !aiModel) {
+    if (!aiToken || !aiModel) {
       setSaveStatus({
         type: "error",
-        message:
-          language === "zh"
-            ? "请填写所有必填字段"
-            : "Please fill in all required fields",
+        message: createErrorMessage("fillRequired", language),
       });
       setIsTesting(false);
       return;
@@ -701,7 +744,6 @@ export function SettingsPage({
   const canTest =
     !!actionModel &&
     actionModel.enabled &&
-    Boolean(actionModel.aiHost) &&
     Boolean(actionModel.aiToken) &&
     Boolean(actionModel.aiModel);
   const canSave =
@@ -1315,7 +1357,6 @@ export function SettingsPage({
                           <div className="space-y-2">
                             <Label htmlFor="aiHost">
                               {t("settings.aiHost")}
-                              <span className="text-destructive ml-1">*</span>
                             </Label>
                             <Input
                               id="aiHost"
@@ -1324,7 +1365,11 @@ export function SettingsPage({
                               onChange={(e) =>
                                 handleModelFieldChange("aiHost", e.target.value)
                               }
-                              placeholder={selectedProviderMeta.host}
+                              placeholder={
+                                "host" in selectedProviderMeta
+                                  ? (selectedProviderMeta.host ?? "")
+                                  : ""
+                              }
                             />
                           </div>
 

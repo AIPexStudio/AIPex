@@ -3,7 +3,7 @@ import type { ProviderType } from "./settings.js";
 export interface AIProviderConfig {
   name: string;
   icon: string;
-  host: string;
+  host?: string;
   models: readonly string[];
   tokenPlaceholder: string;
   docs: string;
@@ -45,7 +45,6 @@ export const AI_PROVIDERS = {
   google: {
     name: "Google",
     icon: "🔍",
-    host: "https://generativelanguage.googleapis.com/v1beta/models",
     models: [
       "gemini-2.0-flash-exp",
       "gemini-1.5-pro",

@@ -6,7 +6,7 @@ export interface CustomModelConfig {
   id: string;
   name?: string;
   providerType: ProviderType;
-  aiHost: string;
+  aiHost?: string;
   aiToken: string;
   aiModel: string;
   enabled: boolean;
