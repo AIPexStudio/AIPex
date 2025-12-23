@@ -2,7 +2,7 @@
 export { aisdk } from "@openai/agents-extensions";
 
 // Agent
-export { AIPex, AIPexAgent } from "./agent/index.js";
+export { AIPex } from "./agent/index.js";
 
 // Config
 export {
@@ -68,7 +68,6 @@ export type {
   AgentPlugin,
   AgentPluginContext,
   AgentPluginHooks,
-  AIPexAgentOptions,
   AIPexOptions,
   AiSdkModel,
   BeforeChatPayload,

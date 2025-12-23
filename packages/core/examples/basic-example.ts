@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import {
-  AIPexAgent,
+  AIPex,
   aisdk,
   ConversationCompressor,
   ConversationManager,
@@ -23,13 +23,13 @@ async function main() {
   console.log("User: What is 15 * 234?");
   console.log("Assistant: ");
 
-  const simpleAgent = AIPexAgent.create({
+  const simpleAgent = AIPex.create({
     instructions: "You are a helpful assistant that can perform calculations.",
     model,
     tools: [calculatorTool],
   });
 
-  for await (const event of simpleAgent.executeStream("What is 15 * 234?")) {
+  for await (const event of simpleAgent.chat("What is 15 * 234?")) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     } else if (event.type === "tool_call_complete") {
@@ -47,7 +47,7 @@ async function main() {
   const storage = new SessionStorage(new InMemoryStorage<SerializedSession>());
   const manager = new ConversationManager(storage);
 
-  const agent = AIPexAgent.create({
+  const agent = AIPex.create({
     instructions: "You are a helpful assistant with memory.",
     model,
     tools: [calculatorTool, httpFetchTool],
@@ -59,7 +59,7 @@ async function main() {
   console.log("User: My name is Alice");
   console.log("Assistant: ");
 
-  for await (const event of agent.executeStream("My name is Alice")) {
+  for await (const event of agent.chat("My name is Alice")) {
     if (event.type === "session_created") {
       sessionId = event.sessionId;
       console.log(`[Session ${sessionId} created]`);
@@ -73,10 +73,7 @@ async function main() {
     console.log("\n\nUser: What is my name?");
     console.log("Assistant: ");
 
-    for await (const event of agent.continueConversation(
-      sessionId,
-      "What is my name?",
-    )) {
+    for await (const event of agent.chat("What is my name?", { sessionId })) {
       if (event.type === "content_delta") {
         process.stdout.write(event.delta);
       }
@@ -106,7 +103,7 @@ async function main() {
     },
   });
 
-  const weatherAgent = AIPexAgent.create({
+  const weatherAgent = AIPex.create({
     instructions: "You are a weather assistant.",
     model,
     tools: [weatherTool],
@@ -115,9 +112,7 @@ async function main() {
   console.log("User: What's the weather in Tokyo?");
   console.log("Assistant: ");
 
-  for await (const event of weatherAgent.executeStream(
-    "What's the weather in Tokyo?",
-  )) {
+  for await (const event of weatherAgent.chat("What's the weather in Tokyo?")) {
     if (event.type === "content_delta") {
       process.stdout.write(event.delta);
     } else if (event.type === "tool_call_complete") {
@@ -140,7 +135,7 @@ async function main() {
     compressor,
   });
 
-  const compressAgent = AIPexAgent.create({
+  const compressAgent = AIPex.create({
     instructions: "You are a helpful assistant.",
     model,
     conversationManager: compressManager,
@@ -159,9 +154,11 @@ async function main() {
     console.log(`User: ${msg}`);
     console.log("Assistant: ");
 
-    for await (const event of compressSessionId
-      ? compressAgent.continueConversation(compressSessionId, msg)
-      : compressAgent.executeStream(msg)) {
+    const stream = compressAgent.chat(
+      msg,
+      compressSessionId ? { sessionId: compressSessionId } : undefined,
+    );
+    for await (const event of stream) {
       if (event.type === "session_created") {
         compressSessionId = event.sessionId;
       }
