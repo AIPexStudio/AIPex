@@ -4,10 +4,13 @@
 export {
   type ChatbotEventHandlers,
   type Theme,
+  type UseAgentOptions,
+  type UseAgentReturn,
   type UseChatConfigOptions,
   type UseChatConfigReturn,
   type UseChatOptions,
   type UseChatReturn,
+  useAgent,
   useChat,
   useChatConfig,
   useTheme,
@@ -18,9 +21,4 @@ export {
   chromeStorageAdapter,
   useStorage,
 } from "@aipexstudio/browser-runtime";
-export {
-  type UseAgentOptions,
-  type UseAgentReturn,
-  useAgent,
-} from "./use-agent.js";
 export { useTabsSync } from "./use-tabs-sync.js";

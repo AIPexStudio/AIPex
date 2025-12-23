@@ -3,6 +3,7 @@
  * Simple wrapper using browser-specific hooks
  */
 
+import { useAgent } from "@aipexstudio/aipex-react";
 import ChatBot from "@aipexstudio/aipex-react/components/chatbot";
 import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
@@ -11,7 +12,14 @@ import type { Theme } from "@aipexstudio/aipex-react/theme/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { chromeStorageAdapter, useAgent, useChatConfig } from "../../hooks";
+import { chromeStorageAdapter, useChatConfig } from "../../hooks";
+import {
+  BROWSER_AGENT_CONFIG,
+  useBrowserContextProviders,
+  useBrowserModelFactory,
+  useBrowserStorage,
+  useBrowserTools,
+} from "../../lib/browser-agent-config";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
@@ -22,7 +30,20 @@ function ChatApp() {
     autoLoad: true,
   });
 
-  const { agent, error } = useAgent({ settings, isLoading });
+  const storage = useBrowserStorage();
+  const modelFactory = useBrowserModelFactory();
+  const contextProviders = useBrowserContextProviders();
+  const tools = useBrowserTools();
+
+  const { agent, error } = useAgent({
+    settings,
+    isLoading,
+    modelFactory,
+    storage,
+    contextProviders,
+    tools,
+    ...BROWSER_AGENT_CONFIG,
+  });
 
   if (isLoading) {
     return (
