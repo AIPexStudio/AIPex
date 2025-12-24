@@ -263,7 +263,7 @@ export class ChatAdapter {
         // Find the last text part (not the first) to append to it
         let textPartIndex = -1;
         for (let i = parts.length - 1; i >= 0; i--) {
-          if (parts[i].type === "text") {
+          if (parts[i]?.type === "text") {
             textPartIndex = i;
             break;
           }

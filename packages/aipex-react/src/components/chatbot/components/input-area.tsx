@@ -73,7 +73,8 @@ export function DefaultInputArea({
       // When BYOK is enabled, only show enabled custom models
       return enabledCustomModels.map((model) => ({
         name:
-          model.name?.trim() || `${model.aiModel} (custom-${model.providerType})`,
+          model.name?.trim() ||
+          `${model.aiModel} (custom-${model.providerType})`,
         value: model.aiModel,
       }));
     }
