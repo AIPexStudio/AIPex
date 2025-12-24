@@ -67,24 +67,20 @@ export function DefaultInputArea({
     return (settings.customModels ?? []).filter((model) => model.enabled);
   }, [settings.byokEnabled, settings.customModels]);
 
-  // Compute effective models list, including all enabled custom models
+  // Compute effective models list - only show enabled custom models when BYOK is enabled
   const effectiveModels = useMemo(() => {
-    if (!enabledCustomModels.length) {
-      return models;
+    if (settings.byokEnabled && enabledCustomModels.length > 0) {
+      // When BYOK is enabled, only show enabled custom models
+      return enabledCustomModels.map((model) => ({
+        name:
+          model.name?.trim() || `${model.aiModel} (custom-${model.providerType})`,
+        value: model.aiModel,
+      }));
     }
 
-    const customOptions = enabledCustomModels.map((model) => ({
-      name:
-        model.name?.trim() || `${model.aiModel} (custom-${model.providerType})`,
-      value: model.aiModel,
-    }));
-
-    const baseModels = models.filter(
-      (model) => !customOptions.some((custom) => custom.value === model.value),
-    );
-
-    return [...customOptions, ...baseModels];
-  }, [enabledCustomModels, models]);
+    // When BYOK is disabled, show default models
+    return models;
+  }, [settings.byokEnabled, enabledCustomModels, models]);
 
   const resolvedDefaultModel = useMemo(() => {
     const candidates = [

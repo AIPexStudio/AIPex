@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/context";
+import { createAIProvider } from "../../lib/ai-provider";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../theme/context";
 import { DEFAULT_MODELS } from "../chatbot/constants";
@@ -619,50 +620,22 @@ export function SettingsPage({
           });
         }
       } else {
-        // Default test implementation
-        if (providerKey === "anthropic") {
-          const response = await fetch(aiHost || "", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": aiToken || "",
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify({
-              model: aiModel,
-              messages: [{ role: "user", content: "Hi" }],
-              max_tokens: 10,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-        } else {
-          const response = await fetch(aiHost || "", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${aiToken}`,
-              "x-api-key": aiToken || "",
-            },
-            body: JSON.stringify({
-              model: aiModel,
-              messages: [{ role: "user", content: "Hi" }],
-              max_tokens: 10,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMsg =
-              errorData.error?.message ||
-              errorData.message ||
-              `HTTP ${response.status}`;
-            throw new Error(errorMsg);
-          }
-        }
+        // Default test implementation - use AI SDK directly (same as runtime)
+        const { generateText } = await import("ai");
+        
+        // Create provider using the same logic as runtime
+        const provider = createAIProvider({
+          aiProvider: providerKey,
+          aiHost,
+          aiToken,
+          aiModel,
+        });
+        
+        // Use AI SDK to make the request (handles all URL construction automatically)
+        await generateText({
+          model: provider(aiModel),
+          prompt: "Hi",
+        });
 
         setSaveStatus({
           type: "success",

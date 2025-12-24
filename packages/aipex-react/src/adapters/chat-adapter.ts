@@ -29,6 +29,7 @@ export class ChatAdapter {
 
   private pendingToolCalls = new Map<string, string[]>();
   private fileObjectUrls = new Map<string, string[]>();
+  private toolsAddedSinceLastText = false;
 
   private options: ChatAdapterOptions;
 
@@ -176,6 +177,7 @@ export class ChatAdapter {
       status: "idle",
     };
     this.pendingToolCalls.clear();
+    this.toolsAddedSinceLastText = false;
     this.clearFileObjectUrls();
     this.options.onMessagesUpdate?.(this.state.messages);
     this.options.onStatusChange?.(this.state.status);
@@ -233,6 +235,7 @@ export class ChatAdapter {
 
     this.state.messages = [...this.state.messages, assistantMessage];
     this.state.currentAssistantMessageId = assistantMessage.id;
+    this.toolsAddedSinceLastText = false;
     this.options.onMessagesUpdate?.(this.state.messages);
   }
 
@@ -252,15 +255,26 @@ export class ChatAdapter {
     this.updateCurrentAssistantMessage((message) => {
       const parts = [...message.parts];
 
-      // Find or create text part
-      let textPart = parts.find((p): p is UITextPart => p.type === "text");
-
-      if (textPart) {
-        textPart = { ...textPart, text: textPart.text + delta };
-        const index = parts.findIndex((p) => p.type === "text");
-        parts[index] = textPart;
-      } else {
+      // If tools were added since last text, create a new text part for interleaving
+      if (this.toolsAddedSinceLastText) {
         parts.push({ type: "text", text: delta });
+        this.toolsAddedSinceLastText = false;
+      } else {
+        // Find the last text part (not the first) to append to it
+        let textPartIndex = -1;
+        for (let i = parts.length - 1; i >= 0; i--) {
+          if (parts[i].type === "text") {
+            textPartIndex = i;
+            break;
+          }
+        }
+
+        if (textPartIndex >= 0) {
+          const textPart = parts[textPartIndex] as UITextPart;
+          parts[textPartIndex] = { ...textPart, text: textPart.text + delta };
+        } else {
+          parts.push({ type: "text", text: delta });
+        }
       }
 
       return { ...message, parts };
@@ -285,6 +299,9 @@ export class ChatAdapter {
 
       return { ...message, parts };
     });
+
+    // Mark that tools were added, so next text creates a new part
+    this.toolsAddedSinceLastText = true;
   }
 
   private updateToolComplete(toolName: string, result: unknown): void {

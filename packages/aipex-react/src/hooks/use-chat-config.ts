@@ -118,7 +118,17 @@ export function useChatConfig(
     if (autoLoad) {
       void loadSettings();
     }
-  }, [autoLoad, loadSettings]);
+
+    // Set up storage change listener for real-time sync
+    const unwatch = storageAdapter.watch(STORAGE_KEYS.SETTINGS, () => {
+      // Reload settings when storage changes (e.g., from settings page)
+      void loadSettings();
+    });
+
+    return () => {
+      unwatch();
+    };
+  }, [autoLoad, loadSettings, storageAdapter]);
 
   const updateSetting = useCallback(
     async <K extends keyof AppSettings>(
