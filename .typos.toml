@@ -1,0 +1,3 @@
+[files]
+# Exclude README files from typos checking (they contain multiple languages)
+extend-exclude = ["README*.md"]
