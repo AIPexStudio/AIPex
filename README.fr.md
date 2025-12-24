@@ -1,16 +1,15 @@
-
 <p align="center"><a href="https://claudechrome.com"><img alt="AIPex Browser Automation" src="https://github.com/user-attachments/assets/039768c0-1765-4a98-b020-57955e4a224a" width="100%" />
 </a></p>
 
-<strong><p align="center">Your browser already works!</p></strong>
+<strong><p align="center">Votre navigateur fonctionne déjà !</p></strong>
 
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar">
-    <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Chrome Web Store">
+    <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Installer-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Chrome Web Store">
   </a>
   <a href="https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa">
-    <img src="https://img.shields.io/badge/Edge%20Add--ons-Install-0078D4?style=for-the-badge&logo=microsoft-edge&logoColor=white" alt="Edge Add-ons">
+    <img src="https://img.shields.io/badge/Edge%20Add--ons-Installer-0078D4?style=for-the-badge&logo=microsoft-edge&logoColor=white" alt="Edge Add-ons">
   </a>
 </p>
 
@@ -32,77 +31,76 @@
 
 ---
 
-**AIPex** — An open-source browser automation agent that lives in your existing browser.
+**AIPex** — Un agent d'automatisation de navigateur open-source qui vit dans votre navigateur existant.
 
-- **Zero Migration**: No new browser to install. No new workflow to learn.
-- **Open Source**: MIT licensed. Fully transparent, auditable, and extensible.
-- **Privacy First**: Your data never leaves your machine. Bring Your Own Key (BYOK).
-
----
-
-## Why We Built This
-
-Every browser automation tool asks you to:
-- Install a separate browser (Dia/Comet)
-- Pay monthly subscriptions (ChatGPT Atlas)
-- Give up your browsing data
-
-**We asked: why can't automation just run in the browser you already use?**
-
-AIPex is the answer. Install the extension, bring your own API key, and automate anything — right where you already work.
+- **Zéro Migration**: Pas de nouveau navigateur à installer. Pas de nouveau flux de travail à apprendre.
+- **Open Source**: Licence MIT. Entièrement transparent, auditable et extensible.
+- **Confidentialité d'abord**: Vos données ne quittent jamais votre machine. Apportez votre propre clé (BYOK).
 
 ---
 
-## Quick Start
+## Pourquoi nous avons construit ceci
 
-1. **Install** — [Chrome Web Store](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar) or [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
-2. **Open** — Press AIPex icon
-3. **Automate** — Type or speak what you want in natural language
+Chaque outil d'automatisation de navigateur vous demande de :
+- Installer un navigateur séparé (Dia/Comet)
+- Payer des abonnements mensuels (ChatGPT Atlas)
+- Renoncer à vos données de navigation
+
+**Nous avons demandé : pourquoi l'automatisation ne peut-elle pas simplement s'exécuter dans le navigateur que vous utilisez déjà ?**
+
+AIPex est la réponse. Installez l'extension, apportez votre propre clé API et automatisez n'importe quoi — là où vous travaillez déjà.
 
 ---
 
-## Demos
+## Démarrage Rapide
 
-### "I have 100 tabs open. Help."
+1. **Installer** — [Chrome Web Store](https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar) ou [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa)
+2. **Ouvrir** — Appuyez sur l'icône AIPex
+3. **Automatiser** — Tapez ou dites ce que vous voulez faire en langage naturel
+
+---
+
+## Démos
+
+### "J'ai 100 onglets ouverts. À l'aide."
 
 https://github.com/user-attachments/assets/4a4f2a64-691c-4783-965e-043b329a8035
 
-### "Research this topic without leaving my browser"
+### "Recherchez ce sujet sans quitter mon navigateur"
 
 https://github.com/user-attachments/assets/71ec4efd-d80e-4e8f-8e39-88baee3ec38e
 
-### "Write a tweet for me"
+### "Écrivez un tweet pour moi"
 
 https://github.com/user-attachments/assets/81f6b482-84d0-4fd9-924b-dca634b208ec
 
-### "Help me pass this exam"
+### "Aidez-moi à réussir cet examen"
 
 https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 ---
 
-## How Does AIPex Compare?
+## Comment AIPex se compare-t-il ?
 
-*Why install a new browser when you can automate the one you already have?*
+*Pourquoi installer un nouveau navigateur quand vous pouvez automatiser celui que vous avez déjà ?*
 
-| Feature | AIPex | ChatGPT Atlas | Dia/Comet | Manus |
-|---------|-------|---------------|-----------|-------|
-| **Browser Migration** | None | Required | Required | None |
-| **Pricing** | Free | Paid | Paid | Paid |
-| **Open Source** | Yes | No | No | No |
-| **Privacy** | Full | Partial | Partial | Partial |
-| **BYOK** | Yes | No | No | No |
-
-
+| Fonctionnalité | AIPex | ChatGPT Atlas | Dia/Comet | Manus |
+|----------------|-------|---------------|-----------|-------|
+| **Migration de Navigateur** | Aucune | Requise | Requise | Aucune |
+| **Prix** | Gratuit | Payant | Payant | Payant |
+| **Open Source** | Oui | Non | Non | Non |
+| **Confidentialité** | Complète | Partielle | Partielle | Partielle |
+| **BYOK** | Oui | Non | Non | Non |
 
 ---
 
-## Contributing
+## Contribuer
 
-We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructions.
+Nous aimons les contributions ! Voir [DEVELOPMENT.md](DEVELOPMENT.md) pour les instructions de configuration.
 
+---
 
-## Contributors
+## Contributeurs
 
 <a href="https://github.com/buttercannfly/AIPex/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=buttercannfly/AIPex" />
@@ -110,14 +108,14 @@ We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructio
 
 ---
 
-## Star History
+## Historique des Étoiles
 
 [![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
 
 ---
 
 <p align="center">
-  <strong>Made with ❤️ by the AIPex Team</strong>
+  <strong>Fait avec ❤️ par l'équipe AIPex</strong>
 </p>
 
 <p align="center">
@@ -125,3 +123,4 @@ We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructio
   <a href="https://chromewebstore.google.com/detail/aipex-%E2%80%94%E2%80%94-tab-history-mana/iglkpadagfelcpmiidndgjgafpdifnke?hl=zh-CN&utm_source=ext_sidebar"><img src="https://img.shields.io/badge/Chrome-4285F4?logo=google-chrome&logoColor=white" alt="Chrome"></a>
   <a href="https://microsoftedge.microsoft.com/addons/detail/aipex/fkgfflijckgpphikbceckjbofkicfnfa"><img src="https://img.shields.io/badge/Edge-0078D4?logo=microsoft-edge&logoColor=white" alt="Edge"></a>
 </p>
+
