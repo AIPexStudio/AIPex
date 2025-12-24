@@ -622,7 +622,7 @@ export function SettingsPage({
       } else {
         // Default test implementation - use AI SDK directly (same as runtime)
         const { generateText } = await import("ai");
-        
+
         // Create provider using the same logic as runtime
         const provider = createAIProvider({
           aiProvider: providerKey,
@@ -630,7 +630,7 @@ export function SettingsPage({
           aiToken,
           aiModel,
         });
-        
+
         // Use AI SDK to make the request (handles all URL construction automatically)
         await generateText({
           model: provider(aiModel),
