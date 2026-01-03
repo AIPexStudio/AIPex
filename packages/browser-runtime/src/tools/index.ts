@@ -8,6 +8,14 @@ export * from "./page";
 export * from "./screenshot";
 export * from "./snapshot";
 export * from "./tab";
+export * from "./tools/clipboard";
+export * from "./tools/context-menus";
+export * from "./tools/downloads";
+export * from "./tools/extensions";
+export * from "./tools/sessions";
+export * from "./tools/tab-groups";
+export * from "./tools/utils/wait-helper";
+export * from "./tools/window-management";
 
 // Import tools for allBrowserTools array
 import {
@@ -56,6 +64,58 @@ import {
   reloadTabTool,
   switchToTabTool,
 } from "./tab";
+import {
+  copyCurrentPageTitleTool,
+  copyCurrentPageUrlTool,
+  copyPageAsMarkdownTool,
+  copyPageAsTextTool,
+  copyPageLinksTool,
+  copyPageMetadataTool,
+  copySelectedTextTool,
+  copyToClipboardTool,
+  readFromClipboardTool,
+} from "./tools/clipboard";
+import {
+  createContextMenuItemTool,
+  removeAllContextMenuItemsTool,
+  removeContextMenuItemTool,
+  updateContextMenuItemTool,
+} from "./tools/context-menus";
+import {
+  cancelDownloadTool,
+  downloadTextAsMarkdownTool,
+  getAllDownloadsTool,
+  openDownloadTool,
+  showDownloadInFolderTool,
+} from "./tools/downloads";
+import {
+  getAllExtensionsTool,
+  getExtensionTool,
+  setExtensionEnabledTool,
+  uninstallExtensionTool,
+} from "./tools/extensions";
+import {
+  getAllDevicesTool,
+  getAllSessionsTool,
+  getCurrentDeviceTool,
+  getSessionTool,
+  restoreSessionTool,
+} from "./tools/sessions";
+import {
+  createTabGroupTool,
+  deleteTabGroupTool,
+  getAllTabGroupsTool,
+  ungroupAllTabsTool,
+  updateTabGroupTool,
+} from "./tools/tab-groups";
+import { waitForElementTool, waitTool } from "./tools/utils/wait-helper";
+import {
+  closeWindowTool,
+  createNewWindowTool,
+  getAllWindowsTool,
+  getCurrentWindowTool,
+  switchToWindowTool,
+} from "./tools/window-management";
 
 export const allBrowserTools: FunctionTool[] = [
   // Page tools
@@ -100,6 +160,53 @@ export const allBrowserTools: FunctionTool[] = [
   clearHistoryTool,
   getMostVisitedSitesTool,
   getHistoryStatsTool,
+  // Clipboard tools
+  copyToClipboardTool,
+  readFromClipboardTool,
+  copyCurrentPageUrlTool,
+  copyCurrentPageTitleTool,
+  copySelectedTextTool,
+  copyPageAsMarkdownTool,
+  copyPageAsTextTool,
+  copyPageLinksTool,
+  copyPageMetadataTool,
+  // Context menu tools
+  createContextMenuItemTool,
+  updateContextMenuItemTool,
+  removeContextMenuItemTool,
+  removeAllContextMenuItemsTool,
+  // Download tools
+  getAllDownloadsTool,
+  openDownloadTool,
+  showDownloadInFolderTool,
+  cancelDownloadTool,
+  downloadTextAsMarkdownTool,
+  // Extension tools
+  getAllExtensionsTool,
+  getExtensionTool,
+  setExtensionEnabledTool,
+  uninstallExtensionTool,
+  // Session tools
+  getAllSessionsTool,
+  getSessionTool,
+  restoreSessionTool,
+  getCurrentDeviceTool,
+  getAllDevicesTool,
+  // Tab group tools
+  ungroupAllTabsTool,
+  getAllTabGroupsTool,
+  createTabGroupTool,
+  updateTabGroupTool,
+  deleteTabGroupTool,
+  // Window management tools
+  getAllWindowsTool,
+  getCurrentWindowTool,
+  switchToWindowTool,
+  createNewWindowTool,
+  closeWindowTool,
+  // Utility tools
+  waitTool,
+  waitForElementTool,
 ] as const;
 
 interface ToolRegistryLike {
