@@ -1,213 +1,88 @@
 import type { FunctionTool } from "@aipexstudio/aipex-core";
-
-// Re-export all tool modules
-export * from "./bookmark";
-export * from "./element";
-export * from "./history";
-export * from "./page";
-export * from "./screenshot";
-export * from "./snapshot";
-export * from "./tab";
-export * from "./tools/clipboard";
-export * from "./tools/context-menus";
-export * from "./tools/downloads";
-export * from "./tools/extensions";
-export * from "./tools/sessions";
-export * from "./tools/tab-groups";
-export * from "./tools/utils/wait-helper";
-export * from "./tools/window-management";
-
-// Import tools for allBrowserTools array
 import {
-  createBookmarkFolderTool,
-  createBookmarkTool,
-  deleteBookmarkFolderTool,
-  deleteBookmarkTool,
-  getBookmarkTool,
-  listBookmarksTool,
-  searchBookmarksTool,
-  updateBookmarkTool,
-} from "./bookmark";
-import {
-  clickElementByUidTool,
+  clickTool,
   fillElementByUidTool,
-  getEditorValueByUidTool,
+  fillFormTool,
+  getEditorValueTool,
   hoverElementByUidTool,
 } from "./element";
 import {
-  clearHistoryTool,
-  deleteHistoryItemTool,
-  getHistoryStatsTool,
-  getMostVisitedSitesTool,
-  getRecentHistoryTool,
-  searchHistoryTool,
-} from "./history";
-import {
-  clickElementTool,
-  fillFormFieldTool,
-  getPageContentTool,
-  getPageInfoTool,
-  navigateToUrlTool,
-  scrollPageTool,
+  getPageMetadataTool,
+  highlightElementTool,
+  highlightTextInlineTool,
+  scrollToElementTool,
 } from "./page";
 import {
-  copyScreenshotToClipboardTool,
-  takeScreenshotOfTabTool,
-  takeScreenshotTool,
+  captureScreenshotToClipboardTool,
+  captureScreenshotTool,
+  captureTabScreenshotTool,
 } from "./screenshot";
-import { searchSnapshotTool, takeSnapshotTool } from "./snapshot";
+import { searchElementsTool } from "./snapshot";
+// Import core tools only (27 tools total, excluding intervention and skills)
 import {
   closeTabTool,
-  createTabTool,
+  createNewTabTool,
   duplicateTabTool,
-  listTabsTool,
-  reloadTabTool,
+  getAllTabsTool,
+  getCurrentTabTool,
+  getTabInfoTool,
+  organizeTabsTool,
   switchToTabTool,
+  ungroupTabsTool,
 } from "./tab";
 import {
-  copyCurrentPageTitleTool,
-  copyCurrentPageUrlTool,
-  copyPageAsMarkdownTool,
-  copyPageAsTextTool,
-  copyPageLinksTool,
-  copyPageMetadataTool,
-  copySelectedTextTool,
-  copyToClipboardTool,
-  readFromClipboardTool,
-} from "./tools/clipboard";
-import {
-  createContextMenuItemTool,
-  removeAllContextMenuItemsTool,
-  removeContextMenuItemTool,
-  updateContextMenuItemTool,
-} from "./tools/context-menus";
-import {
-  cancelDownloadTool,
+  downloadChatImagesTool,
+  downloadCurrentChatImagesTool,
+  downloadImageTool,
   downloadTextAsMarkdownTool,
-  getAllDownloadsTool,
-  openDownloadTool,
-  showDownloadInFolderTool,
 } from "./tools/downloads";
-import {
-  getAllExtensionsTool,
-  getExtensionTool,
-  setExtensionEnabledTool,
-  uninstallExtensionTool,
-} from "./tools/extensions";
-import {
-  getAllDevicesTool,
-  getAllSessionsTool,
-  getCurrentDeviceTool,
-  getSessionTool,
-  restoreSessionTool,
-} from "./tools/sessions";
-import {
-  createTabGroupTool,
-  deleteTabGroupTool,
-  getAllTabGroupsTool,
-  ungroupAllTabsTool,
-  updateTabGroupTool,
-} from "./tools/tab-groups";
-import { waitForElementTool, waitTool } from "./tools/utils/wait-helper";
-import {
-  closeWindowTool,
-  createNewWindowTool,
-  getAllWindowsTool,
-  getCurrentWindowTool,
-  switchToWindowTool,
-} from "./tools/window-management";
+import { waitTool } from "./tools/utils/wait-helper";
 
+/**
+ * All browser tools registered for AI use
+ * Total: 27 core tools (excluding intervention and skills)
+ */
 export const allBrowserTools: FunctionTool[] = [
-  // Page tools
-  getPageInfoTool,
-  scrollPageTool,
-  navigateToUrlTool,
-  getPageContentTool,
-  clickElementTool,
-  fillFormFieldTool,
-  // Tab tools
-  listTabsTool,
+  // Browser/Tab Management (9 tools)
+  getAllTabsTool,
+  getCurrentTabTool,
   switchToTabTool,
-  closeTabTool,
-  createTabTool,
-  reloadTabTool,
+  createNewTabTool,
+  getTabInfoTool,
   duplicateTabTool,
-  // Snapshot tools
-  takeSnapshotTool,
-  searchSnapshotTool,
-  // Element tools (UID-based)
-  clickElementByUidTool,
+  closeTabTool,
+  organizeTabsTool,
+  ungroupTabsTool,
+
+  // UI Operations (7 tools)
+  searchElementsTool,
+  clickTool,
   fillElementByUidTool,
+  getEditorValueTool,
+  fillFormTool,
   hoverElementByUidTool,
-  getEditorValueByUidTool,
-  // Screenshot tools
-  takeScreenshotTool,
-  takeScreenshotOfTabTool,
-  copyScreenshotToClipboardTool,
-  // Bookmark tools
-  listBookmarksTool,
-  searchBookmarksTool,
-  createBookmarkTool,
-  deleteBookmarkTool,
-  getBookmarkTool,
-  updateBookmarkTool,
-  createBookmarkFolderTool,
-  deleteBookmarkFolderTool,
-  // History tools
-  getRecentHistoryTool,
-  searchHistoryTool,
-  deleteHistoryItemTool,
-  clearHistoryTool,
-  getMostVisitedSitesTool,
-  getHistoryStatsTool,
-  // Clipboard tools
-  copyToClipboardTool,
-  readFromClipboardTool,
-  copyCurrentPageUrlTool,
-  copyCurrentPageTitleTool,
-  copySelectedTextTool,
-  copyPageAsMarkdownTool,
-  copyPageAsTextTool,
-  copyPageLinksTool,
-  copyPageMetadataTool,
-  // Context menu tools
-  createContextMenuItemTool,
-  updateContextMenuItemTool,
-  removeContextMenuItemTool,
-  removeAllContextMenuItemsTool,
-  // Download tools
-  getAllDownloadsTool,
-  openDownloadTool,
-  showDownloadInFolderTool,
-  cancelDownloadTool,
-  downloadTextAsMarkdownTool,
-  // Extension tools
-  getAllExtensionsTool,
-  getExtensionTool,
-  setExtensionEnabledTool,
-  uninstallExtensionTool,
-  // Session tools
-  getAllSessionsTool,
-  getSessionTool,
-  restoreSessionTool,
-  getCurrentDeviceTool,
-  getAllDevicesTool,
-  // Tab group tools
-  ungroupAllTabsTool,
-  getAllTabGroupsTool,
-  createTabGroupTool,
-  updateTabGroupTool,
-  deleteTabGroupTool,
-  // Window management tools
-  getAllWindowsTool,
-  getCurrentWindowTool,
-  switchToWindowTool,
-  createNewWindowTool,
-  closeWindowTool,
-  // Utility tools
   waitTool,
-  waitForElementTool,
+
+  // Page Content (4 tools)
+  getPageMetadataTool,
+  scrollToElementTool,
+  highlightElementTool,
+  highlightTextInlineTool,
+
+  // Screenshot (3 tools)
+  captureScreenshotTool,
+  captureTabScreenshotTool,
+  captureScreenshotToClipboardTool,
+
+  // Download (4 tools)
+  downloadTextAsMarkdownTool,
+  downloadImageTool,
+  downloadChatImagesTool,
+  downloadCurrentChatImagesTool,
 ] as const;
+
+// Note: takeSnapshotTool is not included in allBrowserTools as it's called internally
+// Intervention tools (4) and Skills tools (6) will be added in later phases
 
 interface ToolRegistryLike {
   register(tool: (typeof allBrowserTools)[number]): unknown;

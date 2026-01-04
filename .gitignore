@@ -39,3 +39,6 @@ keys.json
 
 # TypeScript build info files
 *.tsbuildinfo
+
+# Cursor AI summaries
+.cursor/

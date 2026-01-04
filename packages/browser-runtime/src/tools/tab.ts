@@ -3,21 +3,15 @@ import { z } from "zod";
 import { getActiveTab } from "./index";
 
 /**
- * List all open tabs
+ * Get all open tabs across all windows
  */
-export const listTabsTool = tool({
-  name: "list_tabs",
-  description: "Get a list of all open tabs in the current window",
-  parameters: z.object({
-    allWindows: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe("Whether to include tabs from all windows"),
-  }),
-  execute: async ({ allWindows = false }: { allWindows?: boolean | null }) => {
-    const query = allWindows ? {} : { currentWindow: true };
-    const tabs = await chrome.tabs.query(query);
+export const getAllTabsTool = tool({
+  name: "get_all_tabs",
+  description:
+    "Get all open tabs across all windows with their IDs, titles, and URLs",
+  parameters: z.object({}),
+  execute: async () => {
+    const tabs = await chrome.tabs.query({});
 
     return {
       tabs: tabs.map((tab) => ({
@@ -26,8 +20,28 @@ export const listTabsTool = tool({
         title: tab.title,
         active: tab.active,
         windowId: tab.windowId,
+        index: tab.index,
       })),
       count: tabs.length,
+    };
+  },
+});
+
+/**
+ * Get information about the currently active tab
+ */
+export const getCurrentTabTool = tool({
+  name: "get_current_tab",
+  description: "Get information about the currently active tab",
+  parameters: z.object({}),
+  execute: async () => {
+    const tab = await getActiveTab();
+    return {
+      id: tab.id,
+      url: tab.url,
+      title: tab.title,
+      windowId: tab.windowId,
+      index: tab.index,
     };
   },
 });
@@ -116,73 +130,52 @@ export const closeTabTool = tool({
 /**
  * Create a new tab
  */
-export const createTabTool = tool({
-  name: "create_tab",
-  description: "Create a new tab with a specific URL",
+export const createNewTabTool = tool({
+  name: "create_new_tab",
+  description: "Create a new tab with the specified URL",
   parameters: z.object({
-    url: z.string().url().describe("URL to open in the new tab"),
-    active: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe("Whether to make the new tab active"),
+    url: z.string().url().describe("The URL to open in the new tab"),
   }),
-  execute: async ({
-    url,
-    active = true,
-  }: {
-    url: string;
-    active?: boolean | null;
-  }) => {
-    const isActive = active ?? true;
-    const tab = await chrome.tabs.create({ url, active: isActive });
+  execute: async ({ url }: { url: string }) => {
+    const tab = await chrome.tabs.create({ url, active: true });
     if (!tab.id) {
       throw new Error("Failed to create tab");
     }
     return {
       success: true,
-      tab: { id: tab.id, url: tab.url, title: tab.title },
+      tabId: tab.id,
+      url: tab.url,
+      title: tab.title,
     };
   },
 });
 
 /**
- * Reload a tab
+ * Get detailed information about a specific tab
  */
-export const reloadTabTool = tool({
-  name: "reload_tab",
-  description: "Reload a specific tab or the current tab",
+export const getTabInfoTool = tool({
+  name: "get_tab_info",
+  description: "Get detailed information about a specific tab",
   parameters: z.object({
-    tabId: z
-      .number()
-      .nullable()
-      .optional()
-      .describe("Tab ID to reload (defaults to current tab)"),
-    bypassCache: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe("Whether to bypass the cache when reloading"),
+    tabId: z.number().describe("The ID of the tab"),
   }),
-  execute: async ({
-    tabId,
-    bypassCache = false,
-  }: {
-    tabId?: number | null;
-    bypassCache?: boolean | null;
-  }) => {
-    const shouldBypassCache = bypassCache ?? false;
-    if (tabId != null) {
-      await chrome.tabs.reload(tabId, { bypassCache: shouldBypassCache });
-      return { success: true, tabId };
-    }
+  execute: async ({ tabId }: { tabId: number }) => {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      if (!tab || typeof tab.id !== "number") {
+        return null;
+      }
 
-    const tab = await getActiveTab();
-    if (!tab.id) {
-      throw new Error("No active tab found");
+      return {
+        id: tab.id,
+        index: tab.index || 0,
+        windowId: tab.windowId || 0,
+        title: tab.title,
+        url: tab.url,
+      };
+    } catch {
+      return null;
     }
-    await chrome.tabs.reload(tab.id, { bypassCache: shouldBypassCache });
-    return { success: true, tabId: tab.id };
   },
 });
 
@@ -191,34 +184,70 @@ export const reloadTabTool = tool({
  */
 export const duplicateTabTool = tool({
   name: "duplicate_tab",
-  description: "Duplicate a specific tab or the current tab",
+  description: "Duplicate an existing tab",
   parameters: z.object({
-    tabId: z
-      .number()
-      .nullable()
-      .optional()
-      .describe("Tab ID to duplicate (defaults to current tab)"),
+    tabId: z.number().describe("The ID of the tab to duplicate"),
   }),
-  execute: async ({ tabId }: { tabId?: number | null }) => {
-    if (tabId != null) {
-      const newTab = await chrome.tabs.duplicate(tabId);
-      if (!newTab) {
-        throw new Error("Failed to duplicate tab");
-      }
-      return {
-        success: true,
-        newTab: { id: newTab.id, url: newTab.url, title: newTab.title },
-      };
-    }
-
-    const tab = await getActiveTab();
-    const newTab = await chrome.tabs.duplicate(tab.id!);
-    if (!newTab) {
-      throw new Error("Failed to duplicate tab");
+  execute: async ({ tabId }: { tabId: number }) => {
+    const newTab = await chrome.tabs.duplicate(tabId);
+    if (!newTab || !newTab.id) {
+      return { success: false, error: "Failed to duplicate tab" };
     }
     return {
       success: true,
-      newTab: { id: newTab.id, url: newTab.url, title: newTab.title },
+      newTabId: newTab.id,
     };
+  },
+});
+
+/**
+ * Use AI to automatically group tabs by topic/purpose
+ */
+export const organizeTabsTool = tool({
+  name: "organize_tabs",
+  description: "Use AI to automatically group tabs by topic/purpose",
+  parameters: z.object({}),
+  execute: async () => {
+    // This is a placeholder - the actual AI grouping logic would be complex
+    // For now, return a message indicating this feature needs implementation
+    return {
+      success: false,
+      message:
+        "AI-powered tab organization requires additional implementation with LLM integration",
+    };
+  },
+});
+
+/**
+ * Remove all tab groups in the current window
+ */
+export const ungroupTabsTool = tool({
+  name: "ungroup_tabs",
+  description: "Remove all tab groups in the current window",
+  parameters: z.object({}),
+  execute: async () => {
+    try {
+      const tabs = await chrome.tabs.query({ currentWindow: true });
+      let ungroupedCount = 0;
+
+      for (const tab of tabs) {
+        if (tab.groupId && tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
+          if (tab.id) {
+            await chrome.tabs.ungroup(tab.id);
+            ungroupedCount++;
+          }
+        }
+      }
+
+      return {
+        success: true,
+        ungroupedCount,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Failed to ungroup tabs",
+      };
+    }
   },
 });

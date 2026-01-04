@@ -61,12 +61,17 @@ export async function waitForElement(
 
 export const waitTool = tool({
   name: "wait",
-  description: "Wait for a specified duration in milliseconds",
+  description:
+    "Wait for a specified time, useful for waiting for page load, element to appear",
   parameters: z.object({
-    milliseconds: z.number().describe("Duration to wait in milliseconds"),
+    time: z
+      .number()
+      .min(0)
+      .max(30000)
+      .describe("The time to wait in milliseconds (max 30 seconds)"),
   }),
-  execute: async ({ milliseconds }: { milliseconds: number }) => {
-    return await wait(milliseconds);
+  execute: async ({ time }: { time: number }) => {
+    return await wait(time);
   },
 });
 

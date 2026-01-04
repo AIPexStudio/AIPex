@@ -228,10 +228,254 @@ export const downloadTextAsMarkdownTool = tool({
   },
 });
 
-// TODO: Uncomment and convert these tools when needed
-// - getDownloadTool
-// - pauseDownloadTool
-// - resumeDownloadTool
-// - removeDownloadTool
-// - getDownloadStatsTool
-// - downloadImageTool
+/**
+ * Download an image from base64 data
+ */
+export const downloadImageTool = tool({
+  name: "download_image",
+  description:
+    "Download an image from base64 data to the user's local filesystem",
+  parameters: z.object({
+    imageData: z
+      .string()
+      .regex(/^data:image\//)
+      .describe("The base64 image data URL (data:image/...)"),
+    filename: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Optional filename (without extension)"),
+    folderPath: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Optional folder path"),
+  }),
+  execute: async ({
+    imageData,
+    filename,
+    folderPath,
+  }: {
+    imageData: string;
+    filename?: string;
+    folderPath?: string;
+  }) => {
+    try {
+      if (!chrome.downloads) {
+        return {
+          success: false,
+          error:
+            "Downloads permission not available. Please check extension permissions.",
+        };
+      }
+
+      if (!imageData || typeof imageData !== "string") {
+        return {
+          success: false,
+          error: "Image data is required and must be a string",
+        };
+      }
+
+      if (!imageData.startsWith("data:image/")) {
+        return {
+          success: false,
+          error: "Invalid image data format. Expected data:image/ URI",
+        };
+      }
+
+      const mimeMatch = imageData.match(/data:image\/([^;]+)/);
+      const imageFormat = mimeMatch ? mimeMatch[1] : "png";
+
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      const baseFilename = filename || `image-${timestamp}`;
+      const fullFilename = `${baseFilename}.${imageFormat}`;
+      const finalPath = folderPath
+        ? `${folderPath}/${fullFilename}`
+        : fullFilename;
+
+      const downloadId = await chrome.downloads.download({
+        url: imageData,
+        filename: finalPath,
+        saveAs: false,
+      });
+
+      return {
+        success: true,
+        downloadId,
+        finalPath,
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+});
+
+/**
+ * Download chat images in batch
+ */
+export const downloadChatImagesTool = tool({
+  name: "download_chat_images",
+  description: "Download multiple images from chat messages in batch",
+  parameters: z.object({
+    messages: z
+      .array(
+        z.object({
+          id: z.string(),
+          parts: z
+            .array(
+              z.object({
+                type: z.string(),
+                imageData: z.string().nullable().optional(),
+                imageTitle: z.string().nullable().optional(),
+              }),
+            )
+            .nullable()
+            .optional(),
+        }),
+      )
+      .describe("Array of chat messages containing images"),
+    folderPrefix: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Optional folder prefix for organizing downloads"),
+    filenamingStrategy: z
+      .enum(["descriptive", "sequential", "timestamp"])
+      .nullable()
+      .optional()
+      .describe("Strategy for naming files"),
+  }),
+  execute: async ({
+    messages,
+    folderPrefix,
+    filenamingStrategy = "descriptive",
+  }: {
+    messages: Array<{
+      id: string;
+      parts?: Array<{
+        type: string;
+        imageData?: string;
+        imageTitle?: string;
+      }>;
+    }>;
+    folderPrefix?: string;
+    filenamingStrategy?: "descriptive" | "sequential" | "timestamp";
+  }) => {
+    try {
+      if (!chrome.downloads) {
+        return {
+          success: false,
+          errors: [
+            "Downloads permission not available. Please check extension permissions.",
+          ],
+        };
+      }
+
+      const downloadIds: number[] = [];
+      const errors: string[] = [];
+      const filesList: string[] = [];
+      let downloadedCount = 0;
+      let imageIndex = 0;
+
+      for (const message of messages) {
+        if (!message.parts) continue;
+
+        for (const part of message.parts) {
+          if (part.type === "image" && part.imageData) {
+            try {
+              imageIndex++;
+
+              const timestamp = new Date()
+                .toISOString()
+                .replace(/[:.]/g, "-")
+                .slice(0, -5);
+              const titleSlug = part.imageTitle
+                ? part.imageTitle
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-+|-+$/g, "")
+                : `image-${imageIndex}`;
+
+              let baseFilename: string;
+              switch (filenamingStrategy) {
+                case "sequential":
+                  baseFilename = `image-${String(imageIndex).padStart(3, "0")}`;
+                  break;
+                case "timestamp":
+                  baseFilename = `image-${timestamp}`;
+                  break;
+                default:
+                  baseFilename = titleSlug;
+                  break;
+              }
+
+              const mimeMatch = part.imageData.match(/data:image\/([^;]+)/);
+              const imageFormat = mimeMatch ? mimeMatch[1] : "png";
+              const fullFilename = `${baseFilename}.${imageFormat}`;
+              const finalPath = folderPrefix
+                ? `${folderPrefix}/${fullFilename}`
+                : fullFilename;
+
+              const downloadId = await chrome.downloads.download({
+                url: part.imageData,
+                filename: finalPath,
+                saveAs: false,
+              });
+
+              downloadIds.push(downloadId);
+              filesList.push(finalPath);
+              downloadedCount++;
+            } catch (error: unknown) {
+              errors.push(
+                `Failed to download image ${imageIndex}: ${error instanceof Error ? error.message : String(error)}`,
+              );
+            }
+          }
+        }
+      }
+
+      return {
+        success: downloadedCount > 0,
+        downloadedCount,
+        downloadIds,
+        errors: errors.length > 0 ? errors : undefined,
+        folderPath: folderPrefix,
+        filesList,
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
+    }
+  },
+});
+
+/**
+ * Download images from current chat
+ */
+export const downloadCurrentChatImagesTool = tool({
+  name: "download_current_chat_images",
+  description: "Download all images from the current chat conversation",
+  parameters: z.object({
+    folderPrefix: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Optional folder prefix for organizing downloads"),
+  }),
+  execute: async ({ folderPrefix }: { folderPrefix?: string }) => {
+    // This is a placeholder - actual implementation would need to access chat context
+    return {
+      success: false,
+      message:
+        "This tool requires integration with the chat system to access current conversation images",
+    };
+  },
+});
