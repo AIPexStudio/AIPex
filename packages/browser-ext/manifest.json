@@ -22,7 +22,8 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content.tsx"]
+      "js": ["src/content.tsx"],
+      "run_at": "document_start"
     }
   ],
   "side_panel": {
@@ -57,7 +58,6 @@
     "browsingData",
     "history",
     "scripting",
-    "search",
     "commands",
     "storage",
     "contextMenus",
@@ -65,6 +65,7 @@
     "sidePanel",
     "management",
     "downloads",
-    "tabCapture"
+    "debugger",
+    "cookies"
   ]
 }

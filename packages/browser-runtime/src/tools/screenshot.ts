@@ -36,9 +36,10 @@ async function compressImage(
   });
 }
 
-export const takeScreenshotTool = tool({
-  name: "take_screenshot",
-  description: "Capture a screenshot of the current visible tab",
+export const captureScreenshotTool = tool({
+  name: "capture_screenshot",
+  description:
+    "Capture screenshot of current visible tab and return as base64 data URL",
   parameters: z.object({
     compress: z
       .boolean()
@@ -91,9 +92,9 @@ export const takeScreenshotTool = tool({
   },
 });
 
-export const takeScreenshotOfTabTool = tool({
-  name: "take_screenshot_of_tab",
-  description: "Capture a screenshot of a specific tab by ID",
+export const captureTabScreenshotTool = tool({
+  name: "capture_tab_screenshot",
+  description: "Capture screenshot of a specific tab by ID",
   parameters: z.object({
     tabId: z.number().describe("The tab ID to capture"),
     compress: z
@@ -136,9 +137,10 @@ export const takeScreenshotOfTabTool = tool({
   },
 });
 
-export const copyScreenshotToClipboardTool = tool({
-  name: "copy_screenshot_to_clipboard",
-  description: "Capture a screenshot and copy it to the clipboard",
+export const captureScreenshotToClipboardTool = tool({
+  name: "capture_screenshot_to_clipboard",
+  description:
+    "Capture screenshot of current tab and save directly to clipboard",
   parameters: z.object({}),
   execute: async () => {
     const tab = await getActiveTab();

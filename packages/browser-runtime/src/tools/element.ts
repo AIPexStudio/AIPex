@@ -5,7 +5,11 @@ import {
   SmartElementHandle,
   snapshotManager,
 } from "../automation";
-import { getActiveTab } from "./index";
+import {
+  playClickAnimationAndReturn,
+  scrollAndMoveFakeMouseToElement,
+  waitForEventsAfterAction,
+} from "./ui-operations";
 
 async function getElementByUid(
   tabId: number,
@@ -14,7 +18,7 @@ async function getElementByUid(
   const node = snapshotManager.getNodeByUid(tabId, uid);
   if (!node) {
     throw new Error(
-      "No such element found in the snapshot. The page content may have changed, please call take_snapshot again.",
+      "No such element found in the snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
     );
   }
 
@@ -25,46 +29,44 @@ async function getElementByUid(
   return null;
 }
 
-export const clickElementByUidTool = tool({
-  name: "click_element_by_uid",
-  description:
-    "Click an element by its UID from a snapshot. Use take_snapshot first to get element UIDs.",
+export const clickTool = tool({
+  name: "click",
+  description: "Click an element using its unique UID from a snapshot",
   parameters: z.object({
-    uid: z.string().describe("The element UID from the snapshot"),
-    doubleClick: z
+    tabId: z.number().describe("The ID of the tab to click on"),
+    uid: z
+      .string()
+      .describe("The unique identifier of an element from the page snapshot"),
+    dblClick: z
       .boolean()
-      .nullable()
       .optional()
-      .describe("Whether to double click"),
+      .default(false)
+      .describe("Set to true for double clicks"),
   }),
   execute: async ({
+    tabId,
     uid,
-    doubleClick = false,
+    dblClick = false,
   }: {
+    tabId: number;
     uid: string;
-    doubleClick?: boolean | null;
+    dblClick?: boolean;
   }) => {
-    const tab = await getActiveTab();
-
-    if (!tab.id) {
-      throw new Error("No active tab found");
-    }
-
     let handle: ElementHandle | null = null;
 
     try {
-      handle = await getElementByUid(tab.id, uid);
+      handle = await getElementByUid(tabId, uid);
       if (!handle) {
         throw new Error(
           "Element not found in current snapshot. Call take_snapshot first.",
         );
       }
 
-      await handle.asLocator().click({ count: doubleClick ? 2 : 1 });
+      await handle.asLocator().click({ count: dblClick ? 2 : 1 });
 
       return {
         success: true,
-        message: `Element ${doubleClick ? "double " : ""}clicked successfully`,
+        message: `Element ${dblClick ? "double " : ""}clicked successfully`,
       };
     } finally {
       if (handle) {
@@ -76,23 +78,25 @@ export const clickElementByUidTool = tool({
 
 export const fillElementByUidTool = tool({
   name: "fill_element_by_uid",
-  description:
-    "Fill a text input by its UID from a snapshot. Use take_snapshot first to get element UIDs.",
+  description: "Fill an input element using its unique UID from a snapshot",
   parameters: z.object({
-    uid: z.string().describe("The element UID from the snapshot"),
-    value: z.string().describe("The value to fill"),
+    tabId: z.number().describe("The ID of the tab to fill the element in"),
+    uid: z.string().describe("The unique identifier of the element to fill"),
+    value: z.string().describe("The value to fill into the element"),
   }),
-  execute: async ({ uid, value }: { uid: string; value: string }) => {
-    const tab = await getActiveTab();
-
-    if (!tab.id) {
-      throw new Error("No active tab found");
-    }
-
+  execute: async ({
+    tabId,
+    uid,
+    value,
+  }: {
+    tabId: number;
+    uid: string;
+    value: string;
+  }) => {
     let handle: ElementHandle | null = null;
 
     try {
-      handle = await getElementByUid(tab.id, uid);
+      handle = await getElementByUid(tabId, uid);
       if (!handle) {
         throw new Error(
           "Element not found in current snapshot. Call take_snapshot first.",
@@ -115,22 +119,18 @@ export const fillElementByUidTool = tool({
 
 export const hoverElementByUidTool = tool({
   name: "hover_element_by_uid",
-  description:
-    "Hover over an element by its UID from a snapshot. Use take_snapshot first to get element UIDs.",
+  description: "Hover over an element using its unique UID from a snapshot",
   parameters: z.object({
-    uid: z.string().describe("The element UID from the snapshot"),
+    tabId: z.number().describe("The ID of the tab to hover over"),
+    uid: z
+      .string()
+      .describe("The unique identifier of the element to hover over"),
   }),
-  execute: async ({ uid }: { uid: string }) => {
-    const tab = await getActiveTab();
-
-    if (!tab.id) {
-      throw new Error("No active tab found");
-    }
-
+  execute: async ({ tabId, uid }: { tabId: number; uid: string }) => {
     let handle: ElementHandle | null = null;
 
     try {
-      handle = await getElementByUid(tab.id, uid);
+      handle = await getElementByUid(tabId, uid);
       if (!handle) {
         throw new Error(
           "Element not found in current snapshot. Call take_snapshot first.",
@@ -151,24 +151,21 @@ export const hoverElementByUidTool = tool({
   },
 });
 
-export const getEditorValueByUidTool = tool({
-  name: "get_editor_value_by_uid",
+export const getEditorValueTool = tool({
+  name: "get_editor_value",
   description:
-    "Get the value of an editor or input element by its UID. Supports Monaco Editor, CodeMirror, ACE, and standard inputs.",
+    "Get the complete content from a code editor (Monaco, CodeMirror, ACE) or textarea without truncation. Use this before filling to avoid data loss.",
   parameters: z.object({
-    uid: z.string().describe("The element UID from the snapshot"),
+    tabId: z.number().describe("The ID of the tab"),
+    uid: z
+      .string()
+      .describe("The unique identifier of the editor element from snapshot"),
   }),
-  execute: async ({ uid }: { uid: string }) => {
-    const tab = await getActiveTab();
-
-    if (!tab.id) {
-      throw new Error("No active tab found");
-    }
-
+  execute: async ({ tabId, uid }: { tabId: number; uid: string }) => {
     let handle: ElementHandle | null = null;
 
     try {
-      handle = await getElementByUid(tab.id, uid);
+      handle = await getElementByUid(tabId, uid);
       if (!handle) {
         throw new Error(
           "Element not found in current snapshot. Call take_snapshot first.",
@@ -195,5 +192,100 @@ export const getEditorValueByUidTool = tool({
         handle.dispose();
       }
     }
+  },
+});
+
+export const fillFormTool = tool({
+  name: "fill_form",
+  description:
+    "Fill multiple form elements at once using their UIDs from a snapshot",
+  parameters: z.object({
+    tabId: z.number().describe("The ID of the tab to fill the elements in"),
+    elements: z
+      .array(
+        z.object({
+          uid: z.string().describe("The unique identifier of the element"),
+          value: z.string().describe("The value to fill into the element"),
+        }),
+      )
+      .describe("Array of elements to fill with their UIDs and values"),
+  }),
+  execute: async ({
+    tabId,
+    elements,
+  }: {
+    tabId: number;
+    elements: Array<{ uid: string; value: string }>;
+  }) => {
+    const results: Array<{
+      uid: string;
+      success: boolean;
+      error?: string;
+    }> = [];
+
+    let successCount = 0;
+
+    for (const element of elements) {
+      let handle: ElementHandle | null = null;
+
+      try {
+        handle = await getElementByUid(tabId, element.uid);
+
+        if (!handle) {
+          results.push({
+            uid: element.uid,
+            success: false,
+            error:
+              "Element not found in current snapshot. Call take_snapshot first.",
+          });
+          continue;
+        }
+
+        // Scroll to element and move fake mouse (optional visual feedback)
+        await scrollAndMoveFakeMouseToElement({
+          tabId,
+          handle,
+        });
+
+        // Fill the element with event handling
+        await waitForEventsAfterAction(async () => {
+          await handle!.asLocator().fill(element.value);
+        });
+
+        results.push({
+          uid: element.uid,
+          success: true,
+        });
+
+        successCount++;
+      } catch (error) {
+        results.push({
+          uid: element.uid,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        if (handle) {
+          handle.dispose();
+        }
+      }
+    }
+
+    // Play animation after filling all fields
+    if (successCount > 0) {
+      await playClickAnimationAndReturn(tabId);
+    }
+
+    return {
+      success: successCount === elements.length,
+      totalElements: elements.length,
+      successCount,
+      failureCount: elements.length - successCount,
+      results,
+      message:
+        successCount === elements.length
+          ? `Successfully filled all ${elements.length} form fields`
+          : `Filled ${successCount} of ${elements.length} form fields`,
+    };
   },
 });

@@ -1,106 +1,88 @@
 import type { FunctionTool } from "@aipexstudio/aipex-core";
-
-// Re-export all tool modules
-export * from "./bookmark";
-export * from "./element";
-export * from "./history";
-export * from "./page";
-export * from "./screenshot";
-export * from "./snapshot";
-export * from "./tab";
-
-// Import tools for allBrowserTools array
 import {
-  createBookmarkFolderTool,
-  createBookmarkTool,
-  deleteBookmarkFolderTool,
-  deleteBookmarkTool,
-  getBookmarkTool,
-  listBookmarksTool,
-  searchBookmarksTool,
-  updateBookmarkTool,
-} from "./bookmark";
-import {
-  clickElementByUidTool,
+  clickTool,
   fillElementByUidTool,
-  getEditorValueByUidTool,
+  fillFormTool,
+  getEditorValueTool,
   hoverElementByUidTool,
 } from "./element";
 import {
-  clearHistoryTool,
-  deleteHistoryItemTool,
-  getHistoryStatsTool,
-  getMostVisitedSitesTool,
-  getRecentHistoryTool,
-  searchHistoryTool,
-} from "./history";
-import {
-  clickElementTool,
-  fillFormFieldTool,
-  getPageContentTool,
-  getPageInfoTool,
-  navigateToUrlTool,
-  scrollPageTool,
+  getPageMetadataTool,
+  highlightElementTool,
+  highlightTextInlineTool,
+  scrollToElementTool,
 } from "./page";
 import {
-  copyScreenshotToClipboardTool,
-  takeScreenshotOfTabTool,
-  takeScreenshotTool,
+  captureScreenshotToClipboardTool,
+  captureScreenshotTool,
+  captureTabScreenshotTool,
 } from "./screenshot";
-import { searchSnapshotTool, takeSnapshotTool } from "./snapshot";
+import { searchElementsTool } from "./snapshot";
+// Import core tools only (27 tools total, excluding intervention and skills)
 import {
   closeTabTool,
-  createTabTool,
+  createNewTabTool,
   duplicateTabTool,
-  listTabsTool,
-  reloadTabTool,
+  getAllTabsTool,
+  getCurrentTabTool,
+  getTabInfoTool,
+  organizeTabsTool,
   switchToTabTool,
+  ungroupTabsTool,
 } from "./tab";
+import {
+  downloadChatImagesTool,
+  downloadCurrentChatImagesTool,
+  downloadImageTool,
+  downloadTextAsMarkdownTool,
+} from "./tools/downloads";
+import { waitTool } from "./tools/utils/wait-helper";
 
+/**
+ * All browser tools registered for AI use
+ * Total: 27 core tools (excluding intervention and skills)
+ */
 export const allBrowserTools: FunctionTool[] = [
-  // Page tools
-  getPageInfoTool,
-  scrollPageTool,
-  navigateToUrlTool,
-  getPageContentTool,
-  clickElementTool,
-  fillFormFieldTool,
-  // Tab tools
-  listTabsTool,
+  // Browser/Tab Management (9 tools)
+  getAllTabsTool,
+  getCurrentTabTool,
   switchToTabTool,
-  closeTabTool,
-  createTabTool,
-  reloadTabTool,
+  createNewTabTool,
+  getTabInfoTool,
   duplicateTabTool,
-  // Snapshot tools
-  takeSnapshotTool,
-  searchSnapshotTool,
-  // Element tools (UID-based)
-  clickElementByUidTool,
+  closeTabTool,
+  organizeTabsTool,
+  ungroupTabsTool,
+
+  // UI Operations (7 tools)
+  searchElementsTool,
+  clickTool,
   fillElementByUidTool,
+  getEditorValueTool,
+  fillFormTool,
   hoverElementByUidTool,
-  getEditorValueByUidTool,
-  // Screenshot tools
-  takeScreenshotTool,
-  takeScreenshotOfTabTool,
-  copyScreenshotToClipboardTool,
-  // Bookmark tools
-  listBookmarksTool,
-  searchBookmarksTool,
-  createBookmarkTool,
-  deleteBookmarkTool,
-  getBookmarkTool,
-  updateBookmarkTool,
-  createBookmarkFolderTool,
-  deleteBookmarkFolderTool,
-  // History tools
-  getRecentHistoryTool,
-  searchHistoryTool,
-  deleteHistoryItemTool,
-  clearHistoryTool,
-  getMostVisitedSitesTool,
-  getHistoryStatsTool,
+  waitTool,
+
+  // Page Content (4 tools)
+  getPageMetadataTool,
+  scrollToElementTool,
+  highlightElementTool,
+  highlightTextInlineTool,
+
+  // Screenshot (3 tools)
+  captureScreenshotTool,
+  captureTabScreenshotTool,
+  captureScreenshotToClipboardTool,
+
+  // Download (4 tools)
+  downloadTextAsMarkdownTool,
+  downloadImageTool,
+  downloadChatImagesTool,
+  downloadCurrentChatImagesTool,
 ] as const;
+
+// Note: takeSnapshotTool is not included in allBrowserTools as it's called internally
+// Intervention tools (4) and Skills tools (6) will be added in later phases
 
 interface ToolRegistryLike {
   register(tool: (typeof allBrowserTools)[number]): unknown;
