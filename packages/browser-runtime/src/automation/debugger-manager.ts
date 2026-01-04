@@ -129,9 +129,14 @@ export class DebuggerManager {
 
       chrome.debugger.attach({ tabId }, "1.3", () => {
         if (chrome.runtime.lastError) {
+          console.error(
+            "❌ [DEBUG] Failed to attach debugger:",
+            chrome.runtime.lastError.message,
+          );
           resolve(false);
         } else {
           this.debuggerAttachedTabs.add(tabId);
+          console.log("✅ [DEBUG] Debugger attached successfully");
           resolve(true);
         }
       });

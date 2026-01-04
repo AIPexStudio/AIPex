@@ -1,16 +1,10 @@
-/**
- * Smart Locator
- *
- * Element interaction using CDP for reliable browser automation
- */
-
 import { CdpCommander } from "./cdp-commander";
 import { debuggerManager } from "./debugger-manager";
 import type { ElementHandle, Locator, TextSnapshotNode } from "./types";
 
+// Smart Locator implementation that uses node information to find elements
 export class SmartLocator implements Locator {
   #cdpCommander: CdpCommander;
-
   constructor(
     private tabId: number,
     private node: TextSnapshotNode,
@@ -41,6 +35,9 @@ export class SmartLocator implements Locator {
     }
   }
 
+  /**
+   * Get element bounding box (public method for external use)
+   */
   async boundingBox(): Promise<{
     x: number;
     y: number;
@@ -55,11 +52,14 @@ export class SmartLocator implements Locator {
       const box = await this.getElementBoundingBox(this.node.id);
 
       return box;
-    } catch {
+    } catch (_error) {
       return null;
     }
   }
 
+  /**
+   * Get editor value - supports Monaco Editor and standard inputs/textareas
+   */
   async getEditorValue(): Promise<string | null> {
     try {
       const attached = await debuggerManager.safeAttachDebugger(this.tabId);
@@ -75,10 +75,11 @@ export class SmartLocator implements Locator {
       }
 
       const result = await this.#cdpCommander.sendCommand<{
-        result?: { value?: string };
+        result?: { value?: string | null };
       }>("Runtime.callFunctionOn", {
         objectId: remoteObject.object.objectId,
         functionDeclaration: `function() {
+          // Method 1: Try Monaco Editor
           const editorContainer = this.closest('.monaco-editor');
           if (editorContainer) {
             const editor = editorContainer.editor ||
@@ -89,6 +90,7 @@ export class SmartLocator implements Locator {
             }
           }
 
+          // Method 2: Try window.monaco.editor.getEditors()
           if (window.monaco && window.monaco.editor) {
             try {
               const editors = window.monaco.editor.getEditors();
@@ -98,9 +100,12 @@ export class SmartLocator implements Locator {
                   return editor.getValue();
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              // Ignore
+            }
           }
 
+          // Method 3: Try CodeMirror
           if (this.CodeMirror && typeof this.CodeMirror.getValue === 'function') {
             return this.CodeMirror.getValue();
           }
@@ -110,19 +115,24 @@ export class SmartLocator implements Locator {
             return cmContainer.CodeMirror.getValue();
           }
 
+          // Method 4: Try ACE Editor
           if (window.ace && this.closest('.ace_editor')) {
             try {
               const aceEditor = window.ace.edit(this);
               if (aceEditor) {
                 return aceEditor.getValue();
               }
-            } catch (e) {}
+            } catch (e) {
+              // Ignore
+            }
           }
 
+          // Method 5: Standard input/textarea
           if (this.value !== undefined) {
             return this.value;
           }
 
+          // Method 6: contenteditable
           if (this.isContentEditable) {
             return this.textContent || this.innerText || '';
           }
@@ -133,7 +143,8 @@ export class SmartLocator implements Locator {
       });
 
       return result?.result?.value || null;
-    } catch {
+    } catch (error) {
+      console.error("❌ [SmartLocator] Failed to get editor value:", error);
       return null;
     }
   }
@@ -142,6 +153,9 @@ export class SmartLocator implements Locator {
     debuggerManager.safeDetachDebugger(this.tabId, true);
   }
 
+  /**
+   * Helper: Get element bounding box using CDP
+   */
   private async getElementBoundingBox(nodeId: string): Promise<{
     x: number;
     y: number;
@@ -149,6 +163,8 @@ export class SmartLocator implements Locator {
     height: number;
   } | null> {
     try {
+      // 获取元素位置并添加临时高亮样式
+      const isDev = import.meta.env?.DEV;
       const boxResult = await this.#cdpCommander.sendCommand<{
         result: {
           value: { x: number; y: number; width: number; height: number };
@@ -159,8 +175,10 @@ export class SmartLocator implements Locator {
           const el = document.querySelector("[data-aipex-nodeid='${nodeId}']");
           if (!el) return null;
 
+          // Get bounding box
           const rect = el.getBoundingClientRect();
 
+          // Store original styles
           const originalStyles = {
             outline: el.style.outline,
             outlineOffset: el.style.outlineOffset,
@@ -168,6 +186,7 @@ export class SmartLocator implements Locator {
             transition: el.style.transition,
           };
 
+          // Apply beautiful highlight styles (only if not already highlighted)
           if (!el.hasAttribute('data-aipex-highlighted')) {
             el.setAttribute('data-aipex-highlighted', 'true');
             el.style.outline = '3px solid #3b82f6';
@@ -175,13 +194,21 @@ export class SmartLocator implements Locator {
             el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
             el.style.transition = 'all 0.2s ease-in-out';
 
-            setTimeout(() => {
-              el.removeAttribute('data-aipex-highlighted');
-              el.style.outline = originalStyles.outline;
-              el.style.outlineOffset = originalStyles.outlineOffset;
-              el.style.boxShadow = originalStyles.boxShadow;
-              el.style.transition = originalStyles.transition;
-            }, 10000);
+            // Schedule removal of highlight after 10 seconds (longer duration)
+            // if dev, keep highlight indefinitely
+            ${
+              isDev
+                ? "// Dev mode: keep highlight forever"
+                : `
+              setTimeout(() => {
+                el.removeAttribute('data-aipex-highlighted');
+                el.style.outline = originalStyles.outline;
+                el.style.outlineOffset = originalStyles.outlineOffset;
+                el.style.boxShadow = originalStyles.boxShadow;
+                el.style.transition = originalStyles.transition;
+              }, 10000);
+            `
+            };
           }
 
           return {
@@ -202,33 +229,47 @@ export class SmartLocator implements Locator {
       }
 
       return null;
-    } catch {
+    } catch (_error) {
       return null;
     }
   }
 
+  /**
+   * Helper: Ensure DOM domain is enabled
+   */
   private async ensureDOMEnabled(): Promise<void> {
     await this.#cdpCommander.sendCommand("DOM.enable", {});
   }
 
+  /**
+   * Helper: Resolve backendDOMNodeId to RemoteObject
+   */
   private async resolveNodeToRemoteObject(
     backendDOMNodeId: number,
-  ): Promise<{ object?: { objectId?: string } } | null> {
+  ): Promise<any> {
     return this.#cdpCommander.sendCommand("DOM.resolveNode", {
       backendNodeId: backendDOMNodeId,
     });
   }
 
+  /**
+   * Helper: Scroll to element
+   */
   private async scrollToElement(backendNodeId: number): Promise<void> {
     await this.#cdpCommander.sendCommand("DOM.scrollIntoViewIfNeeded", {
       backendNodeId,
     });
   }
 
+  /**
+   * Execute action using CDP (Chrome DevTools Protocol) for realistic interactions
+   * Includes a global timeout to prevent indefinite hanging
+   */
   private async executeInPage(
     action: string,
-    ...args: unknown[]
+    ...args: any[]
   ): Promise<{ success: boolean; error?: string }> {
+    // Global timeout for the entire operation (30 seconds)
     const GLOBAL_TIMEOUT = 30000;
 
     const timeoutPromise = new Promise<{ success: boolean; error: string }>(
@@ -244,27 +285,35 @@ export class SmartLocator implements Locator {
 
     const operationPromise = this.executeInPageInternal(action, ...args);
 
+    // Race between operation and timeout
     return Promise.race([operationPromise, timeoutPromise]);
   }
 
+  /**
+   * Internal implementation of executeInPage without timeout
+   */
   private async executeInPageInternal(
     action: string,
-    ...args: unknown[]
+    ...args: any[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Attach debugger and enable necessary domains
       const attached = await debuggerManager.safeAttachDebugger(this.tabId);
       if (!attached) {
         return { success: false, error: "Failed to attach debugger" };
       }
 
+      // Enable DOM domain (Input domain doesn't need explicit enable)
       await this.ensureDOMEnabled();
+
       await this.scrollToElement(this.backendDOMNodeId);
 
+      // Execute action based on type
       switch (action) {
         case "click":
-          return await this.executeClickViaCDP((args[0] as number) || 1);
+          return await this.executeClickViaCDP(args[0] || 1);
         case "fill":
-          return await this.executeFillViaCDP(args[0] as string);
+          return await this.executeFillViaCDP(args[0]);
         case "hover":
           return await this.executeHoverViaCDP();
         default:
@@ -278,6 +327,9 @@ export class SmartLocator implements Locator {
     }
   }
 
+  /**
+   * Execute click action using CDP
+   */
   private async executeClickViaCDP(
     count: number = 1,
   ): Promise<{ success: boolean; error?: string }> {
@@ -295,13 +347,9 @@ export class SmartLocator implements Locator {
       const y = box.y + box.height / 2;
 
       for (let i = 0; i < count; i++) {
-        const { result } = await this.#cdpCommander.sendCommand<{
-          result: {
-            value: {
-              found: boolean;
-              isCovered: boolean;
-              topTag: string | null;
-            };
+        const evalResult = await this.#cdpCommander.sendCommand<{
+          result?: {
+            value?: { found: boolean; isCovered?: boolean; topTag?: string };
           };
         }>("Runtime.evaluate", {
           expression: `
@@ -319,7 +367,7 @@ export class SmartLocator implements Locator {
           returnByValue: true,
         });
 
-        const info = result.value;
+        const info = evalResult?.result?.value;
         if (!info?.found) {
           return { success: false, error: "Element not found" };
         }
@@ -369,6 +417,73 @@ export class SmartLocator implements Locator {
     }
   }
 
+  /**
+   * Add highlight to element during operation
+   */
+  private async addHighlightToElement(objectId: string): Promise<void> {
+    try {
+      await this.#cdpCommander.sendCommand("Runtime.callFunctionOn", {
+        objectId,
+        functionDeclaration: `function() {
+          // Find editor container (Monaco or the element itself)
+          const container = this.closest('.monaco-editor') || this;
+
+          // Store original styles
+          if (!container._aipexOriginalStyles) {
+            container._aipexOriginalStyles = {
+              outline: container.style.outline,
+              outlineOffset: container.style.outlineOffset,
+              transition: container.style.transition
+            };
+          }
+
+          // Add highlight effect
+          container.style.transition = 'outline 0.2s ease';
+          container.style.outline = '3px solid #3B82F6';
+          container.style.outlineOffset = '2px';
+        }`,
+        returnByValue: false,
+      });
+    } catch (error) {
+      console.warn("Failed to add highlight:", error);
+    }
+  }
+
+  /**
+   * Remove highlight from element
+   */
+  private async removeHighlightFromElement(objectId: string): Promise<void> {
+    try {
+      await this.#cdpCommander.sendCommand("Runtime.callFunctionOn", {
+        objectId,
+        functionDeclaration: `function() {
+          const container = this.closest('.monaco-editor') || this;
+
+          // Restore original styles
+          if (container._aipexOriginalStyles) {
+            container.style.outline = container._aipexOriginalStyles.outline;
+            container.style.outlineOffset = container._aipexOriginalStyles.outlineOffset;
+            container.style.transition = container._aipexOriginalStyles.transition;
+            delete container._aipexOriginalStyles;
+          }
+        }`,
+        returnByValue: false,
+      });
+
+      // Schedule cleanup after animation
+      setTimeout(() => {
+        this.#cdpCommander
+          .sendCommand("Runtime.releaseObject", { objectId })
+          .catch(() => {});
+      }, 300);
+    } catch (error) {
+      console.warn("Failed to remove highlight:", error);
+    }
+  }
+
+  /**
+   * Try to fill Monaco Editor using native API
+   */
   private async tryFillMonaco(
     objectId: string,
     value: string,
@@ -379,8 +494,10 @@ export class SmartLocator implements Locator {
       }>("Runtime.callFunctionOn", {
         objectId,
         functionDeclaration: `function(value) {
+          // Method 1: Check if element or ancestor has monaco-editor class
           const editorContainer = this.closest('.monaco-editor');
           if (editorContainer) {
+            // Try to get editor instance from various possible properties
             const editor = editorContainer.editor ||
                           editorContainer.__monaco_editor__ ||
                           editorContainer._editor;
@@ -390,6 +507,7 @@ export class SmartLocator implements Locator {
             }
           }
 
+          // Method 2: If window.monaco exists, try to find editor by DOM node
           if (window.monaco && window.monaco.editor) {
             try {
               const editors = window.monaco.editor.getEditors();
@@ -400,9 +518,12 @@ export class SmartLocator implements Locator {
                   return true;
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              // monaco.editor.getEditors() might not exist in all versions
+            }
           }
 
+          // Method 3: Try to find Monaco instance on the element itself
           if (this._editor && typeof this._editor.setValue === 'function') {
             this._editor.setValue(value);
             return true;
@@ -415,17 +536,24 @@ export class SmartLocator implements Locator {
       });
 
       return result?.result?.value === true;
-    } catch {
+    } catch (error) {
+      console.warn("Monaco fill attempt failed:", error);
       return false;
     }
   }
 
+  /**
+   * Fill using select-all + replace strategy (universal fallback)
+   */
   private async fillUsingSelectAll(value: string): Promise<void> {
+    // Step 1: Focus the element
+    console.log("📍 [SmartLocator] Focusing element...");
     await this.#cdpCommander.sendCommand("DOM.focus", {
       backendNodeId: this.backendDOMNodeId,
     });
     await new Promise((resolve) => setTimeout(resolve, 300));
 
+    // Step 2: Detect platform for modifier key
     const platformResult = await this.#cdpCommander.sendCommand<{
       result?: { value?: boolean };
     }>("Runtime.evaluate", {
@@ -433,8 +561,14 @@ export class SmartLocator implements Locator {
       returnByValue: true,
     });
     const isMac = platformResult?.result?.value === true;
-    const modifiers = isMac ? 8 : 2;
+    const modifiers = isMac ? 8 : 2; // Meta = 8 (Cmd), Control = 2 (Ctrl)
 
+    // Step 3: Send Ctrl+A / Cmd+A to select all
+    console.log(
+      `⌨️  [SmartLocator] Pressing ${isMac ? "Cmd" : "Ctrl"}+A to select all...`,
+    );
+
+    // Press modifier key (Ctrl or Cmd)
     await this.#cdpCommander.sendCommand("Input.dispatchKeyEvent", {
       type: "keyDown",
       modifiers,
@@ -444,6 +578,7 @@ export class SmartLocator implements Locator {
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
 
+    // Press 'A' key
     await this.#cdpCommander.sendCommand("Input.dispatchKeyEvent", {
       type: "keyDown",
       modifiers,
@@ -453,6 +588,7 @@ export class SmartLocator implements Locator {
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
 
+    // Release 'A' key
     await this.#cdpCommander.sendCommand("Input.dispatchKeyEvent", {
       type: "keyUp",
       modifiers,
@@ -462,6 +598,7 @@ export class SmartLocator implements Locator {
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
 
+    // Release modifier key
     await this.#cdpCommander.sendCommand("Input.dispatchKeyEvent", {
       type: "keyUp",
       modifiers: 0,
@@ -470,11 +607,17 @@ export class SmartLocator implements Locator {
       windowsVirtualKeyCode: isMac ? 91 : 17,
     });
 
+    // Step 4: Wait for selection to complete
+    console.log("⏳ [SmartLocator] Waiting for selection...");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
+    // Step 5: Insert text (will replace selected content)
+    console.log("✍️  [SmartLocator] Inserting new text...");
     await this.#cdpCommander.sendCommand("Input.insertText", { text: value });
     await new Promise((resolve) => setTimeout(resolve, 300));
 
+    // Step 6: Trigger change and blur events
+    console.log("🔔 [SmartLocator] Triggering events...");
     const remoteObject = await this.resolveNodeToRemoteObject(
       this.backendDOMNodeId,
     );
@@ -482,21 +625,30 @@ export class SmartLocator implements Locator {
       await this.#cdpCommander.sendCommand("Runtime.callFunctionOn", {
         objectId: remoteObject.object.objectId,
         functionDeclaration: `function() {
-        this.dispatchEvent(new Event('input', { bubbles: true }));
-            this.dispatchEvent(new Event('change', { bubbles: true }));
-            this.dispatchEvent(new Event('blur', { bubbles: true }));
-          }`,
+          this.dispatchEvent(new Event('input', { bubbles: true }));
+              this.dispatchEvent(new Event('change', { bubbles: true }));
+              this.dispatchEvent(new Event('blur', { bubbles: true }));
+            }`,
       });
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
+  /**
+   * Execute fill action using CDP with Monaco detection and visual feedback
+   */
   private async executeFillViaCDP(
     value: string,
   ): Promise<{ success: boolean; error?: string }> {
     let objectId: string | null = null;
 
     try {
+      console.log("🔍 [SmartLocator] Starting fill operation...");
+      console.log(
+        `📝 [SmartLocator] Target value length: ${value.length} characters`,
+      );
+
+      // Step 1: Get element remote object
       const remoteObject = await this.resolveNodeToRemoteObject(
         this.backendDOMNodeId,
       );
@@ -506,17 +658,44 @@ export class SmartLocator implements Locator {
       objectId = remoteObject.object.objectId;
       await new Promise((resolve) => setTimeout(resolve, 200));
 
+      // Step 2: Add visual highlight
+      console.log("✨ [SmartLocator] Adding highlight effect...");
+      await this.addHighlightToElement(objectId!);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Step 3: Try Monaco Editor native API first
+      console.log("🎯 [SmartLocator] Attempting Monaco native fill...");
       const monacoSuccess = await this.tryFillMonaco(objectId!, value);
 
       if (monacoSuccess) {
+        console.log("✅ [SmartLocator] Monaco fill successful!");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        console.log("🧹 [SmartLocator] Removing highlight...");
+        await this.removeHighlightFromElement(objectId!);
         return { success: true };
       }
 
+      // Step 4: Fallback to universal select-all + replace strategy
+      console.log(
+        "🔄 [SmartLocator] Monaco not detected, using universal fill...",
+      );
       await new Promise((resolve) => setTimeout(resolve, 300));
       await this.fillUsingSelectAll(value);
 
+      console.log("✅ [SmartLocator] Universal fill successful!");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log("🧹 [SmartLocator] Removing highlight...");
+      await this.removeHighlightFromElement(objectId!);
+
       return { success: true };
     } catch (error) {
+      console.error("❌ [SmartLocator] Fill failed:", error);
+
+      // Try to remove highlight even on error
+      if (objectId) {
+        await this.removeHighlightFromElement(objectId).catch(() => {});
+      }
+
       return {
         success: false,
         error: `Fill failed: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -524,6 +703,9 @@ export class SmartLocator implements Locator {
     }
   }
 
+  /**
+   * Execute hover action using CDP
+   */
   private async executeHoverViaCDP(): Promise<{
     success: boolean;
     error?: string;
@@ -556,6 +738,7 @@ export class SmartLocator implements Locator {
   }
 }
 
+// Smart ElementHandle implementation
 export class SmartElementHandle implements ElementHandle {
   private locator: Locator;
 

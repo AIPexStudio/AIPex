@@ -17,3 +17,4 @@ export {
 export { SmartElementHandle, SmartLocator } from "./smart-locator";
 export { SnapshotManager, snapshotManager } from "./snapshot-manager";
 export * from "./types";
+export * from "./ui-operations";
