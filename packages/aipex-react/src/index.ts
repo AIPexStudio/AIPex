@@ -2,6 +2,7 @@ export * from "./adapters/chat-adapter.js";
 export * from "./components/chatbot/index.js";
 export * from "./components/content-script/index.js";
 export * from "./components/fake-mouse/index.js";
+export * from "./components/intervention/index.js";
 export * from "./components/omni/index.js";
 export * from "./components/settings/index.js";
 export * from "./hooks/index.js";

@@ -3,13 +3,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  AccessibilityTree,
-  AXNode,
-  TextSnapshot,
-  TextSnapshotNode,
-} from "./types";
 import { SnapshotManager } from "./snapshot-manager";
+import type { AccessibilityTree, TextSnapshot } from "./types";
 
 // Mock dependencies - hoisted to ensure they're available before imports
 const mockSendCommand = vi.hoisted(() => vi.fn());
@@ -176,14 +171,16 @@ describe("SnapshotManager", () => {
 
   describe("getSnapshot", () => {
     it("should return snapshot if exists", async () => {
-      const mockSnapshot: TextSnapshot = {
+      const _mockSnapshot: TextSnapshot = {
         root: {
           id: "root",
           role: "RootWebArea",
           name: "Test",
           children: [],
         },
-        idToNode: new Map([["root", { id: "root", role: "RootWebArea", children: [] }]]),
+        idToNode: new Map([
+          ["root", { id: "root", role: "RootWebArea", children: [] }],
+        ]),
         tabId: 1,
       };
 
@@ -688,4 +685,3 @@ describe("SnapshotManager", () => {
     });
   });
 });
-

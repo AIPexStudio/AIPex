@@ -464,4 +464,3 @@ describe("SmartElementHandle", () => {
     expect(mockSafeDetachDebugger).toHaveBeenCalledWith(tabId, true);
   });
 });
-

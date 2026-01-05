@@ -217,6 +217,65 @@
     "capture_tab_screenshot": "Capture Tab Screenshot",
     "capture_screenshot_to_clipboard": "Capture Screenshot to Clipboard",
     "read_clipboard_image": "Read Clipboard Image",
-    "get_clipboard_image_info": "Get Clipboard Image Info"
+    "get_clipboard_image_info": "Get Clipboard Image Info",
+    "list_interventions": "List Interventions",
+    "get_intervention_info": "Get Intervention Info",
+    "request_intervention": "Request Intervention",
+    "cancel_intervention": "Cancel Intervention"
+  },
+  "interventions": {
+    "mode": {
+      "disabled": "Disabled",
+      "disabledDescription": "AI cannot request any intervention",
+      "passive": "Passive",
+      "passiveDescription": "AI can request intervention as needed"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "timeout": "Timeout",
+      "error": "Error"
+    },
+    "common": {
+      "timeoutLabel": "Timeout",
+      "timeoutUnit": "seconds"
+    },
+    "monitor": {
+      "title": "Monitor Operation",
+      "clickPrompt": "Please click on the element you want to interact with",
+      "captureInfo": "Element information will be captured and sent to AI",
+      "captured": "Element Captured",
+      "capturedSuccess": "Element information captured successfully",
+      "cancelled": "Monitoring cancelled",
+      "timeout": "Monitoring timed out. Please try again.",
+      "error": "An error occurred during monitoring"
+    },
+    "voice": {
+      "title": "Voice Input",
+      "recognizing": "Recognizing...",
+      "silence": "Silence detected",
+      "stopRecording": "Stop Recording",
+      "speakPrompt": "Please speak now",
+      "initializingMic": "Initializing microphone...",
+      "completed": "Recording Completed",
+      "cancelled": "Recording cancelled",
+      "timeout": "Recording timed out",
+      "error": "An error occurred during recording"
+    },
+    "selection": {
+      "title": "User Selection",
+      "promptSingle": "Please select one option",
+      "promptMultiple": "You can select multiple options",
+      "other": "Other",
+      "otherDescription": "Enter custom text",
+      "otherPlaceholder": "Please enter your choice",
+      "confirmButton": "Confirm Selection",
+      "completed": "Selection Completed",
+      "cancelled": "Selection cancelled",
+      "timeout": "Selection timed out",
+      "error": "An error occurred during selection"
+    }
   }
 }

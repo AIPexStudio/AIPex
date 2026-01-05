@@ -6,6 +6,8 @@ export * from "./automation/index.js";
 export * from "./context/index.js";
 // Hooks
 export * from "./hooks/index.js";
+// Intervention
+export * from "./intervention/index.js";
 export * from "./runtime/browser-automation-host.js";
 export * from "./runtime/context-providers.js";
 export * from "./runtime/default-hosts.js";
