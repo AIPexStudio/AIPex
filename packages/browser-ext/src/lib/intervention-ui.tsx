@@ -6,16 +6,16 @@
  */
 
 import {
+  type InterventionMode,
   InterventionModeToggle,
   MonitorCard,
   SelectionCard,
   VoiceCard,
-  type InterventionMode,
 } from "@aipexstudio/aipex-react/components/intervention";
 import {
+  type InterventionState,
   interventionManager,
   selectionManager,
-  type InterventionState,
 } from "@aipexstudio/browser-runtime";
 import { useEffect, useState } from "react";
 
@@ -33,10 +33,7 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
       try {
         await interventionManager.initialize();
         interventionManager.setConversationMode(mode);
-        console.log(
-          "✅ Intervention manager initialized with mode:",
-          mode,
-        );
+        console.log("✅ Intervention manager initialized with mode:", mode);
       } catch (error) {
         console.error("❌ Failed to initialize intervention manager:", error);
       }
@@ -83,7 +80,10 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
     };
 
     interventionManager.addEventListener("start", handleInterventionStart);
-    interventionManager.addEventListener("complete", handleInterventionComplete);
+    interventionManager.addEventListener(
+      "complete",
+      handleInterventionComplete,
+    );
     interventionManager.addEventListener("cancel", handleInterventionCancel);
     interventionManager.addEventListener("timeout", handleInterventionTimeout);
     interventionManager.addEventListener("error", handleInterventionError);
@@ -94,8 +94,14 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
         "complete",
         handleInterventionComplete,
       );
-      interventionManager.removeEventListener("cancel", handleInterventionCancel);
-      interventionManager.removeEventListener("timeout", handleInterventionTimeout);
+      interventionManager.removeEventListener(
+        "cancel",
+        handleInterventionCancel,
+      );
+      interventionManager.removeEventListener(
+        "timeout",
+        handleInterventionTimeout,
+      );
       interventionManager.removeEventListener("error", handleInterventionError);
     };
   }, [mode]);
@@ -147,8 +153,11 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
               ?.options || []
           }
           mode={
-            (currentIntervention.request.params as { mode?: "single" | "multiple" })
-              ?.mode || "single"
+            (
+              currentIntervention.request.params as {
+                mode?: "single" | "multiple";
+              }
+            )?.mode || "single"
           }
           allowOther={
             (currentIntervention.request.params as { allowOther?: boolean })

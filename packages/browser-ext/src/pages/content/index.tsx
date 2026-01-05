@@ -128,7 +128,7 @@ const ContentApp = () => {
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, []);
+  }, [startCapture, stopCapture]);
 
   // Capture functionality
   const startCapture = React.useCallback(() => {
@@ -183,8 +183,7 @@ const ContentApp = () => {
         classes: Array.from(target.classList).filter(
           (c) => !c.startsWith("aipex-") && !c.startsWith("plasmo-"),
         ),
-        textContent:
-          target.textContent?.trim().substring(0, 200) || undefined,
+        textContent: target.textContent?.trim().substring(0, 200) || undefined,
         attributes: Array.from(target.attributes).reduce(
           (acc, attr) => {
             if (!attr.name.startsWith("data-plasmo")) {
@@ -239,7 +238,10 @@ const ContentApp = () => {
       `;
       document.head.appendChild(style);
     }
-  }, []);
+  }, [
+    generateCssSelector, // Stop capture
+    stopCapture,
+  ]);
 
   const stopCapture = React.useCallback(() => {
     console.log("🛑 Stopping element capture mode");
