@@ -15,8 +15,8 @@ importers:
         specifier: ^0.2.19
         version: 0.2.19
       '@types/chrome':
-        specifier: 0.1.31
-        version: 0.1.31
+        specifier: 0.1.32
+        version: 0.1.32
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.1
@@ -299,8 +299,8 @@ importers:
         specifier: ^16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@types/chrome':
-        specifier: 0.1.31
-        version: 0.1.31
+        specifier: 0.1.32
+        version: 0.1.32
       '@types/react':
         specifier: 19.2.7
         version: 19.2.7
@@ -2073,6 +2073,9 @@ packages:
 
   '@types/chrome@0.1.31':
     resolution: {integrity: sha512-8fC9t02LRdqlSQ9bktaiLjP0NKujPNPaCKPfXxfIjZ35A9u831XY0pt0UEf2oup2SjcUEAaIYOB8mzJ51jhjmA==}
+
+  '@types/chrome@0.1.32':
+    resolution: {integrity: sha512-n5Cqlh7zyAqRLQWLXkeV5K/1BgDZdVcO/dJSTa8x+7w+sx7m73UrDmduAptg4KorMtyTW2TNnPu8RGeaDMKNGg==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -4975,6 +4978,7 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -6616,6 +6620,11 @@ snapshots:
       assertion-error: 2.0.1
 
   '@types/chrome@0.1.31':
+    dependencies:
+      '@types/filesystem': 0.0.36
+      '@types/har-format': 1.2.16
+
+  '@types/chrome@0.1.32':
     dependencies:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16
