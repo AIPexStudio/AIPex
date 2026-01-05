@@ -207,7 +207,7 @@ async function execute(
   const language =
     "language" in paramsObj && typeof paramsObj.language === "string"
       ? paramsObj.language
-      : "en-US";
+      : "zh-CN";
   const autoStopSilence =
     "autoStopSilence" in paramsObj &&
     typeof paramsObj.autoStopSilence === "number"
