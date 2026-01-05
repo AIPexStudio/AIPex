@@ -183,4 +183,3 @@ export function InterventionModeToggleHeader({
 
   return <InterventionModeToggle mode={mode} onChange={handleModeChange} />;
 }
-
