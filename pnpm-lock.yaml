@@ -366,8 +366,8 @@ importers:
         specifier: ^0.3.7
         version: 0.3.7(ws@8.18.3)(zod@4.1.13)
       '@openai/agents-extensions':
-        specifier: ^0.3.3
-        version: 0.3.3(@openai/agents@0.3.7(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)
+        specifier: ^0.3.7
+        version: 0.3.7(@openai/agents@0.3.7(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)
       '@openrouter/ai-sdk-provider':
         specifier: ^0.4.0
         version: 0.4.6(zod@4.1.13)
@@ -5813,19 +5813,6 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@openai/agents-core@0.3.3(ws@8.18.3)(zod@4.1.13)':
-    dependencies:
-      debug: 4.4.3
-      openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@4.1.13)
-      zod: 4.1.13
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - hono
-      - supports-color
-      - ws
-
   '@openai/agents-core@0.3.7(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       debug: 4.4.3
@@ -5839,11 +5826,11 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-extensions@0.3.3(@openai/agents@0.3.7(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-extensions@0.3.7(@openai/agents@0.3.7(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)':
     dependencies:
-      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider': 2.0.1
       '@openai/agents': 0.3.7(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-core': 0.3.3(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.7(ws@8.18.3)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
       ws: 8.18.3
