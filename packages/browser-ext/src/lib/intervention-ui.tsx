@@ -10,9 +10,12 @@ import {
   InterventionModeToggle,
   MonitorCard,
   SelectionCard,
+  type SelectionOption,
+  type UserSelectionResult,
   VoiceCard,
 } from "@aipexstudio/aipex-react/components/intervention";
 import {
+  type InterventionEvent,
   type InterventionState,
   interventionManager,
   selectionManager,
@@ -24,7 +27,7 @@ interface InterventionUIProps {
   onModeChange: (mode: InterventionMode) => void;
 }
 
-export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
+export function InterventionUI({ mode }: InterventionUIProps) {
   const [currentIntervention, setCurrentIntervention] =
     useState<InterventionState | null>(null);
 
@@ -45,11 +48,15 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
       setCurrentIntervention(interventionManager.getCurrentIntervention());
     };
 
-    const handleInterventionStart = (event: {
-      data?: { state?: InterventionState };
-    }) => {
-      if (event.data?.state) {
-        setCurrentIntervention(event.data.state);
+    const handleInterventionStart = (event: InterventionEvent) => {
+      if (
+        event.data &&
+        typeof event.data === "object" &&
+        "state" in event.data
+      ) {
+        setCurrentIntervention(
+          event.data.state as InterventionState,
+        );
       } else {
         updateInterventionState();
       }
@@ -149,8 +156,8 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
               ?.question || ""
           }
           options={
-            (currentIntervention.request.params as { options?: unknown[] })
-              ?.options || []
+            ((currentIntervention.request.params as { options?: unknown[] })
+              ?.options || []) as SelectionOption[]
           }
           mode={
             (
@@ -165,7 +172,11 @@ export function InterventionUI({ mode, onModeChange }: InterventionUIProps) {
           }
           reason={currentIntervention.request.reason}
           timeout={currentIntervention.request.timeout}
-          selectedResult={currentIntervention.result?.data}
+          selectedResult={
+            currentIntervention.result?.data as
+              | UserSelectionResult
+              | undefined
+          }
           onConfirm={(result) => {
             console.log("[InterventionUI] Selection confirmed:", result);
             selectionManager.completeSelection(result);
