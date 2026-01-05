@@ -467,6 +467,10 @@ packages:
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
 
+  '@ai-sdk/provider@2.0.1':
+    resolution: {integrity: sha512-KCUwswvsC5VsW2PWFqF8eJgSCu5Ysj7m1TxiHTVA6g7k360bk0RNQENT8KTMAYEs+8fWPD3Uu4dEmzGHc+jGng==}
+    engines: {node: '>=18'}
+
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
@@ -1191,14 +1195,6 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@openai/agents-core@0.3.3':
-    resolution: {integrity: sha512-MlF70Vcjmi7rMlU00bBjes7DxM3IzcFlmpN0/f8fDKVuLKnqPy+dZRCpX+eNbPrJ4xg14Hmx3LgulNvzxgZx2g==}
-    peerDependencies:
-      zod: ^3.25.40 || ^4.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
   '@openai/agents-core@0.3.7':
     resolution: {integrity: sha512-Ya1sPc8UyHXxgQjNWN1sn/vFNP4CRdT/0SWd0tIc+kHgYuxrvRjwSfWNBqXc70XOZGS5bWWaRTqJBMwQt6AlYg==}
     peerDependencies:
@@ -1207,8 +1203,8 @@ packages:
       zod:
         optional: true
 
-  '@openai/agents-extensions@0.3.3':
-    resolution: {integrity: sha512-oQh4H2LhpxwZc+OK8UlDwHnadRC7hg1142pDspUGMR9hef6X8eKdsHqiPCOeKoL21QQ4S4edE1N6d2slJBdvLA==}
+  '@openai/agents-extensions@0.3.7':
+    resolution: {integrity: sha512-eZTtv5Q9ATDYFpQoIGvNxG9TQ/J6l2cVYnloyVK0lqm6rHwMYseKzF76hER00m2hGpjWGMbJzJsI2B5Vvar15Q==}
     peerDependencies:
       '@openai/agents': '>=0.0.0'
       ws: ^8.18.1
@@ -5151,6 +5147,10 @@ snapshots:
       json-schema: 0.4.0
 
   '@ai-sdk/provider@2.0.0':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@2.0.1':
     dependencies:
       json-schema: 0.4.0
 
