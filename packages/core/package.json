@@ -33,8 +33,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@openai/agents": "^0.3.3",
-    "@openai/agents-extensions": "^0.3.3",
+    "@openai/agents": "^0.3.7",
+    "@openai/agents-extensions": "^0.3.7",
     "lru-cache": "^11.2.4",
     "zod": "^4.1.13"
   },
