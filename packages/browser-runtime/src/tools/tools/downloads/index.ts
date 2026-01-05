@@ -470,7 +470,11 @@ export const downloadCurrentChatImagesTool = tool({
       .optional()
       .describe("Optional folder prefix for organizing downloads"),
   }),
-  execute: async ({ folderPrefix }: { folderPrefix?: string }) => {
+  execute: async ({
+    folderPrefix: _folderPrefix,
+  }: {
+    folderPrefix?: string;
+  }) => {
     // This is a placeholder - actual implementation would need to access chat context
     return {
       success: false,

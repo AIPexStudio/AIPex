@@ -54,9 +54,7 @@ export function InterventionUI({ mode }: InterventionUIProps) {
         typeof event.data === "object" &&
         "state" in event.data
       ) {
-        setCurrentIntervention(
-          event.data.state as InterventionState,
-        );
+        setCurrentIntervention(event.data.state as InterventionState);
       } else {
         updateInterventionState();
       }
@@ -173,9 +171,7 @@ export function InterventionUI({ mode }: InterventionUIProps) {
           reason={currentIntervention.request.reason}
           timeout={currentIntervention.request.timeout}
           selectedResult={
-            currentIntervention.result?.data as
-              | UserSelectionResult
-              | undefined
+            currentIntervention.result?.data as UserSelectionResult | undefined
           }
           onConfirm={(result) => {
             console.log("[InterventionUI] Selection confirmed:", result);
