@@ -217,6 +217,65 @@
     "capture_tab_screenshot": "截取标签页截图",
     "capture_screenshot_to_clipboard": "截图到剪贴板",
     "read_clipboard_image": "读取剪贴板图片",
-    "get_clipboard_image_info": "获取剪贴板图片信息"
+    "get_clipboard_image_info": "获取剪贴板图片信息",
+    "list_interventions": "列出介入方式",
+    "get_intervention_info": "获取介入信息",
+    "request_intervention": "请求介入",
+    "cancel_intervention": "取消介入"
+  },
+  "interventions": {
+    "mode": {
+      "disabled": "禁止介入",
+      "disabledDescription": "AI 无法请求任何介入",
+      "passive": "被动介入",
+      "passiveDescription": "AI 可以根据需要请求介入"
+    },
+    "status": {
+      "pending": "等待中",
+      "active": "进行中",
+      "completed": "已完成",
+      "cancelled": "已取消",
+      "timeout": "超时",
+      "error": "错误"
+    },
+    "common": {
+      "timeoutLabel": "超时时间",
+      "timeoutUnit": "秒"
+    },
+    "monitor": {
+      "title": "监听操作",
+      "clickPrompt": "请点击您想要操作的元素",
+      "captureInfo": "元素信息将被捕获并发送给 AI",
+      "captured": "元素已捕获",
+      "capturedSuccess": "元素信息捕获成功",
+      "cancelled": "监听已取消",
+      "timeout": "监听超时，请重试",
+      "error": "监听过程中发生错误"
+    },
+    "voice": {
+      "title": "语音输入",
+      "recognizing": "识别中...",
+      "silence": "检测到静音",
+      "stopRecording": "停止录音",
+      "speakPrompt": "请现在说话",
+      "initializingMic": "正在初始化麦克风...",
+      "completed": "录音完成",
+      "cancelled": "录音已取消",
+      "timeout": "录音超时",
+      "error": "录音过程中发生错误"
+    },
+    "selection": {
+      "title": "用户选择",
+      "promptSingle": "请选择一个选项",
+      "promptMultiple": "您可以选择多个选项",
+      "other": "其他",
+      "otherDescription": "输入自定义文本",
+      "otherPlaceholder": "请输入您的选择",
+      "confirmButton": "确认选择",
+      "completed": "选择完成",
+      "cancelled": "选择已取消",
+      "timeout": "选择超时",
+      "error": "选择过程中发生错误"
+    }
   }
 }

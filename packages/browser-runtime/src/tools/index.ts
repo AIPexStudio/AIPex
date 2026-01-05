@@ -6,6 +6,7 @@ import {
   getEditorValueTool,
   hoverElementByUidTool,
 } from "./element";
+import { interventionTools } from "./interventions/index.js";
 import {
   getPageMetadataTool,
   highlightElementTool,
@@ -40,7 +41,7 @@ import { waitTool } from "./tools/utils/wait-helper";
 
 /**
  * All browser tools registered for AI use
- * Total: 27 core tools (excluding intervention and skills)
+ * Total: 31 tools (27 core + 4 intervention tools)
  */
 export const allBrowserTools: FunctionTool[] = [
   // Browser/Tab Management (9 tools)
@@ -79,10 +80,16 @@ export const allBrowserTools: FunctionTool[] = [
   downloadImageTool,
   downloadChatImagesTool,
   downloadCurrentChatImagesTool,
+
+  // Intervention (4 tools)
+  ...interventionTools,
 ] as const;
 
 // Note: takeSnapshotTool is not included in allBrowserTools as it's called internally
-// Intervention tools (4) and Skills tools (6) will be added in later phases
+// Skills tools (6) will be added in later phases
+
+// Export intervention tools separately for optional registration
+export { interventionTools } from "./interventions/index.js";
 
 interface ToolRegistryLike {
   register(tool: (typeof allBrowserTools)[number]): unknown;

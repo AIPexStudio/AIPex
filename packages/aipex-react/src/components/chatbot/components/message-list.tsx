@@ -54,6 +54,8 @@ export function DefaultMessageList({
           {/* Loading indicator */}
           {status === "submitted" &&
             (slots.loadingIndicator ? slots.loadingIndicator() : <Loader />)}
+          {/* After messages slot - for platform-specific content */}
+          {slots.afterMessages?.()}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>

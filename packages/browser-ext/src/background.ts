@@ -39,4 +39,38 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
+// Handle messages for element capture relay
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  // Echo capture events to all extension contexts
+  if (message.request === "capture-click-event") {
+    try {
+      // Immediately acknowledge sender (content script)
+      sendResponse({ success: true });
+      // Re-broadcast so sidepanel listeners reliably receive it
+      chrome.runtime
+        .sendMessage({ request: "capture-click-event", data: message.data })
+        .catch(() => {
+          // Ignore broadcast errors (OK if no receivers)
+        });
+      // Persist latest event for sidepanel to pick up via storage change
+      chrome.storage.local
+        .set({
+          aipex_last_capture_event: { data: message.data, ts: Date.now() },
+        })
+        .catch((err) => {
+          console.warn("⚠️ Failed to persist capture event:", err);
+        });
+    } catch (err) {
+      console.error("❌ Failed to echo capture event:", err);
+      sendResponse({
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    return true;
+  }
+
+  return false;
+});
+
 console.log("AIPex background service worker started");
