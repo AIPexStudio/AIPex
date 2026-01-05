@@ -140,7 +140,7 @@
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.25",
-    "lucide-react": "^0.555.0",
+    "lucide-react": "^0.562.0",
     "markdown-to-jsx": "^9.3.0",
     "nanoid": "^5.1.6",
     "react-syntax-highlighter": "^16.1.0",
