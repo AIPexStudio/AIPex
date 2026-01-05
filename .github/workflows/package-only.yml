@@ -45,7 +45,7 @@ jobs:
         run: pnpm package
         
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: extension-package
           path: build/
