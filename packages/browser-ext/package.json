@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.2.1",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/chrome": "0.1.32",
