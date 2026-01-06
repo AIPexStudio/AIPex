@@ -2,113 +2,119 @@
   "name": "@aipexstudio/aipex-react",
   "version": "0.0.1",
   "description": "React UI toolkit, hooks, and adapters for building AIPex-powered chat experiences",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./adapters/*": {
-      "types": "./dist/adapters/*.d.ts",
-      "import": "./dist/adapters/*.js"
+      "types": "./dist/src/adapters/*.d.ts",
+      "import": "./dist/src/adapters/*.js"
     },
     "./hooks/*": {
-      "types": "./dist/hooks/*.d.ts",
-      "import": "./dist/hooks/*.js"
+      "types": "./dist/src/hooks/*.d.ts",
+      "import": "./dist/src/hooks/*.js"
     },
     "./components/chatbot": {
-      "types": "./dist/components/chatbot/index.d.ts",
-      "import": "./dist/components/chatbot/index.js"
+      "types": "./dist/src/components/chatbot/index.d.ts",
+      "import": "./dist/src/components/chatbot/index.js"
     },
     "./components/chatbot/*": {
-      "types": "./dist/components/chatbot/*.d.ts",
-      "import": "./dist/components/chatbot/*.js"
+      "types": "./dist/src/components/chatbot/*.d.ts",
+      "import": "./dist/src/components/chatbot/*.js"
     },
     "./components/omni": {
-      "types": "./dist/components/omni/index.d.ts",
-      "import": "./dist/components/omni/index.js"
+      "types": "./dist/src/components/omni/index.d.ts",
+      "import": "./dist/src/components/omni/index.js"
     },
     "./components/ai-elements/*": {
-      "types": "./dist/components/ai-elements/*.d.ts",
-      "import": "./dist/components/ai-elements/*.js"
+      "types": "./dist/src/components/ai-elements/*.d.ts",
+      "import": "./dist/src/components/ai-elements/*.js"
     },
     "./components/*": {
-      "types": "./dist/components/*/index.d.ts",
-      "import": "./dist/components/*/index.js"
+      "types": "./dist/src/components/*/index.d.ts",
+      "import": "./dist/src/components/*/index.js"
     },
     "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
+      "types": "./dist/src/types/index.d.ts",
+      "import": "./dist/src/types/index.js"
     },
     "./types/*": {
-      "types": "./dist/types/*.d.ts",
-      "import": "./dist/types/*.js"
+      "types": "./dist/src/types/*.d.ts",
+      "import": "./dist/src/types/*.js"
     },
     "./i18n/context": {
-      "types": "./dist/i18n/context.d.ts",
-      "import": "./dist/i18n/context.js"
+      "types": "./dist/src/i18n/context.d.ts",
+      "import": "./dist/src/i18n/context.js"
     },
     "./i18n/*": {
-      "types": "./dist/i18n/*.d.ts",
-      "import": "./dist/i18n/*.js"
+      "types": "./dist/src/i18n/*.d.ts",
+      "import": "./dist/src/i18n/*.js"
     },
     "./theme/types": {
-      "types": "./dist/theme/types.d.ts",
-      "import": "./dist/theme/types.js"
+      "types": "./dist/src/theme/types.d.ts",
+      "import": "./dist/src/theme/types.js"
     },
     "./theme/*": {
-      "types": "./dist/theme/*.d.ts",
-      "import": "./dist/theme/*.js"
+      "types": "./dist/src/theme/*.d.ts",
+      "import": "./dist/src/theme/*.js"
     }
   },
   "files": [
-    "dist"
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
+    "dist/src/i18n/locales/*.json",
+    "!dist/src/**/*.test.js",
+    "!dist/src/**/*.test.d.ts"
   ],
   "typesVersions": {
     "*": {
       "adapters/*": [
-        "dist/adapters/*"
+        "dist/src/adapters/*"
       ],
       "hooks/*": [
-        "dist/hooks/*"
+        "dist/src/hooks/*"
       ],
       "components/chatbot": [
-        "dist/components/chatbot/index.d.ts"
+        "dist/src/components/chatbot/index.d.ts"
       ],
       "components/chatbot/*": [
-        "dist/components/chatbot/*"
+        "dist/src/components/chatbot/*"
       ],
       "components/omni": [
-        "dist/components/omni/index.d.ts"
+        "dist/src/components/omni/index.d.ts"
       ],
       "components/ai-elements/*": [
-        "dist/components/ai-elements/*"
+        "dist/src/components/ai-elements/*"
       ],
       "components/*": [
-        "dist/components/*/index.d.ts"
+        "dist/src/components/*/index.d.ts"
       ],
       "types": [
-        "dist/types/index.d.ts"
+        "dist/src/types/index.d.ts"
       ],
       "types/*": [
-        "dist/types/*"
+        "dist/src/types/*"
       ],
       "i18n/context": [
-        "dist/i18n/context.d.ts"
+        "dist/src/i18n/context.d.ts"
       ],
       "i18n/*": [
-        "dist/i18n/*"
+        "dist/src/i18n/*"
       ],
       "theme/types": [
-        "dist/theme/types.d.ts"
+        "dist/src/theme/types.d.ts"
       ],
       "theme/*": [
-        "dist/theme/*"
+        "dist/src/theme/*"
       ]
     }
   },
+  "author": "AIPex Studio",
   "scripts": {
+    "build": "tsc",
     "typecheck": "tsc --project tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "npm run build"
@@ -163,12 +169,15 @@
     }
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "jsdom": "^27.2.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
     "tsc-alias": "^1.8.13",
     "vitest": "^4.0.14"
   }

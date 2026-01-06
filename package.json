@@ -13,6 +13,7 @@
   },
   "scripts": {
     "postinstall": "prek install",
+    "build": "pnpm -r --if-present build",
     "dev": "pnpm --filter @aipexstudio/cool-aipex dev",
     "preflight": "npm run format && npm run lint:fix && npm run typecheck && npm run test",
     "format": "biome format . --write",
@@ -22,14 +23,16 @@
     "lint:dependencies": "knip --strict",
     "test": "pnpm -r --if-present test",
     "typecheck": "tsc --build",
-    "knip": "knip"
+    "bump": "bumpp"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
     "@j178/prek": "^0.2.19",
     "@types/chrome": "0.1.32",
     "@types/node": "^24.10.1",
+    "bumpp": "^10.3.2",
     "knip": "^5.71.0",
+    "tinyglobby": "^0.2.15",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"
   }

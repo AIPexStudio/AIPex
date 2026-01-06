@@ -4,9 +4,7 @@
   "version": "0.0.2",
   "description": "Automate your browser with natural language commands - The open source browser-use solution",
   "author": "Plasmo Corp. <foss@plasmo.com>",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
@@ -72,6 +70,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
     "@crxjs/vite-plugin": "^2.2.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",

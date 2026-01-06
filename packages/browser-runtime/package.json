@@ -2,17 +2,21 @@
   "name": "@aipexstudio/browser-runtime",
   "version": "0.0.1",
   "description": "Browser automation runtime, context providers, and extension host contracts for AIPex",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
+    "!dist/src/**/*.test.js",
+    "!dist/src/**/*.test.d.ts"
   ],
+  "author": "AIPex Studio",
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc --project tsconfig.json",
