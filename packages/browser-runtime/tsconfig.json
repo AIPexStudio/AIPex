@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["esnext", "dom", "dom.iterable"],
-    "types": ["node", "chrome"]
+    "types": ["node", "chrome"],
+    "emitDeclarationOnly": false,
+    "outDir": "./dist"
   },
   "include": ["src/**/*"],
   "references": [
