@@ -6,7 +6,7 @@
   "author": "AIPex Studio",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AIPexStudio/aipex-whole.git"
+    "url": "git+https://github.com/AIPexStudio/AIPex.git"
   },
   "scripts": {
     "postinstall": "prek install",
