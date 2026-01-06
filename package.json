@@ -1,7 +1,8 @@
 {
-  "name": "@aipexstudio/cool-aipex",
+  "name": "@aipexstudio/root",
   "displayName": "AIPex",
   "version": "0.0.2",
+  "private": true,
   "description": "Automate your browser with natural language commands - The open source browser-use solution",
   "author": "AIPex Studio",
   "repository": {
