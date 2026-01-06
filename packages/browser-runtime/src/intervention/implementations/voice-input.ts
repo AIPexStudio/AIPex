@@ -2,54 +2,21 @@
  * Voice Input Intervention
  *
  * Get user voice input and convert to text
- * Three-tier service selection:
- * 1. Non-BYOK users: Use server interface
- * 2. BYOK users with ElevenLabs API: Use ElevenLabs
- * 3. BYOK users without ElevenLabs API: Use browser Web Speech API
- *
- * NOTE: This implementation requires VoiceInputManager, Storage, and isByokUserSimple
- * which need to be provided by the runtime environment or injected as dependencies.
- * For now, this is a simplified implementation using browser Web Speech API.
+ * Multi-source implementation supporting:
+ * 1. Browser Web Speech API (real-time)
+ * 2. VAD + Server/ElevenLabs STT (record & transcribe)
  */
 
+import { STORAGE_KEYS } from "@aipexstudio/aipex-core";
+import { isByokUserSimple } from "../../config/byok-detection.js";
+import { chromeStorageAdapter } from "../../storage/storage-adapter.js";
+import type { VoiceInputMetadata } from "../../voice/voice-input-manager.js";
+import { VoiceInputManager } from "../../voice/voice-input-manager.js";
 import type {
   InterventionImplementation,
   InterventionMetadata,
   VoiceInputResult,
 } from "../types.js";
-
-// Type declarations for Web Speech API
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message?: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-    webkitSpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-  }
-}
 
 /**
  * Check and request microphone permission
@@ -131,7 +98,7 @@ const metadata: InterventionMetadata = {
   name: "Voice Input",
   type: "voice-input",
   description:
-    "Get user voice input, supports browser speech recognition or ElevenLabs API",
+    "Get user voice input, supports browser speech recognition, VAD, and external STT services",
   enabled: true,
   inputSchema: {
     type: "object",
@@ -149,6 +116,21 @@ const metadata: InterventionMetadata = {
         type: "number",
         description: "Auto-stop after seconds of silence (default 5 seconds)",
         default: 5,
+      },
+      useVAD: {
+        type: "boolean",
+        description: "Use VAD for voice activity detection",
+        default: false,
+      },
+      useServer: {
+        type: "boolean",
+        description: "Use server STT (for VAD mode)",
+        default: false,
+      },
+      useElevenLabs: {
+        type: "boolean",
+        description: "Use ElevenLabs STT (for VAD mode)",
+        default: false,
       },
     },
     required: [],
@@ -191,8 +173,7 @@ const metadata: InterventionMetadata = {
 };
 
 /**
- * Execute voice input
- * Simplified implementation using browser Web Speech API
+ * Execute voice input using VoiceInputManager
  */
 async function execute(
   params: unknown,
@@ -213,42 +194,82 @@ async function execute(
     typeof paramsObj.autoStopSilence === "number"
       ? paramsObj.autoStopSilence
       : 5;
+  // Get BYOK status and settings
+  const isByokUser = await isByokUserSimple();
+  const settings = (await chromeStorageAdapter.load(STORAGE_KEYS.SETTINGS)) as
+    | Record<string, unknown>
+    | undefined;
+  const elevenLabsApiKey = settings?.elevenLabsApiKey as string | undefined;
+  const elevenLabsModelId = settings?.elevenLabsModelId as string | undefined;
+
+  // Determine which STT service to use based on BYOK status and available keys
+  let useVAD = false;
+  let useServer = false;
+  let useElevenLabs = false;
+
+  // Allow params to override if explicitly set
+  if ("useVAD" in paramsObj && typeof paramsObj.useVAD === "boolean") {
+    useVAD = paramsObj.useVAD;
+  }
+  if ("useServer" in paramsObj && typeof paramsObj.useServer === "boolean") {
+    useServer = paramsObj.useServer;
+  }
+  if (
+    "useElevenLabs" in paramsObj &&
+    typeof paramsObj.useElevenLabs === "boolean"
+  ) {
+    useElevenLabs = paramsObj.useElevenLabs;
+  }
+
+  // If not explicitly set in params, determine based on BYOK status
+  if (
+    !("useServer" in paramsObj) &&
+    !("useElevenLabs" in paramsObj) &&
+    !("useVAD" in paramsObj)
+  ) {
+    if (!isByokUser) {
+      // Non-BYOK: use server STT with VAD
+      useVAD = true;
+      useServer = true;
+      console.log("[VoiceInput] Using server STT (non-BYOK user)");
+    } else if (elevenLabsApiKey) {
+      // BYOK with ElevenLabs: use ElevenLabs STT with VAD
+      useVAD = true;
+      useElevenLabs = true;
+      console.log("[VoiceInput] Using ElevenLabs STT (BYOK user with API key)");
+    } else {
+      // BYOK without ElevenLabs: use browser Web Speech API
+      useVAD = false;
+      useServer = false;
+      useElevenLabs = false;
+      console.log(
+        "[VoiceInput] Using Web Speech API (BYOK user without API key)",
+      );
+    }
+  }
 
   // Check microphone permission
   await checkMicrophonePermission();
 
+  // Create VoiceInputManager with ElevenLabs config if applicable
+  const voiceManager = new VoiceInputManager(
+    useElevenLabs && elevenLabsApiKey
+      ? { apiKey: elevenLabsApiKey, modelId: elevenLabsModelId }
+      : undefined,
+  );
+
   const startTime = Date.now();
 
-  // Use browser Web Speech API
   return new Promise((resolve, reject) => {
     let resolved = false;
-
-    // Check if Web Speech API is available
-    const SpeechRecognitionConstructor =
-      window.webkitSpeechRecognition || window.SpeechRecognition;
-    if (!SpeechRecognitionConstructor) {
-      reject(
-        new Error(
-          "Web Speech API is not supported in this browser. Please use Chrome or Edge.",
-        ),
-      );
-      return;
-    }
-
-    const recognition = new SpeechRecognitionConstructor();
-    recognition.lang = language;
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    let finalTranscript = "";
-    let lastSpeechTime = Date.now();
     let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastSpeechTime = Date.now();
 
     // Set up cancel listener
     signal.addEventListener("abort", () => {
       if (!resolved) {
         console.log("[VoiceInput] Aborted");
-        recognition.stop();
+        voiceManager.stopListening();
         if (silenceTimer) {
           clearTimeout(silenceTimer);
         }
@@ -257,80 +278,96 @@ async function execute(
       }
     });
 
-    recognition.onresult = (event) => {
+    // Set up result callback
+    voiceManager.onResult((voiceMetadata: VoiceInputMetadata) => {
       if (resolved) return;
 
-      let _interimTranscript = "";
+      console.log("[VoiceInput] Voice result:", voiceMetadata);
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (!result || !result[0]) continue;
-        const transcript = result[0].transcript;
-        if (result.isFinal) {
-          finalTranscript += `${transcript} `;
-        } else {
-          _interimTranscript += transcript;
+      // If it's an interim result from browser API, reset silence timer
+      if (!voiceMetadata.isFinal && voiceMetadata.source === "browser") {
+        lastSpeechTime = Date.now();
+        if (silenceTimer) {
+          clearTimeout(silenceTimer);
         }
+        silenceTimer = setTimeout(() => {
+          if (
+            !resolved &&
+            Date.now() - lastSpeechTime >= autoStopSilence * 1000
+          ) {
+            console.log("[VoiceInput] Auto-stopping due to silence");
+            voiceManager.stopListening();
+          }
+        }, autoStopSilence * 1000);
+        return;
       }
 
-      // Reset silence timer
-      lastSpeechTime = Date.now();
-      if (silenceTimer) {
-        clearTimeout(silenceTimer);
-      }
-      silenceTimer = setTimeout(() => {
-        if (
-          !resolved &&
-          Date.now() - lastSpeechTime >= autoStopSilence * 1000
-        ) {
-          console.log("[VoiceInput] Auto-stopping due to silence");
-          recognition.stop();
-        }
-      }, autoStopSilence * 1000);
-    };
-
-    recognition.onend = () => {
-      if (!resolved && finalTranscript.trim()) {
+      // Final result
+      if (voiceMetadata.isFinal) {
         resolved = true;
+
         if (silenceTimer) {
           clearTimeout(silenceTimer);
         }
 
+        const duration = Date.now() - startTime;
+
         const result: VoiceInputResult = {
-          text: finalTranscript.trim(),
-          confidence: 1.0,
-          language,
-          source: "browser",
-          timestamp: Date.now(),
-          duration: Date.now() - startTime,
+          text: voiceMetadata.text,
+          confidence: voiceMetadata.confidence,
+          language: voiceMetadata.language,
+          source: voiceMetadata.source || "browser",
+          timestamp: voiceMetadata.timestamp,
+          duration,
         };
 
         resolve(result);
-      } else if (!resolved) {
-        resolved = true;
-        if (silenceTimer) {
-          clearTimeout(silenceTimer);
-        }
-        reject(new Error("No speech detected"));
       }
-    };
+    });
 
-    recognition.onerror = (event) => {
+    // Set up error callback
+    voiceManager.onError((error: Error) => {
       if (!resolved) {
         resolved = true;
         if (silenceTimer) {
           clearTimeout(silenceTimer);
         }
-        reject(new Error(`Speech recognition error: ${event.error}`));
+        console.error("[VoiceInput] Error:", error);
+        reject(error);
       }
-    };
+    });
 
+    // Start listening
     try {
-      recognition.start();
-      console.log("[VoiceInput] Started browser speech recognition");
+      voiceManager.startListening({
+        language,
+        continuous: true,
+        interimResults: true,
+        useVAD,
+        useServer,
+        useElevenLabs,
+      });
+
+      // Set up initial silence timer for browser API
+      if (!useVAD) {
+        silenceTimer = setTimeout(() => {
+          if (
+            !resolved &&
+            Date.now() - lastSpeechTime >= autoStopSilence * 1000
+          ) {
+            console.log("[VoiceInput] Auto-stopping due to silence");
+            voiceManager.stopListening();
+          }
+        }, autoStopSilence * 1000);
+      }
+
+      console.log("[VoiceInput] Started voice input");
     } catch (error) {
       if (!resolved) {
         resolved = true;
+        if (silenceTimer) {
+          clearTimeout(silenceTimer);
+        }
         reject(error);
       }
     }

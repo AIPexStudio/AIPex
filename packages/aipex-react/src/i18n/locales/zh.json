@@ -66,6 +66,10 @@
     "close": "关闭",
     "stopResponse": "停止 AI 回应"
   },
+  "chatbot": {
+    "switchToText": "切换到文字输入",
+    "switchToVoice": "切换到语音输入"
+  },
   "ai": {
     "thinking": "AI 正在思考...",
     "streamingResponse": "流式 AI 响应",

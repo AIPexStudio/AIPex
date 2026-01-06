@@ -247,6 +247,9 @@ export function SettingsPage({
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [searchTerm, setSearchTerm] = useState("");
   const [dataSharingEnabled, setDataSharingEnabled] = useState(true);
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState("");
+  const [elevenLabsModelId, setElevenLabsModelId] = useState("");
+  const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -303,6 +306,10 @@ export function SettingsPage({
               ? loadedSettings.dataSharingEnabled
               : true;
           setDataSharingEnabled(loadedDataSharing);
+
+          // Load voice input settings
+          setElevenLabsApiKey(loadedSettings.elevenLabsApiKey ?? "");
+          setElevenLabsModelId(loadedSettings.elevenLabsModelId ?? "");
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -542,6 +549,8 @@ export function SettingsPage({
         customModels,
         dataSharingEnabled,
         defaultModel: resolvedDefaultModel,
+        elevenLabsApiKey,
+        elevenLabsModelId,
       };
       await storageAdapter.save(storageKey, settingsToSave);
       onSave?.(settingsToSave);
@@ -564,6 +573,8 @@ export function SettingsPage({
     customModels,
     selectedModelId,
     dataSharingEnabled,
+    elevenLabsApiKey,
+    elevenLabsModelId,
     storageAdapter,
     storageKey,
     onSave,
@@ -799,7 +810,7 @@ export function SettingsPage({
           onValueChange={(value: string) => setActiveTab(value as SettingsTab)}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               {t("settings.general")}
@@ -807,6 +818,10 @@ export function SettingsPage({
             <TabsTrigger value="ai" className="flex items-center gap-2">
               <Bot className="h-4 w-4" />
               {t("settings.aiConfiguration")}
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              {language === "zh" ? "语音输入" : "Voice Input"}
             </TabsTrigger>
           </TabsList>
 
@@ -1460,6 +1475,120 @@ export function SettingsPage({
                 </div>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Voice Input Tab */}
+          <TabsContent value="voice" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  {language === "zh" ? "语音输入设置" : "Voice Input Settings"}
+                </CardTitle>
+                <CardDescription>
+                  {language === "zh"
+                    ? "配置语音转文字服务，用于语音输入干预"
+                    : "Configure voice-to-text services for voice input intervention"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* ElevenLabs API Key */}
+                <div className="space-y-2">
+                  <Label htmlFor="elevenlabs-api-key">
+                    {language === "zh"
+                      ? "ElevenLabs API 密钥"
+                      : "ElevenLabs API Key"}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="elevenlabs-api-key"
+                      type={showElevenLabsKey ? "text" : "password"}
+                      value={elevenLabsApiKey}
+                      onChange={(e) => setElevenLabsApiKey(e.target.value)}
+                      placeholder={
+                        language === "zh"
+                          ? "您的 ElevenLabs API 密钥"
+                          : "Your ElevenLabs API key"
+                      }
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowElevenLabsKey(!showElevenLabsKey)}
+                      type="button"
+                    >
+                      {showElevenLabsKey ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* ElevenLabs Model ID */}
+                <div className="space-y-2">
+                  <Label htmlFor="elevenlabs-model-id">
+                    {language === "zh"
+                      ? "模型 ID（可选）"
+                      : "Model ID (Optional)"}
+                  </Label>
+                  <Input
+                    id="elevenlabs-model-id"
+                    type="text"
+                    value={elevenLabsModelId}
+                    onChange={(e) => setElevenLabsModelId(e.target.value)}
+                    placeholder="eleven_multilingual_v2"
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {language === "zh"
+                      ? "留空将使用默认模型"
+                      : "Leave empty to use the default model"}
+                  </p>
+                </div>
+
+                {/* Info Alert */}
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    {language === "zh" ? (
+                      <>
+                        <strong>BYOK 用户：</strong>
+                        配置您的 ElevenLabs API
+                        密钥以获得高质量的语音转文字服务。
+                        <br />
+                        <strong>非 BYOK 用户：</strong>
+                        将自动使用服务器端转录服务。
+                      </>
+                    ) : (
+                      <>
+                        <strong>For BYOK users:</strong> Configure your
+                        ElevenLabs API key for high-quality speech-to-text.
+                        <br />
+                        <strong>Non-BYOK users:</strong> Server-side
+                        transcription will be used automatically.
+                      </>
+                    )}
+                  </AlertDescription>
+                </Alert>
+
+                {/* Get API Key Link */}
+                <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                  <ExternalLink className="h-4 w-4" />
+                  <a
+                    href="https://elevenlabs.io/api"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {language === "zh"
+                      ? "获取 ElevenLabs API 密钥"
+                      : "Get ElevenLabs API Key"}
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

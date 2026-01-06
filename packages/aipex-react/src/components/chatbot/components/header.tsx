@@ -1,10 +1,11 @@
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { KeyboardIcon, MicIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "../../../i18n/context";
 import { getRuntime } from "../../../lib/runtime";
 import { cn } from "../../../lib/utils";
 import type { HeaderProps } from "../../../types";
 import { Button } from "../../ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 import { useComponentsContext } from "../context";
 
 /**
@@ -14,6 +15,8 @@ export function DefaultHeader({
   title = "AIPex",
   onSettingsClick,
   onNewChat,
+  inputMode,
+  onToggleInputMode,
   className,
   children,
   ...props
@@ -56,11 +59,34 @@ export function DefaultHeader({
         <div className="text-sm font-medium">{title}</div>
       )}
 
-      {/* Right side - New Chat */}
-      <Button variant="ghost" size="sm" onClick={onNewChat} className="gap-2">
-        <PlusIcon className="size-4" />
-        {t("common.newChat")}
-      </Button>
+      {/* Right side - Actions */}
+      <div className="flex items-center gap-2">
+        {/* Voice/Text Mode Toggle */}
+        {onToggleInputMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" onClick={onToggleInputMode}>
+                {inputMode === "voice" ? (
+                  <KeyboardIcon className="size-4" />
+                ) : (
+                  <MicIcon className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {inputMode === "voice"
+                ? t("chatbot.switchToText")
+                : t("chatbot.switchToVoice")}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* New Chat */}
+        <Button variant="ghost" size="sm" onClick={onNewChat} className="gap-2">
+          <PlusIcon className="size-4" />
+          {t("common.newChat")}
+        </Button>
+      </div>
 
       {children}
     </div>

@@ -114,7 +114,7 @@ export interface VoiceInputResult {
   text: string;
   confidence: number;
   language: string;
-  source: "elevenlabs" | "browser";
+  source: "elevenlabs" | "browser" | "server";
   timestamp: number;
   duration?: number; // Recording duration in milliseconds
 }

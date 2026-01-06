@@ -66,6 +66,10 @@
     "close": "Close",
     "stopResponse": "Stop AI response"
   },
+  "chatbot": {
+    "switchToText": "Switch to text input",
+    "switchToVoice": "Switch to voice input"
+  },
   "ai": {
     "thinking": "AI is thinking...",
     "streamingResponse": "Streaming AI Response",

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useChat, useChatConfig } from "../../../hooks";
 import { cn } from "../../../lib/utils";
 import type { ChatbotThemeVariables, ContextItem } from "../../../types";
@@ -15,6 +15,7 @@ import { ConfigurationGuide } from "./configuration-guide";
 import { Header } from "./header";
 import { InputArea } from "./input-area";
 import { MessageList } from "./message-list";
+import { VoiceInputWrapper } from "./voice-input-wrapper";
 
 /**
  * Convert theme variables to CSS style object
@@ -214,14 +215,33 @@ function ChatbotContent({
   const themeCtx = useContext(ThemeContext);
   const chatCtx = useContext(ChatContext);
   const agentCtx = useContext(AgentContext);
+  const configCtx = useContext(ConfigContext);
 
   const { className, style } = themeCtx;
   const { messages, status, sendMessage, interrupt, reset, regenerate } =
     chatCtx || {};
   const { isReady: isAgentReady } = agentCtx || {};
+  const { settings, updateSetting } = configCtx || {};
 
   const [input, setInput] = useState("");
   const [inputResetCount, setInputResetCount] = useState(0);
+  const [inputMode, setInputMode] = useState<"voice" | "text">("text");
+  const [voiceKey, setVoiceKey] = useState(0);
+
+  // Load input mode from storage on mount
+  useEffect(() => {
+    const loadInputMode = async () => {
+      if (!settings) return;
+
+      const savedMode = (settings as unknown as Record<string, unknown>)
+        ?.inputMode;
+      if (savedMode === "voice" || savedMode === "text") {
+        setInputMode(savedMode);
+      }
+    };
+
+    void loadInputMode();
+  }, [settings]);
 
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
@@ -248,6 +268,29 @@ function ChatbotContent({
     setInputResetCount((count) => count + 1);
   }, [reset]);
 
+  // Handle input mode toggle
+  const handleToggleInputMode = useCallback(() => {
+    const newMode = inputMode === "voice" ? "text" : "voice";
+    setInputMode(newMode);
+
+    // Force remount of VoiceInputWrapper when switching to voice mode
+    if (newMode === "voice") {
+      setVoiceKey((k) => k + 1);
+    }
+
+    // Persist to storage
+    if (updateSetting) {
+      void updateSetting("inputMode", newMode);
+    }
+  }, [inputMode, updateSetting]);
+
+  const handleSwitchToText = useCallback(() => {
+    setInputMode("text");
+    if (updateSetting) {
+      void updateSetting("inputMode", "text");
+    }
+  }, [updateSetting]);
+
   return (
     <div
       className={cn(
@@ -257,33 +300,48 @@ function ChatbotContent({
       style={style}
     >
       {/* Header */}
-      <Header title={title} onNewChat={handleNewChat} />
+      <Header
+        title={title}
+        onNewChat={handleNewChat}
+        inputMode={inputMode}
+        onToggleInputMode={handleToggleInputMode}
+      />
 
       {/* Show configuration guide when agent is not ready */}
       {!isAgentReady ? (
         <ConfigurationGuide className="flex-1" />
       ) : (
         <>
-          {/* Message List */}
-          <MessageList
-            messages={messages || []}
-            status={status || "idle"}
-            onRegenerate={regenerate}
-            onCopy={handleCopy}
-            onSuggestionClick={handleSuggestion}
-          />
+          {/* Conditional rendering based on input mode */}
+          {inputMode === "voice" ? (
+            <VoiceInputWrapper
+              voiceKey={voiceKey}
+              onSwitchToText={handleSwitchToText}
+            />
+          ) : (
+            <>
+              {/* Message List */}
+              <MessageList
+                messages={messages || []}
+                status={status || "idle"}
+                onRegenerate={regenerate}
+                onCopy={handleCopy}
+                onSuggestionClick={handleSuggestion}
+              />
 
-          {/* Input Area */}
-          <InputArea
-            key={inputResetCount}
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSubmit}
-            onStop={interrupt}
-            status={status || "idle"}
-            models={models}
-            placeholderTexts={placeholderTexts}
-          />
+              {/* Input Area */}
+              <InputArea
+                key={inputResetCount}
+                value={input}
+                onChange={setInput}
+                onSubmit={handleSubmit}
+                onStop={interrupt}
+                status={status || "idle"}
+                models={models}
+                placeholderTexts={placeholderTexts}
+              />
+            </>
+          )}
         </>
       )}
     </div>

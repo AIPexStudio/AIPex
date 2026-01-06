@@ -59,10 +59,13 @@ export interface WelcomeScreenProps extends HTMLAttributes<HTMLDivElement> {
   suggestions?: WelcomeSuggestion[];
 }
 
-export interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
+export interface HeaderProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "inputMode"> {
   title?: string;
   onSettingsClick?: () => void;
   onNewChat?: () => void;
+  inputMode?: "voice" | "text";
+  onToggleInputMode?: () => void;
 }
 
 export interface FooterProps extends HTMLAttributes<HTMLDivElement> {

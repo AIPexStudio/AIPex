@@ -1,6 +1,10 @@
 // UI Types
 
 export type { AppSettings } from "@aipexstudio/aipex-core";
+
+// Input Mode Types
+export type InputMode = "voice" | "text";
+
 // Adapter Types
 export type { ChatAdapterOptions, ChatAdapterState } from "./adapter";
 

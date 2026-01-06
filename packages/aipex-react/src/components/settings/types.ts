@@ -20,7 +20,7 @@ export interface ProviderConfig {
 
 export type ProviderConfigs = Record<AIProviderKey, ProviderConfig>;
 
-export type SettingsTab = "general" | "ai";
+export type SettingsTab = "general" | "ai" | "voice";
 
 export interface SaveStatus {
   type: "success" | "error" | "info" | "";

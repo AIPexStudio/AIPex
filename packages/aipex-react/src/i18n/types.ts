@@ -68,6 +68,10 @@ export interface TranslationResources {
     close: string;
     stopResponse: string;
   };
+  chatbot: {
+    switchToText: string;
+    switchToVoice: string;
+  };
   ai: {
     thinking: string;
     streamingResponse: string;
@@ -164,6 +168,8 @@ export type BaseTranslationKey =
   | "tooltip.settings"
   | "tooltip.close"
   | "tooltip.stopResponse"
+  | "chatbot.switchToText"
+  | "chatbot.switchToVoice"
   | "ai.thinking"
   | "ai.streamingResponse"
   | "ai.realtimeExecution"

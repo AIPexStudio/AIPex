@@ -37,6 +37,18 @@ export interface AppSettings {
    * Multiple BYOK custom model configurations
    */
   customModels?: CustomModelConfig[];
+  /**
+   * ElevenLabs API key for voice-to-text (BYOK users)
+   */
+  elevenLabsApiKey?: string;
+  /**
+   * ElevenLabs model ID (optional)
+   */
+  elevenLabsModelId?: string;
+  /**
+   * Input mode for chatbot (voice or text)
+   */
+  inputMode?: "voice" | "text";
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
