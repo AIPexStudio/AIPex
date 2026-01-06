@@ -1,6 +1,6 @@
 {
   "name": "@aipexstudio/aipex-core",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "AIPex Agent - Pure TypeScript AI Agent Framework",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -11,7 +11,10 @@
     }
   },
   "files": [
-    "dist"
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
+    "!dist/src/**/*.test.js",
+    "!dist/src/**/*.test.d.ts"
   ],
   "scripts": {
     "build": "tsc",
@@ -29,12 +32,13 @@
     "gemini",
     "typescript"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "AIPex Studio",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "@openai/agents": "^0.3.7",
     "@openai/agents-extensions": "^0.3.7",
+    "hono": "^4.11.3",
     "lru-cache": "^11.2.4",
     "zod": "^4.1.13"
   },

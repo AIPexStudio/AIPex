@@ -3,7 +3,9 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "types": ["node", "chrome"]
+    "types": ["node", "chrome"],
+    "emitDeclarationOnly": false,
+    "outDir": "./dist"
   },
   "include": ["src/**/*", "vitest.setup.ts", "src/i18n/locales/*.json"],
   "references": [
