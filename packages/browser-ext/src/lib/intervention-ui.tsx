@@ -7,7 +7,6 @@
 
 import {
   type InterventionMode,
-  InterventionModeToggle,
   MonitorCard,
   SelectionCard,
   type SelectionOption,
@@ -24,7 +23,6 @@ import { useEffect, useState } from "react";
 
 interface InterventionUIProps {
   mode: InterventionMode;
-  onModeChange: (mode: InterventionMode) => void;
 }
 
 export function InterventionUI({ mode }: InterventionUIProps) {
@@ -186,16 +184,4 @@ export function InterventionUI({ mode }: InterventionUIProps) {
       ) : null}
     </div>
   );
-}
-
-export function InterventionModeToggleHeader({
-  mode,
-  onModeChange,
-}: InterventionUIProps) {
-  const handleModeChange = (newMode: InterventionMode) => {
-    interventionManager.setConversationMode(newMode);
-    onModeChange(newMode);
-  };
-
-  return <InterventionModeToggle mode={mode} onChange={handleModeChange} />;
 }

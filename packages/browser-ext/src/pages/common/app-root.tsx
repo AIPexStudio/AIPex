@@ -11,7 +11,7 @@ import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
 import type { Theme } from "@aipexstudio/aipex-react/theme/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
-import React, { useState } from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
 import { chromeStorageAdapter, useChatConfig } from "../../hooks";
 import {
@@ -21,10 +21,7 @@ import {
   useBrowserStorage,
   useBrowserTools,
 } from "../../lib/browser-agent-config";
-import {
-  InterventionModeToggleHeader,
-  InterventionUI,
-} from "../../lib/intervention-ui";
+import { InterventionUI } from "../../lib/intervention-ui";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
@@ -50,8 +47,7 @@ function ChatApp() {
     ...BROWSER_AGENT_CONFIG,
   });
 
-  const [interventionMode, setInterventionMode] =
-    useState<InterventionMode>("passive");
+  const interventionMode: InterventionMode = "passive";
 
   if (isLoading) {
     return (
@@ -68,18 +64,7 @@ function ChatApp() {
       initialSettings={settings}
       storageAdapter={chromeStorageAdapter}
       slots={{
-        headerContent: () => (
-          <InterventionModeToggleHeader
-            mode={interventionMode}
-            onModeChange={setInterventionMode}
-          />
-        ),
-        afterMessages: () => (
-          <InterventionUI
-            mode={interventionMode}
-            onModeChange={setInterventionMode}
-          />
-        ),
+        afterMessages: () => <InterventionUI mode={interventionMode} />,
       }}
     />
   );
