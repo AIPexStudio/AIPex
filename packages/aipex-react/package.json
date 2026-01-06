@@ -4,6 +4,10 @@
   "description": "React UI toolkit, hooks, and adapters for building AIPex-powered chat experiences",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AIPexStudio/AIPex.git"
+  },
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
