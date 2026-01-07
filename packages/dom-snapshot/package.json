@@ -1,0 +1,42 @@
+{
+  "name": "@aipexstudio/dom-snapshot",
+  "version": "0.0.6",
+  "description": "DOM snapshot utility for capturing and serializing web page state",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AIPexStudio/AIPex.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
+    "!dist/src/**/*.test.js",
+    "!dist/src/**/*.test.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "dom",
+    "snapshot",
+    "serialize",
+    "web",
+    "browser"
+  ],
+  "author": "AIPex Studio",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  }
+}

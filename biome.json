@@ -40,6 +40,13 @@
     }
   ],
   "files": {
-    "includes": ["**", "!**/dist", "!**/coverage", "!**/build", "!**/assets"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/coverage",
+      "!**/build",
+      "!**/assets",
+      "!.history"
+    ]
   }
 }
