@@ -11,7 +11,9 @@
       "@aipexstudio/aipex-react": ["./packages/aipex-react/src"],
       "@aipexstudio/aipex-react/*": ["./packages/aipex-react/src/*"],
       "@aipexstudio/browser-runtime": ["./packages/browser-runtime/src"],
-      "@aipexstudio/browser-runtime/*": ["./packages/browser-runtime/src/*"]
+      "@aipexstudio/browser-runtime/*": ["./packages/browser-runtime/src/*"],
+      "@aipexstudio/dom-snapshot": ["./packages/dom-snapshot/src"],
+      "@aipexstudio/dom-snapshot/*": ["./packages/dom-snapshot/src/*"]
     },
     "downlevelIteration": true,
     "esModuleInterop": true,
