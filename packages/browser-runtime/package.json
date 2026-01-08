@@ -1,6 +1,6 @@
 {
   "name": "@aipexstudio/browser-runtime",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Browser automation runtime, context providers, and extension host contracts for AIPex",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
