@@ -57,7 +57,7 @@
     "lucide-react": "^0.562.0",
     "markdown-to-jsx": "^9.3.0",
     "nanoid": "^5.1.6",
-    "react": "19.2.0",
+    "react": "19.2.3",
     "react-dom": "19.2.0",
     "react-syntax-highlighter": "^16.1.0",
     "remark-gfm": "^4.0.1",
