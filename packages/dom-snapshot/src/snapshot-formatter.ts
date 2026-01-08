@@ -4,8 +4,8 @@
  * Used by both CDP-based and DOM-based snapshot implementations
  */
 
-import { SKIP_ROLES } from "./query";
-import type { TextSnapshotNode } from "./types";
+import { SKIP_ROLES } from "./query.js";
+import type { TextSnapshotNode } from "./types.js";
 
 /**
  * Interactive roles that should always be included

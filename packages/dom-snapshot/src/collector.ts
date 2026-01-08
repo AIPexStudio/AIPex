@@ -3,7 +3,7 @@ import type {
   DomSnapshotFlatMap,
   DomSnapshotNode,
   SerializedDomSnapshot,
-} from "./types";
+} from "./types.js";
 
 const NODE_ID_ATTR = "data-aipex-nodeid";
 const STATIC_TEXT_ROLE = "StaticText";
