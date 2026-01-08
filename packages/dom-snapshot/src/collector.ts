@@ -214,7 +214,6 @@ function createNodeFromElement(
   const nodeId = ensureElementUid(element);
   const role = resolveRole(element);
   const name = resolveAccessibleName(element, rootDocument);
-  const textContent = normalizeTextContent(element.textContent || "");
   const value = resolveElementValue(element);
 
   const node: DomSnapshotNode = {
@@ -229,8 +228,18 @@ function createNodeFromElement(
     node.value = value;
   }
 
-  if (textContent && textContent !== node.name) {
-    node.textContent = textContent.slice(0, options.maxTextLength);
+  // Only capture textContent for interactive elements to avoid redundancy
+  // Container elements (section, div, etc.) would otherwise include all descendant text
+  // which is already captured via StaticText child nodes
+  const isInteractive =
+    INTERACTIVE_ROLES.has(role) ||
+    INTERACTIVE_TAGS.has(element.tagName.toLowerCase());
+
+  if (isInteractive) {
+    const textContent = extractVisibleTextContent(element);
+    if (textContent && textContent !== node.name) {
+      node.textContent = textContent.slice(0, options.maxTextLength);
+    }
   }
 
   if (element instanceof HTMLInputElement) {
@@ -309,8 +318,14 @@ function createNodeFromElement(
     }
   }
 
-  if (isSynthetic && !node.name && textContent) {
-    node.name = textContent.slice(0, options.maxTextLength);
+  // For synthetic nodes without a name, derive one from text content
+  if (isSynthetic && !node.name) {
+    const syntheticTextContent = normalizeTextContent(
+      element.textContent || "",
+    );
+    if (syntheticTextContent) {
+      node.name = syntheticTextContent.slice(0, options.maxTextLength);
+    }
   }
 
   return node;
@@ -537,6 +552,42 @@ function generateShortId(): string {
 
 function normalizeTextContent(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Extract visible text content from an element, excluding script, style, and other non-visible tags.
+ * This is used for interactive elements where we want meaningful text content for AI search.
+ */
+function extractVisibleTextContent(element: Element): string {
+  const texts: string[] = [];
+
+  function traverse(node: Node): void {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        texts.push(text);
+      }
+      return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const tagName = el.tagName.toLowerCase();
+
+      // Skip non-visible content tags
+      if (SKIP_TAGS.has(tagName)) {
+        return;
+      }
+
+      // Traverse children
+      for (const child of Array.from(node.childNodes)) {
+        traverse(child);
+      }
+    }
+  }
+
+  traverse(element);
+  return texts.join(" ").replace(/\s+/g, " ").trim();
 }
 
 /**
