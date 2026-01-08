@@ -262,6 +262,59 @@ describe("DOM snapshot collector", () => {
     expect(allText).toContain("Text inside span");
   });
 
+  it("captures span element with aria-label", () => {
+    setHtml(`
+      <div>
+        <span aria-label="Important label">Some text</span>
+      </div>
+    `);
+
+    const snapshot = collectDomSnapshot(document);
+    const nodes = Object.values(snapshot.idToNode);
+
+    // span with aria-label should be included as a node
+    const spanNode = nodes.find(
+      (n) => n.tagName === "span" && n.name === "Important label",
+    );
+    expect(spanNode).toBeTruthy();
+    expect(spanNode?.name).toBe("Important label");
+  });
+
+  it("captures span element with explicit role and aria-label", () => {
+    setHtml(`
+      <div>
+        <span role="status" aria-label="Loading status">Loading...</span>
+      </div>
+    `);
+
+    const snapshot = collectDomSnapshot(document);
+    const nodes = Object.values(snapshot.idToNode);
+
+    // span with explicit role should be included
+    const spanNode = nodes.find((n) => n.role === "status");
+    expect(spanNode).toBeTruthy();
+    expect(spanNode?.name).toBe("Loading status");
+  });
+
+  it("captures element with aria-labelledby", () => {
+    setHtml(`
+      <div>
+        <span id="label-text">Description Label</span>
+        <div aria-labelledby="label-text">Content here</div>
+      </div>
+    `);
+
+    const snapshot = collectDomSnapshot(document);
+    const nodes = Object.values(snapshot.idToNode);
+
+    // div with aria-labelledby should be included (find by tagName + name)
+    const labelledDiv = nodes.find(
+      (n) => n.tagName === "div" && n.name === "Description Label",
+    );
+    expect(labelledDiv).toBeTruthy();
+    expect(labelledDiv?.name).toBe("Description Label");
+  });
+
   it("captures nested text content through multiple skipped generic elements", () => {
     setHtml(`
       <div>

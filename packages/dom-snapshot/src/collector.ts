@@ -325,6 +325,33 @@ function createNodeFromElement(
   return node;
 }
 
+function hasExplicitAccessibleLabel(
+  element: Element,
+  rootDocument: Document,
+): boolean {
+  const ariaLabel = element.getAttribute("aria-label");
+  if (ariaLabel && ariaLabel.trim().length > 1) {
+    return true;
+  }
+
+  const labelledBy = element.getAttribute("aria-labelledby");
+  if (labelledBy) {
+    const ids = labelledBy
+      .split(/\s+/g)
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const labelText = ids
+      .map((id) => rootDocument.getElementById(id)?.textContent?.trim() || "")
+      .filter(Boolean)
+      .join(" ");
+    if (labelText.length > 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function shouldIncludeElement(
   element: Element,
   options: CollectorOptions,
@@ -353,6 +380,12 @@ function shouldIncludeElement(
   if (role === "image") {
     const img = element as HTMLImageElement;
     return Boolean(img.alt && img.alt.trim().length > 0);
+  }
+
+  // Include elements with explicit accessibility labels (aria-label, aria-labelledby)
+  // even if they have a generic/layout role
+  if (hasExplicitAccessibleLabel(element, rootDocument)) {
+    return true;
   }
 
   if (!LAYOUT_ROLES.has(role) && hasMeaningfulName) {
