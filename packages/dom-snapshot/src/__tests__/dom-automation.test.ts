@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { collectDomSnapshot } from "../collector";
-import { domSnapshotManager } from "../manager";
+import { buildTextSnapshot, formatSnapshot } from "../manager";
+import { searchAndFormat, searchSnapshotText } from "../query";
 import type { DomSnapshotNode, SerializedDomSnapshot } from "../types";
 
 /**
@@ -478,14 +479,11 @@ describe("DOM snapshot manager", () => {
 
   it("reconstructs TextSnapshot objects and formats output", () => {
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
+    const textSnapshot = buildTextSnapshot(serialized);
 
-    expect(textSnapshot.tabId).toBe(42);
     expect(textSnapshot.idToNode.size).toBeGreaterThan(1);
 
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const formatted = formatSnapshot(textSnapshot);
     expect(formatted).toContain("uid=");
     const roles = Array.from(textSnapshot.idToNode.values()).map(
       (node) => node.role,
@@ -499,11 +497,9 @@ describe("DOM snapshot manager", () => {
              </button>`);
 
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
+    const textSnapshot = buildTextSnapshot(serialized);
 
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const formatted = formatSnapshot(textSnapshot);
     expect(formatted).toContain("button");
   });
 
@@ -514,10 +510,8 @@ describe("DOM snapshot manager", () => {
     </select>`);
 
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const textSnapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(textSnapshot);
 
     expect(formatted).toContain("select");
     // value should be the HTML value attribute, not the display text
@@ -538,10 +532,8 @@ describe("DOM snapshot manager", () => {
     `);
 
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const textSnapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(textSnapshot);
 
     // Should contain radio role
     expect(formatted).toContain("radio");
@@ -562,10 +554,8 @@ describe("DOM snapshot manager", () => {
     `);
 
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const textSnapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(textSnapshot);
 
     expect(formatted).toContain("checkbox");
     // value should be the HTML value attribute
@@ -583,30 +573,25 @@ describe("DOM snapshot manager", () => {
     expect(ignore).toBeTruthy();
     expect(ignore.getAttribute("data-aipex-nodeid")).toBeFalsy();
     const serialized = collectDomSnapshot(document);
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 42,
-    });
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const textSnapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(textSnapshot);
     // body -> button -> static text
     expect(formatted.split(`\n`).filter((line) => line.trim()).length).toBe(3);
   });
 
   it("buildTextSnapshot converts placeholder to description when missing", () => {
     const serialized = buildMockSerializedSnapshot();
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized, {
-      tabId: 7,
-    });
+    const textSnapshot = buildTextSnapshot(serialized);
 
     const inputNode = textSnapshot.idToNode.get("input1");
-    expect(textSnapshot.tabId).toBe(7);
     expect(inputNode?.description).toBe("Enter value");
     expect(inputNode?.tagName).toBe("input");
   });
 
   it("formatSnapshot marks focused nodes and ancestors", () => {
     const serialized = buildMockSerializedSnapshot();
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized);
-    const formatted = domSnapshotManager.formatSnapshot(textSnapshot);
+    const textSnapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(textSnapshot);
 
     const focusedLine = formatted
       .split("\n")
@@ -624,18 +609,11 @@ describe("DOM snapshot manager", () => {
     const serialized = buildMockSerializedSnapshot();
     (serialized.idToNode["btn"] as DomSnapshotNode).value = "Click me";
     (serialized.idToNode["btn"] as DomSnapshotNode).checked = true;
-    const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-    const formatted = domSnapshotManager.formatSnapshot(snapshot);
+    const snapshot = buildTextSnapshot(serialized);
+    const formatted = formatSnapshot(snapshot);
 
     expect(formatted).toContain('value="Click me"');
     expect(formatted).toContain("checked");
-  });
-
-  it("buildTextSnapshot uses default tabId of 0 when options not provided", () => {
-    const serialized = buildMockSerializedSnapshot();
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized);
-
-    expect(textSnapshot.tabId).toBe(0);
   });
 
   it("buildTextSnapshot populates idToNode Map with all nodes", () => {
@@ -675,7 +653,7 @@ describe("DOM snapshot manager", () => {
       },
     };
 
-    const textSnapshot = domSnapshotManager.buildTextSnapshot(serialized);
+    const textSnapshot = buildTextSnapshot(serialized);
 
     expect(textSnapshot.idToNode.size).toBe(3);
     expect(textSnapshot.idToNode.has("root")).toBe(true);
@@ -723,8 +701,8 @@ describe("DOM snapshot manager", () => {
 
     it("includes RootWebArea with full attributes", () => {
       const serialized = createSnapshotWithNode({ role: "generic", name: "" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=root");
       expect(formatted).toContain("RootWebArea");
@@ -745,8 +723,8 @@ describe("DOM snapshot manager", () => {
       "switch",
     ])('includes interactive role "%s" with full attributes', (role) => {
       const serialized = createSnapshotWithNode({ role, name: "Action" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=test-node");
       expect(formatted).toContain(role);
@@ -757,8 +735,8 @@ describe("DOM snapshot manager", () => {
         role: "image",
         name: "Logo",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=test-node");
       expect(formatted).toContain("image");
@@ -769,8 +747,8 @@ describe("DOM snapshot manager", () => {
         role: "img",
         name: "Picture",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=test-node");
       expect(formatted).toContain("img");
@@ -781,8 +759,8 @@ describe("DOM snapshot manager", () => {
         role: "StaticText",
         name: "Hi",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       // StaticText nodes don't have uid - they can't be operated on directly
       expect(formatted).not.toContain("uid=test-node");
@@ -795,8 +773,8 @@ describe("DOM snapshot manager", () => {
         role: "StaticText",
         name: "X",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const lines = formatted
         .split("\n")
@@ -809,8 +787,8 @@ describe("DOM snapshot manager", () => {
         role: "heading",
         name: "Welcome",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=test-node");
       expect(formatted).toContain("heading");
@@ -818,8 +796,8 @@ describe("DOM snapshot manager", () => {
 
     it("excludes generic role with empty name from full output", () => {
       const serialized = createSnapshotWithNode({ role: "generic", name: "" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const testNodeLines = formatted
         .split("\n")
@@ -865,72 +843,72 @@ describe("DOM snapshot manager", () => {
 
     it("outputs disabled attribute when node is disabled", () => {
       const serialized = createNodeWithAttributes({ disabled: true });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("disabled");
     });
 
     it("outputs selected attribute when node is selected", () => {
       const serialized = createNodeWithAttributes({ selected: true });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("selected");
     });
 
     it("outputs expanded attribute when node is expanded", () => {
       const serialized = createNodeWithAttributes({ expanded: true });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("expanded");
     });
 
     it("outputs tagName in angle brackets", () => {
       const serialized = createNodeWithAttributes({ tagName: "div" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("<div>");
     });
 
     it('outputs checked="mixed" for indeterminate checkbox', () => {
       const serialized = createNodeWithAttributes({ checked: "mixed" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('checked="mixed"');
     });
 
     it('outputs checked="false" for unchecked checkbox', () => {
       const serialized = createNodeWithAttributes({ checked: false });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('checked="false"');
     });
 
     it("outputs pressed attribute when node is pressed", () => {
       const serialized = createNodeWithAttributes({ pressed: true });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('pressed="true"');
     });
 
     it('outputs pressed="mixed" for mixed pressed state', () => {
       const serialized = createNodeWithAttributes({ pressed: "mixed" });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('pressed="mixed"');
     });
 
     it('outputs pressed="false" for unpressed toggle', () => {
       const serialized = createNodeWithAttributes({ pressed: false });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('pressed="false"');
     });
@@ -939,8 +917,8 @@ describe("DOM snapshot manager", () => {
       const serialized = createNodeWithAttributes({
         description: "Helper text",
       });
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain('desc="Helper text"');
     });
@@ -987,8 +965,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const siblingLine = formatted
         .split("\n")
@@ -1032,8 +1010,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const focusedLine = formatted
         .split("\n")
@@ -1081,8 +1059,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const rootLine = formatted
         .split("\n")
@@ -1122,8 +1100,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=empty");
       expect(snapshot.idToNode.get("empty")?.children).toEqual([]);
@@ -1158,8 +1136,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       expect(formatted).toContain("uid=noname");
       expect(formatted).toContain('""');
@@ -1205,8 +1183,8 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const snapshot = buildTextSnapshot(serialized);
+      const formatted = formatSnapshot(snapshot);
 
       const lines = formatted.split("\n");
       const f1Line = lines.find((l) => l.includes("uid=f1"));
@@ -1262,14 +1240,14 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
+      const snapshot = buildTextSnapshot(serialized);
       expect(snapshot.idToNode.size).toBe(4);
 
       const l3Node = snapshot.idToNode.get("l3");
       expect(l3Node?.role).toBe("button");
       expect(l3Node?.name).toBe("Deep Button");
 
-      const formatted = domSnapshotManager.formatSnapshot(snapshot);
+      const formatted = formatSnapshot(snapshot);
       expect(formatted).toContain("uid=l3");
     });
 
@@ -1312,7 +1290,7 @@ describe("DOM snapshot manager", () => {
         },
       };
 
-      const snapshot = domSnapshotManager.buildTextSnapshot(serialized);
+      const snapshot = buildTextSnapshot(serialized);
       const clonedNode = snapshot.idToNode.get("full");
 
       expect(clonedNode?.id).toBe("full");
@@ -1328,5 +1306,221 @@ describe("DOM snapshot manager", () => {
       expect(clonedNode?.selected).toBe(true);
       expect(clonedNode?.expanded).toBe(false);
     });
+  });
+});
+
+describe("searchSnapshotText", () => {
+  const sampleSnapshotText = `→uid=root RootWebArea "Test Page" <body>
+ uid=btn1 button "Submit Form" <button>
+ uid=btn2 button "Cancel" <button>
+ uid=input1 textbox "Email" <input> desc="Enter your email"
+ uid=link1 link "Learn More" <a>
+  StaticText "Welcome to our site"
+ uid=btn3 button "Login" <button>
+ uid=btn4 button "Sign In" <button>`;
+
+  it("finds simple text matches", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "Submit");
+
+    expect(result.totalMatches).toBe(1);
+    expect(result.matchedLines.length).toBe(1);
+  });
+
+  it("finds multiple matches with | separator", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "Login | Sign In");
+
+    expect(result.totalMatches).toBe(2);
+    expect(result.matchedLines.length).toBe(2);
+  });
+
+  it("performs case-insensitive search by default", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "submit");
+
+    expect(result.totalMatches).toBe(1);
+  });
+
+  it("performs case-sensitive search when option is set", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "submit", {
+      caseSensitive: true,
+    });
+
+    expect(result.totalMatches).toBe(0);
+  });
+
+  it("returns empty result for no matches", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "NonExistent");
+
+    expect(result.totalMatches).toBe(0);
+    expect(result.matchedLines).toEqual([]);
+    expect(result.contextLines).toEqual([]);
+  });
+
+  it("returns empty result for empty query", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "");
+
+    expect(result.totalMatches).toBe(0);
+  });
+
+  it("includes context lines around matches", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "Email", {
+      contextLevels: 1,
+    });
+
+    expect(result.totalMatches).toBe(1);
+    expect(result.contextLines.length).toBeGreaterThan(1);
+  });
+
+  it("supports glob pattern with asterisk", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "button*", {
+      useGlob: true,
+    });
+
+    expect(result.totalMatches).toBeGreaterThan(0);
+  });
+
+  it("supports glob pattern matching anywhere in line", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "*Form*", {
+      useGlob: true,
+    });
+
+    expect(result.totalMatches).toBe(1);
+  });
+
+  it("auto-detects glob patterns", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "*Cancel*");
+
+    expect(result.totalMatches).toBe(1);
+  });
+
+  it("handles multiple search terms with mixed glob patterns", () => {
+    const result = searchSnapshotText(
+      sampleSnapshotText,
+      "Submit | *Cancel* | Login",
+    );
+
+    expect(result.totalMatches).toBe(3);
+  });
+
+  it("supports question mark glob pattern", () => {
+    const text = "line1 test\nline2 text\nline3 tent";
+    const result = searchSnapshotText(text, "*te?t*", { useGlob: true });
+
+    expect(result.totalMatches).toBe(3);
+  });
+
+  it("supports brace expansion in glob patterns", () => {
+    const result = searchSnapshotText(sampleSnapshotText, "*{Login,Cancel}*", {
+      useGlob: true,
+    });
+
+    expect(result.totalMatches).toBe(2);
+  });
+});
+
+describe("searchAndFormat", () => {
+  const createMockSnapshot = (): SerializedDomSnapshot => {
+    const button1: DomSnapshotNode = {
+      id: "btn1",
+      role: "button",
+      name: "Submit Form",
+      children: [],
+      tagName: "button",
+    };
+
+    const button2: DomSnapshotNode = {
+      id: "btn2",
+      role: "button",
+      name: "Cancel",
+      children: [],
+      tagName: "button",
+    };
+
+    const input: DomSnapshotNode = {
+      id: "input1",
+      role: "textbox",
+      name: "Email",
+      children: [],
+      tagName: "input",
+      placeholder: "Enter your email",
+    };
+
+    const root: DomSnapshotNode = {
+      id: "root",
+      role: "RootWebArea",
+      name: "Test Page",
+      children: [button1, button2, input],
+      tagName: "body",
+    };
+
+    return {
+      root,
+      idToNode: { root, btn1: button1, btn2: button2, input1: input },
+      totalNodes: 4,
+      timestamp: Date.now(),
+      metadata: {
+        title: "Test",
+        url: "https://test.com",
+        collectedAt: new Date().toISOString(),
+        options: {},
+      },
+    };
+  };
+
+  it("returns formatted results with matches", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "Submit");
+
+    expect(result).not.toBeNull();
+    expect(result).toContain("Submit");
+  });
+
+  it("returns no matches message when query not found", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "NonExistent");
+
+    expect(result).toContain("No matches found");
+  });
+
+  it("returns null for null snapshot", async () => {
+    const result = await searchAndFormat(
+      null as unknown as SerializedDomSnapshot,
+      "test",
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("respects contextLevels parameter", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "Email", 2);
+
+    expect(result).not.toBeNull();
+    expect(result).toContain("Email");
+  });
+
+  it("passes search options through", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "submit", 1, {
+      caseSensitive: true,
+    });
+
+    expect(result).toContain("No matches found");
+  });
+
+  it("marks matched lines with checkmark", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "Cancel");
+
+    expect(result).not.toBeNull();
+    expect(result).toContain("✓");
+  });
+
+  it("handles multiple search terms", async () => {
+    const snapshot = createMockSnapshot();
+    const result = await searchAndFormat(snapshot, "Submit | Cancel");
+
+    expect(result).not.toBeNull();
+    expect(result).toContain("Submit");
+    expect(result).toContain("Cancel");
   });
 });
