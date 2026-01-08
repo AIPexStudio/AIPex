@@ -4,6 +4,14 @@
  * Provides search functionality for snapshot text with glob pattern support
  */
 
+import { formatSnapshot } from "./manager.js";
+import type {
+  DomSnapshotNode,
+  SerializedDomSnapshot,
+  TextSnapshot,
+  TextSnapshotNode,
+} from "./types.js";
+
 export const SKIP_ROLES = [
   "generic",
   "none",
@@ -70,7 +78,7 @@ function matchGlob(
 
   // Convert glob pattern to regex
   let regexPattern = pattern
-    .replace(/[.*+^${}()|[\]\\]/g, "\\$&") // Escape regex special chars
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape regex special chars (including ?)
     .replace(/\\\*/g, ".*") // * -> .*
     .replace(/\\\?/g, ".") // ? -> .
     .replace(/\\\[/g, "[") // Restore [ for char class
@@ -172,6 +180,131 @@ export function searchSnapshotText(
     contextLines,
     totalMatches: matchedLines.length,
   };
+}
+
+/**
+ * Convert DOM snapshot node to TextSnapshotNode format
+ */
+function convertDomNodeToTextNode(node: DomSnapshotNode): TextSnapshotNode {
+  const textNode: TextSnapshotNode = {
+    id: node.id,
+    role: node.role,
+    name: node.name,
+    value: node.value,
+    description: node.description,
+    children: node.children.map(convertDomNodeToTextNode),
+    tagName: node.tagName,
+    focused: node.focused,
+    disabled: node.disabled,
+    expanded: node.expanded,
+    selected: node.selected,
+    checked: node.checked,
+    pressed: node.pressed,
+  };
+
+  // Copy additional properties if present
+  if (node.placeholder) textNode.valuetext = node.placeholder;
+  if (node.href) (textNode as any).href = node.href;
+  if (node.title) (textNode as any).title = node.title;
+
+  return textNode;
+}
+
+/**
+ * Convert SerializedDomSnapshot to UnifiedSnapshot format
+ */
+function convertDomSnapshotToUnified(
+  domSnapshot: SerializedDomSnapshot,
+): TextSnapshot {
+  const root = convertDomNodeToTextNode(domSnapshot.root);
+  const idToNode = new Map<string, TextSnapshotNode>();
+
+  // Build idToNode map from flat map
+  for (const [uid, node] of Object.entries(domSnapshot.idToNode)) {
+    idToNode.set(uid, convertDomNodeToTextNode(node));
+  }
+
+  return {
+    root,
+    idToNode,
+  };
+}
+
+/**
+ * Format search results with context
+ */
+function formatSearchResults(
+  snapshotText: string,
+  searchResult: {
+    matchedLines: number[];
+    contextLines: number[];
+    totalMatches: number;
+  },
+): string {
+  const { matchedLines, contextLines } = searchResult;
+  const lines = snapshotText.split("\n");
+  const matchedSet = new Set(matchedLines);
+  const resultGroups: string[][] = [];
+  let currentGroup: string[] = [];
+  let lastContextLine = -1;
+
+  for (const lineNum of contextLines) {
+    if (lineNum >= 0 && lineNum < lines.length) {
+      const line = lines[lineNum];
+
+      if (!line) {
+        continue;
+      }
+
+      if (currentGroup.length > 0 && lineNum - lastContextLine > 2) {
+        resultGroups.push(currentGroup);
+        currentGroup = [];
+      }
+
+      if (matchedSet.has(lineNum)) {
+        const markedLine = line.replace(/^(\s*)([^\s])/, "$1✓$2");
+        currentGroup.push(markedLine);
+      } else {
+        currentGroup.push(line);
+      }
+
+      lastContextLine = lineNum;
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    resultGroups.push(currentGroup);
+  }
+
+  return resultGroups.map((group) => group.join("\n")).join("\n----\n");
+}
+
+/**
+ * Search snapshot and format results with context
+ */
+export async function searchAndFormat(
+  snapshot: SerializedDomSnapshot,
+  query: string,
+  contextLevels: number = 1,
+  options?: Partial<SearchOptions>,
+): Promise<string | null> {
+  if (!snapshot) {
+    return null;
+  }
+
+  const unified = convertDomSnapshotToUnified(snapshot);
+
+  const snapshotText = formatSnapshot(unified);
+  const searchResult = searchSnapshotText(snapshotText, query, {
+    contextLevels,
+    ...options,
+  });
+
+  if (searchResult.totalMatches === 0) {
+    return `No matches found for: ${query}`;
+  }
+
+  return formatSearchResults(snapshotText, searchResult);
 }
 
 /**

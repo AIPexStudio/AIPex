@@ -58,18 +58,16 @@ console.log(snapshot.metadata.url);      // Page URL
 ### Converting to Text Format
 
 ```typescript
-import { collectDomSnapshot, DomSnapshotManager } from '@aipexstudio/dom-snapshot';
-
-const manager = new DomSnapshotManager();
+import { collectDomSnapshot, buildTextSnapshot, formatSnapshot } from '@aipexstudio/dom-snapshot';
 
 // Collect raw snapshot
 const serialized = collectDomSnapshot(document);
 
 // Convert to TextSnapshot format
-const textSnapshot = manager.buildTextSnapshot(serialized, { tabId: 1 });
+const textSnapshot = buildTextSnapshot(serialized);
 
 // Format as readable text representation
-const formatted = manager.formatSnapshot(textSnapshot);
+const formatted = formatSnapshot(textSnapshot);
 console.log(formatted);
 ```
 
@@ -90,9 +88,10 @@ Markers:
 ### Searching Snapshots
 
 ```typescript
-import { searchSnapshotText } from '@aipexstudio/dom-snapshot';
+import { searchSnapshotText, searchAndFormat, buildTextSnapshot, formatSnapshot } from '@aipexstudio/dom-snapshot';
 
-const formatted = manager.formatSnapshot(textSnapshot);
+const textSnapshot = buildTextSnapshot(serialized);
+const formatted = formatSnapshot(textSnapshot);
 
 // Simple text search
 const result = searchSnapshotText(formatted, 'Submit');
@@ -110,6 +109,10 @@ const result = searchSnapshotText(formatted, 'button* | *submit*', {
 console.log(result.matchedLines);   // Line numbers of matches
 console.log(result.contextLines);   // All lines to display (with context)
 console.log(result.totalMatches);   // Total match count
+
+// Or use searchAndFormat for a convenient one-step search with formatted output
+const formattedResults = await searchAndFormat(serialized, 'Submit', 2);
+console.log(formattedResults);      // Formatted search results with context
 ```
 
 ## API Reference
@@ -131,13 +134,23 @@ Collects a DOM snapshot from the specified document.
 
 Convenience function that calls `collectDomSnapshot` with the current `document`.
 
-### `DomSnapshotManager`
+### `buildTextSnapshot(source)`
 
-Manager class for converting and formatting snapshots.
+Converts a serialized DOM snapshot to TextSnapshot format.
 
-**Methods:**
-- `buildTextSnapshot(source, options?)` - Convert serialized snapshot to TextSnapshot
-- `formatSnapshot(snapshot)` - Format TextSnapshot as readable text
+**Parameters:**
+- `source` - The SerializedDomSnapshot to convert
+
+**Returns:** `TextSnapshot`
+
+### `formatSnapshot(snapshot)`
+
+Formats a TextSnapshot as readable text representation.
+
+**Parameters:**
+- `snapshot` - The TextSnapshot to format
+
+**Returns:** `string`
 
 ### `searchSnapshotText(text, query, options?)`
 
@@ -150,6 +163,20 @@ Search snapshot text with optional glob patterns.
   - `contextLevels` (number, default: 1) - Lines of context around matches
   - `caseSensitive` (boolean, default: false) - Case-sensitive search
   - `useGlob` (boolean, auto-detect) - Enable glob pattern matching
+
+**Returns:** `SearchResult`
+
+### `searchAndFormat(snapshot, query, contextLevels?, options?)`
+
+Convenience function that searches a snapshot and returns formatted results with context.
+
+**Parameters:**
+- `snapshot` - The SerializedDomSnapshot to search
+- `query` - Search query (use `|` to separate multiple terms)
+- `contextLevels` (number, default: 1) - Lines of context around matches
+- `options` - Optional SearchOptions
+
+**Returns:** `Promise<string | null>` - Formatted search results or null if no snapshot
 
 ## Node Structure
 

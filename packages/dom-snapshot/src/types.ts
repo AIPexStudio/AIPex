@@ -92,5 +92,4 @@ export interface TextSnapshotNode {
 export interface TextSnapshot {
   root: TextSnapshotNode;
   idToNode: Map<string, TextSnapshotNode>;
-  tabId: number;
 }
