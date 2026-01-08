@@ -282,12 +282,12 @@ function formatSearchResults(
 /**
  * Search snapshot and format results with context
  */
-export async function searchAndFormat(
+export function searchAndFormat(
   snapshot: SerializedDomSnapshot,
   query: string,
   contextLevels: number = 1,
   options?: Partial<SearchOptions>,
-): Promise<string | null> {
+): string | null {
   if (!snapshot) {
     return null;
   }
