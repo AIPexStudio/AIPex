@@ -209,7 +209,7 @@ function createNodeFromElement(
   options: CollectorOptions,
   _idToNode: DomSnapshotFlatMap,
   rootDocument: Document,
-  isSynthetic: boolean,
+  _isSynthetic: boolean,
 ): DomSnapshotNode {
   const nodeId = ensureElementUid(element);
   const role = resolveRole(element);
@@ -318,15 +318,9 @@ function createNodeFromElement(
     }
   }
 
-  // For synthetic nodes without a name, derive one from text content
-  if (isSynthetic && !node.name) {
-    const syntheticTextContent = normalizeTextContent(
-      element.textContent || "",
-    );
-    if (syntheticTextContent) {
-      node.name = syntheticTextContent.slice(0, options.maxTextLength);
-    }
-  }
+  // For synthetic nodes without a name, we no longer derive from textContent
+  // The text content is already captured via StaticText child nodes
+  // Setting a massive name from all descendant text creates redundancy and noise
 
   return node;
 }
@@ -471,8 +465,20 @@ function resolveAccessibleName(
     }
   }
 
-  const textContent = normalizeTextContent(element.textContent || "");
-  return textContent || null;
+  // For other elements, only use textContent as name if the element is interactive
+  // Non-interactive containers should not derive name from their descendant text
+  const tagName = element.tagName.toLowerCase();
+  const role = element.getAttribute("role") || "";
+  const isInteractive =
+    INTERACTIVE_ROLES.has(role) || INTERACTIVE_TAGS.has(tagName);
+
+  if (isInteractive) {
+    const textContent = extractVisibleTextContent(element);
+    return textContent || null;
+  }
+
+  // For non-interactive elements, don't derive name from textContent
+  return null;
 }
 
 function resolveElementValue(element: Element): string | undefined {
@@ -519,14 +525,13 @@ function extractTextNodes(
       return;
     }
     const uid = `${ensureElementUid(element)}::text-${index}`;
-    // StaticText nodes preserve full text content without truncation
-    // as they provide important context for understanding page content
+    // StaticText nodes use 'name' for text content
+    // No need for 'textContent' field as it would be redundant
     const textNode: DomSnapshotNode = {
       id: uid,
       role: STATIC_TEXT_ROLE,
       name: text,
       children: [],
-      textContent: text,
     };
     idToNode[uid] = textNode; // Add to flat map for consistency
     results.push(textNode);
