@@ -81,19 +81,40 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 ---
 
-## How Does AIPex Compare?
 
-*Why install a new browser when you can automate the one you already have?*
+## Roadmap?
 
-| Feature | AIPex | ChatGPT Atlas | Dia/Comet | Manus |
-|---------|-------|---------------|-----------|-------|
-| **Browser Migration** | None | Required | Required | None |
-| **Pricing** | Free | Paid | Paid | Paid |
-| **Open Source** | Yes | No | No | No |
-| **Privacy** | Full | Partial | Partial | Partial |
-| **BYOK** | Yes | No | No | No |
+- Page Understanding
 
+  - [x] Accessbility Tree
 
+  - [x] Optimised Dom
+
+  - [ ] Vision
+
+- Context Engineering
+
+  - [x] Search-based Retrival
+
+  - [x] Drop unused snapshot
+
+  - [x] id-based operation
+
+- Integration
+
+  - [ ] Cursor
+
+  - [ ] Claude Code
+
+- Skills
+
+  - [x] File system
+
+  - [x] Script Execution
+
+- [ ] Evaluation - [Online-Mind2Web](https://huggingface.co/datasets/osunlp/Online-Mind2Web/raw/main/Online_Mind2Web.json)
+
+## Why debugger is necessary for browser automation?
 
 ---
 
