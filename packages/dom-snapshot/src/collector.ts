@@ -352,6 +352,23 @@ function hasExplicitAccessibleLabel(
   return false;
 }
 
+/**
+ * Check if an element has cursor: pointer style, indicating it's clickable via CSS/JS.
+ * This helps identify interactive elements that don't use semantic HTML.
+ */
+function hasCursorPointer(element: Element, rootDocument: Document): boolean {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+
+  const style = rootDocument.defaultView?.getComputedStyle(element);
+  if (!style) {
+    return false;
+  }
+
+  return style.cursor === "pointer";
+}
+
 function shouldIncludeElement(
   element: Element,
   options: CollectorOptions,
@@ -374,6 +391,11 @@ function shouldIncludeElement(
   }
 
   if (element instanceof HTMLElement && element.isContentEditable) {
+    return true;
+  }
+
+  // Include elements with cursor: pointer style (clickable via CSS/JS)
+  if (hasCursorPointer(element, rootDocument)) {
     return true;
   }
 
