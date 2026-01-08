@@ -1,10 +1,10 @@
-import { buildFocusAncestorSet, formatNode } from "./snapshot-formatter";
+import { buildFocusAncestorSet, formatNode } from "./snapshot-formatter.js";
 import type {
   DomSnapshotNode,
   SerializedDomSnapshot,
   TextSnapshot,
   TextSnapshotNode,
-} from "./types";
+} from "./types.js";
 
 export interface BuildSnapshotOptions {
   tabId?: number;

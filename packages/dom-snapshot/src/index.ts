@@ -1,4 +1,4 @@
-export { collectDomSnapshot, collectDomSnapshotInPage } from "./collector";
-export { DomSnapshotManager } from "./manager";
-export { searchSnapshotText } from "./query";
-export * from "./types";
+export { collectDomSnapshot, collectDomSnapshotInPage } from "./collector.js";
+export { DomSnapshotManager } from "./manager.js";
+export { searchSnapshotText } from "./query.js";
+export * from "./types.js";
