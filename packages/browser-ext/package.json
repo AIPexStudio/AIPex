@@ -47,7 +47,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "ahooks": "^3.9.6",
-    "ai": "^5.0.105",
+    "ai": "^6.0.21",
     "assistant-ui": "^0.0.67",
     "bip39": "^3.1.0",
     "class-variance-authority": "^0.7.1",
