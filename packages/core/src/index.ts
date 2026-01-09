@@ -45,7 +45,11 @@ export { Session } from "./conversation/session.js";
 export { SessionStorage } from "./conversation/storage.js";
 
 // Generic Storage
-export type { KeyValueStorage, WatchCallback } from "./storage/index.js";
+export type {
+  BaseKeyValueStorage,
+  KeyValueStorage,
+  WatchCallback,
+} from "./storage/index.js";
 export { InMemoryStorage } from "./storage/memory.js";
 
 // Tools
