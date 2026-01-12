@@ -89,10 +89,10 @@ export class AIPex {
     // Build compressor if compression config is provided
     const compressor = options.compression
       ? new ConversationCompressor(options.compression.model, {
-          summarizeAfterItems: options.compression.summarizeAfterItems,
-          keepRecentItems: options.compression.keepRecentItems,
-          maxSummaryLength: options.compression.maxSummaryLength,
-        })
+        summarizeAfterItems: options.compression.summarizeAfterItems,
+        keepRecentItems: options.compression.keepRecentItems,
+        maxSummaryLength: options.compression.maxSummaryLength,
+      })
       : undefined;
 
     return new ConversationManager(storage, { compressor });
@@ -120,6 +120,13 @@ export class AIPex {
     const startTime = Date.now();
     const metrics = this.initMetrics(startTime, session);
 
+    // Track tool-call argument streaming during a single model response.
+    // This is best-effort and provider-dependent (e.g. OpenAI ChatCompletions tool_calls deltas).
+    const toolArgsStreamByIndex = new Map<
+      number,
+      { toolName: string; startEmitted: boolean }
+    >();
+
     try {
       const result = await run(this.agent, input, {
         maxTurns: this.maxTurns,
@@ -130,6 +137,62 @@ export class AIPex {
       let streamedOutput = "";
       for await (const streamEvent of result) {
         if (streamEvent.type === "raw_model_stream_event") {
+          // New response boundary: reset per-response tool args tracking.
+          if (
+            (streamEvent.data as unknown as { type?: string })?.type ===
+            "response_started"
+          ) {
+            toolArgsStreamByIndex.clear();
+            continue;
+          }
+
+          // Best-effort: detect tool call argument streaming from raw provider events.
+          // For OpenAI ChatCompletions streaming, the raw chunk is available under
+          // streamEvent.data.type === "model" with a shape like:
+          //   event.choices[0].delta.tool_calls[].function.{name,arguments}
+          if (
+            (streamEvent.data as unknown as { type?: string })?.type === "model"
+          ) {
+            const raw = (streamEvent.data as unknown as { event?: unknown })
+              ?.event as unknown;
+            const choices = (raw as any)?.choices;
+            const delta = Array.isArray(choices) ? choices?.[0]?.delta : null;
+            const toolCalls = delta?.tool_calls;
+            if (Array.isArray(toolCalls)) {
+              for (const tcDelta of toolCalls) {
+                const index = tcDelta?.index;
+                if (typeof index !== "number") continue;
+
+                const state = toolArgsStreamByIndex.get(index) ?? {
+                  toolName: "",
+                  startEmitted: false,
+                };
+
+                const nameDelta = tcDelta?.function?.name;
+                if (typeof nameDelta === "string" && nameDelta.length > 0) {
+                  state.toolName += nameDelta;
+                }
+
+                // If we can identify the tool name, emit args streaming start once.
+                if (!state.startEmitted && state.toolName.length > 0) {
+                  state.startEmitted = true;
+                  await this.emitToolEventHooks({
+                    event: {
+                      type: "tool_call_args_streaming_start",
+                      toolName: state.toolName,
+                    },
+                  });
+                  yield {
+                    type: "tool_call_args_streaming_start",
+                    toolName: state.toolName,
+                  };
+                }
+
+                toolArgsStreamByIndex.set(index, state);
+              }
+            }
+          }
+
           if (streamEvent.data.type === "output_text_delta") {
             streamedOutput += streamEvent.data.delta;
             yield { type: "content_delta", delta: streamEvent.data.delta };
@@ -138,6 +201,20 @@ export class AIPex {
         }
 
         if (streamEvent.type === "run_item_stream_event") {
+          // Emit tool args "complete" right before the tool call starts, so UIs can
+          // show a "parameters ready" transition even if they couldn't observe args streaming.
+          if (streamEvent.name === "tool_called") {
+            const toolName = this.extractToolName(streamEvent.item);
+            const params = this.extractToolArguments(streamEvent.item);
+            const argsCompleteEvent: AgentEvent = {
+              type: "tool_call_args_streaming_complete",
+              toolName,
+              params,
+            };
+            await this.emitToolEventHooks({ event: argsCompleteEvent });
+            yield argsCompleteEvent;
+          }
+
           const toolEvent = this.transformToolEvent(streamEvent);
           if (toolEvent) {
             await this.emitToolEventHooks({ event: toolEvent });
@@ -215,14 +292,14 @@ export class AIPex {
         // Resolve context IDs to Context objects if needed
         const contextObjs =
           this.contextManager &&
-          chatOptions.contexts.some((c) => typeof c === "string")
+            chatOptions.contexts.some((c) => typeof c === "string")
             ? await resolveContexts(
-                chatOptions.contexts,
-                this.contextManager.getContext.bind(this.contextManager),
-              )
+              chatOptions.contexts,
+              this.contextManager.getContext.bind(this.contextManager),
+            )
             : (chatOptions.contexts.filter(
-                (c) => typeof c !== "string",
-              ) as Context[]);
+              (c) => typeof c !== "string",
+            ) as Context[]);
 
         if (contextObjs.length > 0) {
           resolvedContexts = contextObjs;

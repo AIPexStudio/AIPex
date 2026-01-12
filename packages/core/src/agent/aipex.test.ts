@@ -555,6 +555,114 @@ describe("AIPex", () => {
   });
 
   describe("tools and errors", () => {
+    it("should emit tool_call_args_streaming_complete before tool_call_start", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "calculator", arguments: '{"a":1}' } },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("use tool")) {
+        events.push(event);
+      }
+
+      const argsCompleteIndex = events.findIndex(
+        (event) => event.type === "tool_call_args_streaming_complete",
+      );
+      const toolStartIndex = events.findIndex(
+        (event) => event.type === "tool_call_start",
+      );
+
+      expect(argsCompleteIndex).toBeGreaterThanOrEqual(0);
+      expect(toolStartIndex).toBeGreaterThanOrEqual(0);
+      expect(argsCompleteIndex).toBeLessThan(toolStartIndex);
+
+      const argsComplete = events[argsCompleteIndex];
+      const toolStart = events[toolStartIndex];
+
+      expect(argsComplete?.type).toBe("tool_call_args_streaming_complete");
+      if (argsComplete?.type === "tool_call_args_streaming_complete") {
+        expect(argsComplete.toolName).toBe("calculator");
+        expect(argsComplete.params).toEqual({ a: 1 });
+      }
+
+      expect(toolStart?.type).toBe("tool_call_start");
+      if (toolStart?.type === "tool_call_start") {
+        expect(toolStart.toolName).toBe("calculator");
+        expect(toolStart.params).toEqual({ a: 1 });
+      }
+    });
+
+    it("should emit tool_call_args_streaming_start when tool args are streamed by the model", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: {
+                type: "model",
+                event: {
+                  choices: [
+                    {
+                      delta: {
+                        tool_calls: [
+                          {
+                            index: 0,
+                            id: "call_1",
+                            function: {
+                              name: "calculator",
+                              arguments: '{"a":',
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "calculator", arguments: '{"a":1}' } },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("use tool")) {
+        events.push(event);
+      }
+
+      const argsStart = events.find(
+        (event) => event.type === "tool_call_args_streaming_start",
+      );
+      expect(argsStart).toBeDefined();
+      if (argsStart?.type === "tool_call_args_streaming_start") {
+        expect(argsStart.toolName).toBe("calculator");
+      }
+    });
+
     it("should emit tool lifecycle events", async () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({
