@@ -633,7 +633,7 @@ export function SettingsPage({
 
         // Use AI SDK to make the request (handles all URL construction automatically)
         await generateText({
-          model: provider(aiModel),
+          model: provider(aiModel) as any,
           prompt: "Hi",
         });
 
