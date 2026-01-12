@@ -7,6 +7,7 @@ import {
   type ProviderType,
   STORAGE_KEYS,
 } from "@aipexstudio/aipex-core";
+import type { LanguageModel } from "ai";
 import {
   Bot,
   CheckCircle,
@@ -633,7 +634,7 @@ export function SettingsPage({
 
         // Use AI SDK to make the request (handles all URL construction automatically)
         await generateText({
-          model: provider(aiModel) as any,
+          model: provider(aiModel) as LanguageModel,
           prompt: "Hi",
         });
 
