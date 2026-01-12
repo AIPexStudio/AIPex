@@ -205,6 +205,73 @@ describe("ChatAdapter", () => {
       expect(adapter.getStatus()).toBe("streaming");
     });
 
+    it("should create a pending tool call on tool_call_args_streaming_start", () => {
+      adapter.processEvent({
+        type: "tool_call_args_streaming_start",
+        toolName: "search",
+      });
+
+      const messages = adapter.getMessages();
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toMatchObject({ role: "assistant" });
+
+      const toolPart = messages[0]?.parts.find((p) => p.type === "tool");
+      expect(toolPart).toMatchObject({
+        toolName: "search",
+        state: "pending",
+        input: {},
+      });
+      expect(adapter.getStatus()).toBe("streaming");
+    });
+
+    it("should update pending tool params on tool_call_args_streaming_complete", () => {
+      adapter.processEvent({
+        type: "tool_call_args_streaming_start",
+        toolName: "search",
+      });
+      adapter.processEvent({
+        type: "tool_call_args_streaming_complete",
+        toolName: "search",
+        params: { q: "ts" },
+      });
+
+      const toolPart = adapter
+        .getMessages()[0]
+        ?.parts.find((p) => p.type === "tool");
+      expect(toolPart).toMatchObject({
+        toolName: "search",
+        state: "pending",
+        input: { q: "ts" },
+      });
+    });
+
+    it("should not duplicate tool parts when tool_call_start follows tool args streaming events", () => {
+      adapter.processEvent({
+        type: "tool_call_args_streaming_start",
+        toolName: "search",
+      });
+      adapter.processEvent({
+        type: "tool_call_args_streaming_complete",
+        toolName: "search",
+        params: { q: "ts" },
+      });
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "search",
+        params: { q: "ts" },
+      });
+
+      const toolParts =
+        adapter.getMessages()[0]?.parts.filter((p) => p.type === "tool") ?? [];
+      expect(toolParts).toHaveLength(1);
+      expect(toolParts[0]).toMatchObject({
+        toolName: "search",
+        state: "executing",
+        input: { q: "ts" },
+      });
+      expect(adapter.getStatus()).toBe("executing_tools");
+    });
+
     it("should append to existing assistant message", () => {
       adapter.processEvent({ type: "content_delta", delta: "Hello" });
       adapter.processEvent({ type: "content_delta", delta: " world" });

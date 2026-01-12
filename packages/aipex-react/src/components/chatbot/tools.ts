@@ -18,7 +18,7 @@ ${typeof output === "string" ? output : JSON.stringify(output, null, 2)}
 export function mapToolState(state: UIToolPart["state"]): ToolComponentState {
   switch (state) {
     case "pending":
-      return "input-available";
+      return "input-streaming";
     case "executing":
       return "executing";
     case "completed":

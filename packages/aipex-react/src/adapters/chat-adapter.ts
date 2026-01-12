@@ -139,9 +139,22 @@ export class ChatAdapter {
         this.appendContentDelta(event.delta);
         break;
 
+      case "tool_call_args_streaming_start":
+        this.ensureAssistantMessage();
+        this.ensurePendingToolCall(event.toolName, {});
+        this.updateStatus("streaming");
+        break;
+
+      case "tool_call_args_streaming_complete":
+        this.ensureAssistantMessage();
+        this.ensurePendingToolCall(event.toolName, event.params);
+        break;
+
       case "tool_call_start":
         this.ensureAssistantMessage();
-        this.addToolCall(event.toolName, event.params);
+        if (!this.startExistingToolCall(event.toolName, event.params)) {
+          this.addToolCall(event.toolName, event.params);
+        }
         this.updateStatus("executing_tools");
         break;
 
@@ -302,6 +315,81 @@ export class ChatAdapter {
 
     // Mark that tools were added, so next text creates a new part
     this.toolsAddedSinceLastText = true;
+  }
+
+  private ensurePendingToolCall(toolName: string, params: unknown): void {
+    const existingCallId = this.findPendingToolCallId(toolName);
+    if (existingCallId) {
+      this.updateToolPart(existingCallId, (toolPart) => ({
+        ...toolPart,
+        toolName,
+        input: params,
+      }));
+      return;
+    }
+
+    const callId = this.queueToolCall(toolName);
+    this.updateCurrentAssistantMessage((message) => {
+      const parts = [...message.parts];
+
+      const toolPart: UIToolPart = {
+        type: "tool",
+        toolCallId: callId,
+        toolName,
+        input: params,
+        state: "pending",
+      };
+
+      parts.push(toolPart);
+
+      return { ...message, parts };
+    });
+
+    this.toolsAddedSinceLastText = true;
+  }
+
+  private startExistingToolCall(toolName: string, params: unknown): boolean {
+    const callId = this.findPendingToolCallId(toolName);
+    if (!callId) {
+      return false;
+    }
+
+    this.updateToolPart(callId, (toolPart) => ({
+      ...toolPart,
+      toolName,
+      input: params,
+      state: "executing",
+    }));
+    this.toolsAddedSinceLastText = true;
+    return true;
+  }
+
+  private findPendingToolCallId(toolName: string): string | undefined {
+    const queue = this.pendingToolCalls.get(toolName);
+    if (!queue || queue.length === 0) {
+      return undefined;
+    }
+
+    const currentId = this.state.currentAssistantMessageId;
+    if (!currentId) {
+      return undefined;
+    }
+    const message = this.state.messages.find((m) => m.id === currentId);
+    if (!message) {
+      return undefined;
+    }
+
+    for (const callId of queue) {
+      const toolPart = message.parts.find(
+        (part): part is UIToolPart =>
+          part.type === "tool" && part.toolCallId === callId,
+      );
+      if (toolPart?.state === "pending") {
+        return callId;
+      }
+    }
+
+    return undefined;
   }
 
   private updateToolComplete(toolName: string, result: unknown): void {
