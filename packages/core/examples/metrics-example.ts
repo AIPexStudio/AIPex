@@ -15,7 +15,8 @@ async function demonstrateMetrics() {
   const agent = AIPex.create({
     name: "MetricsDemo",
     instructions: "You are a helpful assistant that demonstrates metrics.",
-    model: aisdk(openai("gpt-4o")),
+    // TODO: remove as any when @openai/agents-extensions 0.3.8 is released
+    model: aisdk(openai("gpt-4o") as any),
     maxTurns: 10,
     conversationManager: manager,
   });

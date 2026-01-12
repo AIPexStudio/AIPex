@@ -28,9 +28,10 @@
     "host-access-config.json"
   ],
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.51",
-    "@ai-sdk/google": "^2.0.44",
-    "@ai-sdk/openai": "^2.0.75",
+    "@ai-sdk/anthropic": "^3.0.10",
+    "@ai-sdk/google": "^3.0.6",
+    "@ai-sdk/openai": "^3.0.8",
+    "@ai-sdk/openai-compatible": "^2.0.5",
     "@aipexstudio/aipex-core": "workspace:*",
     "@aipexstudio/aipex-react": "workspace:*",
     "@aipexstudio/browser-runtime": "workspace:*",
@@ -47,7 +48,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "ahooks": "^3.9.6",
-    "ai": "^5.0.105",
+    "ai": "^6.0.28",
     "assistant-ui": "^0.0.67",
     "bip39": "^3.1.0",
     "class-variance-authority": "^0.7.1",

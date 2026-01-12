@@ -20,7 +20,7 @@
     "lint:fix": "biome check . --fix --unsafe",
     "lint:dependencies": "knip --strict",
     "test": "pnpm -r --if-present test",
-    "typecheck": "tsc --build",
+    "typecheck": "pnpm -r --if-present typecheck",
     "bump": "bumpp"
   },
   "devDependencies": {

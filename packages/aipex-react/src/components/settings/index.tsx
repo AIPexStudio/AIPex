@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/context";
-import { createAIProvider } from "../../lib/ai-provider";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../theme/context";
 import { DEFAULT_MODELS } from "../chatbot/constants";
@@ -598,48 +597,34 @@ export function SettingsPage({
     }
 
     try {
-      if (onTestConnection) {
-        const success = await onTestConnection({
-          ...settings,
-          aiHost,
-          aiToken,
-          aiModel,
-          aiProvider: providerKey,
-          providerType,
-          customModels,
+      if (!onTestConnection) {
+        setSaveStatus({
+          type: "error",
+          message: "Test connection handler not provided",
         });
-        if (success) {
-          setSaveStatus({
-            type: "success",
-            message: t("settings.testSuccess"),
-          });
-        } else {
-          setSaveStatus({
-            type: "error",
-            message: t("settings.testFailed"),
-          });
-        }
-      } else {
-        // Default test implementation - use AI SDK directly (same as runtime)
-        const { generateText } = await import("ai");
+        setIsTesting(false);
+        return;
+      }
 
-        // Create provider using the same logic as runtime
-        const provider = createAIProvider({
-          aiProvider: providerKey,
-          aiHost,
-          aiToken,
-          aiModel,
-        });
+      const success = await onTestConnection({
+        ...settings,
+        aiHost,
+        aiToken,
+        aiModel,
+        aiProvider: providerKey,
+        providerType,
+        customModels,
+      });
 
-        // Use AI SDK to make the request (handles all URL construction automatically)
-        await generateText({
-          model: provider(aiModel),
-          prompt: "Hi",
-        });
-
+      if (success) {
         setSaveStatus({
           type: "success",
           message: t("settings.testSuccess"),
+        });
+      } else {
+        setSaveStatus({
+          type: "error",
+          message: t("settings.testFailed"),
         });
       }
       setTimeout(() => setSaveStatus({ type: "", message: "" }), 5000);
