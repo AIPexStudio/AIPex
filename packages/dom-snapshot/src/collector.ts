@@ -192,7 +192,8 @@ function traverseElement(
 
   const selfVisibilityHidden =
     !options.includeHidden && isElementVisibilityHidden(element, rootDocument);
-  const hasVisibilityVisible = !selfVisibilityHidden || hasVisibilityVisibleInChildren;
+  const hasVisibilityVisible =
+    !selfVisibilityHidden || hasVisibilityVisibleInChildren;
 
   // Optimization: If this entire subtree is `visibility:hidden` and no descendants override
   // it back to `visibility: visible`, prune it to reduce noise and work.

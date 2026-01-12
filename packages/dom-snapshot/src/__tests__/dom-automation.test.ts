@@ -248,11 +248,21 @@ describe("DOM snapshot collector", () => {
     expect(allText).not.toContain("Hidden L2");
     expect(allText).not.toContain("Hidden L4");
 
-    expect($<HTMLButtonElement>("#btn-v1")!.getAttribute("data-aipex-nodeid")).toBeTruthy();
-    expect($<HTMLButtonElement>("#btn-v2")!.getAttribute("data-aipex-nodeid")).toBeTruthy();
-    expect($<HTMLButtonElement>("#btn-v3")!.getAttribute("data-aipex-nodeid")).toBeTruthy();
-    expect($<HTMLButtonElement>("#btn-h1")!.getAttribute("data-aipex-nodeid")).toBeNull();
-    expect($<HTMLButtonElement>("#btn-h2")!.getAttribute("data-aipex-nodeid")).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#btn-v1")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-v2")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-v3")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-h1")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#btn-h2")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
   });
 
   it("handles multiple branches with repeated visibility overrides", () => {
@@ -294,17 +304,29 @@ describe("DOM snapshot collector", () => {
     expect(allText).not.toContain("B hidden sibling");
     expect(allText).not.toContain("C hidden");
 
-    expect($<HTMLButtonElement>("#b-visible")!.getAttribute("data-aipex-nodeid")).toBeTruthy();
     expect(
-      $<HTMLButtonElement>("#b-visible-deep")!.getAttribute("data-aipex-nodeid"),
+      $<HTMLButtonElement>("#b-visible")!.getAttribute("data-aipex-nodeid"),
     ).toBeTruthy();
-    expect($<HTMLButtonElement>("#c-visible")!.getAttribute("data-aipex-nodeid")).toBeTruthy();
-
-    expect($<HTMLButtonElement>("#a-hidden")!.getAttribute("data-aipex-nodeid")).toBeNull();
     expect(
-      $<HTMLButtonElement>("#b-hidden-sibling")!.getAttribute("data-aipex-nodeid"),
+      $<HTMLButtonElement>("#b-visible-deep")!.getAttribute(
+        "data-aipex-nodeid",
+      ),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#c-visible")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+
+    expect(
+      $<HTMLButtonElement>("#a-hidden")!.getAttribute("data-aipex-nodeid"),
     ).toBeNull();
-    expect($<HTMLButtonElement>("#c-hidden")!.getAttribute("data-aipex-nodeid")).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#b-hidden-sibling")!.getAttribute(
+        "data-aipex-nodeid",
+      ),
+    ).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#c-hidden")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
   });
 
   it('includes elements with aria-hidden="false"', () => {
