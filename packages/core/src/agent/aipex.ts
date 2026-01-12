@@ -89,10 +89,10 @@ export class AIPex {
     // Build compressor if compression config is provided
     const compressor = options.compression
       ? new ConversationCompressor(options.compression.model, {
-        summarizeAfterItems: options.compression.summarizeAfterItems,
-        keepRecentItems: options.compression.keepRecentItems,
-        maxSummaryLength: options.compression.maxSummaryLength,
-      })
+          summarizeAfterItems: options.compression.summarizeAfterItems,
+          keepRecentItems: options.compression.keepRecentItems,
+          maxSummaryLength: options.compression.maxSummaryLength,
+        })
       : undefined;
 
     return new ConversationManager(storage, { compressor });
@@ -292,14 +292,14 @@ export class AIPex {
         // Resolve context IDs to Context objects if needed
         const contextObjs =
           this.contextManager &&
-            chatOptions.contexts.some((c) => typeof c === "string")
+          chatOptions.contexts.some((c) => typeof c === "string")
             ? await resolveContexts(
-              chatOptions.contexts,
-              this.contextManager.getContext.bind(this.contextManager),
-            )
+                chatOptions.contexts,
+                this.contextManager.getContext.bind(this.contextManager),
+              )
             : (chatOptions.contexts.filter(
-              (c) => typeof c !== "string",
-            ) as Context[]);
+                (c) => typeof c !== "string",
+              ) as Context[]);
 
         if (contextObjs.length > 0) {
           resolvedContexts = contextObjs;

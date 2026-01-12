@@ -116,10 +116,10 @@ export type AgentEvent =
   | { type: "content_delta"; delta: string }
   | { type: "tool_call_args_streaming_start"; toolName: string }
   | {
-    type: "tool_call_args_streaming_complete";
-    toolName: string;
-    params: unknown;
-  }
+      type: "tool_call_args_streaming_complete";
+      toolName: string;
+      params: unknown;
+    }
   | { type: "tool_call_start"; toolName: string; params: unknown }
   | { type: "tool_call_complete"; toolName: string; result: unknown }
   | { type: "tool_call_error"; toolName: string; error: Error }
@@ -129,10 +129,10 @@ export type AgentEvent =
   | { type: "metrics_update"; metrics: AgentMetrics }
   | { type: "error"; error: AgentError }
   | {
-    type: "execution_complete";
-    finalOutput: string;
-    metrics: AgentMetrics;
-  };
+      type: "execution_complete";
+      finalOutput: string;
+      metrics: AgentMetrics;
+    };
 
 // ============================================================================
 // Plugin Types
