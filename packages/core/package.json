@@ -47,16 +47,16 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.44",
-    "@ai-sdk/openai": "^2.0.75",
+    "@ai-sdk/google": "^3.0.6",
+    "@ai-sdk/openai": "^3.0.8",
     "@types/node": "^24.10.1",
     "dotenv": "^17.2.3",
     "tsx": "^4.21.0"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
-    "@ai-sdk/google": "^2.0.0",
-    "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/anthropic": "^3.0.0",
+    "@ai-sdk/google": "^3.0.0",
+    "@ai-sdk/openai": "^3.0.0",
     "@openrouter/ai-sdk-provider": "^0.4.0"
   },
   "peerDependenciesMeta": {

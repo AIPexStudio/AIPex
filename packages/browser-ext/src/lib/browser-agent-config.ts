@@ -5,7 +5,6 @@
 
 import type { AppSettings } from "@aipexstudio/aipex-core";
 import { aisdk, SessionStorage } from "@aipexstudio/aipex-core";
-import { createAIProvider } from "@aipexstudio/aipex-react";
 import { SYSTEM_PROMPT } from "@aipexstudio/aipex-react/components/chatbot/constants";
 import {
   allBrowserProviders,
@@ -13,6 +12,7 @@ import {
   IndexedDBStorage,
 } from "@aipexstudio/browser-runtime";
 import { useCallback, useMemo } from "react";
+import { createAIProvider } from "./ai-provider";
 
 /**
  * Create browser-specific storage instance

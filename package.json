@@ -20,7 +20,7 @@
     "lint:fix": "biome check . --fix --unsafe",
     "lint:dependencies": "knip --strict",
     "test": "pnpm -r --if-present test",
-    "typecheck": "tsc --build",
+    "typecheck": "pnpm -r --if-present typecheck",
     "bump": "bumpp"
   },
   "devDependencies": {
@@ -33,10 +33,5 @@
     "tinyglobby": "^0.2.15",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"
-  },
-  "dependencies": {
-    "@ai-sdk/anthropic": "3.0.10",
-    "@ai-sdk/google": "3.0.6",
-    "@ai-sdk/openai": "3.0.8"
   }
 }
