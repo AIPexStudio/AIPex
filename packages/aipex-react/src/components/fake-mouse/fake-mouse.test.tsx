@@ -2,7 +2,7 @@
  * Tests for FakeMouse component
  */
 
-import { render, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FakeMouse } from "./fake-mouse";
 import type { FakeMouseController } from "./types";
@@ -41,7 +41,9 @@ describe("FakeMouse", () => {
       expect(controller).not.toBeNull();
     });
 
-    controller!.show();
+    await act(async () => {
+      controller!.show();
+    });
 
     await waitFor(() => {
       const svg = document.querySelector("svg");
@@ -64,8 +66,10 @@ describe("FakeMouse", () => {
       expect(controller).not.toBeNull();
     });
 
-    controller!.show();
-    controller!.showTooltip("Test tooltip");
+    await act(async () => {
+      controller!.show();
+      controller!.showTooltip("Test tooltip");
+    });
 
     await waitFor(() => {
       const tooltipText = document.body.textContent;
@@ -94,7 +98,9 @@ describe("FakeMouse", () => {
       expect(controller).not.toBeNull();
     });
 
-    controller!.show();
+    await act(async () => {
+      controller!.show();
+    });
 
     await waitFor(() => {
       const cursor = document.querySelector('[style*="width"]');
@@ -117,14 +123,18 @@ describe("FakeMouse", () => {
       expect(controller).not.toBeNull();
     });
 
-    controller!.show();
+    await act(async () => {
+      controller!.show();
+    });
 
     await waitFor(() => {
       const svg = document.querySelector("svg");
       expect(svg).not.toBeNull();
     });
 
-    unmount();
+    await act(async () => {
+      unmount();
+    });
 
     await waitFor(() => {
       const svg = document.querySelector("svg");
