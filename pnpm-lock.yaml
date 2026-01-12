@@ -280,8 +280,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       tailwindcss:
-        specifier: 4.1.17
-        version: 4.1.17
+        specifier: 4.1.18
+        version: 4.1.18
       tokenlens:
         specifier: ^1.3.1
         version: 1.3.1
@@ -4768,9 +4768,6 @@ packages:
     peerDependencies:
       autoprefixer: ^10.0.2
       postcss: ^8.0.9
-
-  tailwindcss@4.1.17:
-    resolution: {integrity: sha512-j9Ee2YjuQqYT9bbRTfTZht9W/ytp5H+jJpZKiYdP/bpnXARAuELt9ofP0lPnmHjbga7SNQIxdTAXCmtKVYjN+Q==}
 
   tailwindcss@4.1.18:
     resolution: {integrity: sha512-4+Z+0yiYyEtUVCScyfHCxOYP06L5Ne+JiHhY2IjR2KWMIWhJOYZKLSGZaP5HkZ8+bY0cxfzwDE5uOmzFXyIwxw==}
@@ -9950,8 +9947,6 @@ snapshots:
       tmp: 0.2.5
     transitivePeerDependencies:
       - ts-node
-
-  tailwindcss@4.1.17: {}
 
   tailwindcss@4.1.18: {}
 
