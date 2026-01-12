@@ -109,7 +109,7 @@ export function collectDomSnapshot(
       config,
       idToNode,
       rootDocument,
-    );
+    ).nodes;
     if (childNodes.length > 0) {
       rootNode.children.push(...childNodes);
     }
@@ -137,34 +137,72 @@ export function collectDomSnapshotInPage(
   return collectDomSnapshot(document, options);
 }
 
+type TraverseResult = {
+  nodes: DomSnapshotNode[];
+  /**
+   * Whether this subtree contains at least one element whose computed
+   * `visibility` is not hidden. Used to prune fully `visibility:hidden` subtrees
+   * while still allowing descendants to override with `visibility: visible`.
+   */
+  hasVisibilityVisible: boolean;
+};
+
+function isElementVisibilityHidden(
+  element: Element,
+  rootDocument: Document,
+): boolean {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+  const style = rootDocument.defaultView?.getComputedStyle(element);
+  if (!style) {
+    return false;
+  }
+  return style.visibility === "hidden" || style.visibility === "collapse";
+}
+
 function traverseElement(
   element: Element,
   options: CollectorOptions,
   idToNode: DomSnapshotFlatMap,
   rootDocument: Document,
-): DomSnapshotNode[] {
+): TraverseResult {
   // Skip tags that should not be traversed (script, style, etc.)
   const tagName = element.tagName.toLowerCase();
   if (SKIP_TAGS.has(tagName)) {
-    return [];
+    return { nodes: [], hasVisibilityVisible: false };
   }
 
   // Skip entire subtree if element is hidden (not just the element itself)
   if (!options.includeHidden && isElementHidden(element, rootDocument)) {
-    return [];
+    return { nodes: [], hasVisibilityVisible: false };
   }
 
-  const nodes: DomSnapshotNode[] = [];
-
-  const includeSelf = shouldIncludeElement(element, options, rootDocument);
   const childrenNodes: DomSnapshotNode[] = [];
+  let hasVisibilityVisibleInChildren = false;
 
   const childElements = Array.from(element.children);
   for (const child of childElements) {
-    childrenNodes.push(
-      ...traverseElement(child, options, idToNode, rootDocument),
-    );
+    const childResult = traverseElement(child, options, idToNode, rootDocument);
+    childrenNodes.push(...childResult.nodes);
+    if (childResult.hasVisibilityVisible) {
+      hasVisibilityVisibleInChildren = true;
+    }
   }
+
+  const selfVisibilityHidden =
+    !options.includeHidden && isElementVisibilityHidden(element, rootDocument);
+  const hasVisibilityVisible =
+    !selfVisibilityHidden || hasVisibilityVisibleInChildren;
+
+  // Optimization: If this entire subtree is `visibility:hidden` and no descendants override
+  // it back to `visibility: visible`, prune it to reduce noise and work.
+  if (selfVisibilityHidden && !hasVisibilityVisibleInChildren) {
+    return { nodes: [], hasVisibilityVisible: false };
+  }
+
+  const nodes: DomSnapshotNode[] = [];
+  const includeSelf = shouldIncludeElement(element, options, rootDocument);
 
   if (options.captureTextNodes) {
     const textChildren = extractTextNodes(element, options, idToNode);
@@ -173,7 +211,7 @@ function traverseElement(
 
   if (!includeSelf) {
     if (childrenNodes.length === 1) {
-      return childrenNodes;
+      return { nodes: childrenNodes, hasVisibilityVisible };
     }
     if (childrenNodes.length > 1) {
       const syntheticNode = createNodeFromElement(
@@ -186,9 +224,9 @@ function traverseElement(
       syntheticNode.children = childrenNodes;
       idToNode[syntheticNode.id] = syntheticNode;
       nodes.push(syntheticNode);
-      return nodes;
+      return { nodes, hasVisibilityVisible };
     }
-    return nodes;
+    return { nodes, hasVisibilityVisible };
   }
 
   const node = createNodeFromElement(
@@ -201,7 +239,7 @@ function traverseElement(
   node.children = childrenNodes;
   idToNode[node.id] = node;
   nodes.push(node);
-  return nodes;
+  return { nodes, hasVisibilityVisible };
 }
 
 function createNodeFromElement(
@@ -678,11 +716,9 @@ function isElementHidden(element: Element, rootDocument: Document): boolean {
       if (style.display === "none") {
         return true;
       }
-      // visibility: hidden with children inheriting (subtree hidden)
-      // Note: visibility can be overridden by children, so we only skip if truly hidden
-      if (style.visibility === "hidden") {
-        return true;
-      }
+      // Note: we intentionally do NOT treat `visibility: hidden` as an unconditional
+      // subtree skip signal. `visibility` can be overridden by descendants, so pruning
+      // fully `visibility:hidden` subtrees is handled in `traverseElement`.
     }
   }
 

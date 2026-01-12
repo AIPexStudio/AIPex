@@ -199,7 +199,7 @@ describe("DOM snapshot collector", () => {
     expect(allText).not.toContain("Display none button");
   });
 
-  it("skips visibility:hidden elements and their subtree", () => {
+  it("skips visibility:hidden elements and their subtree (no visible overrides)", () => {
     setHtml(`
       <button>Visible button</button>
       <div style="visibility: hidden;">
@@ -215,6 +215,118 @@ describe("DOM snapshot collector", () => {
     expect(allText).toContain("Visible button");
     expect(allText).not.toContain("Visibility hidden text");
     expect(allText).not.toContain("Visibility hidden button");
+  });
+
+  it("includes visible descendants across repeated visibility overrides", () => {
+    const { $ } = setHtml(`
+      <div style="visibility: hidden;">
+        <div style="visibility: visible;">
+          <button id="btn-v1">Visible L1</button>
+          <div style="visibility: hidden;">
+            <button id="btn-h1">Hidden L2</button>
+            <div style="visibility: visible;">
+              <button id="btn-v2">Visible L3</button>
+              <div style="visibility: hidden;">
+                <button id="btn-h2">Hidden L4</button>
+                <div style="visibility: visible;">
+                  <button id="btn-v3">Visible L5</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const snapshot = collectDomSnapshot(document);
+    const nodes = Object.values(snapshot.idToNode);
+    const allText = nodes.map((n) => n.textContent || n.name || "").join(" ");
+
+    expect(allText).toContain("Visible L1");
+    expect(allText).toContain("Visible L3");
+    expect(allText).toContain("Visible L5");
+    expect(allText).not.toContain("Hidden L2");
+    expect(allText).not.toContain("Hidden L4");
+
+    expect(
+      $<HTMLButtonElement>("#btn-v1")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-v2")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-v3")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#btn-h1")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#btn-h2")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
+  });
+
+  it("handles multiple branches with repeated visibility overrides", () => {
+    const { $ } = setHtml(`
+      <div style="visibility: hidden;">
+        <div style="visibility: hidden;">
+          <button id="a-hidden">A hidden</button>
+        </div>
+
+        <div style="visibility: hidden;">
+          <div style="visibility: visible;">
+            <button id="b-visible">B visible</button>
+            <div style="visibility: hidden;">
+              <div style="visibility: visible;">
+                <button id="b-visible-deep">B visible deep</button>
+              </div>
+              <button id="b-hidden-sibling">B hidden sibling</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="visibility: visible;">
+          <button id="c-visible">C visible</button>
+          <div style="visibility: hidden;">
+            <button id="c-hidden">C hidden</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const snapshot = collectDomSnapshot(document);
+    const nodes = Object.values(snapshot.idToNode);
+    const allText = nodes.map((n) => n.textContent || n.name || "").join(" ");
+
+    expect(allText).toContain("B visible");
+    expect(allText).toContain("B visible deep");
+    expect(allText).toContain("C visible");
+    expect(allText).not.toContain("A hidden");
+    expect(allText).not.toContain("B hidden sibling");
+    expect(allText).not.toContain("C hidden");
+
+    expect(
+      $<HTMLButtonElement>("#b-visible")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#b-visible-deep")!.getAttribute(
+        "data-aipex-nodeid",
+      ),
+    ).toBeTruthy();
+    expect(
+      $<HTMLButtonElement>("#c-visible")!.getAttribute("data-aipex-nodeid"),
+    ).toBeTruthy();
+
+    expect(
+      $<HTMLButtonElement>("#a-hidden")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#b-hidden-sibling")!.getAttribute(
+        "data-aipex-nodeid",
+      ),
+    ).toBeNull();
+    expect(
+      $<HTMLButtonElement>("#c-hidden")!.getAttribute("data-aipex-nodeid"),
+    ).toBeNull();
   });
 
   it('includes elements with aria-hidden="false"', () => {
