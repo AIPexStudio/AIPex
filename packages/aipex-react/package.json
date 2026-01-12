@@ -181,7 +181,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "jsdom": "^27.2.0",
     "react": "19.2.3",
-    "react-dom": "19.2.0",
+    "react-dom": "19.2.3",
     "tsc-alias": "^1.8.13",
     "vitest": "^4.0.14"
   }
