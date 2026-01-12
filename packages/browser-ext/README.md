@@ -94,4 +94,3 @@ pnpm --filter @aipexstudio/cool-aipex test
 ## License
 
 MIT (see repository root)
-
