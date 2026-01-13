@@ -42,7 +42,7 @@
   "dependencies": {
     "@openai/agents": "^0.3.7",
     "@openai/agents-extensions": "^0.3.7",
-    "hono": "^4.11.3",
+    "hono": "^4.11.4",
     "lru-cache": "^11.2.4",
     "zod": "^4.1.13"
   },
