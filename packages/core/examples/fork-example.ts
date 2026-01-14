@@ -16,8 +16,7 @@ async function main() {
 
   const agent = AIPex.create({
     instructions: "You are a helpful assistant that remembers conversations.",
-    // TODO: remove as any when @openai/agents-extensions 0.3.8 is released
-    model: aisdk(openai("gpt-4o") as any),
+    model: aisdk(openai("gpt-4o")),
     conversationManager: manager,
   });
 
