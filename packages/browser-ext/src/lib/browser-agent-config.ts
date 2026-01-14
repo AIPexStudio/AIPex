@@ -40,8 +40,7 @@ export function useBrowserModelFactory() {
     if (!modelId) {
       throw new Error("AI model is not configured");
     }
-    // TODO: remove as any when @openai/agents-extensions 0.3.8 is released
-    return aisdk(provider(modelId) as any);
+    return aisdk(provider(modelId));
   }, []);
 }
 

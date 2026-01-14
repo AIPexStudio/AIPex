@@ -16,8 +16,7 @@ import {
 async function main() {
   console.log("🤖 AIPex Core - Basic Example\n");
 
-  // TODO: remove as any when @openai/agents-extensions 0.3.8 is released
-  const model = aisdk(google("gemini-2.5-flash") as any);
+  const model = aisdk(google("gemini-2.5-flash"));
 
   // Example 1: Simple one-shot execution
   console.log("📝 Example 1: Simple Calculation (No Session)");
