@@ -1,6 +1,6 @@
 {
   "name": "@aipexstudio/aipex-core",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "AIPex Agent - Pure TypeScript AI Agent Framework",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
