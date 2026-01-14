@@ -367,16 +367,13 @@ importers:
         version: 3.0.10(zod@4.1.13)
       '@openai/agents':
         specifier: ^0.3.8
-        version: 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.8(ws@8.18.3)(zod@4.1.13)
       '@openai/agents-extensions':
         specifier: ^0.3.8
-        version: 0.3.8(@openai/agents@0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13))(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.8(@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)
       '@openrouter/ai-sdk-provider':
         specifier: ^0.4.0
         version: 0.4.6(zod@4.1.13)
-      hono:
-        specifier: ^4.11.4
-        version: 4.11.4
       lru-cache:
         specifier: ^11.2.4
         version: 11.2.4
@@ -5668,7 +5665,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@openai/agents-core@0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-core@0.3.8(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
@@ -5681,11 +5678,11 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-extensions@0.3.8(@openai/agents@0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13))(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-extensions@0.3.8(@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider': 2.0.1
-      '@openai/agents': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-core': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
       ws: 8.18.3
@@ -5695,9 +5692,9 @@ snapshots:
       - hono
       - supports-color
 
-  '@openai/agents-openai@0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-openai@0.3.8(ws@8.18.3)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
       zod: 4.1.13
@@ -5707,9 +5704,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-realtime@0.3.8(hono@4.11.4)(zod@4.1.13)':
+  '@openai/agents-realtime@0.3.8(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
       ws: 8.18.3
@@ -5721,11 +5718,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@openai/agents@0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-openai': 0.3.8(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-realtime': 0.3.8(hono@4.11.4)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-openai': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-realtime': 0.3.8(zod@4.1.13)
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
       zod: 4.1.13
