@@ -185,7 +185,7 @@ importers:
         version: link:../browser-runtime
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.2
-        version: 1.25.2(hono@4.11.3)(zod@4.1.13)
+        version: 1.25.2(hono@4.11.4)(zod@4.1.13)
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.0(react@19.2.3))(react@19.2.3)
@@ -367,16 +367,16 @@ importers:
         version: 3.0.10(zod@4.1.13)
       '@openai/agents':
         specifier: ^0.3.7
-        version: 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
       '@openai/agents-extensions':
         specifier: ^0.3.7
-        version: 0.3.7(@openai/agents@0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13))(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.7(@openai/agents@0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13))(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
       '@openrouter/ai-sdk-provider':
         specifier: ^0.4.0
         version: 0.4.6(zod@4.1.13)
       hono:
-        specifier: ^4.11.3
-        version: 4.11.3
+        specifier: ^4.11.4
+        version: 4.11.4
       lru-cache:
         specifier: ^11.2.4
         version: 11.2.4
@@ -3206,8 +3206,8 @@ packages:
   highlightjs-vue@1.0.0:
     resolution: {integrity: sha512-PDEfEF102G23vHmPhLyPboFCD+BkMGu+GuJe2d9/eH4FsCwvgBpnc9n0pGE+ffKdph38s6foEZiEjdgHdzp+IA==}
 
-  hono@4.11.3:
-    resolution: {integrity: sha512-PmQi306+M/ct/m5s66Hrg+adPnkD5jiO6IjA7WhWw0gSBSo1EcRegwuI1deZ+wd5pzCGynCcn2DprnE4/yEV4w==}
+  hono@4.11.4:
+    resolution: {integrity: sha512-U7tt8JsyrxSRKspfhtLET79pU8K+tInj5QZXs1jSugO1Vq5dFj3kmZsRldo29mTBfcjDRVRXrEZ6LS63Cog9ZA==}
     engines: {node: '>=16.9.0'}
 
   hsl-regex@1.0.0:
@@ -5574,9 +5574,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hono/node-server@1.19.7(hono@4.11.3)':
+  '@hono/node-server@1.19.7(hono@4.11.4)':
     dependencies:
-      hono: 4.11.3
+      hono: 4.11.4
 
   '@iconify/types@2.0.0': {}
 
@@ -5625,9 +5625,9 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.25.2(hono@4.11.3)(zod@4.1.13)':
+  '@modelcontextprotocol/sdk@1.25.2(hono@4.11.4)(zod@4.1.13)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.3)
+      '@hono/node-server': 1.19.7(hono@4.11.4)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -5668,12 +5668,12 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@openai/agents-core@0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-core@0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.3)(zod@4.1.13)
+      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.4)(zod@4.1.13)
       zod: 4.1.13
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5681,11 +5681,11 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-extensions@0.3.7(@openai/agents@0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13))(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-extensions@0.3.7(@openai/agents@0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13))(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider': 2.0.1
-      '@openai/agents': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-core': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
       ws: 8.18.3
@@ -5695,9 +5695,9 @@ snapshots:
       - hono
       - supports-color
 
-  '@openai/agents-openai@0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-openai@0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
       zod: 4.1.13
@@ -5707,9 +5707,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-realtime@0.3.7(hono@4.11.3)(zod@4.1.13)':
+  '@openai/agents-realtime@0.3.7(hono@4.11.4)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
       ws: 8.18.3
@@ -5721,11 +5721,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@openai/agents@0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents@0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-openai': 0.3.7(hono@4.11.3)(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-realtime': 0.3.7(hono@4.11.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-openai': 0.3.7(hono@4.11.4)(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-realtime': 0.3.7(hono@4.11.4)(zod@4.1.13)
       debug: 4.4.3
       openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
       zod: 4.1.13
@@ -8335,7 +8335,7 @@ snapshots:
 
   highlightjs-vue@1.0.0: {}
 
-  hono@4.11.3: {}
+  hono@4.11.4: {}
 
   hsl-regex@1.0.0: {}
 
