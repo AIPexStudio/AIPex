@@ -88,7 +88,13 @@ export function collectDomSnapshot(
   rootDocument: Document = document,
   options?: Partial<CollectorOptions>,
 ): SerializedDomSnapshot {
-  const config: CollectorOptions = { ...DEFAULT_OPTIONS, ...options };
+  // Filter out undefined values to prevent them from overriding defaults
+  const filteredOptions = options
+    ? Object.fromEntries(
+      Object.entries(options).filter(([, v]) => v !== undefined),
+    )
+    : {};
+  const config: CollectorOptions = { ...DEFAULT_OPTIONS, ...filteredOptions };
   const idToNode: DomSnapshotFlatMap = Object.create(null);
   const body = rootDocument.body || rootDocument.documentElement;
 

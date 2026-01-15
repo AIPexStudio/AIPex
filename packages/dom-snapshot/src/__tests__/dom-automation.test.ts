@@ -55,6 +55,33 @@ describe("DOM snapshot collector", () => {
     expect(snapshotWithText.metadata.options.captureTextNodes).toBe(true);
   });
 
+  it("does not let undefined option values override defaults", () => {
+    const snapshot = collectDomSnapshot(document, {
+      maxTextLength: undefined,
+      includeHidden: undefined,
+      captureTextNodes: undefined,
+    });
+
+    // Default values should be preserved when options have undefined values
+    expect(snapshot.metadata.options.maxTextLength).toBe(160);
+    expect(snapshot.metadata.options.includeHidden).toBe(false);
+    expect(snapshot.metadata.options.captureTextNodes).toBe(true);
+  });
+
+  it("applies explicit option values while ignoring undefined ones", () => {
+    const snapshot = collectDomSnapshot(document, {
+      maxTextLength: 100,
+      includeHidden: undefined,
+      captureTextNodes: false,
+    });
+
+    // Explicit values should be applied
+    expect(snapshot.metadata.options.maxTextLength).toBe(100);
+    expect(snapshot.metadata.options.captureTextNodes).toBe(false);
+    // undefined should fall back to default
+    expect(snapshot.metadata.options.includeHidden).toBe(false);
+  });
+
   it("skips text nodes when captureTextNodes is false", () => {
     setHtml(`<div>Some text content</div>`);
 
