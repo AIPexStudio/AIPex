@@ -91,8 +91,8 @@ export function collectDomSnapshot(
   // Filter out undefined values to prevent them from overriding defaults
   const filteredOptions = options
     ? Object.fromEntries(
-      Object.entries(options).filter(([, v]) => v !== undefined),
-    )
+        Object.entries(options).filter(([, v]) => v !== undefined),
+      )
     : {};
   const config: CollectorOptions = { ...DEFAULT_OPTIONS, ...filteredOptions };
   const idToNode: DomSnapshotFlatMap = Object.create(null);
