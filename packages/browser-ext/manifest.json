@@ -33,6 +33,9 @@
     "page": "src/pages/options/index.html",
     "open_in_tab": true
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "web_accessible_resources": [
     {
       "resources": ["assets/*"],
