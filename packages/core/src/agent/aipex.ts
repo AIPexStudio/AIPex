@@ -241,6 +241,7 @@ export class AIPex {
 
       if (session) {
         session.addMetrics(metrics);
+        session.setMetadata("lastPromptTokens", metrics.promptTokens);
         if (this.conversationManager) {
           await this.conversationManager.saveSession(session);
         }
@@ -270,6 +271,7 @@ export class AIPex {
       yield { type: "error", error: agentError };
       if (session) {
         session.addMetrics(metrics);
+        session.setMetadata("lastPromptTokens", metrics.promptTokens);
         if (this.conversationManager) {
           await this.conversationManager.saveSession(session);
         }

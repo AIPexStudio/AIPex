@@ -20,3 +20,5 @@ export * from "./runtime/types.js";
 export * from "./storage/index.js";
 // Tools
 export * from "./tools/index.js";
+// Voice
+export * from "./voice/index.js";
