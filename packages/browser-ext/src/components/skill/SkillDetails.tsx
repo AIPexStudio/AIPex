@@ -188,7 +188,7 @@ export const SkillDetails: React.FC<SkillDetailsProps> = ({
                   </div>
                 ) : (
                   scripts.map((script, index) => (
-                    <div key={index} className="space-y-2">
+                    <div key={script} className="space-y-2">
                       <div className="text-sm font-medium">
                         Script {index + 1}
                       </div>
@@ -212,7 +212,7 @@ export const SkillDetails: React.FC<SkillDetailsProps> = ({
                   </div>
                 ) : (
                   references.map((reference, index) => (
-                    <div key={index} className="space-y-2">
+                    <div key={reference} className="space-y-2">
                       <div className="text-sm font-medium">
                         Reference {index + 1}
                       </div>
@@ -235,9 +235,9 @@ export const SkillDetails: React.FC<SkillDetailsProps> = ({
                     No assets found
                   </div>
                 ) : (
-                  assets.map((asset, index) => (
+                  assets.map((asset) => (
                     <div
-                      key={index}
+                      key={asset}
                       className="flex items-center justify-between p-3 border rounded-md"
                     >
                       <div className="flex items-center gap-2">

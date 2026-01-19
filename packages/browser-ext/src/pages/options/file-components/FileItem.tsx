@@ -36,9 +36,17 @@ export const FileItem: React.FC<FileItemProps> = ({
   return (
     <div className="group relative">
       <div
-        className="flex items-center gap-2 py-1.5 px-2 hover:bg-accent rounded-md cursor-pointer transition-colors"
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-accent rounded-md cursor-pointer transition-colors text-left"
         style={{ paddingLeft: `${level * 24 + 8}px` }}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
       >
         {/* Expand/Collapse Icon */}
         {isDirectory && hasChildren && (
@@ -91,10 +99,7 @@ export const FileItem: React.FC<FileItemProps> = ({
         </span>
 
         {/* Actions - Always rendered but hidden with CSS until hover */}
-        <div
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <FileActions
             node={node}
             onDelete={onDelete}

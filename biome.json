@@ -37,6 +37,16 @@
         "indentStyle": "space",
         "indentWidth": 2
       }
+    },
+    {
+      "includes": ["**/*.d.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noBannedTypes": "off"
+          }
+        }
+      }
     }
   ],
   "files": {
@@ -46,6 +56,8 @@
       "!**/coverage",
       "!**/build",
       "!**/assets",
+      "!**/bundled-modules",
+      "!**/.vscode",
       "!.history"
     ]
   }

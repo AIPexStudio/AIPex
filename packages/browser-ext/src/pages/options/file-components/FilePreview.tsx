@@ -15,7 +15,7 @@ import type { FileInfo } from "@aipexstudio/browser-runtime";
 import { zenfs } from "@aipexstudio/browser-runtime";
 import { AlertCircle, Code, File as FileIcon, FileText } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   oneDark,
@@ -40,13 +40,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { effectiveTheme } = useTheme();
 
-  useEffect(() => {
-    if (filePath && open) {
-      loadFile();
-    }
-  }, [filePath, open, loadFile]);
-
-  const loadFile = async () => {
+  const loadFile = useCallback(async () => {
     if (!filePath) return;
 
     try {
@@ -63,7 +57,13 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [filePath]);
+
+  useEffect(() => {
+    if (filePath && open) {
+      void loadFile();
+    }
+  }, [filePath, open, loadFile]);
 
   const renderContent = () => {
     if (loading) {

@@ -21,7 +21,7 @@ import {
 import { Progress } from "@aipexstudio/aipex-react/components/ui/progress";
 import { AlertCircle, CheckCircle, FileArchive, Upload } from "lucide-react";
 import type React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { SkillClient, SkillMetadata } from "./types";
 
 interface SkillUploaderProps {
@@ -45,6 +45,7 @@ export const SkillUploader: React.FC<SkillUploaderProps> = ({
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [conflictingSkillName, setConflictingSkillName] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileSelect = useCallback(
     async (file: File, replace: boolean = false) => {
@@ -177,10 +178,19 @@ export const SkillUploader: React.FC<SkillUploaderProps> = ({
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-primary/50"
             }`}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload skill ZIP file"
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
           >
             <input
               title="Upload skill ZIP file"
@@ -189,6 +199,7 @@ export const SkillUploader: React.FC<SkillUploaderProps> = ({
               onChange={handleFileInputChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               disabled={isUploading}
+              ref={fileInputRef}
             />
 
             <div className="space-y-2">

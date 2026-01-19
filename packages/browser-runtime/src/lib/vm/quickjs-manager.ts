@@ -408,7 +408,7 @@ class QuickJSManager {
       // Note: The wrapper IIFE returns a promise and registers a .then() handler
       // that stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__
 
-      let finalResult: unknown = undefined;
+      let finalResult: unknown;
 
       // Execute pending jobs until the .then() handler fires
       // and stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__

@@ -70,7 +70,6 @@ function OptionsPageContent() {
           <SettingsPage
             storageAdapter={chromeStorageAdapter}
             onTestConnection={handleTestConnection}
-            defaultTab="general"
           />
         </TabsContent>
 
@@ -78,7 +77,6 @@ function OptionsPageContent() {
           <SettingsPage
             storageAdapter={chromeStorageAdapter}
             onTestConnection={handleTestConnection}
-            defaultTab="ai"
           />
         </TabsContent>
 

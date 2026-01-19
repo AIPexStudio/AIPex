@@ -28,6 +28,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   basePath = "/skills",
 }) => {
   const [loading] = useState(false);
+  void fileSystemClient;
 
   return (
     <Card className="w-full">
@@ -52,6 +53,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             <h3 className="text-lg font-semibold mb-2">File Browser</h3>
             <p className="text-muted-foreground">
               File browser UI will be available in a future update
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Base path: <span className="font-mono">{basePath}</span>
             </p>
           </div>
         )}
