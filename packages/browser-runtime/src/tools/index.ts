@@ -1,4 +1,5 @@
 import type { FunctionTool } from "@aipexstudio/aipex-core";
+import { computerTool } from "./computer";
 import {
   clickTool,
   fillElementByUidTool,
@@ -14,55 +15,55 @@ import {
   scrollToElementTool,
 } from "./page";
 import {
-  captureScreenshotToClipboardTool,
   captureScreenshotTool,
   captureTabScreenshotTool,
 } from "./screenshot";
 import { searchElementsTool } from "./snapshot";
-// Import core tools only (27 tools total, excluding intervention and skills)
 import {
   closeTabTool,
   createNewTabTool,
-  duplicateTabTool,
   getAllTabsTool,
   getCurrentTabTool,
   getTabInfoTool,
   organizeTabsTool,
-  switchToTabTool,
   ungroupTabsTool,
 } from "./tab";
 import {
   downloadChatImagesTool,
-  downloadCurrentChatImagesTool,
   downloadImageTool,
-  downloadTextAsMarkdownTool,
 } from "./tools/downloads";
-import { waitTool } from "./tools/utils/wait-helper";
+import { skillTools } from "./skill";
 
 /**
  * All browser tools registered for AI use
- * Total: 31 tools (27 core + 4 intervention tools)
+ * Total: 32 tools (28 core + 4 intervention tools)
+ * 
+ * Disabled tools (per aipex):
+ * - switch_to_tab (causes context switching issues)
+ * - duplicate_tab (not in aipex)
+ * - wait (replaced by computer tool's wait action)
+ * - capture_screenshot_to_clipboard (not enabled in aipex)
+ * - download_text_as_markdown (not enabled in aipex)
+ * - download_current_chat_images (architecture issue, not enabled in aipex)
  */
 export const allBrowserTools: FunctionTool[] = [
-  // Browser/Tab Management (9 tools)
+  // Browser/Tab Management (7 tools)
   getAllTabsTool,
   getCurrentTabTool,
-  switchToTabTool,
   createNewTabTool,
   getTabInfoTool,
-  duplicateTabTool,
   closeTabTool,
   organizeTabsTool,
   ungroupTabsTool,
 
-  // UI Operations (7 tools)
+  // UI Operations (7 tools) - computer tool replaces visual XY tools
   searchElementsTool,
   clickTool,
   fillElementByUidTool,
   getEditorValueTool,
   fillFormTool,
   hoverElementByUidTool,
-  waitTool,
+  computerTool,
 
   // Page Content (4 tools)
   getPageMetadataTool,
@@ -70,23 +71,23 @@ export const allBrowserTools: FunctionTool[] = [
   highlightElementTool,
   highlightTextInlineTool,
 
-  // Screenshot (3 tools)
+  // Screenshot (2 tools)
   captureScreenshotTool,
   captureTabScreenshotTool,
-  captureScreenshotToClipboardTool,
 
-  // Download (4 tools)
-  downloadTextAsMarkdownTool,
+  // Download (2 tools)
   downloadImageTool,
   downloadChatImagesTool,
-  downloadCurrentChatImagesTool,
 
   // Intervention (4 tools)
   ...interventionTools,
+
+  // Skills (6 tools)
+  ...skillTools,
 ] as const;
 
 // Note: takeSnapshotTool is not included in allBrowserTools as it's called internally
-// Skills tools (6) will be added in later phases
+// Skills tools are enabled to match aipex tool set
 
 // Export intervention tools separately for optional registration
 export { interventionTools } from "./interventions/index.js";

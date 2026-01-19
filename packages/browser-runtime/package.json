@@ -30,8 +30,13 @@
   "type": "module",
   "dependencies": {
     "@aipexstudio/aipex-core": "workspace:*",
+    "@jitl/quickjs-ng-wasmfile-release-sync": "^0.31.0",
+    "@zenfs/core": "^2.4.2",
+    "@zenfs/dom": "^1.2.5",
+    "fflate": "^0.8.2",
     "nanoid": "^5.1.6",
     "p-limit": "^6.1.0",
+    "quickjs-emscripten": "^0.31.0",
     "zod": "^4.1.13"
   },
   "peerDependencies": {

@@ -1,6 +1,7 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
 import { getActiveTab } from "./index";
+import { cacheScreenshotMetadata } from "../automation/computer";
 
 async function compressImage(
   dataUrl: string,
@@ -39,15 +40,22 @@ async function compressImage(
 export const captureScreenshotTool = tool({
   name: "capture_screenshot",
   description:
-    "Capture screenshot of current visible tab and return as base64 data URL",
+    "Capture screenshot of current visible tab and return as base64 data URL. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions.",
   parameters: z.object({
-    compress: z
+    sendToLLM: z
       .boolean()
       .nullable()
       .optional()
-      .describe("Whether to compress the image for LLM consumption"),
+      .default(false)
+      .describe(
+        "Whether to send the screenshot to LLM for visual analysis. When true, visual coordinate tools will be enabled.",
+      ),
   }),
-  execute: async ({ compress = false }: { compress?: boolean | null }) => {
+  execute: async ({
+    sendToLLM = false,
+  }: {
+    sendToLLM?: boolean | null;
+  }) => {
     const tab = await getActiveTab();
 
     if (!tab.id || !tab.windowId) {
@@ -78,13 +86,44 @@ export const captureScreenshotTool = tool({
       throw new Error("Invalid image data captured");
     }
 
-    if (compress) {
+    // Get viewport dimensions for metadata caching
+    const viewportDimensions = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    });
+    const viewport = viewportDimensions[0]?.result;
+
+    if (sendToLLM) {
+      // Compress for LLM
       dataUrl = await compressImage(dataUrl, 0.6, 1024);
+
+      // Extract image dimensions
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+
+      // Cache screenshot metadata for computer tool
+      if (viewport) {
+        cacheScreenshotMetadata(
+          tab.id,
+          img.width,
+          img.height,
+          viewport.width,
+          viewport.height,
+        );
+      }
     }
 
     return {
       success: true,
-      imageData: dataUrl,
+      imageData: sendToLLM ? dataUrl : undefined,
+      captured: !sendToLLM,
       tabId: tab.id,
       url: tab.url,
       title: tab.title,
@@ -94,21 +133,25 @@ export const captureScreenshotTool = tool({
 
 export const captureTabScreenshotTool = tool({
   name: "capture_tab_screenshot",
-  description: "Capture screenshot of a specific tab by ID",
+  description:
+    "Capture screenshot of a specific tab by ID. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions.",
   parameters: z.object({
     tabId: z.number().describe("The tab ID to capture"),
-    compress: z
+    sendToLLM: z
       .boolean()
       .nullable()
       .optional()
-      .describe("Whether to compress the image for LLM consumption"),
+      .default(false)
+      .describe(
+        "Whether to send the screenshot to LLM for visual analysis. When true, visual coordinate tools will be enabled.",
+      ),
   }),
   execute: async ({
     tabId,
-    compress = false,
+    sendToLLM = false,
   }: {
     tabId: number;
-    compress?: boolean | null;
+    sendToLLM?: boolean | null;
   }) => {
     const tab = await chrome.tabs.get(tabId);
     if (!tab || !tab.windowId) {
@@ -123,13 +166,44 @@ export const captureTabScreenshotTool = tool({
       quality: 90,
     });
 
-    if (compress) {
+    // Get viewport dimensions for metadata caching
+    const viewportDimensions = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    });
+    const viewport = viewportDimensions[0]?.result;
+
+    if (sendToLLM) {
+      // Compress for LLM
       dataUrl = await compressImage(dataUrl, 0.6, 1024);
+
+      // Extract image dimensions
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+
+      // Cache screenshot metadata for computer tool
+      if (viewport) {
+        cacheScreenshotMetadata(
+          tabId,
+          img.width,
+          img.height,
+          viewport.width,
+          viewport.height,
+        );
+      }
     }
 
     return {
       success: true,
-      imageData: dataUrl,
+      imageData: sendToLLM ? dataUrl : undefined,
+      captured: !sendToLLM,
       tabId,
       url: tab.url,
       title: tab.title,
