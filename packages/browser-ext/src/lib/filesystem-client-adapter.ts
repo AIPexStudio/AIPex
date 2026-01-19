@@ -1,15 +1,15 @@
 /**
  * FileSystemClient Adapter Implementation
- * 
+ *
  * Adapts browser-runtime zenfs to the FileSystemClient interface
  * used by aipex-react UI components.
  */
 
 import type {
-  FileSystemClient,
-  FileTreeNode,
   DiskUsage,
   FileStats,
+  FileSystemClient,
+  FileTreeNode,
 } from "@aipexstudio/aipex-react";
 import { zenfs } from "@aipexstudio/browser-runtime";
 

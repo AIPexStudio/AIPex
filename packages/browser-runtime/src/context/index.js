@@ -7,6 +7,7 @@ export { CurrentPageProvider } from "./current-page-provider";
 export { HistoryProvider } from "./history-provider";
 export { ScreenshotProvider } from "./screenshot-provider";
 export { TabsProvider } from "./tabs-provider";
+
 import { BookmarksProvider } from "./bookmarks-provider";
 import { CurrentPageProvider } from "./current-page-provider";
 import { HistoryProvider } from "./history-provider";
@@ -17,11 +18,11 @@ import { TabsProvider } from "./tabs-provider";
  * Can be registered with ContextManager for full browser integration
  */
 export const allBrowserProviders = [
-    new CurrentPageProvider(),
-    new TabsProvider(),
-    new BookmarksProvider(),
-    new ScreenshotProvider(),
-    new HistoryProvider(),
+  new CurrentPageProvider(),
+  new TabsProvider(),
+  new BookmarksProvider(),
+  new ScreenshotProvider(),
+  new HistoryProvider(),
 ];
 /**
  * Register all default browser context providers with a ContextManager
@@ -29,8 +30,8 @@ export const allBrowserProviders = [
  * @returns The same manager for chaining
  */
 export function registerDefaultBrowserContextProviders(manager) {
-    for (const provider of allBrowserProviders) {
-        void manager.registerProvider(provider);
-    }
-    return manager;
+  for (const provider of allBrowserProviders) {
+    void manager.registerProvider(provider);
+  }
+  return manager;
 }

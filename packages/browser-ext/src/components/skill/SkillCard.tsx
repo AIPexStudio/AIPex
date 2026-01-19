@@ -1,7 +1,3 @@
-import { Download, Eye, Settings, Trash2 } from "lucide-react";
-import type React from "react";
-import { useEffect, useState } from "react";
-
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
@@ -12,6 +8,9 @@ import {
   CardTitle,
 } from "@aipexstudio/aipex-react/components/ui/card";
 import { Switch } from "@aipexstudio/aipex-react/components/ui/switch";
+import { Download, Eye, Settings, Trash2 } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import type { SkillClient, SkillMetadata } from "./types";
 
 interface SkillCardProps {

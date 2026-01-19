@@ -15,17 +15,20 @@ import type { ElementHandle } from "./types";
  * Returns formatted text representation of the page structure
  */
 export declare function takeSnapshot(): Promise<{
-    success: boolean;
-    snapshotId: number;
-    snapshot: string;
-    title: string;
-    url: string;
-    message?: string;
+  success: boolean;
+  snapshotId: number;
+  snapshot: string;
+  title: string;
+  url: string;
+  message?: string;
 }>;
 /**
  * Get element by UID following DevTools MCP pattern - NO DEBUGGER DEPENDENCY!
  */
-export declare function getElementByUid(tabId: number, uid: string): Promise<ElementHandle | null>;
+export declare function getElementByUid(
+  tabId: number,
+  uid: string,
+): Promise<ElementHandle | null>;
 /**
  * Click element by UID following DevTools MCP pattern
  * This implementation is completely based on snapshot UID mapping with retry mechanism
@@ -34,12 +37,12 @@ export declare function getElementByUid(tabId: number, uid: string): Promise<Ele
  * and move to the target element, showing the user where the AI is about to click.
  */
 export declare function clickElementByUid(params: {
-    tabId: number;
-    uid: string;
-    dblClick: boolean;
+  tabId: number;
+  uid: string;
+  dblClick: boolean;
 }): Promise<{
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }>;
 /**
  * Fill element by UID following DevTools MCP pattern
@@ -49,12 +52,12 @@ export declare function clickElementByUid(params: {
  * and move to the target element, showing the user where the AI is about to type.
  */
 export declare function fillElementByUid(params: {
-    tabId: number;
-    uid: string;
-    value: string;
+  tabId: number;
+  uid: string;
+  value: string;
 }): Promise<{
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }>;
 /**
  * Fill multiple form elements at once using new Locator system
@@ -63,44 +66,44 @@ export declare function fillElementByUid(params: {
  * will move to the target, showing the user where the AI is typing.
  */
 export declare function fillForm(params: {
-    tabId: number;
-    elements: Array<{
-        uid: string;
-        value: string;
-    }>;
+  tabId: number;
+  elements: Array<{
+    uid: string;
+    value: string;
+  }>;
 }): Promise<{
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }>;
 /**
  * Hover element by UID following DevTools MCP pattern
  * This implementation is completely based on snapshot UID mapping - NO debugger dependency!
  */
 export declare function hoverElementByUid(params: {
-    tabId: number;
-    uid: string;
+  tabId: number;
+  uid: string;
 }): Promise<{
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }>;
 export declare function searchSnapshotText(params: {
-    tabId: number;
-    query: string;
-    contextLevels: number;
+  tabId: number;
+  query: string;
+  contextLevels: number;
 }): Promise<{
-    success: boolean;
-    message: string;
-    data: string;
+  success: boolean;
+  message: string;
+  data: string;
 }>;
 /**
  * Get editor content by UID
  * Supports Monaco Editor, CodeMirror, ACE, and standard inputs/textareas
  */
 export declare function getEditorValueByUid(params: {
-    tabId: number;
-    uid: string;
+  tabId: number;
+  uid: string;
 }): Promise<{
-    success: boolean;
-    message: string;
-    value?: string;
+  success: boolean;
+  message: string;
+  value?: string;
 }>;

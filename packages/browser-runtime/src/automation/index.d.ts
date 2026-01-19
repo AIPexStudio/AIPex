@@ -5,7 +5,14 @@
  */
 export { CdpCommander, rejectPendingCommands } from "./cdp-commander";
 export { DebuggerManager, debuggerManager } from "./debugger-manager";
-export { hasGlobPatterns, parseSearchQuery, type SearchOptions, type SearchResult, SKIP_ROLES, searchSnapshotText, } from "./query";
+export {
+  hasGlobPatterns,
+  parseSearchQuery,
+  type SearchOptions,
+  type SearchResult,
+  SKIP_ROLES,
+  searchSnapshotText,
+} from "./query";
 export { SmartElementHandle, SmartLocator } from "./smart-locator";
 export { SnapshotManager, snapshotManager } from "./snapshot-manager";
 export * from "./types";

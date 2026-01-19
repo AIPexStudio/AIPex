@@ -13,4 +13,9 @@ export * from "./skill/index.js";
 export * from "./storage/index.js";
 export * from "./tools/index.js";
 export { zenfs } from "./lib/vm/zenfs-manager.js";
-export type { FileTreeNode, FileInfo, DiskUsage, SkillUsage } from "./lib/vm/zenfs-manager.js";
+export type {
+  FileTreeNode,
+  FileInfo,
+  DiskUsage,
+  SkillUsage,
+} from "./lib/vm/zenfs-manager.js";

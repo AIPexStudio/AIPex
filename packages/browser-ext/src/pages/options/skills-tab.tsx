@@ -1,24 +1,31 @@
 /**
  * Skills Options Tab
- * 
+ *
  * Container component for the Skills management UI in the Options page.
  * Uses local skill UI components with sub-tabs for Skills Management and File System.
  */
 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@aipexstudio/aipex-react/components/ui/tabs";
 import { Puzzle, Search } from "lucide-react";
-import React, { useCallback, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@aipexstudio/aipex-react/components/ui/tabs";
+import { useCallback, useState } from "react";
 import {
   SkillList,
-  SkillUploader,
   type SkillMetadata,
+  SkillUploader,
 } from "../../components/skill";
 import { skillClientAdapter } from "../../lib/skill-client-adapter";
 import { FileExplorerWrapper } from "./file-explorer-wrapper";
 
 export function SkillsOptionsTab() {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [skillsSubTab, setSkillsSubTab] = useState<"skills" | "files">("skills");
+  const [skillsSubTab, setSkillsSubTab] = useState<"skills" | "files">(
+    "skills",
+  );
 
   const handleUploadSuccess = useCallback((skill: SkillMetadata) => {
     console.log("Skill uploaded successfully:", skill.name);
@@ -38,7 +45,12 @@ export function SkillsOptionsTab() {
   return (
     <div className="space-y-6">
       {/* Sub-tabs for Skills */}
-      <Tabs value={skillsSubTab} onValueChange={(value: string) => setSkillsSubTab(value as "skills" | "files")}>
+      <Tabs
+        value={skillsSubTab}
+        onValueChange={(value: string) =>
+          setSkillsSubTab(value as "skills" | "files")
+        }
+      >
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="skills" className="flex items-center gap-2">
             <Puzzle className="h-4 w-4" />

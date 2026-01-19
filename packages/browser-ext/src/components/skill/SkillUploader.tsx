@@ -1,8 +1,7 @@
-import { AlertCircle, CheckCircle, FileArchive, Upload } from "lucide-react";
-import type React from "react";
-import { useCallback, useState } from "react";
-
-import { Alert, AlertDescription } from "@aipexstudio/aipex-react/components/ui/alert";
+import {
+  Alert,
+  AlertDescription,
+} from "@aipexstudio/aipex-react/components/ui/alert";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
   Card,
@@ -20,6 +19,9 @@ import {
   DialogTitle,
 } from "@aipexstudio/aipex-react/components/ui/dialog";
 import { Progress } from "@aipexstudio/aipex-react/components/ui/progress";
+import { AlertCircle, CheckCircle, FileArchive, Upload } from "lucide-react";
+import type React from "react";
+import { useCallback, useState } from "react";
 import type { SkillClient, SkillMetadata } from "./types";
 
 interface SkillUploaderProps {

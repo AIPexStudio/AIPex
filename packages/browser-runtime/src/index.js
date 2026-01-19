@@ -7,6 +7,8 @@ export * from "./context/index.js";
 export * from "./hooks/index.js";
 // Intervention
 export * from "./intervention/index.js";
+// Virtual File System
+export { zenfs } from "./lib/vm/zenfs-manager.js";
 export * from "./runtime/browser-automation-host.js";
 export * from "./runtime/context-providers.js";
 export * from "./runtime/default-hosts.js";
@@ -20,7 +22,5 @@ export * from "./skill/index.js";
 export * from "./storage/index.js";
 // Tools
 export * from "./tools/index.js";
-// Virtual File System
-export { zenfs } from "./lib/vm/zenfs-manager.js";
 // Voice
 // export * from "./voice/index.js";

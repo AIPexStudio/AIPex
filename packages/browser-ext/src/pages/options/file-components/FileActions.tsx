@@ -1,6 +1,3 @@
-import { Eye, Info, MoreVertical, Trash2 } from "lucide-react";
-import React, { useState } from "react";
-
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +7,9 @@ import {
   DropdownMenuTrigger,
 } from "@aipexstudio/aipex-react/components/ui/dropdown-menu";
 import type { FileTreeNode } from "@aipexstudio/browser-runtime";
+import { Eye, Info, MoreVertical, Trash2 } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
 
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
@@ -78,16 +78,15 @@ export const FileActions: React.FC<FileActionsProps> = ({
           </DropdownMenuItem>
 
           {/* Delete */}
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleDelete}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

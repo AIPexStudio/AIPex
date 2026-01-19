@@ -1,14 +1,11 @@
 /**
  * SkillClient Adapter Implementation
- * 
+ *
  * Adapts browser-runtime skillManager to the SkillClient interface
  * used by browser-ext UI components.
  */
 
-import {
-  skillManager,
-  SkillConflictError,
-} from "@aipexstudio/browser-runtime";
+import { SkillConflictError, skillManager } from "@aipexstudio/browser-runtime";
 import type {
   SkillClient,
   SkillDetail,

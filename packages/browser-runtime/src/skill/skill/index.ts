@@ -2,4 +2,4 @@
  * Skill System Core Types
  */
 
-export type { SkillMetadata, ParsedSkill, SkillSummary } from "./types.js";
+export type { ParsedSkill, SkillMetadata, SkillSummary } from "./types.js";

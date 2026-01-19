@@ -1,7 +1,3 @@
-import { Code, Download, Eye, FileText } from "lucide-react";
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
-
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
 import {
   Dialog,
@@ -15,6 +11,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@aipexstudio/aipex-react/components/ui/tabs";
+import { Code, Download, Eye, FileText } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { SkillClient, SkillMetadata } from "./types";
 
 interface SkillDetailsProps {
@@ -46,11 +45,19 @@ export const SkillDetails: React.FC<SkillDetailsProps> = ({
 
       if (skillData) {
         setSkillContent(skillData.skillMdContent);
-        
+
         // For now, just set the file paths - in a full implementation,
         // we'd load the actual content
-        setScripts(skillData.scripts.map(s => `// Script: ${s}\n// (content not loaded)`));
-        setReferences(skillData.references.map(r => `# Reference: ${r}\n(content not loaded)`));
+        setScripts(
+          skillData.scripts.map(
+            (s) => `// Script: ${s}\n// (content not loaded)`,
+          ),
+        );
+        setReferences(
+          skillData.references.map(
+            (r) => `# Reference: ${r}\n(content not loaded)`,
+          ),
+        );
         setAssets(skillData.assets);
       }
     } catch (error) {

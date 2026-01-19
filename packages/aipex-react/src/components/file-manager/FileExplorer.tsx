@@ -1,6 +1,6 @@
 /**
  * FileExplorer Component
- * 
+ *
  * A simplified file explorer for browsing the virtual file system.
  * For a full implementation, see browser-runtime/src/skill/components/file-manager/
  */

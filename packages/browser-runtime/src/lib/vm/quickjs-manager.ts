@@ -140,9 +140,9 @@ class QuickJSManager {
         /(?:import|export)\s+(?:[^'"]+from\s+)?["']([^"']+)["']/g;
 
       const deps: string[] = [];
-      let match: RegExpExecArray | null;
+      let match: RegExpExecArray | null = importRegex.exec(code);
 
-      while ((match = importRegex.exec(code))) {
+      while (match) {
         const rawPath = match[1];
         if (!rawPath) continue;
         let resolved: string;
@@ -159,6 +159,7 @@ class QuickJSManager {
         }
 
         deps.push(resolved);
+        match = importRegex.exec(code);
       }
 
       // Recursively fetch child dependencies
@@ -227,20 +228,23 @@ class QuickJSManager {
 
     // Match ES6 import statements
     const importRegex = /import\s+(?:[\w\s{},*]*\s+from\s+)?['"]([^'"]+)['"]/g;
-    let match: RegExpExecArray | null;
+    let match: RegExpExecArray | null = importRegex.exec(code);
 
-    while ((match = importRegex.exec(code)) !== null) {
+    while (match !== null) {
       if (match[1]) {
         imports.push(match[1]);
       }
+      match = importRegex.exec(code);
     }
 
     // Match dynamic imports
     const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-    while ((match = dynamicImportRegex.exec(code)) !== null) {
+    match = dynamicImportRegex.exec(code);
+    while (match !== null) {
       if (match[1]) {
         imports.push(match[1]);
       }
+      match = dynamicImportRegex.exec(code);
     }
 
     return imports;
@@ -404,7 +408,7 @@ class QuickJSManager {
       // Note: The wrapper IIFE returns a promise and registers a .then() handler
       // that stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__
 
-      let finalResult;
+      let finalResult: unknown = undefined;
 
       // Execute pending jobs until the .then() handler fires
       // and stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__
@@ -476,7 +480,7 @@ class QuickJSManager {
       console.log(
         `[QuickJS] Execution completed successfully in ${(totalElapsed / 1000).toFixed(2)}s`,
       );
-      return finalResult;
+      return finalResult as any;
     });
   }
 

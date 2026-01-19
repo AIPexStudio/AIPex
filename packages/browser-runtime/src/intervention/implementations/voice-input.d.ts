@@ -13,32 +13,31 @@
  */
 import type { InterventionImplementation } from "../types.js";
 interface SpeechRecognitionEvent extends Event {
-    resultIndex: number;
-    results: SpeechRecognitionResultList;
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
 }
 interface SpeechRecognitionErrorEvent extends Event {
-    error: string;
-    message?: string;
+  error: string;
+  message?: string;
 }
 interface SpeechRecognition extends EventTarget {
-    lang: string;
-    continuous: boolean;
-    interimResults: boolean;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-    onend: (() => void) | null;
-    start(): void;
-    stop(): void;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
 }
 declare global {
-    interface Window {
-        SpeechRecognition: {
-            new (): SpeechRecognition;
-        };
-        webkitSpeechRecognition: {
-            new (): SpeechRecognition;
-        };
-    }
+  interface Window {
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
 }
 export declare const voiceInputIntervention: InterventionImplementation;
-export {};

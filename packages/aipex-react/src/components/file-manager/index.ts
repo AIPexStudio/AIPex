@@ -4,11 +4,11 @@
 
 export { FileExplorer } from "./FileExplorer";
 export type {
+  DiskUsage,
+  FileInfo,
+  FileStats,
   FileSystemClient,
   FileTreeNode,
-  FileInfo,
-  DiskUsage,
   SkillUsage,
-  FileStats,
 } from "./types";
 export * from "./utils";

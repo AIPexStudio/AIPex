@@ -1,6 +1,11 @@
 import type { AppSettings } from "@aipexstudio/aipex-core";
 import { SettingsPage } from "@aipexstudio/aipex-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@aipexstudio/aipex-react/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@aipexstudio/aipex-react/components/ui/tabs";
 import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
@@ -8,7 +13,7 @@ import type { Theme } from "@aipexstudio/aipex-react/theme/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import type { LanguageModel } from "ai";
 import { generateText } from "ai";
-import { Settings as SettingsIcon, Package, Bot } from "lucide-react";
+import { Bot, Package, Settings as SettingsIcon } from "lucide-react";
 import React, { useCallback, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { chromeStorageAdapter } from "../../hooks";

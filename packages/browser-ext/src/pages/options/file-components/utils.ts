@@ -8,7 +8,7 @@ export function formatBytes(bytes: number): string {
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
 }
 
 /**
@@ -115,7 +115,7 @@ export function isProtectedPath(path: string): boolean {
 
   // Check if path starts with protected path + /
   for (const protectedPath of protectedPaths) {
-    if (path.startsWith(protectedPath + "/")) {
+    if (path.startsWith(`${protectedPath}/`)) {
       return true;
     }
   }

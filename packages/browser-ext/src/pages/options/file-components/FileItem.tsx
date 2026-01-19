@@ -1,14 +1,9 @@
-import React from "react";
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
-import {
-  ChevronRight,
-  ChevronDown,
-  Folder,
-  FolderOpen,
-} from "lucide-react";
 import type { FileTreeNode } from "@aipexstudio/browser-runtime";
-import { formatBytes, formatDate, getFileIcon } from "./utils";
+import { ChevronDown, ChevronRight, Folder, FolderOpen } from "lucide-react";
+import type React from "react";
 import { FileActions } from "./FileActions";
+import { formatBytes, formatDate, getFileIcon } from "./utils";
 
 interface FileItemProps {
   node: FileTreeNode;
@@ -55,7 +50,9 @@ export const FileItem: React.FC<FileItemProps> = ({
             )}
           </div>
         )}
-        {isDirectory && !hasChildren && <div className="w-4 h-4 flex-shrink-0" />}
+        {isDirectory && !hasChildren && (
+          <div className="w-4 h-4 flex-shrink-0" />
+        )}
         {!isDirectory && <div className="w-4 h-4 flex-shrink-0" />}
 
         {/* File/Folder Icon */}

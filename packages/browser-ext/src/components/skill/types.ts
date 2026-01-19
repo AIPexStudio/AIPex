@@ -1,6 +1,6 @@
 /**
  * Skill UI Adapter Types
- * 
+ *
  * These interfaces define the contract between UI components and runtime implementations.
  * Types are now sourced from @aipexstudio/browser-runtime.
  */
@@ -17,7 +17,7 @@ export type SkillUploadResult =
 
 /**
  * Client interface for skill operations
- * 
+ *
  * UI components receive this interface and call its methods.
  * Browser-ext provides the implementation using skillManager.
  */

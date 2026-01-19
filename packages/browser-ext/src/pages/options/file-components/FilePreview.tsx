@@ -1,17 +1,7 @@
 import {
-  AlertCircle,
-  Code,
-  File as FileIcon,
-  FileText,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  oneDark,
-  oneLight,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
-
-import { Alert, AlertDescription } from "@aipexstudio/aipex-react/components/ui/alert";
+  Alert,
+  AlertDescription,
+} from "@aipexstudio/aipex-react/components/ui/alert";
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
 import {
   Dialog,
@@ -23,6 +13,14 @@ import {
 import { useTheme } from "@aipexstudio/aipex-react/theme/context";
 import type { FileInfo } from "@aipexstudio/browser-runtime";
 import { zenfs } from "@aipexstudio/browser-runtime";
+import { AlertCircle, Code, File as FileIcon, FileText } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import { formatBytes, formatDate, getFileExtension } from "./utils";
 
@@ -46,7 +44,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     if (filePath && open) {
       loadFile();
     }
-  }, [filePath, open]);
+  }, [filePath, open, loadFile]);
 
   const loadFile = async () => {
     if (!filePath) return;

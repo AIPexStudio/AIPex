@@ -1,4 +1,4 @@
-import React from "react";
+import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@aipexstudio/aipex-react/components/ui/dialog";
-import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import type React from "react";
 
 interface DeleteConfirmDialogProps {
   open: boolean;

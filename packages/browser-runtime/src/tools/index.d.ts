@@ -14,12 +14,14 @@ import type { FunctionTool } from "@aipexstudio/aipex-core";
 export declare const allBrowserTools: FunctionTool[];
 export { interventionTools } from "./interventions/index.js";
 interface ToolRegistryLike {
-    register(tool: (typeof allBrowserTools)[number]): unknown;
+  register(tool: (typeof allBrowserTools)[number]): unknown;
 }
 /**
  * Register all default browser tools with a registry-like object
  */
-export declare function registerDefaultBrowserTools<T extends ToolRegistryLike>(registry: T): T;
+export declare function registerDefaultBrowserTools<T extends ToolRegistryLike>(
+  registry: T,
+): T;
 /**
  * Get the currently active tab
  * @throws Error if no active tab is found
@@ -28,8 +30,15 @@ export declare function getActiveTab(): Promise<chrome.tabs.Tab>;
 /**
  * Execute a script in a specific tab
  */
-export declare function executeScriptInTab<T, Args extends any[]>(tabId: number, func: (...args: Args) => T, args: Args): Promise<T>;
+export declare function executeScriptInTab<T, Args extends any[]>(
+  tabId: number,
+  func: (...args: Args) => T,
+  args: Args,
+): Promise<T>;
 /**
  * Execute a script in the active tab
  */
-export declare function executeScriptInActiveTab<T, Args extends any[]>(func: (...args: Args) => T, args: Args): Promise<T>;
+export declare function executeScriptInActiveTab<T, Args extends any[]>(
+  func: (...args: Args) => T,
+  args: Args,
+): Promise<T>;

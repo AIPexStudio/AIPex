@@ -1,20 +1,14 @@
 /**
  * FileExplorer Wrapper
- * 
+ *
  * Wraps the full FileExplorer implementation from aipex with proper imports for new-aipex.
  * This component uses the zenfs manager from @aipexstudio/browser-runtime.
  */
 
 import {
-  AlertCircle,
-  Files,
-  FolderOpen,
-  HardDrive,
-  RefreshCw,
-  Search,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Alert, AlertDescription } from "@aipexstudio/aipex-react/components/ui/alert";
+  Alert,
+  AlertDescription,
+} from "@aipexstudio/aipex-react/components/ui/alert";
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
@@ -27,10 +21,20 @@ import {
 import { Input } from "@aipexstudio/aipex-react/components/ui/input";
 import type { DiskUsage, FileTreeNode } from "@aipexstudio/browser-runtime";
 import { zenfs } from "@aipexstudio/browser-runtime";
+import {
+  AlertCircle,
+  Files,
+  FolderOpen,
+  HardDrive,
+  RefreshCw,
+  Search,
+} from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { FilePreview } from "./file-components/FilePreview";
-import { FileTree } from "./file-components/FileTree";
-import { formatBytes } from "./file-components/utils";
+import { FilePreview } from "./file-components/FilePreview.js";
+import { FileTree } from "./file-components/FileTree.js";
+import { formatBytes } from "./file-components/utils.js";
 
 interface FileExplorerProps {
   basePath?: string;
@@ -47,7 +51,7 @@ export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const loadFileSystem = async () => {
+  const loadFileSystem = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -71,14 +75,14 @@ export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadFileSystem();
   }, [basePath]);
 
+  useEffect(() => {
+    void loadFileSystem();
+  }, [loadFileSystem]);
+
   const handleRefresh = () => {
-    loadFileSystem();
+    void loadFileSystem();
   };
 
   const handleFileSelect = (path: string) => {
@@ -103,10 +107,7 @@ export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
     }
   };
 
-  const filterTree = (
-    nodes: FileTreeNode[],
-    query: string
-  ): FileTreeNode[] => {
+  const filterTree = (nodes: FileTreeNode[], query: string): FileTreeNode[] => {
     if (!query.trim()) return nodes;
 
     const lowerQuery = query.toLowerCase();

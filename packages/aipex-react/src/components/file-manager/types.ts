@@ -1,6 +1,6 @@
 /**
  * File Manager Adapter Types
- * 
+ *
  * These interfaces define the contract between UI components and file system implementations.
  */
 
@@ -59,7 +59,7 @@ export interface FileStats {
 
 /**
  * Client interface for file system operations
- * 
+ *
  * UI components receive this interface and call its methods.
  * Browser-ext provides the implementation using zenfs.
  */

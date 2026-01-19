@@ -1,8 +1,7 @@
-import { AlertCircle, Filter, RefreshCw, Search } from "lucide-react";
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
-
-import { Alert, AlertDescription } from "@aipexstudio/aipex-react/components/ui/alert";
+import {
+  Alert,
+  AlertDescription,
+} from "@aipexstudio/aipex-react/components/ui/alert";
 import { Badge } from "@aipexstudio/aipex-react/components/ui/badge";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
@@ -13,6 +12,9 @@ import {
   CardTitle,
 } from "@aipexstudio/aipex-react/components/ui/card";
 import { Input } from "@aipexstudio/aipex-react/components/ui/input";
+import { AlertCircle, Filter, RefreshCw, Search } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SkillCard } from "./SkillCard";
 import { SkillDetails } from "./SkillDetails";
 import type { SkillClient, SkillMetadata } from "./types";

@@ -1,4 +1,3 @@
-import type { ParsedSkill, SkillMetadata } from "../../skill/types.js";
 import { zenfs } from "../../../lib/vm/zenfs-manager";
 import licenseText from "../../built-in/skill-creator-browser/LICENSE.txt?raw";
 // Import built-in skill content files
@@ -12,6 +11,7 @@ import writeFileScript from "../../built-in/skill-creator-browser/scripts/write_
 import uxAuditWalkthroughMarkdown from "../../built-in/ux-audit-walkthrough/SKILL.md?raw";
 // Import WCAG 2.2 Accessibility Audit skill
 import wcag22A11yAuditMarkdown from "../../built-in/wcag22-a11y-audit/SKILL.md?raw";
+import type { ParsedSkill, SkillMetadata } from "../../skill/types.js";
 import { skillStorage } from "../storage/skill-storage";
 import { skillExecutor } from "./skill-executor";
 import { skillRegistry } from "./skill-registry";

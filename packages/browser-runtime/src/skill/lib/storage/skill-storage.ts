@@ -1,5 +1,5 @@
-import type { ParsedSkill, SkillMetadata } from "../../skill/types.js";
 import { zenfs } from "../../../lib/vm/zenfs-manager";
+import type { ParsedSkill, SkillMetadata } from "../../skill/types.js";
 import {
   extractZipToFS,
   getSkillAssets,
