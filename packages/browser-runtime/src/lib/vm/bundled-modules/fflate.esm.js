@@ -167,7 +167,7 @@ var slc = function (v, s, e) {
 /**
  * Codes for errors generated within this library
  */
-export var FlateErrorCode = {
+export var FlatErrorCode = {
     UnexpectedEOF: 0,
     InvalidBlockType: 1,
     InvalidLengthLiteral: 2,
@@ -1533,7 +1533,7 @@ var Decompress = /*#__PURE__*/ (function () {
         this.Z = Unzlib;
     }
     // init substream
-    // overriden by AsyncDecompress
+    // overridden by AsyncDecompress
     Decompress.prototype.i = function () {
         var _this = this;
         this.s.ondata = function (dat, final) {
