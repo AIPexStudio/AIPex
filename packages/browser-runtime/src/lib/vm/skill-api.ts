@@ -304,4 +304,3 @@ export function createSkillAPIBridge(options: {
  * SKILL_API type definition for TypeScript skills
  */
 export type SkillAPI = SkillAPIBridge
-

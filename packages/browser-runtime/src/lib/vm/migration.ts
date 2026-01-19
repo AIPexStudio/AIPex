@@ -358,4 +358,3 @@ export async function autoMigrate(): Promise<void> {
     console.error('[Migration] Auto-migration failed:', error)
   }
 }
-

@@ -272,4 +272,3 @@ export async function getSkillAssets(skillPath: string): Promise<string[]> {
     return []
   }
 }
-
