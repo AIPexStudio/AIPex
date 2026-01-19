@@ -1,3 +1,4 @@
 [files]
 # Exclude README files from typos checking (they contain multiple languages)
-extend-exclude = ["README*.md", "*/bundled-modules/*"]
+# Exclude bundled-modules directory (contains third-party bundled code)
+extend-exclude = ["README*.md", "**/bundled-modules/**"]
