@@ -255,4 +255,16 @@ export interface CompressionConfig {
   summarizeAfterItems?: number;
   keepRecentItems?: number;
   maxSummaryLength?: number;
+  /**
+   * Token watermark threshold. If set and lastPromptTokens exceeds this value,
+   * compression will be triggered automatically.
+   * Example: 150000
+   */
+  tokenWatermark?: number;
+  /**
+   * Number of recent messages (type="message") to protect from compression.
+   * When set, the compressor will keep the last N message items and their
+   * associated tool call/result pairs intact, and only compress older items.
+   */
+  protectRecentMessages?: number;
 }

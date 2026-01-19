@@ -293,5 +293,116 @@ describe("ConversationManager", () => {
       expect(items?.[0]).toMatchObject({ role: "system" });
       expect(reloaded?.getSummary().preview).toContain("Important context");
     });
+
+    it("should trigger compression based on token watermark", async () => {
+      let compressCalled = false;
+      const compressor = {
+        shouldCompress: (_itemCount: number, lastPromptTokens?: number) => {
+          if (lastPromptTokens !== undefined && lastPromptTokens > 150000) {
+            return true;
+          }
+          return false;
+        },
+        async compressItems(items: AgentInputItem[]) {
+          compressCalled = true;
+          return {
+            summary: "Compressed due to token watermark",
+            compressedItems: items.slice(-2),
+          };
+        },
+      } as unknown as ConversationCompressor;
+
+      const compressionManager = new ConversationManager(storage, {
+        compressor,
+      });
+      const session = await compressionManager.createSession();
+      await session.addItems([
+        createUserMessage("Message 1"),
+        createAssistantMessage("Response 1"),
+        createUserMessage("Message 2"),
+        createAssistantMessage("Response 2"),
+      ]);
+
+      // Set lastPromptTokens above watermark
+      session.setMetadata("lastPromptTokens", 200000);
+
+      await compressionManager.saveSession(session);
+
+      expect(compressCalled).toBe(true);
+
+      const reloaded = await compressionManager.getSession(session.id);
+      expect(reloaded?.getMetadata("lastSummary")).toBe(
+        "Compressed due to token watermark",
+      );
+    });
+
+    it("should not compress when token watermark not exceeded", async () => {
+      let compressCalled = false;
+      const compressor = {
+        shouldCompress: (_itemCount: number, lastPromptTokens?: number) => {
+          if (lastPromptTokens !== undefined && lastPromptTokens > 150000) {
+            return true;
+          }
+          return false;
+        },
+        async compressItems(items: AgentInputItem[]) {
+          compressCalled = true;
+          return { summary: "", compressedItems: items };
+        },
+      } as unknown as ConversationCompressor;
+
+      const compressionManager = new ConversationManager(storage, {
+        compressor,
+      });
+      const session = await compressionManager.createSession();
+      await session.addItems([
+        createUserMessage("Message 1"),
+        createAssistantMessage("Response 1"),
+      ]);
+
+      // Set lastPromptTokens below watermark
+      session.setMetadata("lastPromptTokens", 100000);
+
+      await compressionManager.saveSession(session);
+
+      expect(compressCalled).toBe(false);
+
+      const reloaded = await compressionManager.getSession(session.id);
+      expect(reloaded?.getItemCount()).toBe(2);
+    });
+
+    it("should handle missing lastPromptTokens metadata gracefully", async () => {
+      let compressCalled = false;
+      const compressor = {
+        shouldCompress: (itemCount: number, lastPromptTokens?: number) => {
+          if (lastPromptTokens !== undefined && lastPromptTokens > 150000) {
+            return true;
+          }
+          return itemCount > 10;
+        },
+        async compressItems(items: AgentInputItem[]) {
+          compressCalled = true;
+          return { summary: "Fallback compression", compressedItems: items };
+        },
+      } as unknown as ConversationCompressor;
+
+      const compressionManager = new ConversationManager(storage, {
+        compressor,
+      });
+      const session = await compressionManager.createSession();
+
+      // Add many items to trigger item-count based compression
+      for (let i = 0; i < 15; i++) {
+        await session.addItems([
+          createUserMessage(`Message ${i}`),
+          createAssistantMessage(`Response ${i}`),
+        ]);
+      }
+
+      // Do not set lastPromptTokens - it should fallback to item count
+      await compressionManager.saveSession(session);
+
+      expect(compressCalled).toBe(true);
+    });
   });
 });
