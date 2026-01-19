@@ -1,7 +1,7 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
-import { getActiveTab } from "./index";
 import { cacheScreenshotMetadata } from "../automation/computer";
+import { getActiveTab } from "./index";
 
 async function compressImage(
   dataUrl: string,
@@ -51,11 +51,7 @@ export const captureScreenshotTool = tool({
         "Whether to send the screenshot to LLM for visual analysis. When true, visual coordinate tools will be enabled.",
       ),
   }),
-  execute: async ({
-    sendToLLM = false,
-  }: {
-    sendToLLM?: boolean | null;
-  }) => {
+  execute: async ({ sendToLLM = false }: { sendToLLM?: boolean | null }) => {
     const tab = await getActiveTab();
 
     if (!tab.id || !tab.windowId) {

@@ -6,166 +6,177 @@
  * Chrome extensions don't allow 'wasm-eval' which is required by asyncify variants.
  */
 
-import { newQuickJSWASMModuleFromVariant, Scope } from 'quickjs-emscripten'
-import { default as RELEASE_SYNC } from "@jitl/quickjs-ng-wasmfile-release-sync"
-import type { QuickJSContext, QuickJSRuntime, QuickJSHandle } from 'quickjs-emscripten'
-import type { SkillAPIBridge } from './skill-api'
-import fs from '@zenfs/core'
+import { default as RELEASE_SYNC } from "@jitl/quickjs-ng-wasmfile-release-sync";
+import fs from "@zenfs/core";
+import type {
+  QuickJSContext,
+  QuickJSHandle,
+  QuickJSRuntime,
+} from "quickjs-emscripten";
+import { newQuickJSWASMModuleFromVariant, Scope } from "quickjs-emscripten";
+import type { SkillAPIBridge } from "./skill-api";
 
 interface ExecutionContext {
-  skillId: string
-  workingDir: string
-  args?: any
+  skillId: string;
+  workingDir: string;
+  args?: any;
 }
 
 class QuickJSManager {
-  private runtime: QuickJSRuntime | null = null
-  private quickjs: Awaited<ReturnType<typeof newQuickJSWASMModuleFromVariant>> | null = null
-  private initPromise: Promise<void> | null = null
-  private initialized = false
-  private moduleCache: Map<string, string> = new Map() // Cache for CDN modules
+  private runtime: QuickJSRuntime | null = null;
+  private quickjs: Awaited<
+    ReturnType<typeof newQuickJSWASMModuleFromVariant>
+  > | null = null;
+  private initPromise: Promise<void> | null = null;
+  private initialized = false;
+  private moduleCache: Map<string, string> = new Map(); // Cache for CDN modules
 
   /**
    * Initialize QuickJS runtime
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
-      return
+      return;
     }
 
     if (this.initPromise) {
-      return this.initPromise
+      return this.initPromise;
     }
 
-    this.initPromise = this._initialize()
-    return this.initPromise
+    this.initPromise = this._initialize();
+    return this.initPromise;
   }
 
   private async _initialize(): Promise<void> {
     try {
-      console.log('[QuickJS] Initializing runtime with RELEASE_SYNC variant...')
+      console.log(
+        "[QuickJS] Initializing runtime with RELEASE_SYNC variant...",
+      );
 
       // Use RELEASE_SYNC variant (required for Chrome extensions due to CSP restrictions)
       // Chrome extensions don't allow 'wasm-eval' which asyncify variants need
-      this.quickjs = await newQuickJSWASMModuleFromVariant(RELEASE_SYNC)
-      this.runtime = this.quickjs.newRuntime()
+      this.quickjs = await newQuickJSWASMModuleFromVariant(RELEASE_SYNC);
+      this.runtime = this.quickjs.newRuntime();
 
       // Set memory and stack limits
-      this.runtime.setMemoryLimit(100 * 1024 * 1024) // 100MB
-      this.runtime.setMaxStackSize(1024 * 1024) // 1MB
+      this.runtime.setMemoryLimit(100 * 1024 * 1024); // 100MB
+      this.runtime.setMaxStackSize(1024 * 1024); // 1MB
 
       // Set synchronous module loader
       // Note: Module loader must return synchronously, so modules are loaded from cache
       // IMPORTANT: Must return ES6 module code with export statements
       this.runtime.setModuleLoader((moduleName: string) => {
-        console.log(`[QuickJS] Module loader called for: ${moduleName}`)
+        console.log(`[QuickJS] Module loader called for: ${moduleName}`);
 
         // 1. Built-in modules (fs, etc.)
-        if (moduleName === 'fs') {
-          console.log(`[QuickJS] Loading built-in module: ${moduleName}`)
+        if (moduleName === "fs") {
+          console.log(`[QuickJS] Loading built-in module: ${moduleName}`);
           // Return as ES6 module with default export
-          return `export default ${JSON.stringify(fs)}`
+          return `export default ${JSON.stringify(fs)}`;
         }
 
         // 2. Check cache for preloaded modules (by package name or URL)
-        const cachedModule = this.moduleCache.get(moduleName)
+        const cachedModule = this.moduleCache.get(moduleName);
         if (cachedModule) {
-          console.log(`[QuickJS] Loading cached module: ${moduleName}`)
+          console.log(`[QuickJS] Loading cached module: ${moduleName}`);
           // Cache should already contain module code with exports
-          return cachedModule
+          return cachedModule;
         }
 
         // 3. If moduleName is a URL path (e.g., /v135/lodash@4.17.21/es/lodash.js)
         //    try to resolve it with esm.sh origin
-        if (moduleName.startsWith('/')) {
-          const fullUrl = `https://esm.sh${moduleName}`
-          const cachedByUrl = this.moduleCache.get(fullUrl)
+        if (moduleName.startsWith("/")) {
+          const fullUrl = `https://esm.sh${moduleName}`;
+          const cachedByUrl = this.moduleCache.get(fullUrl);
           if (cachedByUrl) {
-            console.log(`[QuickJS] Loading cached module by URL: ${fullUrl}`)
-            return cachedByUrl
+            console.log(`[QuickJS] Loading cached module by URL: ${fullUrl}`);
+            return cachedByUrl;
           }
         }
 
         // 4. Module not found - this shouldn't happen if preload worked correctly
-        console.error(`[QuickJS] Module not found in cache: ${moduleName}`)
-        return `throw new Error('Module not found: ${moduleName}. Module must be preloaded before execution.');`
-      })
+        console.error(`[QuickJS] Module not found in cache: ${moduleName}`);
+        return `throw new Error('Module not found: ${moduleName}. Module must be preloaded before execution.');`;
+      });
 
-      this.initialized = true
-      console.log('[QuickJS] Runtime initialized successfully')
+      this.initialized = true;
+      console.log("[QuickJS] Runtime initialized successfully");
     } catch (error) {
-      console.error('[QuickJS] Failed to initialize:', error)
-      this.initPromise = null
-      throw error
+      console.error("[QuickJS] Failed to initialize:", error);
+      this.initPromise = null;
+      throw error;
     }
   }
 
   private async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
-      await this.initialize()
+      await this.initialize();
     }
   }
-
 
   /**
    * Recursively fetch ESM module and its dependencies
    */
-  private async fetchESM(url: string, visited = new Set<string>()): Promise<{ url: string; code: string; deps: string[] } | null> {
-    if (visited.has(url)) return null
-    visited.add(url)
+  private async fetchESM(
+    url: string,
+    visited = new Set<string>(),
+  ): Promise<{ url: string; code: string; deps: string[] } | null> {
+    if (visited.has(url)) return null;
+    visited.add(url);
 
-    const base = new URL(url)
-    const origin = base.origin
+    const base = new URL(url);
+    const origin = base.origin;
 
-    console.log(`[QuickJS] Fetching ESM: ${url}`)
+    console.log(`[QuickJS] Fetching ESM: ${url}`);
 
     try {
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-      const code = await res.text()
+      const code = await res.text();
 
       // Match import/export from statements
-      const importRegex = /(?:import|export)\s+(?:[^'"]+from\s+)?["']([^"']+)["']/g
+      const importRegex =
+        /(?:import|export)\s+(?:[^'"]+from\s+)?["']([^"']+)["']/g;
 
-      const deps: string[] = []
-      let match: RegExpExecArray | null
+      const deps: string[] = [];
+      let match: RegExpExecArray | null;
 
       while ((match = importRegex.exec(code))) {
-        const rawPath = match[1]
-        if (!rawPath) continue
-        let resolved: string
+        const rawPath = match[1];
+        if (!rawPath) continue;
+        let resolved: string;
 
-        if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+        if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
           // Absolute URL
-          resolved = rawPath
-        } else if (rawPath.startsWith('/')) {
+          resolved = rawPath;
+        } else if (rawPath.startsWith("/")) {
           // Root path reference (from esm.sh)
-          resolved = origin + rawPath
+          resolved = origin + rawPath;
         } else {
           // Relative path
-          resolved = new URL(rawPath, base).href
+          resolved = new URL(rawPath, base).href;
         }
 
-        deps.push(resolved)
+        deps.push(resolved);
       }
 
       // Recursively fetch child dependencies
       await Promise.all(
         deps.map(async (dep) => {
-          const child = await this.fetchESM(dep, visited)
+          const child = await this.fetchESM(dep, visited);
           if (child) {
             // Cache child dependencies by URL
-            this.moduleCache.set(child.url, child.code)
-            console.log(`[QuickJS] Cached dependency: ${child.url}`)
+            this.moduleCache.set(child.url, child.code);
+            console.log(`[QuickJS] Cached dependency: ${child.url}`);
           }
-        })
-      )
+        }),
+      );
 
-      return { url, code, deps }
+      return { url, code, deps };
     } catch (error) {
-      console.error(`[QuickJS] Failed to fetch ${url}:`, error)
-      throw error
+      console.error(`[QuickJS] Failed to fetch ${url}:`, error);
+      throw error;
     }
   }
 
@@ -175,31 +186,35 @@ class QuickJSManager {
   private async loadFromCDN(packageName: string): Promise<string> {
     // Check cache first
     if (this.moduleCache.has(packageName)) {
-      console.log(`[QuickJS] Loading from cache: ${packageName}`)
-      return this.moduleCache.get(packageName)!
+      console.log(`[QuickJS] Loading from cache: ${packageName}`);
+      return this.moduleCache.get(packageName)!;
     }
 
-    console.log(`[QuickJS] Loading from CDN: ${packageName}`)
+    console.log(`[QuickJS] Loading from CDN: ${packageName}`);
 
     try {
       // Use esm.sh as CDN
-      const url = `https://esm.sh/${packageName}`
+      const url = `https://esm.sh/${packageName}`;
 
       // Recursively fetch module and all dependencies
-      const result = await this.fetchESM(url)
+      const result = await this.fetchESM(url);
 
       if (!result) {
-        throw new Error('Failed to fetch module')
+        throw new Error("Failed to fetch module");
       }
 
       // Cache the main module
-      this.moduleCache.set(packageName, result.code)
-      this.moduleCache.set(url, result.code) // Also cache by URL for dependency resolution
+      this.moduleCache.set(packageName, result.code);
+      this.moduleCache.set(url, result.code); // Also cache by URL for dependency resolution
 
-      console.log(`[QuickJS] Successfully loaded from CDN: ${packageName} (with ${result.deps.length} dependencies)`)
-      return result.code
+      console.log(
+        `[QuickJS] Successfully loaded from CDN: ${packageName} (with ${result.deps.length} dependencies)`,
+      );
+      return result.code;
     } catch (error) {
-      throw new Error(`Failed to load module ${packageName} from CDN: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Failed to load module ${packageName} from CDN: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -208,27 +223,27 @@ class QuickJSManager {
    * Note: Local imports should be inlined, only third-party packages should use import
    */
   private extractImports(code: string): string[] {
-    const imports: string[] = []
+    const imports: string[] = [];
 
     // Match ES6 import statements
-    const importRegex = /import\s+(?:[\w\s{},*]*\s+from\s+)?['"]([^'"]+)['"]/g
-    let match: RegExpExecArray | null
+    const importRegex = /import\s+(?:[\w\s{},*]*\s+from\s+)?['"]([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
 
     while ((match = importRegex.exec(code)) !== null) {
       if (match[1]) {
-        imports.push(match[1])
+        imports.push(match[1]);
       }
     }
 
     // Match dynamic imports
-    const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+    const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
     while ((match = dynamicImportRegex.exec(code)) !== null) {
       if (match[1]) {
-        imports.push(match[1])
+        imports.push(match[1]);
       }
     }
 
-    return imports
+    return imports;
   }
 
   /**
@@ -237,43 +252,51 @@ class QuickJSManager {
    * Note: Local modules should be inlined in the script, not imported
    */
   private async preloadModules(code: string): Promise<void> {
-    const imports = this.extractImports(code)
+    const imports = this.extractImports(code);
 
     if (imports.length === 0) {
-      console.log('[QuickJS] No imports detected')
-      return
+      console.log("[QuickJS] No imports detected");
+      return;
     }
 
-    console.log(`[QuickJS] Found ${imports.length} imports, preloading CDN packages:`, imports)
+    console.log(
+      `[QuickJS] Found ${imports.length} imports, preloading CDN packages:`,
+      imports,
+    );
 
     for (const moduleName of imports) {
       // Skip built-in modules
-      if (moduleName === 'fs') {
-        continue
+      if (moduleName === "fs") {
+        continue;
       }
 
       // Skip if already cached
       if (this.moduleCache.has(moduleName)) {
-        console.log(`[QuickJS] Module already cached: ${moduleName}`)
-        continue
+        console.log(`[QuickJS] Module already cached: ${moduleName}`);
+        continue;
       }
 
       try {
         // Only support CDN packages (no relative paths)
-        if (moduleName.startsWith('./') || moduleName.startsWith('../')) {
-          throw new Error(`Relative imports are not supported. Please inline local modules in your script. Found: ${moduleName}`)
+        if (moduleName.startsWith("./") || moduleName.startsWith("../")) {
+          throw new Error(
+            `Relative imports are not supported. Please inline local modules in your script. Found: ${moduleName}`,
+          );
         }
 
         // Load third-party package from CDN
-        await this.loadFromCDN(moduleName)
-        console.log(`[QuickJS] Preloaded CDN module: ${moduleName}`)
+        await this.loadFromCDN(moduleName);
+        console.log(`[QuickJS] Preloaded CDN module: ${moduleName}`);
       } catch (error) {
-        console.error(`[QuickJS] Failed to preload module ${moduleName}:`, error)
-        throw error
+        console.error(
+          `[QuickJS] Failed to preload module ${moduleName}:`,
+          error,
+        );
+        throw error;
       }
     }
 
-    console.log(`[QuickJS] Finished preloading ${imports.length} CDN modules`)
+    console.log(`[QuickJS] Finished preloading ${imports.length} CDN modules`);
   }
 
   /**
@@ -296,39 +319,39 @@ class QuickJSManager {
   async execute(
     code: string,
     context: ExecutionContext,
-    apiBridge: SkillAPIBridge
+    apiBridge: SkillAPIBridge,
   ): Promise<any> {
-    await this.ensureInitialized()
+    await this.ensureInitialized();
 
     if (!this.runtime || !this.quickjs) {
-      throw new Error('QuickJS runtime not initialized')
+      throw new Error("QuickJS runtime not initialized");
     }
 
     // Preload all CDN modules before execution (required for sync variant)
     // Note: Local modules should be inlined in the script, not imported
-    await this.preloadModules(code)
+    await this.preloadModules(code);
 
     // Use Scope to automatically manage all disposable resources
     return await Scope.withScopeAsync(async (scope) => {
       // Create a new context for this execution and add it to the scope
-      const vm = scope.manage(this.runtime!.newContext())
+      const vm = scope.manage(this.runtime!.newContext());
 
-      console.log(`[QuickJS] Executing code for skill: ${context.skillId}`)
+      console.log(`[QuickJS] Executing code for skill: ${context.skillId}`);
 
       // Inject SKILL_API into the VM
-      this._injectGlobalAPI(vm, apiBridge, scope)
+      this._injectGlobalAPI(vm, apiBridge, scope);
 
       // Inject args variable into the VM
       // Directly evaluate the args object as JavaScript literal
-      const argsJson = JSON.stringify(context.args ?? {})
-      const argsResult = scope.manage(vm.evalCode(`(${argsJson})`))
+      const argsJson = JSON.stringify(context.args ?? {});
+      const argsResult = scope.manage(vm.evalCode(`(${argsJson})`));
 
       if (argsResult.error) {
-        const errorMsg = vm.dump(argsResult.error)
-        throw new Error(`Failed to inject args: ${errorMsg}`)
+        const errorMsg = vm.dump(argsResult.error);
+        throw new Error(`Failed to inject args: ${errorMsg}`);
       }
 
-      vm.setProp(vm.global, 'args', argsResult.value)
+      vm.setProp(vm.global, "args", argsResult.value);
 
       // Wrap code to support main() pattern
       // Strategy: Return the Promise directly, handle resolution in host code
@@ -364,87 +387,112 @@ class QuickJSManager {
   } else {
     throw new Error('main function or module.exports not found')
   }
-})()`
+})()`;
 
-      const resultHandle = scope.manage(vm.evalCode(wrappedCode, 'index.js', {
-        type: 'module'
-      }))
+      const resultHandle = scope.manage(
+        vm.evalCode(wrappedCode, "index.js", {
+          type: "module",
+        }),
+      );
 
       if (resultHandle.error) {
-        const errorMessage = vm.dump(resultHandle.error)
-        throw new Error(`Execution error: ${JSON.stringify({ errorMessage })}`)
+        const errorMessage = vm.dump(resultHandle.error);
+        throw new Error(`Execution error: ${JSON.stringify({ errorMessage })}`);
       }
 
       // Handle promise results
       // Note: The wrapper IIFE returns a promise and registers a .then() handler
       // that stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__
 
-      let finalResult
+      let finalResult;
 
       // Execute pending jobs until the .then() handler fires
       // and stores the resolved value in globalThis.__SKILL_RESOLVED_VALUE__
-      const startTime = Date.now()
-      const timeout = 60000 // 60 seconds
-      const checkInterval = 16 // 16ms between checks (~60fps)
+      const startTime = Date.now();
+      const timeout = 60000; // 60 seconds
+      const checkInterval = 16; // 16ms between checks (~60fps)
 
       while (Date.now() - startTime < timeout) {
-        vm.runtime.executePendingJobs()
+        vm.runtime.executePendingJobs();
 
         // Check if the resolved value is available
-        const checkCode = vm.evalCode(`globalThis.__SKILL_RESOLVED_VALUE__`)
+        const checkCode = vm.evalCode(`globalThis.__SKILL_RESOLVED_VALUE__`);
         if (!checkCode.error) {
-          const wrapper = vm.dump(checkCode.value)
-          checkCode.value.dispose()
+          const wrapper = vm.dump(checkCode.value);
+          checkCode.value.dispose();
 
           // Check if it's the wrapper object with __resolved flag
-          if (wrapper && typeof wrapper === 'object' && wrapper.__resolved === true) {
-            finalResult = wrapper.value
-            break
+          if (
+            wrapper &&
+            typeof wrapper === "object" &&
+            wrapper.__resolved === true
+          ) {
+            finalResult = wrapper.value;
+            break;
           }
         } else {
-          checkCode.error.dispose()
+          checkCode.error.dispose();
         }
 
         // Check for errors
-        const checkError = vm.evalCode(`globalThis.__SKILL_RESOLVED_ERROR__`)
+        const checkError = vm.evalCode(`globalThis.__SKILL_RESOLVED_ERROR__`);
         if (!checkError.error) {
-          const errorWrapper = vm.dump(checkError.value)
-          checkError.value.dispose()
+          const errorWrapper = vm.dump(checkError.value);
+          checkError.value.dispose();
 
           // Check if it's the error wrapper object with __rejected flag
-          if (errorWrapper && typeof errorWrapper === 'object' && errorWrapper.__rejected === true) {
-            throw new Error(`Promise rejected: ${JSON.stringify({ error: errorWrapper.error })}`)
+          if (
+            errorWrapper &&
+            typeof errorWrapper === "object" &&
+            errorWrapper.__rejected === true
+          ) {
+            throw new Error(
+              `Promise rejected: ${JSON.stringify({ error: errorWrapper.error })}`,
+            );
           }
         } else {
-          checkError.error.dispose()
+          checkError.error.dispose();
         }
 
         // Wait for the check interval before next iteration
-        await new Promise(resolve => setTimeout(resolve, checkInterval))
+        await new Promise((resolve) => setTimeout(resolve, checkInterval));
 
         // Log progress every 5 seconds
-        const elapsed = Date.now() - startTime
+        const elapsed = Date.now() - startTime;
         if (elapsed > 0 && elapsed % 5000 < checkInterval) {
-          console.log(`[QuickJS] Waiting for promise resolution... (${(elapsed / 1000).toFixed(1)}s elapsed)`)
+          console.log(
+            `[QuickJS] Waiting for promise resolution... (${(elapsed / 1000).toFixed(1)}s elapsed)`,
+          );
         }
       }
 
-      const totalElapsed = Date.now() - startTime
+      const totalElapsed = Date.now() - startTime;
       if (totalElapsed >= timeout) {
-        throw new Error(`Promise resolution timeout: Promise never resolved after ${timeout / 1000} seconds`)
+        throw new Error(
+          `Promise resolution timeout: Promise never resolved after ${timeout / 1000} seconds`,
+        );
       }
 
-      console.log(`[QuickJS] Execution completed successfully in ${(totalElapsed / 1000).toFixed(2)}s`)
-      return finalResult
-    })
+      console.log(
+        `[QuickJS] Execution completed successfully in ${(totalElapsed / 1000).toFixed(2)}s`,
+      );
+      return finalResult;
+    });
   }
 
   /**
    * Check if a handle is a built-in constant that should not be disposed
    */
-  private isBuiltInConstant(vm: QuickJSContext, handle: QuickJSHandle): boolean {
-    return handle === vm.undefined || handle === vm.null ||
-      handle === vm.true || handle === vm.false;
+  private isBuiltInConstant(
+    vm: QuickJSContext,
+    handle: QuickJSHandle,
+  ): boolean {
+    return (
+      handle === vm.undefined ||
+      handle === vm.null ||
+      handle === vm.true ||
+      handle === vm.false
+    );
   }
 
   /**
@@ -456,8 +504,11 @@ class QuickJSManager {
     }
   }
 
-  private bindObject(vm: QuickJSContext, target: any, name: string | null = null): QuickJSHandle {
-    const self = this;
+  private bindObject(
+    vm: QuickJSContext,
+    target: any,
+    name: string | null = null,
+  ): QuickJSHandle {
     // Built-in constants - return directly without creating new handles
     if (target === undefined) return vm.undefined;
     if (target === null) return vm.null;
@@ -486,9 +537,9 @@ class QuickJSManager {
 
           result
             .then((val: any) => {
-              const resolvedHandle = self.bindObject(vm, val);
+              const resolvedHandle = this.bindObject(vm, val);
               deferred.resolve(resolvedHandle);
-              self.safeDispose(vm, resolvedHandle);
+              this.safeDispose(vm, resolvedHandle);
               // Note: executePendingJobs() is called via deferred.settled handler
             })
             .catch((err: any) => {
@@ -502,7 +553,7 @@ class QuickJSManager {
         }
 
         // Handle sync functions
-        return self.bindObject(vm, result);
+        return this.bindObject(vm, result);
       });
     }
 
@@ -529,9 +580,9 @@ class QuickJSManager {
     if (Array.isArray(target)) {
       const arr = vm.newArray();
       target.forEach((v, i) => {
-        const valueHandle = self.bindObject(vm, v);
+        const valueHandle = this.bindObject(vm, v);
         vm.setProp(arr, i, valueHandle);
-        self.safeDispose(vm, valueHandle);
+        this.safeDispose(vm, valueHandle);
       });
       return arr;
     }
@@ -539,9 +590,9 @@ class QuickJSManager {
     if (typeof target === "object") {
       const obj = vm.newObject();
       for (const [k, v] of Object.entries(target)) {
-        const valueHandle = self.bindObject(vm, v, k);
+        const valueHandle = this.bindObject(vm, v, k);
         vm.setProp(obj, k, valueHandle);
-        self.safeDispose(vm, valueHandle);
+        this.safeDispose(vm, valueHandle);
       }
       return obj;
     }
@@ -557,10 +608,12 @@ class QuickJSManager {
   private _injectGlobalAPI(
     vm: QuickJSContext,
     apiBridge: SkillAPIBridge,
-    scope: Scope
+    scope: Scope,
   ): void {
-    const consoleHandle = scope.manage(this.bindObject(vm, apiBridge.console, 'console'))
-    vm.setProp(vm.global, 'console', consoleHandle)
+    const consoleHandle = scope.manage(
+      this.bindObject(vm, apiBridge.console, "console"),
+    );
+    vm.setProp(vm.global, "console", consoleHandle);
 
     // TODO: Add other global APIs here
     // For now, we'll inject a simple API
@@ -569,13 +622,15 @@ class QuickJSManager {
     // Full async API bridging requires more complex implementation
 
     // File System API
-    const fsHandle = scope.manage(this.bindObject(vm, apiBridge.fs, 'fs'))
-    vm.setProp(vm.global, 'fs', fsHandle)
+    const fsHandle = scope.manage(this.bindObject(vm, apiBridge.fs, "fs"));
+    vm.setProp(vm.global, "fs", fsHandle);
 
-    const downloadFileHandle = scope.manage(this.bindObject(vm, apiBridge.downloadFile, 'downloadFile'))
-    vm.setProp(vm.global, 'downloadFile', downloadFileHandle)
+    const downloadFileHandle = scope.manage(
+      this.bindObject(vm, apiBridge.downloadFile, "downloadFile"),
+    );
+    vm.setProp(vm.global, "downloadFile", downloadFileHandle);
 
-    console.log('[QuickJS] Global API injected successfully')
+    console.log("[QuickJS] Global API injected successfully");
   }
 
   /**
@@ -583,15 +638,15 @@ class QuickJSManager {
    */
   dispose(): void {
     if (this.runtime) {
-      this.runtime.dispose()
-      this.runtime = null
+      this.runtime.dispose();
+      this.runtime = null;
     }
-    this.quickjs = null
-    this.initialized = false
-    this.initPromise = null
-    console.log('[QuickJS] Runtime disposed')
+    this.quickjs = null;
+    this.initialized = false;
+    this.initPromise = null;
+    console.log("[QuickJS] Runtime disposed");
   }
 }
 
 // Singleton instance
-export const quickjs = new QuickJSManager()
+export const quickjs = new QuickJSManager();

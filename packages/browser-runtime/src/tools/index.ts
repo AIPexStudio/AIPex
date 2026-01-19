@@ -14,10 +14,8 @@ import {
   highlightTextInlineTool,
   scrollToElementTool,
 } from "./page";
-import {
-  captureScreenshotTool,
-  captureTabScreenshotTool,
-} from "./screenshot";
+import { captureScreenshotTool, captureTabScreenshotTool } from "./screenshot";
+import { skillTools } from "./skill";
 import { searchElementsTool } from "./snapshot";
 import {
   closeTabTool,
@@ -28,16 +26,12 @@ import {
   organizeTabsTool,
   ungroupTabsTool,
 } from "./tab";
-import {
-  downloadChatImagesTool,
-  downloadImageTool,
-} from "./tools/downloads";
-import { skillTools } from "./skill";
+import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
 
 /**
  * All browser tools registered for AI use
  * Total: 32 tools (28 core + 4 intervention tools)
- * 
+ *
  * Disabled tools (per aipex):
  * - switch_to_tab (causes context switching issues)
  * - duplicate_tab (not in aipex)

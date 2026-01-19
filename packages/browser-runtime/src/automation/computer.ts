@@ -188,7 +188,7 @@ async function performClick(
     return {
       success: false,
       error:
-        'No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).',
+        "No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).",
     };
   }
 
@@ -312,7 +312,7 @@ async function performHover(
     return {
       success: false,
       error:
-        'No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).',
+        "No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).",
     };
   }
 
@@ -372,7 +372,7 @@ async function performDrag(
     return {
       success: false,
       error:
-        'No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).',
+        "No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).",
     };
   }
 
@@ -481,7 +481,7 @@ async function performScroll(
     return {
       success: false,
       error:
-        'No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).',
+        "No screenshot metadata found. Please take a screenshot first using capture_screenshot(sendToLLM=true).",
     };
   }
 
@@ -620,7 +620,7 @@ async function performKey(
       const parts = keySpec.split("+");
       let modifiers = 0;
       const key = parts[parts.length - 1];
-      
+
       if (!key) {
         console.warn(`[Computer] Empty key in keySpec: "${keySpec}"`);
         continue;

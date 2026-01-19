@@ -3,24 +3,28 @@
  * Migrate from old formats to new unified ZenFS storage
  */
 
-import { simpleFS, skillStorage, type SkillMetadata } from '../../skill/lib/storage/skill-storage'
-import { zenfs } from './zenfs-manager'
+import {
+  type SkillMetadata,
+  simpleFS,
+  skillStorage,
+} from "../../skill/lib/storage/skill-storage";
+import { zenfs } from "./zenfs-manager";
 
-const MIGRATION_KEY = 'aipex_zenfs_migration_status'
-const MIGRATION_V2_KEY = 'aipex_zenfs_migration_v2_status'
+const MIGRATION_KEY = "aipex_zenfs_migration_status";
+const MIGRATION_V2_KEY = "aipex_zenfs_migration_v2_status";
 
 interface MigrationStatus {
-  completed: boolean
-  migratedSkills: string[]
-  timestamp: number
-  version: string
+  completed: boolean;
+  migratedSkills: string[];
+  timestamp: number;
+  version: string;
 }
 
 interface MigrationV2Status {
-  completed: boolean
-  renamedSkills: { oldId: string; newId: string }[]
-  timestamp: number
-  version: string
+  completed: boolean;
+  renamedSkills: { oldId: string; newId: string }[];
+  timestamp: number;
+  version: string;
 }
 
 /**
@@ -28,11 +32,11 @@ interface MigrationV2Status {
  */
 export async function isMigrationCompleted(): Promise<boolean> {
   try {
-    const result = await chrome.storage.local.get(MIGRATION_KEY)
-    const status = result[MIGRATION_KEY] as MigrationStatus | undefined
-    return status?.completed || false
+    const result = await chrome.storage.local.get(MIGRATION_KEY);
+    const status = result[MIGRATION_KEY] as MigrationStatus | undefined;
+    return status?.completed || false;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -41,10 +45,10 @@ export async function isMigrationCompleted(): Promise<boolean> {
  */
 export async function getMigrationStatus(): Promise<MigrationStatus | null> {
   try {
-    const result = await chrome.storage.local.get(MIGRATION_KEY)
-    return (result[MIGRATION_KEY] as MigrationStatus) || null
+    const result = await chrome.storage.local.get(MIGRATION_KEY);
+    return (result[MIGRATION_KEY] as MigrationStatus) || null;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -52,7 +56,7 @@ export async function getMigrationStatus(): Promise<MigrationStatus | null> {
  * Save migration status
  */
 async function saveMigrationStatus(status: MigrationStatus): Promise<void> {
-  await chrome.storage.local.set({ [MIGRATION_KEY]: status })
+  await chrome.storage.local.set({ [MIGRATION_KEY]: status });
 }
 
 /**
@@ -60,44 +64,46 @@ async function saveMigrationStatus(status: MigrationStatus): Promise<void> {
  */
 async function migrateSkill(skillId: string): Promise<boolean> {
   try {
-    console.log(`[Migration] Migrating skill: ${skillId}`)
+    console.log(`[Migration] Migrating skill: ${skillId}`);
 
     // Get all files from SimpleFileSystem for this skill
-    const files = simpleFS.getSkillFiles(skillId)
+    const files = simpleFS.getSkillFiles(skillId);
 
     if (files.size === 0) {
-      console.log(`[Migration] No files found for skill: ${skillId}`)
-      return true
+      console.log(`[Migration] No files found for skill: ${skillId}`);
+      return true;
     }
 
     // Create skill directory in ZenFS
-    const skillPath = zenfs.getSkillPath(skillId)
-    await zenfs.mkdir(skillPath, { recursive: true })
+    const skillPath = zenfs.getSkillPath(skillId);
+    await zenfs.mkdir(skillPath, { recursive: true });
 
     // Migrate each file
     for (const [relativePath, content] of files.entries()) {
-      const fullPath = `${skillPath}/${relativePath}`
+      const fullPath = `${skillPath}/${relativePath}`;
 
       // Convert content to appropriate format
-      let data: string | Uint8Array
-      if (typeof content === 'string') {
-        data = content
+      let data: string | Uint8Array;
+      if (typeof content === "string") {
+        data = content;
       } else if (content instanceof ArrayBuffer) {
-        data = new Uint8Array(content)
+        data = new Uint8Array(content);
       } else {
-        console.warn(`[Migration] Unknown content type for: ${relativePath}`)
-        continue
+        console.warn(`[Migration] Unknown content type for: ${relativePath}`);
+        continue;
       }
 
-      await zenfs.writeFile(fullPath, data)
-      console.log(`[Migration] Migrated file: ${relativePath}`)
+      await zenfs.writeFile(fullPath, data);
+      console.log(`[Migration] Migrated file: ${relativePath}`);
     }
 
-    console.log(`[Migration] Successfully migrated skill: ${skillId} (${files.size} files)`)
-    return true
+    console.log(
+      `[Migration] Successfully migrated skill: ${skillId} (${files.size} files)`,
+    );
+    return true;
   } catch (error) {
-    console.error(`[Migration] Failed to migrate skill: ${skillId}`, error)
-    return false
+    console.error(`[Migration] Failed to migrate skill: ${skillId}`, error);
+    return false;
   }
 }
 
@@ -105,53 +111,55 @@ async function migrateSkill(skillId: string): Promise<boolean> {
  * Migrate all skills from SimpleFileSystem to ZenFS
  */
 export async function migrateAllSkills(): Promise<{
-  success: boolean
-  migratedCount: number
-  failedCount: number
-  migratedSkills: string[]
+  success: boolean;
+  migratedCount: number;
+  failedCount: number;
+  migratedSkills: string[];
 }> {
-  console.log('[Migration] Starting migration from SimpleFileSystem to ZenFS...')
+  console.log(
+    "[Migration] Starting migration from SimpleFileSystem to ZenFS...",
+  );
 
   // Check if already migrated
-  const alreadyMigrated = await isMigrationCompleted()
+  const alreadyMigrated = await isMigrationCompleted();
   if (alreadyMigrated) {
-    console.log('[Migration] Migration already completed, skipping')
-    const status = await getMigrationStatus()
+    console.log("[Migration] Migration already completed, skipping");
+    const status = await getMigrationStatus();
     return {
       success: true,
       migratedCount: status?.migratedSkills.length || 0,
       failedCount: 0,
-      migratedSkills: status?.migratedSkills || []
-    }
+      migratedSkills: status?.migratedSkills || [],
+    };
   }
 
   // Initialize ZenFS
-  await zenfs.initialize()
+  await zenfs.initialize();
 
   // Get all skill IDs from SimpleFileSystem
   // We need to extract skill IDs from the file paths
-  const skillIds = new Set<string>()
-  const allPaths = simpleFS.getAllPathsInDir('skill_')
+  const skillIds = new Set<string>();
+  const allPaths = simpleFS.getAllPathsInDir("skill_");
 
   for (const path of allPaths) {
-    const match = path.match(/^skill_([^/]+)/)
-    if (match && match[1]) {
-      skillIds.add(match[1])
+    const match = path.match(/^skill_([^/]+)/);
+    if (match?.[1]) {
+      skillIds.add(match[1]);
     }
   }
 
-  console.log(`[Migration] Found ${skillIds.size} skills to migrate`)
+  console.log(`[Migration] Found ${skillIds.size} skills to migrate`);
 
-  const migratedSkills: string[] = []
-  let failedCount = 0
+  const migratedSkills: string[] = [];
+  let failedCount = 0;
 
   // Migrate each skill
   for (const skillId of skillIds) {
-    const success = await migrateSkill(skillId)
+    const success = await migrateSkill(skillId);
     if (success) {
-      migratedSkills.push(skillId)
+      migratedSkills.push(skillId);
     } else {
-      failedCount++
+      failedCount++;
     }
   }
 
@@ -160,27 +168,29 @@ export async function migrateAllSkills(): Promise<{
     completed: failedCount === 0,
     migratedSkills,
     timestamp: Date.now(),
-    version: '1.0'
-  }
+    version: "1.0",
+  };
 
-  await saveMigrationStatus(status)
+  await saveMigrationStatus(status);
 
-  console.log(`[Migration] Migration completed: ${migratedSkills.length} succeeded, ${failedCount} failed`)
+  console.log(
+    `[Migration] Migration completed: ${migratedSkills.length} succeeded, ${failedCount} failed`,
+  );
 
   return {
     success: failedCount === 0,
     migratedCount: migratedSkills.length,
     failedCount,
-    migratedSkills
-  }
+    migratedSkills,
+  };
 }
 
 /**
  * Reset migration status (for testing)
  */
 export async function resetMigration(): Promise<void> {
-  await chrome.storage.local.remove(MIGRATION_KEY)
-  console.log('[Migration] Migration status reset')
+  await chrome.storage.local.remove(MIGRATION_KEY);
+  console.log("[Migration] Migration status reset");
 }
 
 /**
@@ -188,11 +198,11 @@ export async function resetMigration(): Promise<void> {
  */
 export async function isMigrationV2Completed(): Promise<boolean> {
   try {
-    const result = await chrome.storage.local.get(MIGRATION_V2_KEY)
-    const status = result[MIGRATION_V2_KEY] as MigrationV2Status | undefined
-    return status?.completed || false
+    const result = await chrome.storage.local.get(MIGRATION_V2_KEY);
+    const status = result[MIGRATION_V2_KEY] as MigrationV2Status | undefined;
+    return status?.completed || false;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -200,64 +210,73 @@ export async function isMigrationV2Completed(): Promise<boolean> {
  * Save V2 migration status
  */
 async function saveMigrationV2Status(status: MigrationV2Status): Promise<void> {
-  await chrome.storage.local.set({ [MIGRATION_V2_KEY]: status })
+  await chrome.storage.local.set({ [MIGRATION_V2_KEY]: status });
 }
 
 /**
  * Migrate from old skill ID format (skill_xxx_xxx) to new format (skill name)
  */
-async function migrateSkillIdFormat(oldMetadata: SkillMetadata): Promise<boolean> {
+async function migrateSkillIdFormat(
+  oldMetadata: SkillMetadata,
+): Promise<boolean> {
   try {
-    const oldId = oldMetadata.id
-    const newId = oldMetadata.name
+    const oldId = oldMetadata.id;
+    const newId = oldMetadata.name;
 
     // Skip if ID is already using the name format (not random)
     if (!oldId.match(/^skill_\d+_[a-z0-9]+$/)) {
-      console.log(`[Migration V2] Skill ${oldId} already uses new format`)
-      return true
+      console.log(`[Migration V2] Skill ${oldId} already uses new format`);
+      return true;
     }
 
-    console.log(`[Migration V2] Migrating skill: ${oldId} -> ${newId}`)
+    console.log(`[Migration V2] Migrating skill: ${oldId} -> ${newId}`);
 
-    const oldPath = zenfs.getSkillPath(oldId)
-    const newPath = zenfs.getSkillPath(newId)
+    const oldPath = zenfs.getSkillPath(oldId);
+    const newPath = zenfs.getSkillPath(newId);
 
     // Check if old path exists in ZenFS
-    const oldPathExists = await zenfs.exists(oldPath)
+    const oldPathExists = await zenfs.exists(oldPath);
     if (!oldPathExists) {
-      console.warn(`[Migration V2] Old path not found: ${oldPath}`)
+      console.warn(`[Migration V2] Old path not found: ${oldPath}`);
       // Still update metadata even if files don't exist
     } else {
       // Check if new path already exists
-      const newPathExists = await zenfs.exists(newPath)
+      const newPathExists = await zenfs.exists(newPath);
       if (newPathExists) {
-        console.warn(`[Migration V2] New path already exists: ${newPath}, removing old path`)
-        await zenfs.rm(oldPath, { recursive: true })
+        console.warn(
+          `[Migration V2] New path already exists: ${newPath}, removing old path`,
+        );
+        await zenfs.rm(oldPath, { recursive: true });
       } else {
         // Rename directory in ZenFS
-        await zenfs.rename(oldPath, newPath)
-        console.log(`[Migration V2] Renamed directory: ${oldPath} -> ${newPath}`)
+        await zenfs.rename(oldPath, newPath);
+        console.log(
+          `[Migration V2] Renamed directory: ${oldPath} -> ${newPath}`,
+        );
       }
     }
 
     // Update metadata in IndexedDB
     // First delete old metadata
-    await skillStorage.deleteSkill(oldId)
+    await skillStorage.deleteSkill(oldId);
 
     // Create new metadata with updated ID
     const newMetadata: SkillMetadata = {
       ...oldMetadata,
-      id: newId
-    }
+      id: newId,
+    };
 
     // Save new metadata
-    await skillStorage.saveSkillMetadata(newMetadata)
-    console.log(`[Migration V2] Updated metadata: ${oldId} -> ${newId}`)
+    await skillStorage.saveSkillMetadata(newMetadata);
+    console.log(`[Migration V2] Updated metadata: ${oldId} -> ${newId}`);
 
-    return true
+    return true;
   } catch (error) {
-    console.error(`[Migration V2] Failed to migrate skill ${oldMetadata.id}:`, error)
-    return false
+    console.error(
+      `[Migration V2] Failed to migrate skill ${oldMetadata.id}:`,
+      error,
+    );
+    return false;
   }
 }
 
@@ -265,53 +284,55 @@ async function migrateSkillIdFormat(oldMetadata: SkillMetadata): Promise<boolean
  * Migrate all skills from old ID format to new ID format
  */
 export async function migrateAllSkillIds(): Promise<{
-  success: boolean
-  renamedCount: number
-  failedCount: number
-  renamedSkills: { oldId: string; newId: string }[]
+  success: boolean;
+  renamedCount: number;
+  failedCount: number;
+  renamedSkills: { oldId: string; newId: string }[];
 }> {
-  console.log('[Migration V2] Starting skill ID format migration...')
+  console.log("[Migration V2] Starting skill ID format migration...");
 
   // Check if already migrated
-  const alreadyMigrated = await isMigrationV2Completed()
+  const alreadyMigrated = await isMigrationV2Completed();
   if (alreadyMigrated) {
-    console.log('[Migration V2] Migration already completed, skipping')
+    console.log("[Migration V2] Migration already completed, skipping");
     return {
       success: true,
       renamedCount: 0,
       failedCount: 0,
-      renamedSkills: []
-    }
+      renamedSkills: [],
+    };
   }
 
   // Initialize storage and ZenFS
-  await skillStorage.initialize()
-  await zenfs.initialize()
+  await skillStorage.initialize();
+  await zenfs.initialize();
 
   // Get all skills from IndexedDB
-  const allSkills = await skillStorage.listSkills()
-  console.log(`[Migration V2] Found ${allSkills.length} skills in storage`)
+  const allSkills = await skillStorage.listSkills();
+  console.log(`[Migration V2] Found ${allSkills.length} skills in storage`);
 
   // Filter skills that need migration (those with random IDs)
-  const skillsToMigrate = allSkills.filter(skill =>
-    skill.id.match(/^skill_\d+_[a-z0-9]+$/)
-  )
+  const skillsToMigrate = allSkills.filter((skill) =>
+    skill.id.match(/^skill_\d+_[a-z0-9]+$/),
+  );
 
-  console.log(`[Migration V2] ${skillsToMigrate.length} skills need ID migration`)
+  console.log(
+    `[Migration V2] ${skillsToMigrate.length} skills need ID migration`,
+  );
 
-  const renamedSkills: { oldId: string; newId: string }[] = []
-  let failedCount = 0
+  const renamedSkills: { oldId: string; newId: string }[] = [];
+  let failedCount = 0;
 
   // Migrate each skill
   for (const skill of skillsToMigrate) {
-    const oldId = skill.id
-    const newId = skill.name
+    const oldId = skill.id;
+    const newId = skill.name;
 
-    const success = await migrateSkillIdFormat(skill)
+    const success = await migrateSkillIdFormat(skill);
     if (success) {
-      renamedSkills.push({ oldId, newId })
+      renamedSkills.push({ oldId, newId });
     } else {
-      failedCount++
+      failedCount++;
     }
   }
 
@@ -320,19 +341,21 @@ export async function migrateAllSkillIds(): Promise<{
     completed: failedCount === 0,
     renamedSkills,
     timestamp: Date.now(),
-    version: '2.0'
-  }
+    version: "2.0",
+  };
 
-  await saveMigrationV2Status(status)
+  await saveMigrationV2Status(status);
 
-  console.log(`[Migration V2] Migration completed: ${renamedSkills.length} succeeded, ${failedCount} failed`)
+  console.log(
+    `[Migration V2] Migration completed: ${renamedSkills.length} succeeded, ${failedCount} failed`,
+  );
 
   return {
     success: failedCount === 0,
     renamedCount: renamedSkills.length,
     failedCount,
-    renamedSkills
-  }
+    renamedSkills,
+  };
 }
 
 /**
@@ -342,19 +365,19 @@ export async function migrateAllSkillIds(): Promise<{
 export async function autoMigrate(): Promise<void> {
   try {
     // V1 Migration: SimpleFileSystem to ZenFS
-    const v1Completed = await isMigrationCompleted()
+    const v1Completed = await isMigrationCompleted();
     if (!v1Completed) {
-      console.log('[Migration] Auto-migration V1 triggered')
-      await migrateAllSkills()
+      console.log("[Migration] Auto-migration V1 triggered");
+      await migrateAllSkills();
     }
 
     // V2 Migration: Old ID format to new ID format
-    const v2Completed = await isMigrationV2Completed()
+    const v2Completed = await isMigrationV2Completed();
     if (!v2Completed) {
-      console.log('[Migration] Auto-migration V2 triggered')
-      await migrateAllSkillIds()
+      console.log("[Migration] Auto-migration V2 triggered");
+      await migrateAllSkillIds();
     }
   } catch (error) {
-    console.error('[Migration] Auto-migration failed:', error)
+    console.error("[Migration] Auto-migration failed:", error);
   }
 }

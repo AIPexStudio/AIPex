@@ -96,7 +96,7 @@ Files not intended to be loaded into context, but rather used within the output 
 ---
 
 **Any unneeded directories can be deleted.** Not every skill requires all three types of resources.
-`
+`;
 
 const EXAMPLE_SCRIPT = `
 /**
@@ -121,7 +121,7 @@ if (require.main === module) {
 }
 
 module.exports = { main };
-`
+`;
 
 const EXAMPLE_REFERENCE = `# Reference Documentation for {skill_title}
 
@@ -157,7 +157,7 @@ Reference docs are ideal for:
 - Common patterns
 - Troubleshooting
 - Best practices
-`
+`;
 
 const EXAMPLE_ASSET = `# Example Asset File
 
@@ -183,14 +183,14 @@ Example asset files from other skills:
 - Data files: .csv, .json, .xml, .yaml
 
 Note: This is a text placeholder. Actual assets can be any file type.
-`
+`;
 
 function titleCaseSkillName(skillName) {
   /**Convert hyphenated skill name to Title Case for display.*/
   return skillName
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+    .join(" ");
 }
 
 function initSkill(skillName, basePath, fs) {
@@ -206,108 +206,108 @@ function initSkill(skillName, basePath, fs) {
    *     Object with skill structure, or null if error
    */
   // Determine skill directory path
-  const skillDir = `${basePath}/${skillName}`
+  const skillDir = `${basePath}/${skillName}`;
 
   // Check if directory already exists
   if (fs.existsSync(skillDir)) {
-    console.log(`❌ Error: Skill directory already exists: ${skillDir}`)
-    return null
+    console.log(`❌ Error: Skill directory already exists: ${skillDir}`);
+    return null;
   }
 
   // Create skill directory
   try {
-    fs.mkdirSync(skillDir, { recursive: true })
-    console.log(`✅ Created skill directory: ${skillDir}`)
+    fs.mkdirSync(skillDir, { recursive: true });
+    console.log(`✅ Created skill directory: ${skillDir}`);
   } catch (e) {
-    console.log(`❌ Error creating directory: ${e.message}`)
-    return null
+    console.log(`❌ Error creating directory: ${e.message}`);
+    return null;
   }
 
   // Create SKILL.md from template
-  const skillTitle = titleCaseSkillName(skillName)
+  const skillTitle = titleCaseSkillName(skillName);
   const skillContent = SKILL_TEMPLATE.replace(
     /{skill_name}/g,
-    skillName
-  ).replace(/{skill_title}/g, skillTitle)
+    skillName,
+  ).replace(/{skill_title}/g, skillTitle);
 
-  const skillMdPath = `${skillDir}/SKILL.md`
+  const skillMdPath = `${skillDir}/SKILL.md`;
   try {
-    fs.writeFileSync(skillMdPath, skillContent)
-    console.log("✅ Created SKILL.md")
+    fs.writeFileSync(skillMdPath, skillContent);
+    console.log("✅ Created SKILL.md");
   } catch (e) {
-    console.log(`❌ Error creating SKILL.md: ${e.message}`)
-    return null
+    console.log(`❌ Error creating SKILL.md: ${e.message}`);
+    return null;
   }
 
   // Create resource directories with example files
   try {
     // Create scripts/ directory with example script
-    const scriptsDir = `${skillDir}/scripts`
-    fs.mkdirSync(scriptsDir, { recursive: true })
-    const exampleScript = `${scriptsDir}/example.js`
+    const scriptsDir = `${skillDir}/scripts`;
+    fs.mkdirSync(scriptsDir, { recursive: true });
+    const exampleScript = `${scriptsDir}/example.js`;
     const exampleScriptContent = EXAMPLE_SCRIPT.replace(
       /{skill_name}/g,
-      skillName
-    )
-    fs.writeFileSync(exampleScript, exampleScriptContent)
-    console.log("✅ Created scripts/example.js")
+      skillName,
+    );
+    fs.writeFileSync(exampleScript, exampleScriptContent);
+    console.log("✅ Created scripts/example.js");
 
     // Create references/ directory with example reference doc
-    const referencesDir = `${skillDir}/references`
-    fs.mkdirSync(referencesDir, { recursive: true })
-    const exampleReference = `${referencesDir}/api_reference.md`
+    const referencesDir = `${skillDir}/references`;
+    fs.mkdirSync(referencesDir, { recursive: true });
+    const exampleReference = `${referencesDir}/api_reference.md`;
     const exampleReferenceContent = EXAMPLE_REFERENCE.replace(
       /{skill_title}/g,
-      skillTitle
-    )
-    fs.writeFileSync(exampleReference, exampleReferenceContent)
-    console.log("✅ Created references/api_reference.md")
+      skillTitle,
+    );
+    fs.writeFileSync(exampleReference, exampleReferenceContent);
+    console.log("✅ Created references/api_reference.md");
 
     // Create assets/ directory with example asset placeholder
-    const assetsDir = `${skillDir}/assets`
-    fs.mkdirSync(assetsDir, { recursive: true })
-    const exampleAsset = `${assetsDir}/example_asset.txt`
-    fs.writeFileSync(exampleAsset, EXAMPLE_ASSET)
-    console.log("✅ Created assets/example_asset.txt")
+    const assetsDir = `${skillDir}/assets`;
+    fs.mkdirSync(assetsDir, { recursive: true });
+    const exampleAsset = `${assetsDir}/example_asset.txt`;
+    fs.writeFileSync(exampleAsset, EXAMPLE_ASSET);
+    console.log("✅ Created assets/example_asset.txt");
   } catch (e) {
-    console.log(`❌ Error creating resource directories: ${e.message}`)
-    return null
+    console.log(`❌ Error creating resource directories: ${e.message}`);
+    return null;
   }
 
   // Print next steps
   console.log(
-    `\n✅ Skill '${skillName}' initialized successfully at ${skillDir}`
-  )
-  console.log("\nNext steps:")
+    `\n✅ Skill '${skillName}' initialized successfully at ${skillDir}`,
+  );
+  console.log("\nNext steps:");
   console.log(
-    "1. Edit SKILL.md to complete the TODO items and update the description"
-  )
+    "1. Edit SKILL.md to complete the TODO items and update the description",
+  );
   console.log(
-    "2. Customize or delete the example files in scripts/, references/, and assets/"
-  )
-  console.log("3. Run the validator when ready to check the skill structure")
+    "2. Customize or delete the example files in scripts/, references/, and assets/",
+  );
+  console.log("3. Run the validator when ready to check the skill structure");
 
   return {
     skillName: skillName,
     skillTitle: skillTitle,
     skillDir: skillDir,
-    success: true
-  }
+    success: true,
+  };
 }
 
 // Browser-compatible module export
 // Main entry point for script execution
-async function main(args) {
-  const { skillName, basePath } = args
+async function _main(args) {
+  const { skillName, basePath } = args;
 
   if (!skillName) {
-    throw new Error("skillName is required")
+    throw new Error("skillName is required");
   }
 
   if (!basePath) {
-    throw new Error("basePath is required")
+    throw new Error("basePath is required");
   }
 
   // Use SKILL_API.fs for file operations in browser context
-  return initSkill(skillName, basePath, fs)
+  return initSkill(skillName, basePath, fs);
 }
