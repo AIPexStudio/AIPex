@@ -53,8 +53,18 @@ export class ConversationManager {
   }
 
   async saveSession(session: Session): Promise<void> {
-    if (this.compressor?.shouldCompress(session.getItemCount())) {
-      await this.doCompress(session);
+    if (this.compressor) {
+      const lastPromptTokens = session.getMetadata("lastPromptTokens");
+      const lastPromptTokensValue =
+        typeof lastPromptTokens === "number" ? lastPromptTokens : undefined;
+      if (
+        this.compressor.shouldCompress(
+          session.getItemCount(),
+          lastPromptTokensValue,
+        )
+      ) {
+        await this.doCompress(session);
+      }
     }
     this.cache.set(session.id, session);
     await this.storage.save(session);
