@@ -27,7 +27,7 @@
     "@biomejs/biome": "^2.3.8",
     "@j178/prek": "^0.2.19",
     "@types/chrome": "0.1.32",
-    "@types/node": "^24.10.1",
+    "@types/node": "^25.0.9",
     "bumpp": "^10.3.2",
     "knip": "^5.71.0",
     "tinyglobby": "^0.2.15",
