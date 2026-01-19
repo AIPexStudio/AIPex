@@ -34,7 +34,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.14
-        version: 4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@1.8.0))(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/aipex-react:
     dependencies:
@@ -145,8 +145,8 @@ importers:
         specifier: ^15.5.13
         version: 15.5.13
       jsdom:
-        specifier: ^27.2.0
-        version: 27.2.0
+        specifier: ^27.4.0
+        version: 27.4.0(@noble/hashes@1.8.0)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -158,7 +158,7 @@ importers:
         version: 1.8.16
       vitest:
         specifier: ^4.0.14
-        version: 4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@1.8.0))(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/browser-ext:
     dependencies:
@@ -317,8 +317,8 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2))
       jsdom:
-        specifier: ^27.2.0
-        version: 27.2.0
+        specifier: ^27.4.0
+        version: 27.4.0(@noble/hashes@1.8.0)
       postcss:
         specifier: 8.5.6
         version: 8.5.6
@@ -367,10 +367,10 @@ importers:
         version: 3.0.10(zod@4.1.13)
       '@openai/agents':
         specifier: ^0.3.8
-        version: 0.3.8(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.8(ws@8.19.0)(zod@4.1.13)
       '@openai/agents-extensions':
         specifier: ^0.3.8
-        version: 0.3.8(@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)
+        version: 0.3.8(@openai/agents@0.3.8(ws@8.19.0)(zod@4.1.13))(ws@8.19.0)(zod@4.1.13)
       '@openrouter/ai-sdk-provider':
         specifier: ^0.4.0
         version: 0.4.6(zod@4.1.13)
@@ -405,8 +405,8 @@ importers:
 
 packages:
 
-  '@acemir/cssom@0.9.24':
-    resolution: {integrity: sha512-5YjgMmAiT2rjJZU7XK1SNI7iqTy92DpaYVgG6x63FxkJ11UpYfLndHJATtinWJClAXiOlW9XWaUyAQf8pMrQPg==}
+  '@acemir/cssom@0.9.31':
+    resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
 
   '@adobe/css-tools@4.4.4':
     resolution: {integrity: sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg==}
@@ -475,11 +475,11 @@ packages:
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
 
-  '@asamuzakjp/css-color@4.1.0':
-    resolution: {integrity: sha512-9xiBAtLn4aNsa4mDnpovJvBn72tNEIACyvlqaNJ+ADemR+yeMJWnBudOi2qGDviJa7SwcDOU/TRh5dnET7qk0w==}
+  '@asamuzakjp/css-color@4.1.1':
+    resolution: {integrity: sha512-B0Hv6G3gWGMn0xKJ0txEi/jM5iFpT3MfDxmhZFb4W047GvytCf1DHQ1D69W3zHI4yWe2aTZAA0JnbMZ7Xc8DuQ==}
 
-  '@asamuzakjp/dom-selector@6.7.5':
-    resolution: {integrity: sha512-Eks6dY8zau4m4wNRQjRVaKQRTalNcPcBvU1ZQ35w5kKRk1gUeNCkVLsRiATurjASTp3TKM4H10wsI50nx3NZdw==}
+  '@asamuzakjp/dom-selector@6.7.6':
+    resolution: {integrity: sha512-hBaJER6A9MpdG3WgdlOolHmbOYvSk46y7IQN/1+iqiCuUu6iWdQrs9DGKF8ocqsEqWujWf/V7b7vaDgiUmIvUg==}
 
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
@@ -775,8 +775,8 @@ packages:
     peerDependencies:
       '@csstools/css-tokenizer': ^3.0.4
 
-  '@csstools/css-syntax-patches-for-csstree@1.0.20':
-    resolution: {integrity: sha512-8BHsjXfSciZxjmHQOuVdW2b8WLUPts9a+mfL13/PzEviufUEW2xnvQuOlKs9dRBHgRqJ53SF/DUoK9+MZk72oQ==}
+  '@csstools/css-syntax-patches-for-csstree@1.0.25':
+    resolution: {integrity: sha512-g0Kw9W3vjx5BEBAF8c5Fm2NcB/Fs8jJXh85aXqwEXiL+tqtOut07TWgyaGzAAfTM+gKckrrncyeGEZPcaRgm2Q==}
     engines: {node: '>=18'}
 
   '@csstools/css-tokenizer@3.0.4':
@@ -947,6 +947,15 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@exodus/bytes@1.9.0':
+    resolution: {integrity: sha512-lagqsvnk09NKogQaN/XrtlWeUF8SRhT12odMvbTIIaVObqzwAogL6jhR4DAp0gPuKoM1AOVrKUshJpRdpMFrww==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      '@noble/hashes': ^1.8.0 || ^2.0.0
+    peerDependenciesMeta:
+      '@noble/hashes':
+        optional: true
 
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
@@ -2555,8 +2564,8 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
-  cssstyle@5.3.3:
-    resolution: {integrity: sha512-OytmFH+13/QXONJcC75QNdMtKpceNk3u8ThBjyyYjkEcy/ekBwR1mMAuNvi3gdBPW3N5TlCzQ0WZw8H0lN/bDw==}
+  cssstyle@5.3.7:
+    resolution: {integrity: sha512-7D2EPVltRrsTkhpQmksIu+LxeWAIEk6wRDMJ1qljlv+CKHJM+cJLlfhWIzNA44eAsHXSNe3+vO6DW1yCYx8SuQ==}
     engines: {node: '>=20'}
 
   csstype@3.2.3:
@@ -3213,9 +3222,9 @@ packages:
   hsla-regex@1.0.0:
     resolution: {integrity: sha512-7Wn5GMLuHBjZCb2bTmnDOycho0p/7UVaAeqXZGbHrBCl6Yd/xDhQJAXe6Ga9AXJH2I5zY1dEdYw2u1UptnSBJA==}
 
-  html-encoding-sniffer@4.0.0:
-    resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
-    engines: {node: '>=18'}
+  html-encoding-sniffer@6.0.0:
+    resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
   html-tags@3.3.1:
     resolution: {integrity: sha512-ztqyC3kLto0e9WbNp0aeP+M3kTt+nbaIveGmUxAtZa+8iFgKLUOD4YKM5j+f3QD89bra7UeumolZHKuOXnTmeQ==}
@@ -3399,8 +3408,8 @@ packages:
       '@babel/preset-env':
         optional: true
 
-  jsdom@27.2.0:
-    resolution: {integrity: sha512-454TI39PeRDW1LgpyLPyURtB4Zx1tklSr6+OFOipsxGUH1WMTvk6C65JQdrj455+DP2uJ1+veBEHTGFKWVLFoA==}
+  jsdom@27.4.0:
+    resolution: {integrity: sha512-mjzqwWRD9Y1J1KUi7W97Gja1bwOOM5Ug0EZ6UDK3xS7j7mndrkwozHtSblfomlzyB4NepioNt+B2sOSzczVgtQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
     peerDependencies:
       canvas: ^3.0.0
@@ -4929,8 +4938,8 @@ packages:
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
-  webidl-conversions@8.0.0:
-    resolution: {integrity: sha512-n4W4YFyz5JzOfQeA8oN7dUYpR+MBP3PIUsn2jLjWXwK5ASUzt0Jc/A5sAUZoCYFJRGF0FBKJ+1JjN43rNdsQzA==}
+  webidl-conversions@8.0.1:
+    resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
     engines: {node: '>=20'}
 
   whatwg-encoding@3.1.1:
@@ -4963,8 +4972,8 @@ packages:
     resolution: {integrity: sha512-+QU2zd6OTD8XWIJCbffaiQeH9U73qIqafo1x6V1snCWYGJf6cVE0cDR4D8xRzcEnfI21IFrUPzPGtcPf8AC+Rw==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  ws@8.18.3:
-    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+  ws@8.19.0:
+    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -5015,7 +5024,7 @@ packages:
 
 snapshots:
 
-  '@acemir/cssom@0.9.24': {}
+  '@acemir/cssom@0.9.31': {}
 
   '@adobe/css-tools@4.4.4': {}
 
@@ -5085,7 +5094,7 @@ snapshots:
       package-manager-detector: 1.6.0
       tinyexec: 1.0.2
 
-  '@asamuzakjp/css-color@4.1.0':
+  '@asamuzakjp/css-color@4.1.1':
     dependencies:
       '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-color-parser': 3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
@@ -5093,7 +5102,7 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 11.2.4
 
-  '@asamuzakjp/dom-selector@6.7.5':
+  '@asamuzakjp/dom-selector@6.7.6':
     dependencies:
       '@asamuzakjp/nwsapi': 2.3.9
       bidi-js: 1.0.3
@@ -5450,7 +5459,7 @@ snapshots:
     dependencies:
       '@csstools/css-tokenizer': 3.0.4
 
-  '@csstools/css-syntax-patches-for-csstree@1.0.20': {}
+  '@csstools/css-syntax-patches-for-csstree@1.0.25': {}
 
   '@csstools/css-tokenizer@3.0.4': {}
 
@@ -5547,6 +5556,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.2':
     optional: true
+
+  '@exodus/bytes@1.9.0(@noble/hashes@1.8.0)':
+    optionalDependencies:
+      '@noble/hashes': 1.8.0
 
   '@floating-ui/core@1.7.3':
     dependencies:
@@ -5665,10 +5678,10 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@openai/agents-core@0.3.8(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-core@0.3.8(ws@8.19.0)(zod@4.1.13)':
     dependencies:
       debug: 4.4.3
-      openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
+      openai: 6.15.0(ws@8.19.0)(zod@4.1.13)
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.4)(zod@4.1.13)
       zod: 4.1.13
@@ -5678,25 +5691,25 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-extensions@0.3.8(@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13))(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-extensions@0.3.8(@openai/agents@0.3.8(ws@8.19.0)(zod@4.1.13))(ws@8.19.0)(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider': 2.0.1
-      '@openai/agents': 0.3.8(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents': 0.3.8(ws@8.19.0)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.19.0)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
-      ws: 8.18.3
+      ws: 8.19.0
       zod: 4.1.13
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - hono
       - supports-color
 
-  '@openai/agents-openai@0.3.8(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents-openai@0.3.8(ws@8.19.0)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.19.0)(zod@4.1.13)
       debug: 4.4.3
-      openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
+      openai: 6.15.0(ws@8.19.0)(zod@4.1.13)
       zod: 4.1.13
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5706,10 +5719,10 @@ snapshots:
 
   '@openai/agents-realtime@0.3.8(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.19.0)(zod@4.1.13)
       '@types/ws': 8.18.1
       debug: 4.4.3
-      ws: 8.18.3
+      ws: 8.19.0
       zod: 4.1.13
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5718,13 +5731,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@openai/agents@0.3.8(ws@8.18.3)(zod@4.1.13)':
+  '@openai/agents@0.3.8(ws@8.19.0)(zod@4.1.13)':
     dependencies:
-      '@openai/agents-core': 0.3.8(ws@8.18.3)(zod@4.1.13)
-      '@openai/agents-openai': 0.3.8(ws@8.18.3)(zod@4.1.13)
+      '@openai/agents-core': 0.3.8(ws@8.19.0)(zod@4.1.13)
+      '@openai/agents-openai': 0.3.8(ws@8.19.0)(zod@4.1.13)
       '@openai/agents-realtime': 0.3.8(zod@4.1.13)
       debug: 4.4.3
-      openai: 6.15.0(ws@8.18.3)(zod@4.1.13)
+      openai: 6.15.0(ws@8.19.0)(zod@4.1.13)
       zod: 4.1.13
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -7553,11 +7566,12 @@ snapshots:
 
   cssesc@3.0.0: {}
 
-  cssstyle@5.3.3:
+  cssstyle@5.3.7:
     dependencies:
-      '@asamuzakjp/css-color': 4.1.0
-      '@csstools/css-syntax-patches-for-csstree': 1.0.20
+      '@asamuzakjp/css-color': 4.1.1
+      '@csstools/css-syntax-patches-for-csstree': 1.0.25
       css-tree: 3.1.0
+      lru-cache: 11.2.4
 
   csstype@3.2.3: {}
 
@@ -8338,9 +8352,11 @@ snapshots:
 
   hsla-regex@1.0.0: {}
 
-  html-encoding-sniffer@4.0.0:
+  html-encoding-sniffer@6.0.0(@noble/hashes@1.8.0):
     dependencies:
-      whatwg-encoding: 3.1.1
+      '@exodus/bytes': 1.9.0(@noble/hashes@1.8.0)
+    transitivePeerDependencies:
+      - '@noble/hashes'
 
   html-tags@3.3.1: {}
 
@@ -8512,14 +8528,15 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  jsdom@27.2.0:
+  jsdom@27.4.0(@noble/hashes@1.8.0):
     dependencies:
-      '@acemir/cssom': 0.9.24
-      '@asamuzakjp/dom-selector': 6.7.5
-      cssstyle: 5.3.3
+      '@acemir/cssom': 0.9.31
+      '@asamuzakjp/dom-selector': 6.7.6
+      '@exodus/bytes': 1.9.0(@noble/hashes@1.8.0)
+      cssstyle: 5.3.7
       data-urls: 6.0.0
       decimal.js: 10.6.0
-      html-encoding-sniffer: 4.0.0
+      html-encoding-sniffer: 6.0.0(@noble/hashes@1.8.0)
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
       is-potential-custom-element-name: 1.0.1
@@ -8528,13 +8545,13 @@ snapshots:
       symbol-tree: 3.2.4
       tough-cookie: 6.0.0
       w3c-xmlserializer: 5.0.0
-      webidl-conversions: 8.0.0
-      whatwg-encoding: 3.1.1
+      webidl-conversions: 8.0.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 15.1.0
-      ws: 8.18.3
+      ws: 8.19.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
+      - '@noble/hashes'
       - bufferutil
       - supports-color
       - utf-8-validate
@@ -9257,9 +9274,9 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@6.15.0(ws@8.18.3)(zod@4.1.13):
+  openai@6.15.0(ws@8.19.0)(zod@4.1.13):
     optionalDependencies:
-      ws: 8.18.3
+      ws: 8.19.0
       zod: 4.1.13
 
   oxc-resolver@11.14.2:
@@ -10263,7 +10280,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
-  vitest@4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2):
+  vitest@4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@1.8.0))(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       '@vitest/expect': 4.0.14
       '@vitest/mocker': 4.0.14(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2))
@@ -10288,7 +10305,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/node': 24.10.1
-      jsdom: 27.2.0
+      jsdom: 27.4.0(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - jiti
       - less
@@ -10332,7 +10349,7 @@ snapshots:
 
   web-namespaces@2.0.1: {}
 
-  webidl-conversions@8.0.0: {}
+  webidl-conversions@8.0.1: {}
 
   whatwg-encoding@3.1.1:
     dependencies:
@@ -10343,7 +10360,7 @@ snapshots:
   whatwg-url@15.1.0:
     dependencies:
       tr46: 6.0.0
-      webidl-conversions: 8.0.0
+      webidl-conversions: 8.0.1
 
   which@2.0.2:
     dependencies:
@@ -10361,7 +10378,7 @@ snapshots:
       imurmurhash: 0.1.4
       signal-exit: 4.1.0
 
-  ws@8.18.3: {}
+  ws@8.19.0: {}
 
   xml-name-validator@5.0.0: {}
 
