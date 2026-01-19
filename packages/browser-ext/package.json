@@ -31,7 +31,7 @@
     "@ai-sdk/anthropic": "^3.0.10",
     "@ai-sdk/google": "^3.0.6",
     "@ai-sdk/openai": "^3.0.8",
-    "@ai-sdk/openai-compatible": "^2.0.5",
+    "@ai-sdk/openai-compatible": "^2.0.13",
     "@aipexstudio/aipex-core": "workspace:*",
     "@aipexstudio/aipex-react": "workspace:*",
     "@aipexstudio/browser-runtime": "workspace:*",
