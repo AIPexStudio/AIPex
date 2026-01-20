@@ -8,16 +8,10 @@
  * The implementation is chosen based on the automation mode setting.
  */
 
-import type { TextSnapshotNode } from "./types";
-import { snapshotManager } from "./snapshot-manager";
 import { getAutomationMode } from "../runtime/automation-mode";
-import {
-  hasGlobPatterns,
-  parseSearchQuery,
-  searchSnapshotText,
-  type SearchOptions,
-  SKIP_ROLES,
-} from "./query";
+import { type SearchOptions, SKIP_ROLES, searchSnapshotText } from "./query";
+import { snapshotManager } from "./snapshot-manager";
+import type { TextSnapshotNode } from "./types";
 
 /**
  * DOM snapshot node structure from @aipexstudio/dom-snapshot
@@ -441,11 +435,7 @@ function formatNode(
   const shouldInclude = shouldIncludeInOutput(node);
   const attributes = shouldInclude ? getNodeAttributes(node) : [node.role];
   // marker: '*' = exact focused node; '→' = ancestor in focus path
-  const marker = node.focused
-    ? "*"
-    : focusAncestorSet.has(node.id)
-      ? "→"
-      : " ";
+  const marker = node.focused ? "*" : focusAncestorSet.has(node.id) ? "→" : " ";
   let result = `${" ".repeat(depth * 1) + marker + attributes.join(" ")}\n`;
 
   // recursively format child nodes

@@ -6,9 +6,9 @@
 import type { AppSettings } from "@aipexstudio/aipex-core";
 import {
   type AutomationMode,
-  STORAGE_KEYS,
   aisdk,
   SessionStorage,
+  STORAGE_KEYS,
   validateAutomationMode,
 } from "@aipexstudio/aipex-core";
 import { SYSTEM_PROMPT } from "@aipexstudio/aipex-react/components/chatbot/constants";
@@ -62,16 +62,21 @@ export function useBrowserContextProviders() {
  * Filter tools based on automation mode
  * In background mode, filter out computer and screenshot-related tools
  */
-function filterToolsByMode(tools: typeof allBrowserTools, mode: AutomationMode) {
+function filterToolsByMode(
+  tools: typeof allBrowserTools,
+  mode: AutomationMode,
+) {
   // In background mode, filter out computer and screenshot-related tools
-  if (mode === 'background') {
-    return tools.filter(tool => {
+  if (mode === "background") {
+    return tools.filter((tool) => {
       const toolName = tool.name.toLowerCase();
       // Filter out computer tool and all screenshot-related tools
-      return toolName !== 'computer' && 
-             !toolName.includes('screenshot') && 
-             !toolName.includes('take_screenshot') &&
-             !toolName.includes('capture_screenshot');
+      return (
+        toolName !== "computer" &&
+        !toolName.includes("screenshot") &&
+        !toolName.includes("take_screenshot") &&
+        !toolName.includes("capture_screenshot")
+      );
     });
   }
   // In focus mode, include all tools
@@ -83,8 +88,11 @@ function filterToolsByMode(tools: typeof allBrowserTools, mode: AutomationMode) 
  * In background mode, visual tools (computer, screenshot) are excluded
  */
 export function useBrowserTools() {
-  const [automationModeRaw] = useStorage<string>(STORAGE_KEYS.AUTOMATION_MODE, "focus");
-  
+  const [automationModeRaw] = useStorage<string>(
+    STORAGE_KEYS.AUTOMATION_MODE,
+    "focus",
+  );
+
   const automationMode: AutomationMode = useMemo(
     () => validateAutomationMode(automationModeRaw),
     [automationModeRaw],

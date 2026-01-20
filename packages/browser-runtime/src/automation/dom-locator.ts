@@ -1,6 +1,6 @@
 /**
  * DOM Locator - Pure DOM-based element operations
- * 
+ *
  * Uses chrome.scripting.executeScript to interact with elements by UID
  * No CDP/debugger required - suitable for background mode
  */
@@ -265,7 +265,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
       if (monacoEditor && typeof monacoEditor.getValue === "function") {
         return { success: true, data: monacoEditor.getValue() };
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore
     }
 
@@ -275,7 +275,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
       if (codeMirror && typeof codeMirror.getValue === "function") {
         return { success: true, data: codeMirror.getValue() };
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore
     }
 
@@ -285,7 +285,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
       if (aceEditor && typeof aceEditor.getValue === "function") {
         return { success: true, data: aceEditor.getValue() };
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore
     }
 
