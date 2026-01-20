@@ -68,6 +68,13 @@ export interface TranslationResources {
     close: string;
     stopResponse: string;
   };
+  mode: {
+    focus: string;
+    background: string;
+    selectMode: string;
+    focusDescription: string;
+    backgroundDescription: string;
+  };
   ai: {
     thinking: string;
     streamingResponse: string;
@@ -164,6 +171,11 @@ export type BaseTranslationKey =
   | "tooltip.settings"
   | "tooltip.close"
   | "tooltip.stopResponse"
+  | "mode.focus"
+  | "mode.background"
+  | "mode.selectMode"
+  | "mode.focusDescription"
+  | "mode.backgroundDescription"
   | "ai.thinking"
   | "ai.streamingResponse"
   | "ai.realtimeExecution"

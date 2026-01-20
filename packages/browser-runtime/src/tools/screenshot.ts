@@ -1,6 +1,7 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
 import { cacheScreenshotMetadata } from "../automation/computer";
+import { getAutomationMode } from "../runtime/automation-mode";
 import { getActiveTab } from "./index";
 
 async function compressImage(
@@ -40,7 +41,7 @@ async function compressImage(
 export const captureScreenshotTool = tool({
   name: "capture_screenshot",
   description:
-    "Capture screenshot of current visible tab and return as base64 data URL. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions.",
+    "Capture screenshot of current visible tab and return as base64 data URL. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions. NOTE: This tool requires focus mode.",
   parameters: z.object({
     sendToLLM: z
       .boolean()
@@ -52,6 +53,16 @@ export const captureScreenshotTool = tool({
       ),
   }),
   execute: async ({ sendToLLM = false }: { sendToLLM?: boolean | null }) => {
+    const mode = await getAutomationMode();
+    console.log("🔧 [captureScreenshot] Automation mode:", mode);
+
+    // Background mode: reject screenshot with visual feedback
+    if (mode === "background") {
+      throw new Error(
+        "Screenshot capture is disabled in background mode. Please switch to focus mode to use visual tools.",
+      );
+    }
+
     const tab = await getActiveTab();
 
     if (!tab.id || !tab.windowId) {
@@ -130,7 +141,7 @@ export const captureScreenshotTool = tool({
 export const captureTabScreenshotTool = tool({
   name: "capture_tab_screenshot",
   description:
-    "Capture screenshot of a specific tab by ID. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions.",
+    "Capture screenshot of a specific tab by ID. When sendToLLM=true, the screenshot will be sent to the LLM for visual analysis AND visual coordinate tools (computer) will be unlocked for subsequent interactions. NOTE: This tool requires focus mode.",
   parameters: z.object({
     tabId: z.number().describe("The tab ID to capture"),
     sendToLLM: z
@@ -149,6 +160,16 @@ export const captureTabScreenshotTool = tool({
     tabId: number;
     sendToLLM?: boolean | null;
   }) => {
+    const mode = await getAutomationMode();
+    console.log("🔧 [captureTabScreenshot] Automation mode:", mode);
+
+    // Background mode: reject screenshot with visual feedback
+    if (mode === "background") {
+      throw new Error(
+        "Screenshot capture is disabled in background mode. Please switch to focus mode to use visual tools.",
+      );
+    }
+
     const tab = await chrome.tabs.get(tabId);
     if (!tab || !tab.windowId) {
       throw new Error("Tab not found");
@@ -210,9 +231,19 @@ export const captureTabScreenshotTool = tool({
 export const captureScreenshotToClipboardTool = tool({
   name: "capture_screenshot_to_clipboard",
   description:
-    "Capture screenshot of current tab and save directly to clipboard",
+    "Capture screenshot of current tab and save directly to clipboard. NOTE: This tool requires focus mode.",
   parameters: z.object({}),
   execute: async () => {
+    const mode = await getAutomationMode();
+    console.log("🔧 [captureScreenshotToClipboard] Automation mode:", mode);
+
+    // Background mode: reject screenshot
+    if (mode === "background") {
+      throw new Error(
+        "Screenshot capture is disabled in background mode. Please switch to focus mode to use visual tools.",
+      );
+    }
+
     const tab = await getActiveTab();
 
     if (!tab.id || !tab.windowId) {

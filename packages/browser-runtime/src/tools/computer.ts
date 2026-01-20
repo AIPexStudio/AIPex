@@ -1,10 +1,11 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
 import { executeComputerAction } from "../automation/computer";
+import { getAutomationMode } from "../runtime/automation-mode";
 
 export const computerTool = tool({
   name: "computer",
-  description: `Use mouse and keyboard to interact with a web browser based on screenshot coordinates.
+  description: `Use mouse and keyboard to interact with a web browser based on screenshot coordinates. NOTE: This tool requires focus mode.
 
 IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag), you MUST first call capture_screenshot(sendToLLM=true) to take a screenshot. All coordinate values are in screenshot pixel space and will be mapped to viewport CSS pixels.
 
@@ -94,6 +95,16 @@ IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag
       .describe("Element UID from snapshot for scroll_to action."),
   }),
   execute: async (params) => {
+    const mode = await getAutomationMode();
+    console.log("🔧 [computer] Automation mode:", mode);
+
+    // Background mode: reject computer tool (visual coordinate-based interactions)
+    if (mode === "background") {
+      throw new Error(
+        "Computer tool (visual coordinate interactions) is disabled in background mode. Please switch to focus mode to use visual automation tools.",
+      );
+    }
+
     return await executeComputerAction({
       action: params.action,
       coordinate: params.coordinate

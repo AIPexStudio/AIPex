@@ -1,6 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
-import { snapshotManager } from "../automation";
+import * as snapshotProvider from "../automation/snapshot-provider";
 import { getActiveTab } from "./index";
 
 export const takeSnapshotTool = tool({
@@ -15,8 +15,11 @@ export const takeSnapshotTool = tool({
       throw new Error("No active tab found");
     }
 
-    const snapshot = await snapshotManager.createSnapshot(tab.id);
-    const snapshotText = snapshotManager.formatSnapshot(snapshot);
+    const snapshot = await snapshotProvider.createSnapshot(tab.id);
+    if (!snapshot) {
+      throw new Error("Failed to create snapshot");
+    }
+    const snapshotText = snapshotProvider.formatSnapshot(snapshot);
 
     return {
       success: true,
@@ -63,7 +66,7 @@ export const searchElementsTool = tool({
         };
       }
 
-      const result = await snapshotManager.searchAndFormat(
+      const result = await snapshotProvider.searchAndFormat(
         tabId,
         query,
         contextLevels,

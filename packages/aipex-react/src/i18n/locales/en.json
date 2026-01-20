@@ -66,6 +66,13 @@
     "close": "Close",
     "stopResponse": "Stop AI response"
   },
+  "mode": {
+    "focus": "Focus Mode",
+    "background": "Background Mode",
+    "selectMode": "Select automation mode",
+    "focusDescription": "Visual feedback and window focus enabled",
+    "backgroundDescription": "Silent operation, no window focus changes"
+  },
   "ai": {
     "thinking": "AI is thinking...",
     "streamingResponse": "Streaming AI Response",

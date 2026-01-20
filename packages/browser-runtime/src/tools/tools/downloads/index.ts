@@ -363,14 +363,10 @@ export const downloadChatImagesTool = tool({
       .describe("Descriptive folder name for organizing downloads"),
     filenamingStrategy: z
       .enum(["descriptive", "sequential", "timestamp"])
-      .nullable()
-      .optional()
       .default("descriptive")
       .describe("Strategy for naming files"),
     displayResults: z
       .boolean()
-      .nullable()
-      .optional()
       .default(true)
       .describe("Whether to display the download results"),
   }),

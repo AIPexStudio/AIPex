@@ -23,7 +23,14 @@ export default defineConfig({
       ],
     }),
   ],
+  // Optimize dependencies - hooks are now properly isolated
+  optimizeDeps: {
+    // No longer need to exclude hooks since they're not in the main export path
+    include: ["react", "react-dom"],
+  },
   resolve: {
+    // Dedupe React to ensure single instance across all chunks
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
     alias: [
       { find: "~", replacement: path.resolve(__dirname, "./src") },
       { find: "@", replacement: path.resolve(__dirname, "./") },

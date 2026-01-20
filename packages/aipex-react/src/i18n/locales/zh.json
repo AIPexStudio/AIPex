@@ -66,6 +66,13 @@
     "close": "关闭",
     "stopResponse": "停止 AI 回应"
   },
+  "mode": {
+    "focus": "聚焦模式",
+    "background": "后台模式",
+    "selectMode": "选择自动化模式",
+    "focusDescription": "启用视觉反馈和窗口聚焦",
+    "backgroundDescription": "静默操作，不改变窗口焦点"
+  },
   "ai": {
     "thinking": "AI 正在思考...",
     "streamingResponse": "流式 AI 响应",

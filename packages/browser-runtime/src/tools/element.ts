@@ -3,8 +3,9 @@ import { z } from "zod";
 import {
   type ElementHandle,
   SmartElementHandle,
-  snapshotManager,
 } from "../automation";
+import { DomElementHandle } from "../automation/dom-element-handle";
+import * as snapshotProvider from "../automation/snapshot-provider";
 import {
   playClickAnimationAndReturn,
   scrollAndMoveFakeMouseToElement,
@@ -15,7 +16,19 @@ async function getElementByUid(
   tabId: number,
   uid: string,
 ): Promise<ElementHandle | null> {
-  const node = snapshotManager.getNodeByUid(tabId, uid);
+  // Ensure snapshot exists (auto-create if needed)
+  let snapshot = snapshotProvider.getSnapshot(tabId);
+  if (!snapshot) {
+    console.log(`📸 [element.ts] Auto-creating snapshot for tab ${tabId}`);
+    snapshot = await snapshotProvider.createSnapshot(tabId);
+    if (!snapshot) {
+      throw new Error(
+        `Failed to create snapshot for tab ${tabId}. Please ensure the tab is accessible.`,
+      );
+    }
+  }
+
+  const node = snapshotProvider.getNodeByUid(tabId, uid);
   if (!node) {
     throw new Error(
       `Element with UID "${uid}" not found in snapshot for tab ${tabId}. ` +
@@ -23,11 +36,22 @@ async function getElementByUid(
     );
   }
 
-  if (node.backendDOMNodeId) {
-    return new SmartElementHandle(tabId, node, node.backendDOMNodeId);
-  }
+  // Select handle based on snapshot mode
+  const mode = await snapshotProvider.getSnapshotMode();
+  console.log(`🔧 [element.ts] Using ${mode} mode handle for uid ${uid}`);
 
-  return null;
+  if (mode === "dom") {
+    // DOM mode: use DomElementHandle (no CDP required)
+    return new DomElementHandle(tabId, node);
+  } else {
+    // CDP mode: use SmartElementHandle (requires backendDOMNodeId)
+    if (node.backendDOMNodeId) {
+      return new SmartElementHandle(tabId, node, node.backendDOMNodeId);
+    }
+    throw new Error(
+      `backendDOMNodeId not available for CDP mode. This should not happen.`,
+    );
+  }
 }
 
 export const clickTool = tool({
