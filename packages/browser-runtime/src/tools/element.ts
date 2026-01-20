@@ -1,9 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
-import {
-  type ElementHandle,
-  SmartElementHandle,
-} from "../automation";
+import { type ElementHandle, SmartElementHandle } from "../automation";
 import { DomElementHandle } from "../automation/dom-element-handle";
 import * as snapshotProvider from "../automation/snapshot-provider";
 import {

@@ -1,12 +1,12 @@
 /**
  * DOM Element Handle
- * 
+ *
  * Provides ElementHandle/Locator interface using DOM-based operations
  * No CDP/debugger required - suitable for background mode
  */
 
-import type { ElementHandle, Locator, TextSnapshotNode } from "./types";
 import { DomLocator } from "./dom-locator";
+import type { ElementHandle, Locator, TextSnapshotNode } from "./types";
 
 /**
  * DOM-based Locator implementation
@@ -84,10 +84,7 @@ class DomLocatorImpl implements Locator {
 export class DomElementHandle implements ElementHandle {
   private locator: DomLocatorImpl;
 
-  constructor(
-    private tabId: number,
-    private node: TextSnapshotNode,
-  ) {
+  constructor(tabId: number, node: TextSnapshotNode) {
     this.locator = new DomLocatorImpl(tabId, node.id);
   }
 
