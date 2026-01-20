@@ -229,7 +229,7 @@ export const downloadTextAsMarkdownTool = tool({
 });
 
 /**
- * Download an image from base64 data
+ * Download an image from base64 data to the user's local filesystem
  */
 export const downloadImageTool = tool({
   name: "download_image",
@@ -244,12 +244,12 @@ export const downloadImageTool = tool({
       .string()
       .nullable()
       .optional()
-      .describe("Optional filename (without extension)"),
+      .describe("Descriptive filename for the download (without extension)"),
     folderPath: z
       .string()
       .nullable()
       .optional()
-      .describe("Optional folder path"),
+      .describe("Optional folder path for organizing downloads"),
   }),
   execute: async ({
     imageData,
@@ -291,15 +291,19 @@ export const downloadImageTool = tool({
         .replace(/[:.]/g, "-")
         .slice(0, -5);
       const baseFilename = filename || `image-${timestamp}`;
-      const fullFilename = `${baseFilename}.${imageFormat}`;
+      const extension = imageFormat === "jpeg" ? "jpg" : imageFormat;
+      const imageFilename = baseFilename.includes(".")
+        ? baseFilename
+        : `${baseFilename}.${extension}`;
       const finalPath = folderPath
-        ? `${folderPath}/${fullFilename}`
-        : fullFilename;
+        ? `${folderPath}/${imageFilename}`
+        : imageFilename;
 
+      // Align with aipex: saveAs: true to show save dialog
       const downloadId = await chrome.downloads.download({
         url: imageData,
         filename: finalPath,
-        saveAs: false,
+        saveAs: true,
       });
 
       return {
@@ -317,26 +321,38 @@ export const downloadImageTool = tool({
 });
 
 /**
- * Download chat images in batch
+ * Download multiple images from chat messages to the user's local filesystem
  */
 export const downloadChatImagesTool = tool({
   name: "download_chat_images",
-  description: "Download multiple images from chat messages in batch",
+  description:
+    "Download multiple images from chat messages to the user's local filesystem",
   parameters: z.object({
     messages: z
       .array(
         z.object({
-          id: z.string(),
+          id: z.string().describe("Message ID"),
           parts: z
             .array(
               z.object({
-                type: z.string(),
-                imageData: z.string().nullable().optional(),
-                imageTitle: z.string().nullable().optional(),
+                type: z
+                  .string()
+                  .describe("Part type (should be 'image' for image parts)"),
+                imageData: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("Base64 image data URL"),
+                imageTitle: z
+                  .string()
+                  .nullable()
+                  .optional()
+                  .describe("Descriptive title for the image"),
               }),
             )
             .nullable()
-            .optional(),
+            .optional()
+            .describe("Message parts that may contain images"),
         }),
       )
       .describe("Array of chat messages containing images"),
@@ -344,17 +360,25 @@ export const downloadChatImagesTool = tool({
       .string()
       .nullable()
       .optional()
-      .describe("Optional folder prefix for organizing downloads"),
+      .describe("Descriptive folder name for organizing downloads"),
     filenamingStrategy: z
       .enum(["descriptive", "sequential", "timestamp"])
       .nullable()
       .optional()
+      .default("descriptive")
       .describe("Strategy for naming files"),
+    displayResults: z
+      .boolean()
+      .nullable()
+      .optional()
+      .default(true)
+      .describe("Whether to display the download results"),
   }),
   execute: async ({
     messages,
     folderPrefix,
     filenamingStrategy = "descriptive",
+    displayResults = true,
   }: {
     messages: Array<{
       id: string;
@@ -366,6 +390,7 @@ export const downloadChatImagesTool = tool({
     }>;
     folderPrefix?: string;
     filenamingStrategy?: "descriptive" | "sequential" | "timestamp";
+    displayResults?: boolean;
   }) => {
     try {
       if (!chrome.downloads) {
@@ -440,13 +465,35 @@ export const downloadChatImagesTool = tool({
         }
       }
 
-      return {
-        success: downloadedCount > 0,
+      // Format response with optional display message (align with aipex)
+      const responseData: {
+        downloadedCount: number;
+        downloadIds: number[];
+        errors?: string[];
+        message?: string;
+        folderPath?: string;
+        filesList?: string[];
+      } = {
         downloadedCount,
         downloadIds,
         errors: errors.length > 0 ? errors : undefined,
         folderPath: folderPrefix,
-        filesList,
+        filesList: filesList.length > 0 ? filesList : undefined,
+      };
+
+      if (displayResults) {
+        responseData.message =
+          `Successfully downloaded ${downloadedCount || 0} images from chat messages\n\n` +
+          `📁 Download Summary:\n` +
+          `- Folder: ${folderPrefix || "Default"}\n` +
+          `- Files: ${downloadedCount || 0}\n` +
+          `- Strategy: ${filenamingStrategy}\n` +
+          (filesList.length > 0 ? `- Files: ${filesList.join(", ")}` : "");
+      }
+
+      return {
+        success: downloadedCount > 0 || errors.length === 0,
+        ...responseData,
       };
     } catch (error: unknown) {
       return {

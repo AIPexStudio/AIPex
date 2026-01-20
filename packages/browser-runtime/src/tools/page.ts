@@ -126,11 +126,13 @@ export const highlightElementTool = tool({
       .enum(["subtle", "normal", "strong"])
       .nullable()
       .optional()
+      .default("normal")
       .describe("Highlight intensity"),
     persist: z
       .boolean()
       .nullable()
       .optional()
+      .default(true)
       .describe("Whether to keep the highlight permanently"),
   }),
   execute: async ({
@@ -240,23 +242,37 @@ export const highlightTextInlineTool = tool({
       .boolean()
       .nullable()
       .optional()
+      .default(false)
       .describe("Case sensitive search"),
     wholeWords: z
       .boolean()
       .nullable()
       .optional()
+      .default(false)
       .describe("Match whole words only"),
-    highlightColor: z.string().nullable().optional().describe("Text color"),
+    highlightColor: z
+      .string()
+      .nullable()
+      .optional()
+      .default("#DC143C")
+      .describe("Text color"),
     backgroundColor: z
       .string()
       .nullable()
       .optional()
+      .default("transparent")
       .describe("Background color"),
-    fontWeight: z.string().nullable().optional().describe("Font weight"),
+    fontWeight: z
+      .string()
+      .nullable()
+      .optional()
+      .default("bold")
+      .describe("Font weight"),
     persist: z
       .boolean()
       .nullable()
       .optional()
+      .default(true)
       .describe("Whether to keep the highlight permanently"),
   }),
   execute: async ({

@@ -103,32 +103,22 @@ export const switchToTabTool = tool({
 });
 
 /**
- * Close a tab
+ * Close a specific tab
  */
 export const closeTabTool = tool({
   name: "close_tab",
-  description: "Close a specific tab or the current tab",
+  description: "Close a specific tab",
   parameters: z.object({
-    tabId: z
-      .number()
-      .nullable()
-      .optional()
-      .describe("Tab ID to close (defaults to current tab)"),
+    tabId: z.number().describe("The ID of the tab to close"),
   }),
-  execute: async ({ tabId }: { tabId?: number | null }) => {
-    if (tabId != null) {
-      await chrome.tabs.remove(tabId);
-      return { success: true, tabId };
-    }
-
-    const tab = await getActiveTab();
-    await chrome.tabs.remove(tab.id!);
-    return { success: true, tabId: tab.id };
+  execute: async ({ tabId }: { tabId: number }) => {
+    await chrome.tabs.remove(tabId);
+    return { success: true };
   },
 });
 
 /**
- * Create a new tab
+ * Create a new tab with the specified URL
  */
 export const createNewTabTool = tool({
   name: "create_new_tab",
@@ -137,15 +127,25 @@ export const createNewTabTool = tool({
     url: z.string().url().describe("The URL to open in the new tab"),
   }),
   execute: async ({ url }: { url: string }) => {
-    const tab = await chrome.tabs.create({ url, active: true });
+    // Prepend protocol if missing (align with aipex behavior)
+    let finalUrl = url?.trim();
+    if (!finalUrl) {
+      throw new Error("URL is required");
+    }
+    if (
+      !/^https?:\/\//i.test(finalUrl) &&
+      !/^chrome:|^chrome-extension:/i.test(finalUrl)
+    ) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    const tab = await chrome.tabs.create({ url: finalUrl, active: true });
     if (!tab.id) {
       throw new Error("Failed to create tab");
     }
     return {
-      success: true,
       tabId: tab.id,
-      url: tab.url,
-      title: tab.title,
+      url: tab.url || finalUrl,
     };
   },
 });
@@ -202,18 +202,22 @@ export const duplicateTabTool = tool({
 
 /**
  * Use AI to automatically group tabs by topic/purpose
+ * Note: This is a placeholder that returns an error - actual implementation
+ * requires AI service integration which should be handled at the browser-ext layer
  */
 export const organizeTabsTool = tool({
   name: "organize_tabs",
   description: "Use AI to automatically group tabs by topic/purpose",
   parameters: z.object({}),
   execute: async () => {
-    // This is a placeholder - the actual AI grouping logic would be complex
-    // For now, return a message indicating this feature needs implementation
+    // Placeholder implementation - actual AI grouping should be implemented
+    // in browser-ext layer with access to AI services
     return {
       success: false,
       message:
-        "AI-powered tab organization requires additional implementation with LLM integration",
+        "AI-powered tab organization requires LLM integration (should be implemented at browser-ext layer with AI service access)",
+      error:
+        "This tool requires AI service integration which is not available in browser-runtime package. The implementation should be added in browser-ext.",
     };
   },
 });

@@ -18,7 +18,8 @@ async function getElementByUid(
   const node = snapshotManager.getNodeByUid(tabId, uid);
   if (!node) {
     throw new Error(
-      "No such element found in the snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
+      `Element with UID "${uid}" not found in snapshot for tab ${tabId}. ` +
+        `The page content may have changed. Please call 'search_elements' with tabId=${tabId} to create a fresh snapshot.`,
     );
   }
 
@@ -57,9 +58,11 @@ export const clickTool = tool({
     try {
       handle = await getElementByUid(tabId, uid);
       if (!handle) {
-        throw new Error(
-          "Element not found in current snapshot. Call take_snapshot first.",
-        );
+        return {
+          success: false,
+          message:
+            "Element not found in current snapshot. Call search_elements first to get fresh element UIDs.",
+        };
       }
 
       await handle.asLocator().click({ count: dblClick ? 2 : 1 });
@@ -67,6 +70,11 @@ export const clickTool = tool({
       return {
         success: true,
         message: `Element ${dblClick ? "double " : ""}clicked successfully`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error clicking element: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     } finally {
       if (handle) {
@@ -98,9 +106,11 @@ export const fillElementByUidTool = tool({
     try {
       handle = await getElementByUid(tabId, uid);
       if (!handle) {
-        throw new Error(
-          "Element not found in current snapshot. Call take_snapshot first.",
-        );
+        return {
+          success: false,
+          message:
+            "Element not found in current snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
+        };
       }
 
       await handle.asLocator().fill(value);
@@ -108,6 +118,11 @@ export const fillElementByUidTool = tool({
       return {
         success: true,
         message: "Element filled successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error filling element: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     } finally {
       if (handle) {
@@ -132,9 +147,11 @@ export const hoverElementByUidTool = tool({
     try {
       handle = await getElementByUid(tabId, uid);
       if (!handle) {
-        throw new Error(
-          "Element not found in current snapshot. Call take_snapshot first.",
-        );
+        return {
+          success: false,
+          message:
+            "Element not found in current snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
+        };
       }
 
       await handle.asLocator().hover();
@@ -142,6 +159,11 @@ export const hoverElementByUidTool = tool({
       return {
         success: true,
         message: "Element hovered successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error hovering element: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     } finally {
       if (handle) {
@@ -167,9 +189,11 @@ export const getEditorValueTool = tool({
     try {
       handle = await getElementByUid(tabId, uid);
       if (!handle) {
-        throw new Error(
-          "Element not found in current snapshot. Call take_snapshot first.",
-        );
+        return {
+          success: false,
+          message:
+            "Element not found in current snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
+        };
       }
 
       const value = await handle.asLocator().getEditorValue();
@@ -184,8 +208,13 @@ export const getEditorValueTool = tool({
 
       return {
         success: true,
+        message: `Successfully retrieved editor value (${value.length} characters)`,
         value,
-        length: value.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error getting editor value: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     } finally {
       if (handle) {
@@ -236,7 +265,7 @@ export const fillFormTool = tool({
             uid: element.uid,
             success: false,
             error:
-              "Element not found in current snapshot. Call take_snapshot first.",
+              "Element not found in current snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot.",
           });
           continue;
         }
@@ -276,16 +305,19 @@ export const fillFormTool = tool({
       await playClickAnimationAndReturn(tabId);
     }
 
+    // Align with aipex: simpler return format
+    const message = `Filled ${successCount}/${elements.length} elements successfully${
+      results.filter((r) => !r.success).length > 0
+        ? `. Errors: ${results
+            .filter((r) => !r.success)
+            .map((r) => `UID ${r.uid}: ${r.error}`)
+            .join(", ")}`
+        : ""
+    }`;
+
     return {
-      success: successCount === elements.length,
-      totalElements: elements.length,
-      successCount,
-      failureCount: elements.length - successCount,
-      results,
-      message:
-        successCount === elements.length
-          ? `Successfully filled all ${elements.length} form fields`
-          : `Filled ${successCount} of ${elements.length} form fields`,
+      success: successCount > 0,
+      message,
     };
   },
 });
