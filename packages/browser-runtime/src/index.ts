@@ -4,8 +4,9 @@
 export * from "./automation/index.js";
 // Context providers
 export * from "./context/index.js";
-// Hooks
-export * from "./hooks/index.js";
+// Hooks - NOT exported from main entry to avoid React dependency in non-React environments
+// Import hooks directly from "@aipexstudio/browser-runtime/hooks" if needed in React components
+// export * from "./hooks/index.js";
 // Intervention
 export * from "./intervention/index.js";
 export type {
@@ -16,6 +17,7 @@ export type {
 } from "./lib/vm/zenfs-manager.js";
 // Virtual File System
 export { zenfs } from "./lib/vm/zenfs-manager.js";
+export * from "./runtime/automation-mode.js";
 export * from "./runtime/browser-automation-host.js";
 export * from "./runtime/context-providers.js";
 export * from "./runtime/default-hosts.js";

@@ -1,5 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
+import { getAutomationMode } from "../runtime/automation-mode";
 import { getActiveTab } from "./index";
 
 /**
@@ -67,12 +68,29 @@ export const switchToTabTool = tool({
     tabId?: number | null;
     urlPattern?: string | null;
   }) => {
+    const mode = await getAutomationMode();
+    console.log("🔧 [switchToTab] Automation mode:", mode);
+
     if (tabId != null) {
-      await chrome.tabs.update(tabId, { active: true });
       const tab = await chrome.tabs.get(tabId);
       if (!tab.id) {
         throw new Error("Tab not found");
       }
+
+      // Background mode: use highlight only, avoid window focus
+      if (mode === "background") {
+        await chrome.tabs.highlight({
+          tabs: tab.index ?? 0,
+          windowId: tab.windowId,
+        });
+        console.log(
+          "ℹ️ [switchToTab] Background mode: tab highlighted without window focus",
+        );
+      } else {
+        // Focus mode: activate tab normally (may focus window)
+        await chrome.tabs.update(tabId, { active: true });
+      }
+
       return {
         success: true,
         tab: { id: tab.id, url: tab.url, title: tab.title },
@@ -87,7 +105,20 @@ export const switchToTabTool = tool({
         throw new Error(`No tab found matching pattern: ${urlPattern}`);
       }
 
-      await chrome.tabs.update(matchingTab.id, { active: true });
+      // Background mode: use highlight only, avoid window focus
+      if (mode === "background") {
+        await chrome.tabs.highlight({
+          tabs: matchingTab.index ?? 0,
+          windowId: matchingTab.windowId,
+        });
+        console.log(
+          "ℹ️ [switchToTab] Background mode: tab highlighted without window focus",
+        );
+      } else {
+        // Focus mode: activate tab normally (may focus window)
+        await chrome.tabs.update(matchingTab.id, { active: true });
+      }
+
       return {
         success: true,
         tab: {
@@ -137,10 +168,34 @@ export const createNewTabTool = tool({
     url: z.string().url().describe("The URL to open in the new tab"),
   }),
   execute: async ({ url }: { url: string }) => {
-    const tab = await chrome.tabs.create({ url, active: true });
+    // Prepend protocol if missing (align with aipex behavior)
+    let finalUrl = url?.trim();
+    if (!finalUrl) {
+      throw new Error("URL is required");
+    }
+    if (
+      !/^https?:\/\//i.test(finalUrl) &&
+      !/^chrome:|^chrome-extension:/i.test(finalUrl)
+    ) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    const mode = await getAutomationMode();
+    console.log("🔧 [createNewTab] Automation mode:", mode);
+
+    // Background mode: create tab without switching to it
+    // Focus mode: create tab and switch to it
+    const active = mode === "focus";
+
+    const tab = await chrome.tabs.create({ url: finalUrl, active });
     if (!tab.id) {
       throw new Error("Failed to create tab");
     }
+
+    console.log(
+      `✅ [createNewTab] Tab created in ${mode} mode (active=${active})`,
+    );
+
     return {
       success: true,
       tabId: tab.id,

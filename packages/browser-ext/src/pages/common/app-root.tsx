@@ -3,7 +3,7 @@
  * Simple wrapper using browser-specific hooks
  */
 
-import { useAgent } from "@aipexstudio/aipex-react";
+import { useAgent, useChatConfig } from "@aipexstudio/aipex-react";
 import ChatBot from "@aipexstudio/aipex-react/components/chatbot";
 import type { InterventionMode } from "@aipexstudio/aipex-react/components/intervention";
 import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
@@ -13,7 +13,8 @@ import type { Theme } from "@aipexstudio/aipex-react/theme/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
-import { chromeStorageAdapter, useChatConfig } from "../../hooks";
+import { chromeStorageAdapter } from "../../hooks";
+import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
 import {
   BROWSER_AGENT_CONFIG,
   useBrowserContextProviders,
@@ -80,6 +81,7 @@ function ChatApp() {
             onModeChange={setInterventionMode}
           />
         ),
+        inputToolbar: (props) => <AutomationModeInputToolbar {...props} />,
       }}
     />
   );
