@@ -8,10 +8,11 @@
 import type { CdpCommander } from "./cdp-commander";
 import type { AccessibilityTree, AXNode } from "./types";
 
-interface FrameInfo {
-  frameId: string;
-  backendDOMNodeId?: number;
-  childFrames?: FrameInfo[];
+interface FrameTreeNode {
+  frame: {
+    id: string;
+  };
+  childFrames?: FrameTreeNode[];
 }
 
 /**
@@ -32,7 +33,7 @@ export class IframeManager {
 
       // Get frame tree
       const frameTree = await cdpCommander.sendCommand<{
-        frameTree: FrameInfo;
+        frameTree: FrameTreeNode;
       }>("Page.getFrameTree", {});
 
       if (!frameTree?.frameTree) {
@@ -45,23 +46,24 @@ export class IframeManager {
 
       // Iterate through frame tree and use DOM.getFrameOwner
       // to get the backendNodeId for each frame
-      const collectFrames = async (frame: FrameInfo): Promise<void> => {
-        if (frame.frameId) {
+      const collectFrames = async (node: FrameTreeNode): Promise<void> => {
+        const frameId = node.frame?.id;
+        if (frameId) {
           try {
             const frameOwner = await cdpCommander.sendCommand<{
               backendNodeId?: number;
-            }>("DOM.getFrameOwner", { frameId: frame.frameId });
+            }>("DOM.getFrameOwner", { frameId });
 
             if (frameOwner?.backendNodeId) {
-              iframeMap.set(frameOwner.backendNodeId, frame.frameId);
+              iframeMap.set(frameOwner.backendNodeId, frameId);
             }
           } catch {
             // Main frame or inaccessible frame - skip
           }
         }
 
-        if (frame.childFrames) {
-          for (const childFrame of frame.childFrames) {
+        if (node.childFrames) {
+          for (const childFrame of node.childFrames) {
             await collectFrames(childFrame);
           }
         }

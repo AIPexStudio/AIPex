@@ -990,7 +990,12 @@ export class SnapshotManager {
     contextLevels: number = 1,
     options?: Partial<SearchOptions>,
   ): Promise<string | null> {
-    const snapshot = await this.createSnapshot(tabId);
+    let snapshot: TextSnapshot | null = null;
+    try {
+      snapshot = await this.createSnapshot(tabId);
+    } catch {
+      return null;
+    }
 
     if (!snapshot) {
       return null;

@@ -15,9 +15,9 @@ const mockPopulateIframes = vi.hoisted(() => vi.fn());
 
 // Mock chrome.debugger.sendCommand
 vi.mock("./cdp-commander", () => ({
-  CdpCommander: vi.fn().mockImplementation(() => ({
-    sendCommand: mockSendCommand,
-  })),
+  CdpCommander: class {
+    sendCommand = mockSendCommand;
+  },
 }));
 
 // Mock debugger-manager
@@ -64,7 +64,7 @@ describe("SnapshotManager", () => {
   let snapshotManager: SnapshotManager;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     snapshotManager = new SnapshotManager();
     mockSafeAttachDebugger.mockResolvedValue(true);
     mockSafeDetachDebugger.mockResolvedValue(undefined);

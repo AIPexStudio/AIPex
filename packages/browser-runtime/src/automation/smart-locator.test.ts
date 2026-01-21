@@ -13,9 +13,9 @@ const mockSafeDetachDebugger = vi.hoisted(() => vi.fn());
 
 // Mock CdpCommander
 vi.mock("./cdp-commander", () => ({
-  CdpCommander: vi.fn().mockImplementation(() => ({
-    sendCommand: mockSendCommand,
-  })),
+  CdpCommander: class {
+    sendCommand = mockSendCommand;
+  },
 }));
 
 // Mock debugger-manager

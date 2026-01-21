@@ -196,7 +196,28 @@ From the repository root:
 ```bash
 pnpm --filter @aipexstudio/browser-runtime build
 pnpm --filter @aipexstudio/browser-runtime typecheck
+pnpm --filter @aipexstudio/browser-runtime test
 ```
+
+### Testing
+
+This package includes Puppeteer-based integration tests for CDP automation features:
+
+- **Iframe Manager tests**: Test iframe accessibility tree merging (`iframe-manager.puppeteer.test.ts`)
+- **Snapshot Manager tests**: Test snapshot creation, search, and node ID injection (`snapshot-manager.puppeteer.test.ts`)
+
+These tests use Puppeteer to simulate a browser environment without requiring a real Chrome extension. They automatically handle CI environments (GitHub Actions) with appropriate launch flags.
+
+To run tests:
+
+```bash
+pnpm --filter @aipexstudio/browser-runtime test
+```
+
+**CI Considerations**: The tests are configured to work in CI environments (GitHub Actions) with:
+- Automatic Chromium download via Puppeteer
+- Sandbox flags (`--no-sandbox`, `--disable-setuid-sandbox`) for containerized environments
+- Increased timeouts for slower CI runners
 
 ## License
 

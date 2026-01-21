@@ -15,10 +15,13 @@ export async function waitForEventsAfterAction(
   // Wait for any pending events to be processed
   await new Promise((resolve) => setTimeout(resolve, 100));
 
+  const scheduleFrame =
+    typeof globalThis.requestAnimationFrame === "function"
+      ? globalThis.requestAnimationFrame.bind(globalThis)
+      : (callback: () => void) => setTimeout(callback, 16);
+
   // Wait for next animation frame to ensure DOM updates
-  await new Promise((resolve) =>
-    requestAnimationFrame(() => resolve(undefined)),
-  );
+  await new Promise((resolve) => scheduleFrame(() => resolve(undefined)));
 
   // Additional small delay for event propagation
   await new Promise((resolve) => setTimeout(resolve, 50));
