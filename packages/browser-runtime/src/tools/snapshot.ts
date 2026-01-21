@@ -7,15 +7,21 @@ export const takeSnapshotTool = tool({
   name: "take_snapshot",
   description:
     "Take an accessibility snapshot of the current page. Returns a tree of interactive elements with UIDs for interaction.",
-  parameters: z.object({}),
-  execute: async () => {
+  parameters: z.object({
+    includeIframes: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe("Whether to include iframe content in the snapshot"),
+  }),
+  execute: async ({ includeIframes = true }: { includeIframes?: boolean }) => {
     const tab = await getActiveTab();
 
     if (!tab.id) {
       throw new Error("No active tab found");
     }
 
-    const snapshot = await snapshotProvider.createSnapshot(tab.id);
+const snapshot = await snapshotProvider.createSnapshot(tab.id);
     if (!snapshot) {
       throw new Error("Failed to create snapshot");
     }

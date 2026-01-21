@@ -11,6 +11,7 @@ const mockSendCommand = vi.hoisted(() => vi.fn());
 const mockSafeAttachDebugger = vi.hoisted(() => vi.fn());
 const mockSafeDetachDebugger = vi.hoisted(() => vi.fn());
 const mockExecuteScript = vi.hoisted(() => vi.fn());
+const mockPopulateIframes = vi.hoisted(() => vi.fn());
 
 // Mock chrome.debugger.sendCommand
 vi.mock("./cdp-commander", () => ({
@@ -24,6 +25,13 @@ vi.mock("./debugger-manager", () => ({
   debuggerManager: {
     safeAttachDebugger: mockSafeAttachDebugger,
     safeDetachDebugger: mockSafeDetachDebugger,
+  },
+}));
+
+// Mock iframe-manager
+vi.mock("./iframe-manager", () => ({
+  iframeManager: {
+    populateIframes: mockPopulateIframes,
   },
 }));
 
@@ -61,6 +69,8 @@ describe("SnapshotManager", () => {
     mockSafeAttachDebugger.mockResolvedValue(true);
     mockSafeDetachDebugger.mockResolvedValue(undefined);
     mockExecuteScript.mockResolvedValue([{ result: false }]);
+    // Default: return tree as-is (no iframes)
+    mockPopulateIframes.mockImplementation(async (_, tree) => tree);
   });
 
   afterEach(() => {
@@ -166,6 +176,152 @@ describe("SnapshotManager", () => {
         .mockResolvedValueOnce(mockAXTree); // Accessibility.getFullAXTree
 
       await expect(snapshotManager.createSnapshot(1)).rejects.toThrow();
+    });
+
+    it("should include iframes when includeIframes is true", async () => {
+      const mockAXTree: AccessibilityTree = {
+        nodes: [
+          {
+            nodeId: "1",
+            ignored: false,
+            role: { type: "string", value: "RootWebArea" },
+            name: { type: "string", value: "Test Page" },
+            backendDOMNodeId: 1,
+          },
+          {
+            nodeId: "2",
+            ignored: false,
+            role: { type: "string", value: "button" },
+            name: { type: "string", value: "Click Me" },
+            parentId: "1",
+            backendDOMNodeId: 2,
+          },
+        ],
+      };
+
+      const mockTreeWithIframes: AccessibilityTree = {
+        nodes: [
+          ...mockAXTree.nodes,
+          {
+            nodeId: "iframe:1",
+            ignored: false,
+            role: { type: "string", value: "RootWebArea" },
+            name: { type: "string", value: "Iframe Content" },
+            frameId: "iframe1",
+            backendDOMNodeId: 10,
+          },
+        ],
+      };
+
+      mockPopulateIframes.mockResolvedValueOnce(mockTreeWithIframes);
+
+      mockSendCommand
+        .mockResolvedValueOnce(undefined) // Accessibility.enable
+        .mockResolvedValueOnce(mockAXTree) // Accessibility.getFullAXTree
+        .mockResolvedValueOnce(undefined) // DOM.enable
+        .mockResolvedValueOnce({}) // DOM.getDocument
+        .mockResolvedValueOnce({
+          object: { objectId: "obj1" },
+        }) // DOM.resolveNode for node 1
+        .mockResolvedValueOnce({
+          result: { value: { existingId: null, tagName: "html" } },
+        }) // Runtime.callFunctionOn for node 1
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for node 1
+        .mockResolvedValueOnce({
+          object: { objectId: "obj2" },
+        }) // DOM.resolveNode for node 2
+        .mockResolvedValueOnce({
+          result: { value: { existingId: null, tagName: "button" } },
+        }) // Runtime.callFunctionOn for node 2
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for node 2
+        .mockResolvedValueOnce(undefined) // DOM.disable
+        .mockResolvedValueOnce(undefined) // DOM.enable (for injection)
+        .mockResolvedValueOnce({}) // DOM.getDocument (for injection)
+        .mockResolvedValueOnce({
+          object: { objectId: "obj1" },
+        }) // DOM.resolveNode for injection node 1
+        .mockResolvedValueOnce({
+          result: { value: true },
+        }) // Runtime.callFunctionOn for injection node 1
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for injection node 1
+        .mockResolvedValueOnce({
+          object: { objectId: "obj2" },
+        }) // DOM.resolveNode for injection node 2
+        .mockResolvedValueOnce({
+          result: { value: true },
+        }) // Runtime.callFunctionOn for injection node 2
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for injection node 2
+        .mockResolvedValueOnce(undefined); // DOM.disable for injection
+
+      const snapshot = await snapshotManager.createSnapshot(1, true);
+
+      expect(snapshot).toBeDefined();
+      expect(mockPopulateIframes).toHaveBeenCalled();
+    });
+
+    it("should not include iframes when includeIframes is false", async () => {
+      const mockAXTree: AccessibilityTree = {
+        nodes: [
+          {
+            nodeId: "1",
+            ignored: false,
+            role: { type: "string", value: "RootWebArea" },
+            name: { type: "string", value: "Test Page" },
+            backendDOMNodeId: 1,
+          },
+          {
+            nodeId: "2",
+            ignored: false,
+            role: { type: "string", value: "button" },
+            name: { type: "string", value: "Click Me" },
+            parentId: "1",
+            backendDOMNodeId: 2,
+          },
+        ],
+      };
+
+      mockSendCommand
+        .mockResolvedValueOnce(undefined) // Accessibility.enable
+        .mockResolvedValueOnce(mockAXTree) // Accessibility.getFullAXTree
+        .mockResolvedValueOnce(undefined) // DOM.enable
+        .mockResolvedValueOnce({}) // DOM.getDocument
+        .mockResolvedValueOnce({
+          object: { objectId: "obj1" },
+        }) // DOM.resolveNode for node 1
+        .mockResolvedValueOnce({
+          result: { value: { existingId: null, tagName: "html" } },
+        }) // Runtime.callFunctionOn for node 1
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for node 1
+        .mockResolvedValueOnce({
+          object: { objectId: "obj2" },
+        }) // DOM.resolveNode for node 2
+        .mockResolvedValueOnce({
+          result: { value: { existingId: null, tagName: "button" } },
+        }) // Runtime.callFunctionOn for node 2
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for node 2
+        .mockResolvedValueOnce(undefined) // DOM.disable
+        .mockResolvedValueOnce(undefined) // DOM.enable (for injection)
+        .mockResolvedValueOnce({}) // DOM.getDocument (for injection)
+        .mockResolvedValueOnce({
+          object: { objectId: "obj1" },
+        }) // DOM.resolveNode for injection node 1
+        .mockResolvedValueOnce({
+          result: { value: true },
+        }) // Runtime.callFunctionOn for injection node 1
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for injection node 1
+        .mockResolvedValueOnce({
+          object: { objectId: "obj2" },
+        }) // DOM.resolveNode for injection node 2
+        .mockResolvedValueOnce({
+          result: { value: true },
+        }) // Runtime.callFunctionOn for injection node 2
+        .mockResolvedValueOnce(undefined) // Runtime.releaseObject for injection node 2
+        .mockResolvedValueOnce(undefined); // DOM.disable for injection
+
+      const snapshot = await snapshotManager.createSnapshot(1, false);
+
+      expect(snapshot).toBeDefined();
+      expect(mockPopulateIframes).not.toHaveBeenCalled();
     });
   });
 

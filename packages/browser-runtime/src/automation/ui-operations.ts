@@ -37,7 +37,7 @@ async function getCurrentTab(): Promise<chrome.tabs.Tab | null> {
  * Take accessibility snapshot (exactly like DevTools MCP's take_snapshot)
  * Returns formatted text representation of the page structure
  */
-export async function takeSnapshot(): Promise<{
+export async function takeSnapshot(includeIframes: boolean = true): Promise<{
   success: boolean;
   snapshotId: number;
   snapshot: string;
@@ -65,7 +65,7 @@ export async function takeSnapshot(): Promise<{
       tab.id,
     );
 
-    const result = await snapshotProvider.createSnapshot(tab.id);
+const result = await snapshotProvider.createSnapshot(tab.id);
     if (!result?.root) {
       return {
         success: false,

@@ -8,6 +8,7 @@ import { nanoid } from "nanoid";
 import pLimit from "p-limit";
 import { CdpCommander } from "./cdp-commander";
 import { debuggerManager } from "./debugger-manager";
+import { iframeManager } from "./iframe-manager";
 import { type SearchOptions, SKIP_ROLES, searchSnapshotText } from "./query";
 import type {
   AccessibilityTree,
@@ -140,6 +141,7 @@ export class SnapshotManager {
    */
   private async getRealAccessibilityTree(
     tabId: number,
+    includeIframes: boolean = true,
   ): Promise<AccessibilityTree | null> {
     try {
       console.log(
@@ -174,6 +176,23 @@ export class SnapshotManager {
         result.nodes?.length || 0,
         "nodes",
       );
+
+      // STEP 3: Populate iframes if requested
+      if (includeIframes) {
+        console.log("🔍 [DEBUG] Populating iframe snapshots...");
+        const treeWithIframes = await iframeManager.populateIframes(
+          cdpCommander,
+          result,
+        );
+        console.log(
+          "✅ [DEBUG] Tree with iframes has",
+          treeWithIframes.nodes?.length || 0,
+          "nodes",
+        );
+        debuggerManager.safeDetachDebugger(tabId);
+        return treeWithIframes;
+      }
+
       debuggerManager.safeDetachDebugger(tabId);
       return result;
     } catch (error) {
@@ -283,6 +302,11 @@ export class SnapshotManager {
 
     // Rule 2: Always include root
     if (role === "RootWebArea") {
+      return true;
+    }
+
+    // Rule 2.5: Always include iframe nodes to preserve boundaries
+    if (role === "Iframe" || role === "WebArea") {
       return true;
     }
 
@@ -721,10 +745,13 @@ export class SnapshotManager {
    *
    * get accessibility tree using Chrome DevTools Protocol
    */
-  async createSnapshot(tabId: number): Promise<TextSnapshot> {
+  async createSnapshot(
+    tabId: number,
+    includeIframes: boolean = true,
+  ): Promise<TextSnapshot> {
     try {
       // get accessibility tree
-      const axTree = await this.getRealAccessibilityTree(tabId);
+      const axTree = await this.getRealAccessibilityTree(tabId, includeIframes);
 
       if (!axTree?.nodes || axTree.nodes.length === 0) {
         throw new Error("No accessibility nodes found");

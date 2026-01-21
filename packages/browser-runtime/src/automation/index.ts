@@ -8,6 +8,7 @@ export { CdpCommander, rejectPendingCommands } from "./cdp-commander";
 export { DebuggerManager, debuggerManager } from "./debugger-manager";
 export { DomElementHandle } from "./dom-element-handle";
 export { DomLocator } from "./dom-locator";
+export { IframeManager, iframeManager } from "./iframe-manager";
 export {
   hasGlobPatterns,
   parseSearchQuery,
