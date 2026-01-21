@@ -3,8 +3,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { SnapshotManager } from "./snapshot-manager";
 import { html, setupPuppeteerTest } from "./__tests__/puppeteer-test-utils";
+import { SnapshotManager } from "./snapshot-manager";
 
 describe("SnapshotManager (Puppeteer)", () => {
   let testContext: Awaited<ReturnType<typeof setupPuppeteerTest>>;
@@ -68,7 +68,7 @@ describe("SnapshotManager (Puppeteer)", () => {
     expect(buttonNode).toBeDefined();
     expect(buttonNode?.id).toBeDefined();
 
-    const nodeIdInPage = await testContext.page.evaluate((nodeId) => {
+    const nodeIdInPage = await testContext.page.evaluate((_nodeId) => {
       const btn = document.querySelector("#test-btn");
       return btn?.getAttribute("data-aipex-nodeid");
     }, buttonNode?.id);
@@ -104,7 +104,7 @@ describe("SnapshotManager (Puppeteer)", () => {
       </main>`,
     );
 
-    const snapshot = await snapshotManager.createSnapshot(
+    const _snapshot = await snapshotManager.createSnapshot(
       testContext.tabId,
       false,
     );

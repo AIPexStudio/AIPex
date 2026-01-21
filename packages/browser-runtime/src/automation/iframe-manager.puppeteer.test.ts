@@ -3,12 +3,15 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { IframeManager } from "./iframe-manager";
-import { CdpCommander } from "./cdp-commander";
 import { html, setupPuppeteerTest } from "./__tests__/puppeteer-test-utils";
+import { CdpCommander } from "./cdp-commander";
+import { IframeManager } from "./iframe-manager";
 import type { AccessibilityTree } from "./types";
 
-const complexFixtureUrl = new URL("./__tests__/test-iframe.html", import.meta.url);
+const complexFixtureUrl = new URL(
+  "./__tests__/test-iframe.html",
+  import.meta.url,
+);
 
 describe("IframeManager (Puppeteer)", () => {
   let testContext: Awaited<ReturnType<typeof setupPuppeteerTest>>;

@@ -78,10 +78,10 @@ export class IframeManager {
       // Clean up domains
       try {
         await cdpCommander.sendCommand("DOM.disable", {});
-      } catch { }
+      } catch {}
       try {
         await cdpCommander.sendCommand("Page.disable", {});
-      } catch { }
+      } catch {}
     }
 
     return iframeMap;

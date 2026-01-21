@@ -22,7 +22,9 @@ interface ChromeDebuggerShim {
   ) => void;
   detach: (target: { tabId: number }, callback?: () => void) => void;
   onDetach: {
-    addListener: (callback: (source: { tabId?: number }, reason: string) => void) => void;
+    addListener: (
+      callback: (source: { tabId?: number }, reason: string) => void,
+    ) => void;
   };
 }
 
@@ -99,7 +101,7 @@ async function createChromeDebuggerShim(
 
   const attach = (
     target: { tabId: number },
-    requiredVersion: string,
+    _requiredVersion: string,
     callback?: () => void,
   ) => {
     const session = tabIdToCdpSession.get(target.tabId);
@@ -125,13 +127,10 @@ async function createChromeDebuggerShim(
     }
   };
 
-  const detach = (
-    target: { tabId: number },
-    callback?: () => void,
-  ) => {
+  const detach = (target: { tabId: number }, callback?: () => void) => {
     const session = tabIdToCdpSession.get(target.tabId);
     if (session) {
-      session.detach().catch(() => { });
+      session.detach().catch(() => {});
       attachedTabs.delete(target.tabId);
     }
     if (callback) {
@@ -142,14 +141,18 @@ async function createChromeDebuggerShim(
     }
   };
 
-  const onDetachListeners: Array<(source: { tabId?: number }, reason: string) => void> = [];
+  const onDetachListeners: Array<
+    (source: { tabId?: number }, reason: string) => void
+  > = [];
 
   return {
     sendCommand,
     attach,
     detach,
     onDetach: {
-      addListener: (callback: (source: { tabId?: number }, reason: string) => void) => {
+      addListener: (
+        callback: (source: { tabId?: number }, reason: string) => void,
+      ) => {
         onDetachListeners.push(callback);
       },
     },
@@ -160,7 +163,6 @@ async function createChromeDebuggerShim(
  * Setup Puppeteer test environment with Chrome debugger shim
  */
 export async function setupPuppeteerTest(): Promise<TestContext> {
-
   const launchArgs = [
     "--disable-crashpad",
     "--disable-crashpad-for-testing",
@@ -170,11 +172,11 @@ export async function setupPuppeteerTest(): Promise<TestContext> {
     "--no-default-browser-check",
     ...(isCI
       ? [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ]
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+        ]
       : []),
   ];
 

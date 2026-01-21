@@ -148,20 +148,20 @@
     function log(message) {
       const output = document.getElementById('output');
       if (output) {
-        output.textContent += message + '\n';
+        output.textContent += `${message}\n`;
         output.scrollTop = output.scrollHeight;
       }
       console.log(message);
     }
 
-    function clearOutput() {
+    function _clearOutput() {
       const output = document.getElementById('output');
       if (output) {
         output.textContent = '';
       }
     }
 
-    async function testSnapshot(includeIframes) {
+    async function _testSnapshot(includeIframes) {
       log(`\n=== Testing Snapshot (includeIframes: ${includeIframes}) ===`);
       log(`Time: ${new Date().toISOString()}`);
       

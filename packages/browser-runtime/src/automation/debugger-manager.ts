@@ -183,7 +183,10 @@ export class DebuggerManager {
       rejectPendingCommands(tabId, "Debugger detaching");
 
       return new Promise((resolve) => {
-        if (this.debuggerAttachedTabs.has(tabId) && chromeApi?.debugger?.detach) {
+        if (
+          this.debuggerAttachedTabs.has(tabId) &&
+          chromeApi?.debugger?.detach
+        ) {
           chromeApi.debugger.detach({ tabId }, () => {
             this.debuggerAttachedTabs.delete(tabId);
             resolve();

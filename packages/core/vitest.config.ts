@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     pool: "threads",
     silent: true,
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });

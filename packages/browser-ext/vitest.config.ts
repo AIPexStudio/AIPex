@@ -23,6 +23,7 @@ export default defineConfig({
         inline: [/katex/, /streamdown/],
       },
     },
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
   resolve: {
     alias: {

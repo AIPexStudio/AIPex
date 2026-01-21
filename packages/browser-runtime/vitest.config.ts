@@ -9,5 +9,6 @@ export default defineConfig({
       concurrent: false,
     },
     silent: true,
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });
