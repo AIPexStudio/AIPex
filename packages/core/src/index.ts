@@ -9,6 +9,7 @@ export {
   type AIProviderConfig,
   type AIProviderKey,
   type AppSettings,
+  type AutomationMode,
   type CustomModelConfig,
   createConversationConfig,
   DEFAULT_APP_SETTINGS,
@@ -19,6 +20,7 @@ export {
   type ProviderType,
   STORAGE_KEYS,
   type StorageKey,
+  validateAutomationMode,
 } from "./config/index.js";
 
 // Context

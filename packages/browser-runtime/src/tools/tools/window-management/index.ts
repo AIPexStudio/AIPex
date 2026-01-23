@@ -1,5 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
+import { getAutomationMode } from "../../../runtime/automation-mode";
 
 export interface SimplifiedWindow {
   id: number;
@@ -59,6 +60,19 @@ export async function switchToWindow(windowId: number): Promise<{
   error?: string;
 }> {
   try {
+    const mode = await getAutomationMode();
+    console.log("🔧 [switchToWindow] Automation mode:", mode);
+
+    // Background mode: reject window focus changes
+    if (mode === "background") {
+      return {
+        success: false,
+        error:
+          "Window focus changes are disabled in background mode. Please switch to focus mode to use this feature.",
+      };
+    }
+
+    // Focus mode: allow window focus changes
     await chrome.windows.update(windowId, { focused: true });
     return { success: true };
   } catch (error: unknown) {
@@ -78,9 +92,22 @@ export async function createNewWindow(url?: string): Promise<{
   error?: string;
 }> {
   try {
+    const mode = await getAutomationMode();
+    console.log("🔧 [createNewWindow] Automation mode:", mode);
+
+    // Background mode: create window without focus
+    // Focus mode: create window normally (focused by default)
+    const focused = mode === "focus";
+
     const window = await chrome.windows.create({
       url: url ? [url] : undefined,
+      focused,
     });
+
+    console.log(
+      `✅ [createNewWindow] Window created in ${mode} mode (focused=${focused})`,
+    );
+
     return { success: true, windowId: window?.id };
   } catch (error: unknown) {
     return {

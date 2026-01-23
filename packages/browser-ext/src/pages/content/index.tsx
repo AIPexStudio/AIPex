@@ -1,6 +1,7 @@
 import { FakeMouse } from "@aipexstudio/aipex-react/components/fake-mouse";
 import type { FakeMouseController } from "@aipexstudio/aipex-react/components/fake-mouse/types";
 import { Omni } from "@aipexstudio/aipex-react/components/omni";
+import { collectDomSnapshot } from "@aipexstudio/dom-snapshot";
 import React from "react";
 import ReactDOM from "react-dom/client";
 // Import CSS as a string to inject into Shadow DOM
@@ -291,6 +292,25 @@ const ContentApp = () => {
           });
         }
         return true;
+      } else if (message.type === "aipex:collect-dom-snapshot") {
+        // DOM snapshot collection for background mode
+        (async () => {
+          try {
+            console.log("📸 Content script collecting DOM snapshot");
+            const snapshot = collectDomSnapshot(document, message.options);
+            sendResponse({ success: true, data: snapshot });
+          } catch (error) {
+            console.error("❌ Failed to collect DOM snapshot:", error);
+            sendResponse({
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to collect DOM snapshot",
+            });
+          }
+        })();
+        return true; // Keep channel open for async response
       }
 
       return false;

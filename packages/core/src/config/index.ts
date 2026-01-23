@@ -12,7 +12,12 @@ export {
   DEFAULT_APP_SETTINGS,
   type ProviderType,
 } from "./settings.js";
-export { STORAGE_KEYS, type StorageKey } from "./storage-keys.js";
+export {
+  type AutomationMode,
+  STORAGE_KEYS,
+  type StorageKey,
+  validateAutomationMode,
+} from "./storage-keys.js";
 export {
   createConversationConfig,
   isValidConversationStorage,

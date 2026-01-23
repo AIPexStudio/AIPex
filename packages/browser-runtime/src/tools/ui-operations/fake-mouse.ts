@@ -4,6 +4,7 @@
  */
 
 import type { ElementHandle } from "../../automation";
+import { getAutomationMode } from "../../runtime/automation-mode";
 
 export interface FakeMouseScrollOptions {
   tabId: number;
@@ -27,6 +28,9 @@ export async function scrollAndMoveFakeMouseToElement(
   const { tabId, handle } = options;
 
   try {
+    const mode = await getAutomationMode();
+    console.log("🔧 [FakeMouse] Automation mode:", mode);
+
     // Get element position before scroll
     const rectBeforeScroll = await handle.asLocator().boundingBox();
 
@@ -58,6 +62,13 @@ export async function scrollAndMoveFakeMouseToElement(
       return null;
     }
 
+    // Background mode: skip fake mouse visual effects
+    if (mode === "background") {
+      console.log("ℹ️ [FakeMouse] Background mode: skipping visual effects");
+      return finalRect;
+    }
+
+    // Focus mode: show fake mouse visual effects
     const elementCenterX = finalRect.x + finalRect.width / 2;
     const elementCenterY = finalRect.y + finalRect.height / 2;
 
@@ -98,6 +109,15 @@ export async function playClickAnimationAndReturn(
   tabId: number,
 ): Promise<void> {
   try {
+    const mode = await getAutomationMode();
+
+    // Background mode: skip visual animation
+    if (mode === "background") {
+      console.log("ℹ️ [FakeMouse] Background mode: skipping click animation");
+      return;
+    }
+
+    // Focus mode: show click animation
     await chrome.tabs
       .sendMessage(tabId, {
         request: "fake-mouse-play-click-animation",

@@ -347,9 +347,12 @@ export const downloadChatImagesTool = tool({
       .describe("Optional folder prefix for organizing downloads"),
     filenamingStrategy: z
       .enum(["descriptive", "sequential", "timestamp"])
-      .nullable()
-      .optional()
+      .default("descriptive")
       .describe("Strategy for naming files"),
+    displayResults: z
+      .boolean()
+      .default(true)
+      .describe("Whether to display the download results"),
   }),
   execute: async ({
     messages,

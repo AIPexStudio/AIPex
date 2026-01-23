@@ -12,6 +12,10 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/src/hooks/index.d.ts",
+      "import": "./dist/src/hooks/index.js"
     }
   },
   "files": [
@@ -30,6 +34,7 @@
   "type": "module",
   "dependencies": {
     "@aipexstudio/aipex-core": "workspace:*",
+    "@aipexstudio/dom-snapshot": "workspace:*",
     "@jitl/quickjs-ng-wasmfile-release-sync": "^0.31.0",
     "@zenfs/core": "^2.4.2",
     "@zenfs/dom": "^1.2.5",

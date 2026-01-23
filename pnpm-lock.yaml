@@ -183,6 +183,9 @@ importers:
       '@aipexstudio/browser-runtime':
         specifier: workspace:*
         version: link:../browser-runtime
+      '@aipexstudio/dom-snapshot':
+        specifier: workspace:*
+        version: link:../dom-snapshot
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.2
         version: 1.25.2(hono@4.11.4)(zod@4.1.13)
@@ -340,6 +343,9 @@ importers:
       '@aipexstudio/aipex-core':
         specifier: workspace:*
         version: link:../core
+      '@aipexstudio/dom-snapshot':
+        specifier: workspace:*
+        version: link:../dom-snapshot
       '@jitl/quickjs-ng-wasmfile-release-sync':
         specifier: ^0.31.0
         version: 0.31.0
