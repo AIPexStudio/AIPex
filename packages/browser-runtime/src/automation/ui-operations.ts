@@ -11,7 +11,7 @@
  */
 
 import { SmartElementHandle } from "./smart-locator";
-import { snapshotManager } from "./snapshot-manager";
+import * as snapshotProvider from "./snapshot-provider";
 import type { ElementHandle } from "./types";
 
 /**
@@ -59,9 +59,10 @@ export async function takeSnapshot(): Promise<{
   }
 
   try {
-    console.log("🔍 [DEBUG] Taking accessibility snapshot for tab:", tab.id);
+    const mode = await snapshotProvider.getSnapshotMode();
+    console.log(`🔍 [DEBUG] Taking ${mode === 'dom' ? 'DOM' : 'CDP'} snapshot for tab:`, tab.id);
 
-    const result = await snapshotManager.createSnapshot(tab.id);
+    const result = await snapshotProvider.createSnapshot(tab.id);
     if (!result?.root) {
       return {
         success: false,
@@ -74,7 +75,7 @@ export async function takeSnapshot(): Promise<{
     }
 
     // Format as text (like DevTools MCP)
-    const snapshotText = snapshotManager.formatSnapshot(result);
+    const snapshotText = snapshotProvider.formatSnapshot(result);
 
     console.log(
       `✅ [DEBUG] Snapshot preview:\n${snapshotText.split("\n").slice(0, 20).join("\n")}`,
@@ -86,7 +87,7 @@ export async function takeSnapshot(): Promise<{
       snapshot: snapshotText,
       title: tab.title || "",
       url: tab.url || "",
-      message: `Snapshot ${tab.id} created`,
+      message: `Snapshot ${tab.id} created (${mode} mode)`,
     };
   } catch (error) {
     console.error("❌ [DEBUG] Error in takeSnapshot:", error);
@@ -126,7 +127,7 @@ export async function getElementByUid(
   if (!(await checkTabValid(tabId))) {
     throw new Error("No accessible tab found");
   }
-  const node = snapshotManager.getNodeByUid(tabId, uid);
+  const node = snapshotProvider.getNodeByUid(tabId, uid);
   if (!node) {
     throw new Error(
       "No such element found in the snapshot, the page content may have changed, please call search_elements again to get a fresh snapshot",
@@ -692,7 +693,7 @@ export async function searchSnapshotText(params: {
   if (!isValidTab) {
     return { success: false, message: "No accessible tab found", data: "" };
   }
-  const result = await snapshotManager.searchAndFormat(
+  const result = await snapshotProvider.searchAndFormat(
     tabId,
     query,
     contextLevels,
