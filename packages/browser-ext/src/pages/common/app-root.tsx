@@ -22,10 +22,9 @@ import {
   useBrowserStorage,
   useBrowserTools,
 } from "../../lib/browser-agent-config";
-import {
-  InterventionModeToggleHeader,
-  InterventionUI,
-} from "../../lib/intervention-ui";
+import { BrowserChatHeader } from "../../lib/browser-chat-header";
+import { InterventionModeProvider } from "../../lib/intervention-mode-context";
+import { InterventionUI } from "../../lib/intervention-ui";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
@@ -63,27 +62,29 @@ function ChatApp() {
   }
 
   return (
-    <ChatBot
-      agent={agent}
-      configError={error}
-      initialSettings={settings}
-      storageAdapter={chromeStorageAdapter}
-      slots={{
-        headerContent: () => (
-          <InterventionModeToggleHeader
-            mode={interventionMode}
-            onModeChange={setInterventionMode}
-          />
-        ),
-        afterMessages: () => (
-          <InterventionUI
-            mode={interventionMode}
-            onModeChange={setInterventionMode}
-          />
-        ),
-        inputToolbar: (props) => <AutomationModeInputToolbar {...props} />,
-      }}
-    />
+    <InterventionModeProvider
+      mode={interventionMode}
+      setMode={setInterventionMode}
+    >
+      <ChatBot
+        agent={agent}
+        configError={error}
+        initialSettings={settings}
+        storageAdapter={chromeStorageAdapter}
+        components={{
+          Header: BrowserChatHeader,
+        }}
+        slots={{
+          afterMessages: () => (
+            <InterventionUI
+              mode={interventionMode}
+              onModeChange={setInterventionMode}
+            />
+          ),
+          inputToolbar: (props) => <AutomationModeInputToolbar {...props} />,
+        }}
+      />
+    </InterventionModeProvider>
   );
 }
 

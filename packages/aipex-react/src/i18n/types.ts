@@ -109,6 +109,77 @@ export interface TranslationResources {
   tools: {
     [key: string]: string;
   };
+  conversationHistory: {
+    title: string;
+    loading: string;
+    noHistory: string;
+    recentConversations: string;
+    messagesCount: string;
+    newConversation: string;
+    timeFormat: {
+      justNow: string;
+      minutesAgo: string;
+      hourAgo: string;
+      hoursAgo: string;
+      yesterday: string;
+      daysAgo: string;
+    };
+  };
+  interventions: {
+    mode: {
+      disabled: string;
+      disabledDescription: string;
+      passive: string;
+      passiveDescription: string;
+    };
+    status: {
+      pending: string;
+      active: string;
+      completed: string;
+      cancelled: string;
+      timeout: string;
+      error: string;
+    };
+    common: {
+      timeoutLabel: string;
+      timeoutUnit: string;
+    };
+    monitor: {
+      title: string;
+      clickPrompt: string;
+      captureInfo: string;
+      captured: string;
+      capturedSuccess: string;
+      cancelled: string;
+      timeout: string;
+      error: string;
+    };
+    voice: {
+      title: string;
+      recognizing: string;
+      silence: string;
+      stopRecording: string;
+      speakPrompt: string;
+      initializingMic: string;
+      completed: string;
+      cancelled: string;
+      timeout: string;
+      error: string;
+    };
+    selection: {
+      title: string;
+      promptSingle: string;
+      promptMultiple: string;
+      other: string;
+      otherDescription: string;
+      otherPlaceholder: string;
+      confirmButton: string;
+      completed: string;
+      cancelled: string;
+      timeout: string;
+      error: string;
+    };
+  };
 }
 
 export type BaseTranslationKey =
@@ -159,6 +230,8 @@ export type BaseTranslationKey =
   | "settings.feedback"
   | "settings.general"
   | "settings.aiConfiguration"
+  | "settings.skills"
+  | "settings.skillsTab"
   | "settings.selectProvider"
   | "settings.searchProviders"
   | "settings.noProvidersFound"
@@ -196,7 +269,60 @@ export type BaseTranslationKey =
   | "config.title"
   | "config.description"
   | "config.apiTokenRequired"
-  | "config.openSettings";
+  | "config.openSettings"
+  | "conversationHistory.title"
+  | "conversationHistory.loading"
+  | "conversationHistory.noHistory"
+  | "conversationHistory.recentConversations"
+  | "conversationHistory.messagesCount"
+  | "conversationHistory.newConversation"
+  | "conversationHistory.timeFormat.justNow"
+  | "conversationHistory.timeFormat.minutesAgo"
+  | "conversationHistory.timeFormat.hourAgo"
+  | "conversationHistory.timeFormat.hoursAgo"
+  | "conversationHistory.timeFormat.yesterday"
+  | "conversationHistory.timeFormat.daysAgo"
+  | "interventions.mode.disabled"
+  | "interventions.mode.disabledDescription"
+  | "interventions.mode.passive"
+  | "interventions.mode.passiveDescription"
+  | "interventions.status.pending"
+  | "interventions.status.active"
+  | "interventions.status.completed"
+  | "interventions.status.cancelled"
+  | "interventions.status.timeout"
+  | "interventions.status.error"
+  | "interventions.common.timeoutLabel"
+  | "interventions.common.timeoutUnit"
+  | "interventions.monitor.title"
+  | "interventions.monitor.clickPrompt"
+  | "interventions.monitor.captureInfo"
+  | "interventions.monitor.captured"
+  | "interventions.monitor.capturedSuccess"
+  | "interventions.monitor.cancelled"
+  | "interventions.monitor.timeout"
+  | "interventions.monitor.error"
+  | "interventions.voice.title"
+  | "interventions.voice.recognizing"
+  | "interventions.voice.silence"
+  | "interventions.voice.stopRecording"
+  | "interventions.voice.speakPrompt"
+  | "interventions.voice.initializingMic"
+  | "interventions.voice.completed"
+  | "interventions.voice.cancelled"
+  | "interventions.voice.timeout"
+  | "interventions.voice.error"
+  | "interventions.selection.title"
+  | "interventions.selection.promptSingle"
+  | "interventions.selection.promptMultiple"
+  | "interventions.selection.other"
+  | "interventions.selection.otherDescription"
+  | "interventions.selection.otherPlaceholder"
+  | "interventions.selection.confirmButton"
+  | "interventions.selection.completed"
+  | "interventions.selection.cancelled"
+  | "interventions.selection.timeout"
+  | "interventions.selection.error";
 
 export type TranslationKey = BaseTranslationKey | `tools.${string}`;
 
