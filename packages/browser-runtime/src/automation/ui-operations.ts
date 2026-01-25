@@ -60,7 +60,10 @@ export async function takeSnapshot(): Promise<{
 
   try {
     const mode = await snapshotProvider.getSnapshotMode();
-    console.log(`🔍 [DEBUG] Taking ${mode === 'dom' ? 'DOM' : 'CDP'} snapshot for tab:`, tab.id);
+    console.log(
+      `🔍 [DEBUG] Taking ${mode === "dom" ? "DOM" : "CDP"} snapshot for tab:`,
+      tab.id,
+    );
 
     const result = await snapshotProvider.createSnapshot(tab.id);
     if (!result?.root) {
