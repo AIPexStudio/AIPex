@@ -3,7 +3,13 @@ export {
   conversationStorage,
 } from "./conversation-storage";
 export { LRUPolicy } from "./lru-policy";
-export { ConversationMigration } from "./migration";
+export {
+  checkMigrationStatus,
+  cleanupOldStorage,
+  getOldConversations,
+  markMigrationComplete,
+  migrate,
+} from "./migration";
 export type {
   ConversationData,
   ConversationStorageConfig,

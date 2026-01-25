@@ -23,7 +23,7 @@ import {
   conversationStorage,
 } from "@aipexstudio/browser-runtime";
 import { ClockIcon, MessageSquareIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface ConversationHistoryProps {
   currentConversationId?: string;
@@ -42,7 +42,7 @@ export function ConversationHistory({
   const [conversations, setConversations] = useState<ConversationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       const allConversations = await conversationStorage.getAllConversations();
@@ -53,7 +53,7 @@ export function ConversationHistory({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadConversations();

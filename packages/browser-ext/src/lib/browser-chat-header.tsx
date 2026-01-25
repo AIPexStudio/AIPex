@@ -35,7 +35,7 @@ export function BrowserChatHeader({
   >();
 
   // Persistence: debounced save/update on messages change
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     // Clear any pending save

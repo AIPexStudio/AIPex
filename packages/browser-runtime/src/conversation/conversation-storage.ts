@@ -1,6 +1,6 @@
 import { IndexedDBStorage } from "../storage/indexeddb-storage";
 import { LRUPolicy } from "./lru-policy";
-import { ConversationMigration } from "./migration";
+import { migrate } from "./migration";
 import type {
   ConversationData,
   ConversationStorageConfig,
@@ -42,11 +42,9 @@ export class ConversationStorage {
    */
   private async performMigration(): Promise<void> {
     try {
-      const result = await ConversationMigration.migrate(
-        async (conversation) => {
-          await this.storage.save(conversation.id, conversation);
-        },
-      );
+      const result = await migrate(async (conversation) => {
+        await this.storage.save(conversation.id, conversation);
+      });
 
       if (result.migratedCount > 0) {
         // Apply LRU after migration
