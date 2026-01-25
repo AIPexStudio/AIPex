@@ -49,6 +49,8 @@
     "feedback": "Feedback",
     "general": "General",
     "aiConfiguration": "AI Configuration",
+    "skills": "Skills",
+    "skillsTab": "Skills",
     "selectProvider": "Select AI Provider",
     "searchProviders": "Search providers...",
     "noProvidersFound": "No providers found",
@@ -229,6 +231,22 @@
     "get_intervention_info": "Get Intervention Info",
     "request_intervention": "Request Intervention",
     "cancel_intervention": "Cancel Intervention"
+  },
+  "conversationHistory": {
+    "title": "Conversation History",
+    "loading": "Loading...",
+    "noHistory": "No conversation history",
+    "recentConversations": "Recent conversations",
+    "messagesCount": "messages",
+    "newConversation": "New conversation",
+    "timeFormat": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} min ago",
+      "hourAgo": "1 hour ago",
+      "hoursAgo": "{{count}} hours ago",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{count}} days ago"
+    }
   },
   "interventions": {
     "mode": {

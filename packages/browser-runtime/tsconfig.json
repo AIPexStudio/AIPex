@@ -7,7 +7,7 @@
     "outDir": "./dist"
   },
   "include": ["src/**/*"],
-  "exclude": ["src/skill/components/**"],
+  "exclude": ["src/skill/components/**", "src/**/__tests__/**", "src/**/*.test.ts"],
   "references": [
     {
       "path": "../core/tsconfig.json"

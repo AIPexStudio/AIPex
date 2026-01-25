@@ -3,6 +3,7 @@ import type {
   AppSettings,
   KeyValueStorage,
 } from "@aipexstudio/aipex-core";
+import type { ReactNode } from "react";
 
 export interface SettingsPageProps {
   storageAdapter: KeyValueStorage<unknown>;
@@ -10,6 +11,7 @@ export interface SettingsPageProps {
   className?: string;
   onSave?: (settings: AppSettings) => void;
   onTestConnection?: (settings: AppSettings) => Promise<boolean>;
+  skillsContent?: ReactNode;
 }
 
 export interface ProviderConfig {
@@ -20,7 +22,7 @@ export interface ProviderConfig {
 
 export type ProviderConfigs = Record<AIProviderKey, ProviderConfig>;
 
-export type SettingsTab = "general" | "ai";
+export type SettingsTab = "general" | "ai" | "skills";
 
 export interface SaveStatus {
   type: "success" | "error" | "info" | "";

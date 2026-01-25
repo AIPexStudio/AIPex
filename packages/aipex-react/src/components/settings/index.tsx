@@ -19,6 +19,7 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
+  Package,
   Palette,
   Plus,
   Search,
@@ -217,6 +218,7 @@ export function SettingsPage({
   className,
   onSave,
   onTestConnection,
+  skillsContent,
 }: SettingsPageProps) {
   const { t, language, changeLanguage } = useTranslation();
   const { theme, changeTheme, effectiveTheme } = useTheme();
@@ -784,7 +786,11 @@ export function SettingsPage({
           onValueChange={(value: string) => setActiveTab(value as SettingsTab)}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList
+            className={`grid w-full mb-6 ${
+              skillsContent ? "grid-cols-3" : "grid-cols-2"
+            }`}
+          >
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               {t("settings.general")}
@@ -793,6 +799,12 @@ export function SettingsPage({
               <Bot className="h-4 w-4" />
               {t("settings.aiConfiguration")}
             </TabsTrigger>
+            {skillsContent && (
+              <TabsTrigger value="skills" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {t("settings.skillsTab")}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* General Tab */}
@@ -1446,6 +1458,13 @@ export function SettingsPage({
               </Card>
             )}
           </TabsContent>
+
+          {/* Skills Tab */}
+          {skillsContent && (
+            <TabsContent value="skills" className="space-y-6">
+              {skillsContent}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

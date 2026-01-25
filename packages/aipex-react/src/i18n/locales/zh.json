@@ -49,6 +49,8 @@
     "feedback": "反馈",
     "general": "常规设置",
     "aiConfiguration": "AI 配置",
+    "skills": "技能管理",
+    "skillsTab": "技能管理",
     "selectProvider": "选择 AI 提供商",
     "searchProviders": "搜索提供商...",
     "noProvidersFound": "未找到匹配的提供商",
@@ -229,6 +231,22 @@
     "get_intervention_info": "获取介入信息",
     "request_intervention": "请求介入",
     "cancel_intervention": "取消介入"
+  },
+  "conversationHistory": {
+    "title": "对话历史",
+    "loading": "加载中...",
+    "noHistory": "暂无对话历史",
+    "recentConversations": "最近对话",
+    "messagesCount": "条消息",
+    "newConversation": "新对话",
+    "timeFormat": {
+      "justNow": "刚刚",
+      "minutesAgo": "{{count}} 分钟前",
+      "hourAgo": "1 小时前",
+      "hoursAgo": "{{count}} 小时前",
+      "yesterday": "昨天",
+      "daysAgo": "{{count}} 天前"
+    }
   },
   "interventions": {
     "mode": {
