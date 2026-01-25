@@ -467,6 +467,7 @@ export class SnapshotManager {
         name,
         children: serializedChildren,
         backendDOMNodeId: axNode.backendDOMNodeId,
+        frameId: axNode.frameId,
         tagName,
       };
 
@@ -524,6 +525,7 @@ export class SnapshotManager {
       name,
       children: serializedChildren,
       backendDOMNodeId: axNode.backendDOMNodeId,
+      frameId: axNode.frameId,
       tagName,
     };
 

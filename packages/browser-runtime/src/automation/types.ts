@@ -12,6 +12,7 @@ export interface TextSnapshotNode {
   description?: string;
   children: TextSnapshotNode[];
   backendDOMNodeId?: number;
+  frameId?: string;
   tagName?: string;
   focused?: boolean;
   modal?: boolean;

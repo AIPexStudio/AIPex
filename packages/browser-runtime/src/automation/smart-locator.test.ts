@@ -35,6 +35,8 @@ describe("SmartLocator", () => {
     vi.clearAllMocks();
     mockSafeAttachDebugger.mockResolvedValue(true);
     mockSafeDetachDebugger.mockResolvedValue(undefined);
+    // Ensure mocked CDP always returns a Promise (important for code paths that call .catch()).
+    mockSendCommand.mockImplementation(async () => undefined);
 
     mockNode = {
       id: "test-node-id",
@@ -53,17 +55,27 @@ describe("SmartLocator", () => {
     it("should fill element using Monaco Editor API", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      // Mock CDP commands for Monaco fill
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          object: { objectId: "obj1" },
-        }) // DOM.resolveNode
-        .mockResolvedValueOnce({
-          result: { value: true },
-        }) // Runtime.callFunctionOn - tryFillMonaco success
-        .mockResolvedValueOnce(undefined); // Runtime.releaseObject
+      let callFunctionOnCount = 0;
+      mockSendCommand.mockImplementation(
+        async (command: string, params: any) => {
+          if (command === "DOM.enable") return undefined;
+          if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+          if (command === "DOM.resolveNode") {
+            expect(params).toMatchObject({ backendNodeId: backendDOMNodeId });
+            return { object: { objectId: "obj1" } };
+          }
+          if (command === "Runtime.callFunctionOn") {
+            callFunctionOnCount++;
+            // 1) addHighlight, 2) tryFillMonaco, 3) removeHighlight
+            if (callFunctionOnCount === 2) {
+              return { result: { value: true } };
+            }
+            return { result: { value: undefined } };
+          }
+          if (command === "Runtime.releaseObject") return undefined;
+          return undefined;
+        },
+      );
 
       await expect(locator.fill("test value")).resolves.toBeUndefined();
 
@@ -73,30 +85,39 @@ describe("SmartLocator", () => {
     it("should fallback to universal fill strategy when Monaco not detected", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      // Mock CDP commands for universal fill
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          object: { objectId: "obj1" },
-        }) // DOM.resolveNode
-        .mockResolvedValueOnce({
-          result: { value: false },
-        }) // Runtime.callFunctionOn - tryFillMonaco returns false
-        .mockResolvedValueOnce(undefined) // DOM.focus
-        .mockResolvedValueOnce({
-          result: { value: false },
-        }) // Runtime.evaluate - platform check (not Mac)
-        .mockResolvedValueOnce(undefined) // Input.dispatchKeyEvent - Ctrl down
-        .mockResolvedValueOnce(undefined) // Input.dispatchKeyEvent - A down
-        .mockResolvedValueOnce(undefined) // Input.dispatchKeyEvent - A up
-        .mockResolvedValueOnce(undefined) // Input.dispatchKeyEvent - Ctrl up
-        .mockResolvedValueOnce(undefined) // Input.insertText
-        .mockResolvedValueOnce({
-          object: { objectId: "obj2" },
-        }) // DOM.resolveNode for events
-        .mockResolvedValueOnce(undefined) // Runtime.callFunctionOn - dispatch events
-        .mockResolvedValueOnce(undefined); // Runtime.releaseObject
+      let callFunctionOnCount = 0;
+      let resolveNodeCount = 0;
+      mockSendCommand.mockImplementation(
+        async (command: string, params: any) => {
+          if (command === "DOM.enable") return undefined;
+          if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+          if (command === "DOM.resolveNode") {
+            resolveNodeCount++;
+            if (resolveNodeCount === 1) {
+              expect(params).toMatchObject({ backendNodeId: backendDOMNodeId });
+              return { object: { objectId: "obj1" } };
+            }
+            return { object: { objectId: "obj2" } };
+          }
+          if (command === "Runtime.callFunctionOn") {
+            callFunctionOnCount++;
+            // 1) addHighlight, 2) tryFillMonaco (false), 3) dispatch events, 4) removeHighlight
+            if (callFunctionOnCount === 2) {
+              return { result: { value: false } };
+            }
+            return { result: { value: undefined } };
+          }
+          if (command === "DOM.focus") return undefined;
+          if (command === "Runtime.evaluate") {
+            // platform check
+            return { result: { value: false } };
+          }
+          if (command === "Input.dispatchKeyEvent") return undefined;
+          if (command === "Input.insertText") return undefined;
+          if (command === "Runtime.releaseObject") return undefined;
+          return undefined;
+        },
+      );
 
       await expect(locator.fill("test value")).resolves.toBeUndefined();
     });
@@ -104,10 +125,12 @@ describe("SmartLocator", () => {
     it("should throw error when fill fails", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockRejectedValueOnce(new Error("CDP error")); // DOM.resolveNode fails
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.resolveNode") throw new Error("CDP error");
+        return undefined;
+      });
 
       await expect(locator.fill("test value")).rejects.toThrow();
     });
@@ -117,27 +140,43 @@ describe("SmartLocator", () => {
     it("should click element successfully", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      // Mock CDP commands for click
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 50,
-              height: 30,
-            },
-          },
-        }) // Runtime.evaluate - getElementBoundingBox
-        .mockResolvedValueOnce({
-          result: {
-            value: { found: true, isCovered: false },
-          },
-        }) // Runtime.evaluate - check if element is covered
-        .mockResolvedValueOnce(undefined) // Input.dispatchMouseEvent - mousePressed
-        .mockResolvedValueOnce(undefined); // Input.dispatchMouseEvent - mouseReleased
+      let resolveNodeCount = 0;
+      let callFunctionOnCount = 0;
+      mockSendCommand.mockImplementation(
+        async (command: string, _params: any) => {
+          if (command === "DOM.enable") return undefined;
+          if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+          if (command === "DOM.getContentQuads") {
+            // Return a 50x30 rect at (100, 200)
+            return {
+              quads: [[100, 200, 150, 200, 150, 230, 100, 230]],
+            };
+          }
+          if (command === "DOM.resolveNode") {
+            resolveNodeCount++;
+            // 1) highlight target, 2) isCovered target, 3) isCovered hit
+            if (resolveNodeCount === 1)
+              return { object: { objectId: "objTarget1" } };
+            if (resolveNodeCount === 2)
+              return { object: { objectId: "objTarget2" } };
+            return { object: { objectId: "objHit" } };
+          }
+          if (command === "Runtime.callFunctionOn") {
+            callFunctionOnCount++;
+            // isCovered containment check should return true (not covered)
+            if (callFunctionOnCount >= 2) {
+              return { result: { value: true } };
+            }
+            return { result: { value: undefined } };
+          }
+          if (command === "Runtime.releaseObject") return undefined;
+          if (command === "DOM.getNodeForLocation") {
+            return { backendNodeId: backendDOMNodeId, frameId: "main" };
+          }
+          if (command === "Input.dispatchMouseEvent") return undefined;
+          return undefined;
+        },
+      );
 
       await expect(locator.click()).resolves.toBeUndefined();
     });
@@ -145,33 +184,25 @@ describe("SmartLocator", () => {
     it("should handle double click", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 50,
-              height: 30,
-            },
-          },
-        }) // Runtime.evaluate - getElementBoundingBox
-        .mockResolvedValueOnce({
-          result: {
-            value: { found: true, isCovered: false },
-          },
-        }) // Runtime.evaluate - check if element is covered (first click)
-        .mockResolvedValueOnce(undefined) // Input.dispatchMouseEvent - mousePressed (first)
-        .mockResolvedValueOnce(undefined) // Input.dispatchMouseEvent - mouseReleased (first)
-        .mockResolvedValueOnce({
-          result: {
-            value: { found: true, isCovered: false },
-          },
-        }) // Runtime.evaluate - check if element is covered (second click)
-        .mockResolvedValueOnce(undefined) // Input.dispatchMouseEvent - mousePressed (second)
-        .mockResolvedValueOnce(undefined); // Input.dispatchMouseEvent - mouseReleased (second)
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") {
+          return { quads: [[100, 200, 150, 200, 150, 230, 100, 230]] };
+        }
+        if (command === "DOM.getNodeForLocation") {
+          return { backendNodeId: backendDOMNodeId, frameId: "main" };
+        }
+        if (command === "DOM.resolveNode") {
+          return { object: { objectId: "obj" } };
+        }
+        if (command === "Runtime.callFunctionOn") {
+          return { result: { value: true } };
+        }
+        if (command === "Runtime.releaseObject") return undefined;
+        if (command === "Input.dispatchMouseEvent") return undefined;
+        return undefined;
+      });
 
       await expect(locator.click({ count: 2 })).resolves.toBeUndefined();
     });
@@ -179,49 +210,74 @@ describe("SmartLocator", () => {
     it("should throw error when element not visible", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 0,
-              height: 0,
-            },
-          },
-        }); // Runtime.evaluate - zero size element
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") {
+          // zero-size rect
+          return { quads: [[100, 200, 100, 200, 100, 200, 100, 200]] };
+        }
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj1" } };
+        if (command === "Runtime.callFunctionOn")
+          return { result: { value: true } };
+        if (command === "Runtime.releaseObject") return undefined;
+        return undefined;
+      });
 
       await expect(locator.click()).rejects.toThrow();
     });
 
-    it("should handle covered elements by dispatching click event", async () => {
+    it("should handle covered elements by falling back to JS click", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 50,
-              height: 30,
-            },
-          },
-        }) // Runtime.evaluate - getElementBoundingBox
-        .mockResolvedValueOnce({
-          result: {
-            value: { found: true, isCovered: true },
-          },
-        }) // Runtime.evaluate - element is covered
-        .mockResolvedValueOnce({
-          result: { value: true },
-        }); // Runtime.evaluate - dispatch click event
+      let callFunctionOnCount = 0;
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") {
+          return { quads: [[100, 200, 150, 200, 150, 230, 100, 230]] };
+        }
+        if (command === "DOM.getNodeForLocation") {
+          return { backendNodeId: backendDOMNodeId + 1, frameId: "main" };
+        }
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj" } };
+        if (command === "Runtime.callFunctionOn") {
+          callFunctionOnCount++;
+          // First: highlight; Second: contains check => false (covered); Third: JS click => true
+          if (callFunctionOnCount === 2) return { result: { value: false } };
+          return { result: { value: true } };
+        }
+        if (command === "Runtime.releaseObject") return undefined;
+        if (command === "Input.dispatchMouseEvent") return undefined;
+        return undefined;
+      });
 
       await expect(locator.click()).resolves.toBeUndefined();
+    });
+
+    it("should still click via JS when bounding box cannot be computed", async () => {
+      const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
+
+      let callFunctionOnCount = 0;
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") throw new Error("no layout");
+        if (command === "DOM.getBoxModel") throw new Error("no layout");
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj" } };
+        if (command === "Runtime.callFunctionOn") {
+          callFunctionOnCount++;
+          return { result: { value: true } };
+        }
+        if (command === "Runtime.releaseObject") return undefined;
+        return undefined;
+      });
+
+      await expect(locator.click()).resolves.toBeUndefined();
+      expect(callFunctionOnCount).toBeGreaterThan(0);
     });
   });
 
@@ -229,20 +285,20 @@ describe("SmartLocator", () => {
     it("should hover element successfully", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 50,
-              height: 30,
-            },
-          },
-        }) // Runtime.evaluate - getElementBoundingBox
-        .mockResolvedValueOnce(undefined); // Input.dispatchMouseEvent - mouseMoved
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") {
+          return { quads: [[100, 200, 150, 200, 150, 230, 100, 230]] };
+        }
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj1" } };
+        if (command === "Runtime.callFunctionOn")
+          return { result: { value: true } };
+        if (command === "Runtime.releaseObject") return undefined;
+        if (command === "Input.dispatchMouseEvent") return undefined;
+        return undefined;
+      });
 
       await expect(locator.hover()).resolves.toBeUndefined();
     });
@@ -250,19 +306,19 @@ describe("SmartLocator", () => {
     it("should throw error when element not visible", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce(undefined) // DOM.scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 0,
-              height: 0,
-            },
-          },
-        }); // Runtime.evaluate - zero size element
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.scrollIntoViewIfNeeded") return undefined;
+        if (command === "DOM.getContentQuads") {
+          return { quads: [[100, 200, 100, 200, 100, 200, 100, 200]] };
+        }
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj1" } };
+        if (command === "Runtime.callFunctionOn")
+          return { result: { value: true } };
+        if (command === "Runtime.releaseObject") return undefined;
+        return undefined;
+      });
 
       await expect(locator.hover()).rejects.toThrow();
     });
@@ -272,24 +328,81 @@ describe("SmartLocator", () => {
     it("should return bounding box when element exists", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce({
-          result: {
-            value: {
-              x: 100,
-              y: 200,
-              width: 50,
-              height: 30,
-            },
-          },
-        }); // Runtime.evaluate - getElementBoundingBox
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.getContentQuads") {
+          return { quads: [[100, 200, 150, 200, 150, 230, 100, 230]] };
+        }
+        if (command === "DOM.getNodeForLocation") {
+          return { backendNodeId: backendDOMNodeId, frameId: "main" };
+        }
+        if (command === "DOM.resolveNode")
+          return { object: { objectId: "obj1" } };
+        if (command === "Runtime.callFunctionOn")
+          return { result: { value: true } };
+        if (command === "Runtime.releaseObject") return undefined;
+        return undefined;
+      });
 
       const box = await locator.boundingBox();
 
       expect(box).toEqual({
         x: 100,
         y: 200,
+        width: 50,
+        height: 30,
+      });
+    });
+
+    it("should accumulate iframe offsets when frameId is provided", async () => {
+      const iframeNode: TextSnapshotNode = {
+        ...mockNode,
+        frameId: "child",
+      };
+      const locator = new SmartLocator(tabId, iframeNode, backendDOMNodeId);
+
+      mockSendCommand.mockImplementation(
+        async (command: string, params: any) => {
+          if (command === "DOM.enable") return undefined;
+          if (command === "DOM.getContentQuads") {
+            if (params?.backendNodeId === backendDOMNodeId) {
+              // element inside child frame at (10, 20) size 50x30
+              return { quads: [[10, 20, 60, 20, 60, 50, 10, 50]] };
+            }
+            if (params?.backendNodeId === 200) {
+              // iframe element in parent at (100, 150)
+              return { quads: [[100, 150, 400, 150, 400, 350, 100, 350]] };
+            }
+            return { quads: [] };
+          }
+          if (command === "DOM.getNodeForLocation") {
+            // Force base rect to be considered covered to test offset accumulation.
+            return { backendNodeId: backendDOMNodeId + 1, frameId: "main" };
+          }
+          if (command === "Page.getFrameTree") {
+            return {
+              frameTree: {
+                frame: { id: "main" },
+                childFrames: [{ frame: { id: "child" } }],
+              },
+            };
+          }
+          if (command === "DOM.getFrameOwner") {
+            return { backendNodeId: 200 };
+          }
+          if (command === "DOM.resolveNode")
+            return { object: { objectId: "obj1" } };
+          if (command === "Runtime.callFunctionOn")
+            return { result: { value: true } };
+          if (command === "Runtime.releaseObject") return undefined;
+          return undefined;
+        },
+      );
+
+      const box = await locator.boundingBox();
+      expect(box).toEqual({
+        x: 110,
+        y: 170,
         width: 50,
         height: 30,
       });
@@ -306,11 +419,12 @@ describe("SmartLocator", () => {
     it("should return null when element not found", async () => {
       const locator = new SmartLocator(tabId, mockNode, backendDOMNodeId);
 
-      mockSendCommand
-        .mockResolvedValueOnce(undefined) // DOM.enable
-        .mockResolvedValueOnce({
-          result: { value: null },
-        }); // Runtime.evaluate - element not found
+      mockSendCommand.mockImplementation(async (command: string) => {
+        if (command === "DOM.enable") return undefined;
+        if (command === "DOM.getContentQuads") return { quads: [] };
+        if (command === "DOM.getBoxModel") return {};
+        return undefined;
+      });
 
       const box = await locator.boundingBox();
       expect(box).toBeNull();
