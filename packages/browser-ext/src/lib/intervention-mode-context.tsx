@@ -4,16 +4,15 @@
  */
 
 import type { InterventionMode } from "@aipexstudio/aipex-react/components/intervention";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 
 interface InterventionModeContextValue {
   mode: InterventionMode;
   setMode: (mode: InterventionMode) => void;
 }
 
-const InterventionModeContext = createContext<InterventionModeContextValue | null>(
-  null
-);
+const InterventionModeContext =
+  createContext<InterventionModeContextValue | null>(null);
 
 export interface InterventionModeProviderProps {
   mode: InterventionMode;
@@ -37,7 +36,7 @@ export function useInterventionMode(): InterventionModeContextValue {
   const context = useContext(InterventionModeContext);
   if (!context) {
     throw new Error(
-      "useInterventionMode must be used within InterventionModeProvider"
+      "useInterventionMode must be used within InterventionModeProvider",
     );
   }
   return context;

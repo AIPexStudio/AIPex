@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationStorage } from "../conversation-storage";
-import { ConversationMigration } from "../migration";
-import type { UIMessage, ConversationData } from "../types";
+import type { ConversationData, UIMessage } from "../types";
 
 // Mock IndexedDB with in-memory storage
 class MockIDBDatabase {
@@ -19,7 +18,7 @@ class MockIDBDatabase {
   transaction(storeNames: string[], _mode: string) {
     return new MockIDBTransaction(
       this.stores,
-      storeNames[0] ?? "conversations"
+      storeNames[0] ?? "conversations",
     );
   }
 
@@ -29,7 +28,7 @@ class MockIDBDatabase {
 class MockIDBTransaction {
   constructor(
     private stores: Map<string, Map<string, any>>,
-    private storeName: string
+    _storeName: string,
   ) {}
 
   objectStore(name: string) {
@@ -82,7 +81,7 @@ class MockIDBObjectStore {
 }
 
 const indexedDBMock = {
-  open: vi.fn((name: string, version: number) => {
+  open: vi.fn((name: string, _version: number) => {
     const db = new MockIDBDatabase(name);
     return {
       onsuccess: null as any,
@@ -153,7 +152,9 @@ describe("ConversationStorage Integration Tests", () => {
       const mockDelete = vi.fn().mockResolvedValue(undefined);
       vi.spyOn((storage as any).storage, "save").mockImplementation(mockSave);
       vi.spyOn((storage as any).storage, "load").mockImplementation(mockLoad);
-      vi.spyOn((storage as any).storage, "delete").mockImplementation(mockDelete);
+      vi.spyOn((storage as any).storage, "delete").mockImplementation(
+        mockDelete,
+      );
       vi.spyOn(storage as any, "applyLRU").mockResolvedValue(undefined);
 
       // 1. Save a conversation
@@ -200,7 +201,7 @@ describe("ConversationStorage Integration Tests", () => {
           messages: expect.arrayContaining([
             expect.objectContaining({ id: "msg3" }),
           ]),
-        })
+        }),
       );
 
       // 4. Delete the conversation
@@ -217,7 +218,7 @@ describe("ConversationStorage Integration Tests", () => {
       // Mock storage operations
       vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
       const conversations: ConversationData[] = [];
-      const mockSave = vi.fn((id: string, data: ConversationData) => {
+      const mockSave = vi.fn((_id: string, data: ConversationData) => {
         conversations.push(data);
         return Promise.resolve();
       });
@@ -229,13 +230,13 @@ describe("ConversationStorage Integration Tests", () => {
       });
 
       vi.spyOn((storage as any).storage, "save").mockImplementation(
-        mockSave as (id: string, data: ConversationData) => Promise<void>
+        mockSave as (id: string, data: ConversationData) => Promise<void>,
       );
       vi.spyOn((storage as any).storage, "listAll").mockImplementation(
-        mockListAll as () => Promise<ConversationData[]>
+        mockListAll as () => Promise<ConversationData[]>,
       );
       vi.spyOn((storage as any).storage, "delete").mockImplementation(
-        mockDelete as (id: string) => Promise<void>
+        mockDelete as (id: string) => Promise<void>,
       );
 
       // Save 5 conversations (exceeding limit of 3)
@@ -276,7 +277,7 @@ describe("ConversationStorage Integration Tests", () => {
 
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify(oldConversations)
+        JSON.stringify(oldConversations),
       );
 
       // Create storage instance (should trigger migration)
@@ -304,7 +305,7 @@ describe("ConversationStorage Integration Tests", () => {
       // Setup old conversations (should be ignored)
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify([{ id: "old1" }])
+        JSON.stringify([{ id: "old1" }]),
       );
 
       const storage = new ConversationStorage();
@@ -331,7 +332,7 @@ describe("ConversationStorage Integration Tests", () => {
 
       // Save multiple conversations concurrently
       const savePromises = Array.from({ length: 5 }, (_, i) =>
-        storage.saveConversation(createMockMessages(`Concurrent ${i}`))
+        storage.saveConversation(createMockMessages(`Concurrent ${i}`)),
       );
 
       const ids = await Promise.all(savePromises);
@@ -350,7 +351,7 @@ describe("ConversationStorage Integration Tests", () => {
       // Mock storage to throw error
       vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
       vi.spyOn((storage as any).storage, "save").mockRejectedValue(
-        new Error("Save failed")
+        new Error("Save failed"),
       );
 
       const messages = createMockMessages("Test");
@@ -366,7 +367,7 @@ describe("ConversationStorage Integration Tests", () => {
       // Mock storage to throw error
       vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
       vi.spyOn((storage as any).storage, "load").mockRejectedValue(
-        new Error("Load failed")
+        new Error("Load failed"),
       );
 
       const conversation = await storage.getConversation("nonexistent");

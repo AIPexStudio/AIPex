@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationStorage } from "../conversation-storage";
 import type { UIMessage } from "../types";
 
@@ -139,7 +139,9 @@ describe("ConversationStorage", () => {
       const filtered = (storage as any).filterMessages(messages);
 
       expect(filtered).toHaveLength(2);
-      expect(filtered.find((m: UIMessage) => m.role === "system")).toBeUndefined();
+      expect(
+        filtered.find((m: UIMessage) => m.role === "system"),
+      ).toBeUndefined();
     });
 
     it("should keep user and assistant messages", () => {

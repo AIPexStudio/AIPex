@@ -10,7 +10,7 @@ import type { UIMessage as RuntimeUIMessage } from "@aipexstudio/browser-runtime
  * Convert aipex-react UIMessage to runtime UIMessage for storage
  */
 export function toStorageFormat(
-  messages: ReactUIMessage[]
+  messages: ReactUIMessage[],
 ): RuntimeUIMessage[] {
   return messages.map((msg) => ({
     id: msg.id,
@@ -59,7 +59,7 @@ export function toStorageFormat(
  * Convert runtime UIMessage back to aipex-react UIMessage for display
  */
 export function fromStorageFormat(
-  messages: RuntimeUIMessage[]
+  messages: RuntimeUIMessage[],
 ): ReactUIMessage[] {
   return messages.map((msg) => ({
     id: msg.id,

@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { LRUPolicy } from "../lru-policy";
 import type { ConversationData } from "../types";
 
 describe("LRUPolicy", () => {
   const createMockConversation = (
     id: string,
-    updatedAt: number
+    updatedAt: number,
   ): ConversationData => ({
     id,
     title: `Conversation ${id}`,
@@ -134,7 +134,7 @@ describe("LRUPolicy", () => {
     it("should respect custom maxItems value", () => {
       const policy = new LRUPolicy(10);
       const conversations = Array.from({ length: 15 }, (_, i) =>
-        createMockConversation(`${i}`, i * 1000)
+        createMockConversation(`${i}`, i * 1000),
       );
 
       const result = policy.apply(conversations);
@@ -146,7 +146,7 @@ describe("LRUPolicy", () => {
     it("should use default maxItems of 5", () => {
       const policy = new LRUPolicy();
       const conversations = Array.from({ length: 10 }, (_, i) =>
-        createMockConversation(`${i}`, i * 1000)
+        createMockConversation(`${i}`, i * 1000),
       );
 
       const result = policy.apply(conversations);

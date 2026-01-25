@@ -70,26 +70,28 @@ export class ConversationMigration {
    * Perform full migration from localStorage to IndexedDB
    */
   static async migrate(
-    saveCallback: (conversation: ConversationData) => Promise<void>
+    saveCallback: (conversation: ConversationData) => Promise<void>,
   ): Promise<{ success: boolean; migratedCount: number }> {
     try {
       // Check if already migrated
-      const alreadyMigrated = await this.checkMigrationStatus();
+      const alreadyMigrated =
+        await ConversationMigration.checkMigrationStatus();
       if (alreadyMigrated) {
         console.log("✅ [Migration] Already migrated, skipping");
         return { success: true, migratedCount: 0 };
       }
 
       // Get old conversations
-      const oldConversations = await this.getOldConversations();
+      const oldConversations =
+        await ConversationMigration.getOldConversations();
       if (oldConversations.length === 0) {
         console.log("✅ [Migration] No conversations to migrate");
-        await this.markMigrationComplete();
+        await ConversationMigration.markMigrationComplete();
         return { success: true, migratedCount: 0 };
       }
 
       console.log(
-        `🔄 [Migration] Migrating ${oldConversations.length} conversation(s)...`
+        `🔄 [Migration] Migrating ${oldConversations.length} conversation(s)...`,
       );
 
       // Migrate each conversation
@@ -101,17 +103,17 @@ export class ConversationMigration {
         } catch (error) {
           console.error(
             `❌ [Migration] Failed to migrate conversation ${conversation.id}:`,
-            error
+            error,
           );
         }
       }
 
       // Mark as complete and cleanup
-      await this.markMigrationComplete();
-      await this.cleanupOldStorage();
+      await ConversationMigration.markMigrationComplete();
+      await ConversationMigration.cleanupOldStorage();
 
       console.log(
-        `✅ [Migration] Successfully migrated ${migratedCount}/${oldConversations.length} conversation(s)`
+        `✅ [Migration] Successfully migrated ${migratedCount}/${oldConversations.length} conversation(s)`,
       );
       return { success: true, migratedCount };
     } catch (error) {

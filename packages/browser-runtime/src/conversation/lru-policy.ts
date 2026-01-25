@@ -43,7 +43,7 @@ export class LRUPolicy {
    * Get conversations that should be deleted
    */
   getExpiredConversations(
-    conversations: ConversationData[]
+    conversations: ConversationData[],
   ): ConversationData[] {
     if (conversations.length <= this.maxItems) {
       return [];

@@ -1,11 +1,11 @@
 import { IndexedDBStorage } from "../storage/indexeddb-storage";
-import type {
-  ConversationData,
-  UIMessage,
-  ConversationStorageConfig,
-} from "./types";
 import { LRUPolicy } from "./lru-policy";
 import { ConversationMigration } from "./migration";
+import type {
+  ConversationData,
+  ConversationStorageConfig,
+  UIMessage,
+} from "./types";
 
 /**
  * Conversation Storage Manager
@@ -45,7 +45,7 @@ export class ConversationStorage {
       const result = await ConversationMigration.migrate(
         async (conversation) => {
           await this.storage.save(conversation.id, conversation);
-        }
+        },
       );
 
       if (result.migratedCount > 0) {
@@ -75,10 +75,12 @@ export class ConversationStorage {
       return "新对话";
     }
 
-    const textPart = firstUserMessage.parts.find((part) => part.type === "text");
+    const textPart = firstUserMessage.parts.find(
+      (part) => part.type === "text",
+    );
     if (textPart && "text" in textPart && textPart.text) {
       const text = textPart.text;
-      return text.length > 30 ? text.slice(0, 30) + "..." : text;
+      return text.length > 30 ? `${text.slice(0, 30)}...` : text;
     }
 
     return "新对话";
@@ -101,7 +103,7 @@ export class ConversationStorage {
 
       if (toDelete.length > 0) {
         console.log(
-          `🗑️ [ConversationStorage] LRU: Removing ${toDelete.length} old conversation(s)`
+          `🗑️ [ConversationStorage] LRU: Removing ${toDelete.length} old conversation(s)`,
         );
         await Promise.all(toDelete.map((conv) => this.storage.delete(conv.id)));
       }
@@ -144,13 +146,13 @@ export class ConversationStorage {
       console.log(
         "💾 [ConversationStorage] Conversation saved:",
         conversationId,
-        title
+        title,
       );
       return conversationId;
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to save conversation:",
-        error
+        error,
       );
       return "";
     }
@@ -168,7 +170,7 @@ export class ConversationStorage {
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to get all conversations:",
-        error
+        error,
       );
       return [];
     }
@@ -178,7 +180,9 @@ export class ConversationStorage {
    * Get a single conversation by ID
    * Updates the conversation's updatedAt timestamp (LRU access tracking)
    */
-  async getConversation(conversationId: string): Promise<ConversationData | null> {
+  async getConversation(
+    conversationId: string,
+  ): Promise<ConversationData | null> {
     await this.ensureMigrated();
 
     try {
@@ -193,13 +197,13 @@ export class ConversationStorage {
 
       console.log(
         "🔄 [ConversationStorage] Conversation access time updated:",
-        conversationId
+        conversationId,
       );
       return conversation;
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to get conversation:",
-        error
+        error,
       );
       return null;
     }
@@ -210,7 +214,7 @@ export class ConversationStorage {
    */
   async updateConversation(
     conversationId: string,
-    messages: UIMessage[]
+    messages: UIMessage[],
   ): Promise<void> {
     await this.ensureMigrated();
 
@@ -219,7 +223,7 @@ export class ConversationStorage {
       if (!conversation) {
         console.warn(
           "⚠️ [ConversationStorage] Conversation not found for update:",
-          conversationId
+          conversationId,
         );
         return;
       }
@@ -229,11 +233,14 @@ export class ConversationStorage {
       conversation.updatedAt = Date.now();
 
       await this.storage.save(conversationId, conversation);
-      console.log("📝 [ConversationStorage] Conversation updated:", conversationId);
+      console.log(
+        "📝 [ConversationStorage] Conversation updated:",
+        conversationId,
+      );
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to update conversation:",
-        error
+        error,
       );
     }
   }
@@ -246,11 +253,14 @@ export class ConversationStorage {
 
     try {
       await this.storage.delete(conversationId);
-      console.log("🗑️ [ConversationStorage] Conversation deleted:", conversationId);
+      console.log(
+        "🗑️ [ConversationStorage] Conversation deleted:",
+        conversationId,
+      );
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to delete conversation:",
-        error
+        error,
       );
     }
   }
@@ -267,7 +277,7 @@ export class ConversationStorage {
     } catch (error) {
       console.error(
         "❌ [ConversationStorage] Failed to clear conversations:",
-        error
+        error,
       );
     }
   }

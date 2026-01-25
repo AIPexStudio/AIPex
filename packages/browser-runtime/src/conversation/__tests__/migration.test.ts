@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationMigration } from "../migration";
 import type { ConversationData } from "../types";
 
@@ -84,7 +84,7 @@ describe("ConversationMigration", () => {
       ];
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify(mockConversations)
+        JSON.stringify(mockConversations),
       );
 
       const conversations = await ConversationMigration.getOldConversations();
@@ -95,7 +95,10 @@ describe("ConversationMigration", () => {
     });
 
     it("should return empty array when data is not an array", async () => {
-      localStorage.setItem("aipex-conversations", JSON.stringify({ not: "array" }));
+      localStorage.setItem(
+        "aipex-conversations",
+        JSON.stringify({ not: "array" }),
+      );
 
       const conversations = await ConversationMigration.getOldConversations();
 
@@ -152,7 +155,7 @@ describe("ConversationMigration", () => {
       ];
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify(mockConversations)
+        JSON.stringify(mockConversations),
       );
       const saveCallback = vi.fn().mockResolvedValue(undefined);
 
@@ -173,7 +176,7 @@ describe("ConversationMigration", () => {
       ];
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify(mockConversations)
+        JSON.stringify(mockConversations),
       );
       const saveCallback = vi
         .fn()
@@ -193,7 +196,7 @@ describe("ConversationMigration", () => {
       const mockConversations = [createMockConversation("1")];
       localStorage.setItem(
         "aipex-conversations",
-        JSON.stringify(mockConversations)
+        JSON.stringify(mockConversations),
       );
       const saveCallback = vi.fn().mockResolvedValue(undefined);
 

@@ -57,11 +57,11 @@ export function ConversationHistory({
 
   useEffect(() => {
     void loadConversations();
-  }, []);
+  }, [loadConversations]);
 
   const handleDeleteConversation = async (
     conversationId: string,
-    event: React.MouseEvent
+    event: React.MouseEvent,
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -168,7 +168,7 @@ export function ConversationHistory({
                 key={conversation.id}
                 className={cn(
                   "flex items-start gap-3 p-3 cursor-pointer hover:bg-accent focus:bg-accent group",
-                  currentConversationId === conversation.id && "bg-accent/50"
+                  currentConversationId === conversation.id && "bg-accent/50",
                 )}
                 onClick={() => onConversationSelect(conversation.id)}
               >

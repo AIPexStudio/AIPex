@@ -62,7 +62,10 @@ function ChatApp() {
   }
 
   return (
-    <InterventionModeProvider mode={interventionMode} setMode={setInterventionMode}>
+    <InterventionModeProvider
+      mode={interventionMode}
+      setMode={setInterventionMode}
+    >
       <ChatBot
         agent={agent}
         configError={error}

@@ -4,7 +4,12 @@
 export type MessagePart =
   | { type: "text"; text: string }
   | { type: "image"; imageData: string; imageTitle?: string }
-  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+  | {
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
   | {
       type: "tool_result";
       tool_use_id: string;

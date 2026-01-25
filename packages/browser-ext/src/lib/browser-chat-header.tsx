@@ -54,16 +54,19 @@ export function BrowserChatHeader({
           // Update existing conversation
           await conversationStorage.updateConversation(
             currentConversationId,
-            toStorageFormat(messages)
+            toStorageFormat(messages),
           );
         } else if (nonSystemMessages.length >= 2) {
           // Create new conversation only when we have at least user message + assistant response
           const conversationId = await conversationStorage.saveConversation(
-            toStorageFormat(messages)
+            toStorageFormat(messages),
           );
           if (conversationId) {
             setCurrentConversationId(conversationId);
-            console.log("💾 New conversation created and saved:", conversationId);
+            console.log(
+              "💾 New conversation created and saved:",
+              conversationId,
+            );
           }
         }
       } catch (error) {
@@ -109,7 +112,7 @@ export function BrowserChatHeader({
       console.log(
         "✅ Conversation restored:",
         conversationId,
-        conversation.title
+        conversation.title,
       );
     } catch (error) {
       console.error("❌ Failed to restore conversation:", error);
@@ -128,7 +131,7 @@ export function BrowserChatHeader({
     <div
       className={cn(
         "flex items-center justify-between border-b px-4 py-2",
-        className
+        className,
       )}
       {...props}
     >
@@ -145,10 +148,7 @@ export function BrowserChatHeader({
 
       {/* Center - Intervention toggle and History */}
       <div className="flex items-center gap-2">
-        <InterventionModeToggleHeader
-          mode={mode}
-          onModeChange={setMode}
-        />
+        <InterventionModeToggleHeader mode={mode} onModeChange={setMode} />
         <ConversationHistory
           currentConversationId={currentConversationId}
           onConversationSelect={handleConversationSelect}
@@ -157,7 +157,12 @@ export function BrowserChatHeader({
       </div>
 
       {/* Right side - New Chat */}
-      <Button variant="ghost" size="sm" onClick={handleNewChat} className="gap-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleNewChat}
+        className="gap-2"
+      >
         <PlusIcon className="size-4" />
         {t("common.newChat")}
       </Button>
