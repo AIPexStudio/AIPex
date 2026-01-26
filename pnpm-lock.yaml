@@ -172,8 +172,8 @@ importers:
         specifier: ^3.0.12
         version: 3.0.12(zod@4.1.13)
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.13
-        version: 2.0.13(zod@4.1.13)
+        specifier: ^2.0.18
+        version: 2.0.18(zod@4.1.13)
       '@aipexstudio/aipex-core':
         specifier: workspace:*
         version: link:../core
@@ -456,8 +456,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai-compatible@2.0.13':
-    resolution: {integrity: sha512-DShpuHZ9wiy3QtxJ4/Uq5csLxgNgeA3w58isYhZ34pSod2cBlRmJl3EyQzxZ1HD8e6sQDa9fvc0cwF5/EugBMw==}
+  '@ai-sdk/openai-compatible@2.0.18':
+    resolution: {integrity: sha512-CMbsSDWzQT5y0woUWRqom+eUDsyB+btFyA68MGkrUOBWDDsmcCWt/DHUAAIWC5GO+hwcX4WXT2Q9KJQrQJ9RQg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5201,10 +5201,10 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
       zod: 4.1.13
 
-  '@ai-sdk/openai-compatible@2.0.13(zod@4.1.13)':
+  '@ai-sdk/openai-compatible@2.0.18(zod@4.1.13)':
     dependencies:
-      '@ai-sdk/provider': 3.0.4
-      '@ai-sdk/provider-utils': 4.0.8(zod@4.1.13)
+      '@ai-sdk/provider': 3.0.5
+      '@ai-sdk/provider-utils': 4.0.9(zod@4.1.13)
       zod: 4.1.13
 
   '@ai-sdk/openai@3.0.12(zod@4.1.13)':
