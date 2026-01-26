@@ -147,7 +147,7 @@ for await (const event of agent.chat("What is 15 * 234?")) {
 ### 3) Define a custom tool (schema-first with Zod)
 
 ```ts
-import { z } from "zod/v3";
+import { z } from "zod";
 import { tool } from "@aipexstudio/aipex-core";
 
 export const weatherTool = tool({
@@ -268,7 +268,7 @@ const agent = AIPex.create({
 ### 8) ToolRegistry (register and execute tools dynamically)
 
 ```ts
-import { z } from "zod/v3";
+import { z } from "zod";
 import { ToolRegistry } from "@aipexstudio/aipex-core";
 
 const registry = new ToolRegistry();

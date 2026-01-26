@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { tool } from "./index.js";
 
 const calculatorParameters = z.object({

@@ -10,7 +10,7 @@ export const loadSkillTool = tool({
   parameters: z.object({
     name: z.string().describe("The name of the skill to load"),
   }),
-  execute: async ({ name }: { name: string }) => {
+  execute: async ({ name }) => {
     try {
       await skillManager.initialize();
       const content = await skillManager.getSkillContent(name);
@@ -41,15 +41,7 @@ export const executeSkillScriptTool = tool({
       .optional()
       .describe("Arguments to pass to the script"),
   }),
-  execute: async ({
-    skillName,
-    scriptPath,
-    args,
-  }: {
-    skillName: string;
-    scriptPath: string;
-    args?: unknown;
-  }) => {
+  execute: async ({ skillName, scriptPath, args }) => {
     try {
       await skillManager.initialize();
       const normalizedPath = scriptPath.startsWith("scripts/")
@@ -82,13 +74,7 @@ export const readSkillReferenceTool = tool({
         'The path to the reference file (e.g., "references/guide.md"), MUST start with "references/"',
       ),
   }),
-  execute: async ({
-    skillName,
-    refPath,
-  }: {
-    skillName: string;
-    refPath: string;
-  }) => {
+  execute: async ({ skillName, refPath }) => {
     try {
       await skillManager.initialize();
       const normalizedPath = refPath.startsWith("references/")
@@ -123,13 +109,7 @@ export const getSkillAssetTool = tool({
         'The path to the asset file (e.g., "assets/icon.png"), MUST start with "assets/"',
       ),
   }),
-  execute: async ({
-    skillName,
-    assetPath,
-  }: {
-    skillName: string;
-    assetPath: string;
-  }) => {
+  execute: async ({ skillName, assetPath }) => {
     try {
       await skillManager.initialize();
       const normalizedPath = assetPath.startsWith("assets/")
@@ -176,7 +156,7 @@ export const listSkillsTool = tool({
       .optional()
       .describe("If true, only show enabled skills. Default: false"),
   }),
-  execute: async ({ enabledOnly }: { enabledOnly?: boolean | null }) => {
+  execute: async ({ enabledOnly }) => {
     try {
       await skillManager.initialize();
       const skills = skillManager.getAllSkills();
@@ -207,7 +187,7 @@ export const getSkillInfoTool = tool({
   parameters: z.object({
     skillName: z.string().describe("The name of the skill"),
   }),
-  execute: async ({ skillName }: { skillName: string }) => {
+  execute: async ({ skillName }) => {
     try {
       await skillManager.initialize();
       const skillInfo = await getSkillInfoImpl(skillName);

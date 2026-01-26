@@ -70,7 +70,7 @@ export const waitTool = tool({
       .max(30000)
       .describe("The time to wait in milliseconds (max 30 seconds)"),
   }),
-  execute: async ({ time }: { time: number }) => {
+  execute: async ({ time }) => {
     return await wait(time);
   },
 });
@@ -87,15 +87,7 @@ export const waitForElementTool = tool({
       .optional()
       .describe("Maximum time to wait in milliseconds (default: 5000)"),
   }),
-  execute: async ({
-    tabId,
-    selector,
-    timeout,
-  }: {
-    tabId: number;
-    selector: string;
-    timeout?: number;
-  }) => {
-    return await waitForElement(tabId, selector, timeout);
+  execute: async ({ tabId, selector, timeout }) => {
+    return await waitForElement(tabId, selector, timeout ?? undefined);
   },
 });

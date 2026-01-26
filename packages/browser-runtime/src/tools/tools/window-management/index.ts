@@ -162,7 +162,7 @@ export const switchToWindowTool = tool({
   parameters: z.object({
     windowId: z.number().describe("ID of the window to switch to"),
   }),
-  execute: async ({ windowId }: { windowId: number }) => {
+  execute: async ({ windowId }) => {
     return await switchToWindow(windowId);
   },
 });
@@ -177,8 +177,8 @@ export const createNewWindowTool = tool({
       .optional()
       .describe("URL to open in the new window"),
   }),
-  execute: async ({ url }: { url?: string }) => {
-    return await createNewWindow(url);
+  execute: async ({ url }) => {
+    return await createNewWindow(url ?? undefined);
   },
 });
 
@@ -188,7 +188,7 @@ export const closeWindowTool = tool({
   parameters: z.object({
     windowId: z.number().describe("ID of the window to close"),
   }),
-  execute: async ({ windowId }: { windowId: number }) => {
+  execute: async ({ windowId }) => {
     return await closeWindow(windowId);
   },
 });

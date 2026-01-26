@@ -1,4 +1,5 @@
 import type { FunctionTool } from "@aipexstudio/aipex-core";
+import type { z } from "zod";
 import { computerTool } from "./computer";
 import {
   clickTool,
@@ -40,7 +41,13 @@ import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
  * - download_text_as_markdown (not enabled in aipex)
  * - download_current_chat_images (architecture issue, not enabled in aipex)
  */
-export const allBrowserTools: FunctionTool[] = [
+type BrowserFunctionTool = FunctionTool<
+  unknown,
+  z.ZodObject<any, any>,
+  unknown
+>;
+
+const browserFunctionTools: BrowserFunctionTool[] = [
   // Browser/Tab Management (7 tools)
   getAllTabsTool,
   getCurrentTabTool,
@@ -79,6 +86,11 @@ export const allBrowserTools: FunctionTool[] = [
   // Skills (6 tools)
   ...skillTools,
 ] as const;
+
+export const allBrowserTools: FunctionTool[] =
+  browserFunctionTools as unknown as FunctionTool[];
+
+export type { BrowserFunctionTool };
 
 // Note: takeSnapshotTool is not included in allBrowserTools as it's called internally
 // Skills tools are enabled to match aipex tool set

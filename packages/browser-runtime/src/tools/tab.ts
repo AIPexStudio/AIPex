@@ -61,13 +61,7 @@ export const switchToTabTool = tool({
       .optional()
       .describe("URL pattern to match (e.g., 'github.com')"),
   }),
-  execute: async ({
-    tabId,
-    urlPattern,
-  }: {
-    tabId?: number | null;
-    urlPattern?: string | null;
-  }) => {
+  execute: async ({ tabId, urlPattern }) => {
     const mode = await getAutomationMode();
     console.log("🔧 [switchToTab] Automation mode:", mode);
 
@@ -146,7 +140,7 @@ export const closeTabTool = tool({
       .optional()
       .describe("Tab ID to close (defaults to current tab)"),
   }),
-  execute: async ({ tabId }: { tabId?: number | null }) => {
+  execute: async ({ tabId }) => {
     if (tabId != null) {
       await chrome.tabs.remove(tabId);
       return { success: true, tabId };
@@ -167,7 +161,7 @@ export const createNewTabTool = tool({
   parameters: z.object({
     url: z.string().url().describe("The URL to open in the new tab"),
   }),
-  execute: async ({ url }: { url: string }) => {
+  execute: async ({ url }) => {
     // Prepend protocol if missing (align with aipex behavior)
     let finalUrl = url?.trim();
     if (!finalUrl) {
@@ -214,7 +208,7 @@ export const getTabInfoTool = tool({
   parameters: z.object({
     tabId: z.number().describe("The ID of the tab"),
   }),
-  execute: async ({ tabId }: { tabId: number }) => {
+  execute: async ({ tabId }) => {
     try {
       const tab = await chrome.tabs.get(tabId);
       if (!tab || typeof tab.id !== "number") {
@@ -243,7 +237,7 @@ export const duplicateTabTool = tool({
   parameters: z.object({
     tabId: z.number().describe("The ID of the tab to duplicate"),
   }),
-  execute: async ({ tabId }: { tabId: number }) => {
+  execute: async ({ tabId }) => {
     const newTab = await chrome.tabs.duplicate(tabId);
     if (!newTab || !newTab.id) {
       return { success: false, error: "Failed to duplicate tab" };

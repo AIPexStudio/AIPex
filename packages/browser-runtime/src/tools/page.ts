@@ -62,7 +62,7 @@ export const scrollToElementTool = tool({
   parameters: z.object({
     selector: z.string().describe("CSS selector of the element to scroll to"),
   }),
-  execute: async ({ selector }: { selector: string }) => {
+  execute: async ({ selector }) => {
     const tab = await getActiveTab();
     if (!tab.id) {
       return null;
@@ -133,27 +133,22 @@ export const highlightElementTool = tool({
       .optional()
       .describe("Whether to keep the highlight permanently"),
   }),
-  execute: async ({
-    selector,
-    color,
-    duration,
-    intensity = "normal",
-    persist = true,
-  }: {
-    selector: string;
-    color?: string;
-    duration?: number;
-    intensity?: "subtle" | "normal" | "strong";
-    persist?: boolean;
-  }) => {
+  execute: async ({ selector, color, duration, intensity, persist }) => {
     const tab = await getActiveTab();
     if (!tab.id) {
       return null;
     }
 
+    const options = {
+      color: color ?? undefined,
+      duration: duration ?? undefined,
+      intensity: intensity ?? undefined,
+      persist: persist ?? undefined,
+    };
+
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      args: [selector, { color, duration, intensity, persist }],
+      args: [selector, options],
       func: (
         selector: string,
         options: {
@@ -262,41 +257,30 @@ export const highlightTextInlineTool = tool({
   execute: async ({
     selector,
     searchText,
-    caseSensitive = false,
-    wholeWords = false,
-    highlightColor = "#DC143C",
-    backgroundColor = "transparent",
-    fontWeight = "bold",
-    persist = true,
-  }: {
-    selector: string;
-    searchText: string;
-    caseSensitive?: boolean;
-    wholeWords?: boolean;
-    highlightColor?: string;
-    backgroundColor?: string;
-    fontWeight?: string;
-    persist?: boolean;
+    caseSensitive,
+    wholeWords,
+    highlightColor,
+    backgroundColor,
+    fontWeight,
+    persist,
   }) => {
     const tab = await getActiveTab();
     if (!tab.id) {
       return null;
     }
 
+    const options = {
+      caseSensitive: caseSensitive ?? false,
+      wholeWords: wholeWords ?? false,
+      highlightColor: highlightColor ?? "#DC143C",
+      backgroundColor: backgroundColor ?? "transparent",
+      fontWeight: fontWeight ?? "bold",
+      persist: persist ?? true,
+    };
+
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      args: [
-        selector,
-        searchText,
-        {
-          caseSensitive,
-          wholeWords,
-          highlightColor,
-          backgroundColor,
-          fontWeight,
-          persist,
-        },
-      ],
+      args: [selector, searchText, options],
       func: (
         selector: string,
         searchText: string,

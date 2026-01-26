@@ -390,7 +390,7 @@ export const copyToClipboardTool = tool({
   parameters: z.object({
     text: z.string().describe("Text to copy to clipboard"),
   }),
-  execute: async ({ text }: { text: string }) => {
+  execute: async ({ text }) => {
     return await copyToClipboard(text);
   },
 });

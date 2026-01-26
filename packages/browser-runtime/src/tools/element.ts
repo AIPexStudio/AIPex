@@ -64,15 +64,7 @@ export const clickTool = tool({
       .default(false)
       .describe("Set to true for double clicks"),
   }),
-  execute: async ({
-    tabId,
-    uid,
-    dblClick = false,
-  }: {
-    tabId: number;
-    uid: string;
-    dblClick?: boolean;
-  }) => {
+  execute: async ({ tabId, uid, dblClick = false }) => {
     let handle: ElementHandle | null = null;
 
     try {
@@ -105,15 +97,7 @@ export const fillElementByUidTool = tool({
     uid: z.string().describe("The unique identifier of the element to fill"),
     value: z.string().describe("The value to fill into the element"),
   }),
-  execute: async ({
-    tabId,
-    uid,
-    value,
-  }: {
-    tabId: number;
-    uid: string;
-    value: string;
-  }) => {
+  execute: async ({ tabId, uid, value }) => {
     let handle: ElementHandle | null = null;
 
     try {
@@ -147,7 +131,7 @@ export const hoverElementByUidTool = tool({
       .string()
       .describe("The unique identifier of the element to hover over"),
   }),
-  execute: async ({ tabId, uid }: { tabId: number; uid: string }) => {
+  execute: async ({ tabId, uid }) => {
     let handle: ElementHandle | null = null;
 
     try {
@@ -182,7 +166,7 @@ export const getEditorValueTool = tool({
       .string()
       .describe("The unique identifier of the editor element from snapshot"),
   }),
-  execute: async ({ tabId, uid }: { tabId: number; uid: string }) => {
+  execute: async ({ tabId, uid }) => {
     let handle: ElementHandle | null = null;
 
     try {
@@ -231,13 +215,7 @@ export const fillFormTool = tool({
       )
       .describe("Array of elements to fill with their UIDs and values"),
   }),
-  execute: async ({
-    tabId,
-    elements,
-  }: {
-    tabId: number;
-    elements: Array<{ uid: string; value: string }>;
-  }) => {
+  execute: async ({ tabId, elements }) => {
     const results: Array<{
       uid: string;
       success: boolean;

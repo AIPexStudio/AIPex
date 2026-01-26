@@ -193,7 +193,7 @@ export const getSessionTool = tool({
   parameters: z.object({
     sessionId: z.string().describe("Session ID"),
   }),
-  execute: async ({ sessionId }: { sessionId: string }) => {
+  execute: async ({ sessionId }) => {
     return await getSession(sessionId);
   },
 });
@@ -204,7 +204,7 @@ export const restoreSessionTool = tool({
   parameters: z.object({
     sessionId: z.string().describe("Session ID to restore"),
   }),
-  execute: async ({ sessionId }: { sessionId: string }) => {
+  execute: async ({ sessionId }) => {
     return await restoreSession(sessionId);
   },
 });

@@ -52,7 +52,7 @@ export const captureScreenshotTool = tool({
         "Whether to send the screenshot to LLM for visual analysis. When true, visual coordinate tools will be enabled.",
       ),
   }),
-  execute: async ({ sendToLLM = false }: { sendToLLM?: boolean | null }) => {
+  execute: async ({ sendToLLM = false }) => {
     const mode = await getAutomationMode();
     console.log("🔧 [captureScreenshot] Automation mode:", mode);
 
@@ -153,13 +153,7 @@ export const captureTabScreenshotTool = tool({
         "Whether to send the screenshot to LLM for visual analysis. When true, visual coordinate tools will be enabled.",
       ),
   }),
-  execute: async ({
-    tabId,
-    sendToLLM = false,
-  }: {
-    tabId: number;
-    sendToLLM?: boolean | null;
-  }) => {
+  execute: async ({ tabId, sendToLLM = false }) => {
     const mode = await getAutomationMode();
     console.log("🔧 [captureTabScreenshot] Automation mode:", mode);
 
