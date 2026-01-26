@@ -24,7 +24,7 @@
     "bump": "bumpp"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.8",
+    "@biomejs/biome": "^2.3.12",
     "@j178/prek": "^0.2.19",
     "@types/chrome": "0.1.32",
     "@types/node": "^25.0.9",
