@@ -28,7 +28,7 @@
     "@j178/prek": "^0.2.19",
     "@types/chrome": "0.1.32",
     "@types/node": "^25.0.9",
-    "bumpp": "^10.3.2",
+    "bumpp": "^10.4.0",
     "knip": "^5.82.1",
     "tinyglobby": "^0.2.15",
     "typescript": "^5.9.3",
