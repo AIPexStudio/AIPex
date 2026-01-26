@@ -147,7 +147,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.29.0",
     "lucide-react": "^0.562.0",
-    "markdown-to-jsx": "^9.3.0",
+    "markdown-to-jsx": "^9.6.1",
     "nanoid": "^5.1.6",
     "react-syntax-highlighter": "^16.1.0",
     "remark-gfm": "^4.0.1",
