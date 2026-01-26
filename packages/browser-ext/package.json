@@ -57,7 +57,7 @@
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^0.562.0",
-    "markdown-to-jsx": "^9.3.0",
+    "markdown-to-jsx": "^9.6.1",
     "nanoid": "^5.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
