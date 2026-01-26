@@ -12,6 +12,7 @@ import type {
   QuickJSContext,
   QuickJSHandle,
   QuickJSRuntime,
+  QuickJSScope,
 } from "quickjs-emscripten";
 import { newQuickJSWASMModuleFromVariant, Scope } from "quickjs-emscripten";
 import type { SkillAPIBridge } from "./skill-api";
@@ -336,7 +337,7 @@ class QuickJSManager {
     await this.preloadModules(code);
 
     // Use Scope to automatically manage all disposable resources
-    return await Scope.withScopeAsync(async (scope) => {
+    return await Scope.withScopeAsync(async (scope: QuickJSScope) => {
       // Create a new context for this execution and add it to the scope
       const vm = scope.manage(this.runtime!.newContext());
 
@@ -523,7 +524,7 @@ class QuickJSManager {
     if (typeof target === "string") return vm.newString(target);
 
     if (typeof target === "function") {
-      return vm.newFunction(name || "fn", (...args) => {
+      return vm.newFunction(name || "fn", (...args: QuickJSHandle[]) => {
         const jsArgs = args.map(vm.dump);
         const result = target(...jsArgs);
 
@@ -612,7 +613,7 @@ class QuickJSManager {
   private _injectGlobalAPI(
     vm: QuickJSContext,
     apiBridge: SkillAPIBridge,
-    scope: Scope,
+    scope: QuickJSScope,
   ): void {
     const consoleHandle = scope.manage(
       this.bindObject(vm, apiBridge.console, "console"),

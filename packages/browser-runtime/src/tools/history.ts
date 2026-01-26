@@ -20,7 +20,7 @@ export const getRecentHistoryTool = tool({
       .default(50)
       .describe("Maximum number of history items to return"),
   }),
-  execute: async ({ limit }: { limit?: number | null }) => {
+  execute: async ({ limit }) => {
     const endTime = Date.now();
     const startTime = endTime - 7 * 24 * 60 * 60 * 1000;
     const maxResults = limit ?? 50;
@@ -57,13 +57,7 @@ export const searchHistoryTool = tool({
       .default(50)
       .describe("Maximum number of results"),
   }),
-  execute: async ({
-    query,
-    limit,
-  }: {
-    query: string;
-    limit?: number | null;
-  }) => {
+  execute: async ({ query, limit }) => {
     const maxResults = limit ?? 50;
     const history = await chrome.history.search({
       text: query,
@@ -89,7 +83,7 @@ export const deleteHistoryItemTool = tool({
   parameters: z.object({
     url: z.string().describe("The URL to delete from history"),
   }),
-  execute: async ({ url }: { url: string }) => {
+  execute: async ({ url }) => {
     await chrome.history.deleteUrl({ url });
 
     return {
@@ -110,7 +104,7 @@ export const clearHistoryTool = tool({
       .default(1)
       .describe("Number of days of history to clear"),
   }),
-  execute: async ({ days }: { days?: number | null }) => {
+  execute: async ({ days }) => {
     const endTime = Date.now();
     const daysValue = days ?? 1;
     const startTime = endTime - daysValue * 24 * 60 * 60 * 1000;
@@ -135,7 +129,7 @@ export const getMostVisitedSitesTool = tool({
       .default(25)
       .describe("Maximum number of sites to return"),
   }),
-  execute: async ({ limit }: { limit?: number | null }) => {
+  execute: async ({ limit }) => {
     const endTime = Date.now();
     const startTime = endTime - 30 * 24 * 60 * 60 * 1000;
     const maxSites = limit ?? 25;

@@ -3,7 +3,7 @@
  * Provides default configuration for browser extension use cases
  */
 
-import type { AppSettings } from "@aipexstudio/aipex-core";
+import type { AppSettings, FunctionTool } from "@aipexstudio/aipex-core";
 import {
   type AutomationMode,
   aisdk,
@@ -63,9 +63,9 @@ export function useBrowserContextProviders() {
  * In background mode, filter out computer and screenshot-related tools
  */
 function filterToolsByMode(
-  tools: typeof allBrowserTools,
+  tools: FunctionTool[],
   mode: AutomationMode,
-) {
+): FunctionTool[] {
   // In background mode, filter out computer and screenshot-related tools
   if (mode === "background") {
     return tools.filter((tool) => {
@@ -87,7 +87,7 @@ function filterToolsByMode(
  * Get browser-specific tools filtered by automation mode
  * In background mode, visual tools (computer, screenshot) are excluded
  */
-export function useBrowserTools() {
+export function useBrowserTools(): FunctionTool[] {
   const [automationModeRaw] = useStorage<string>(
     STORAGE_KEYS.AUTOMATION_MODE,
     "focus",

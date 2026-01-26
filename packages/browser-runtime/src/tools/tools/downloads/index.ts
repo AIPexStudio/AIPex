@@ -185,7 +185,7 @@ export const openDownloadTool = tool({
   parameters: z.object({
     downloadId: z.number().describe("ID of the download to open"),
   }),
-  execute: async ({ downloadId }: { downloadId: number }) => {
+  execute: async ({ downloadId }) => {
     return await openDownload(downloadId);
   },
 });
@@ -196,7 +196,7 @@ export const showDownloadInFolderTool = tool({
   parameters: z.object({
     downloadId: z.number().describe("ID of the download to show in folder"),
   }),
-  execute: async ({ downloadId }: { downloadId: number }) => {
+  execute: async ({ downloadId }) => {
     return await showDownloadInFolder(downloadId);
   },
 });
@@ -207,7 +207,7 @@ export const cancelDownloadTool = tool({
   parameters: z.object({
     downloadId: z.number().describe("ID of the download to cancel"),
   }),
-  execute: async ({ downloadId }: { downloadId: number }) => {
+  execute: async ({ downloadId }) => {
     return await cancelDownload(downloadId);
   },
 });
@@ -223,8 +223,8 @@ export const downloadTextAsMarkdownTool = tool({
       .optional()
       .describe("Filename for the markdown file"),
   }),
-  execute: async ({ text, filename }: { text: string; filename?: string }) => {
-    return await downloadTextAsMarkdown(text, filename);
+  execute: async ({ text, filename }) => {
+    return await downloadTextAsMarkdown(text, filename ?? undefined);
   },
 });
 
@@ -251,15 +251,7 @@ export const downloadImageTool = tool({
       .optional()
       .describe("Optional folder path"),
   }),
-  execute: async ({
-    imageData,
-    filename,
-    folderPath,
-  }: {
-    imageData: string;
-    filename?: string;
-    folderPath?: string;
-  }) => {
+  execute: async ({ imageData, filename, folderPath }) => {
     try {
       if (!chrome.downloads) {
         return {
@@ -358,17 +350,6 @@ export const downloadChatImagesTool = tool({
     messages,
     folderPrefix,
     filenamingStrategy = "descriptive",
-  }: {
-    messages: Array<{
-      id: string;
-      parts?: Array<{
-        type: string;
-        imageData?: string;
-        imageTitle?: string;
-      }>;
-    }>;
-    folderPrefix?: string;
-    filenamingStrategy?: "descriptive" | "sequential" | "timestamp";
   }) => {
     try {
       if (!chrome.downloads) {
@@ -448,7 +429,7 @@ export const downloadChatImagesTool = tool({
         downloadedCount,
         downloadIds,
         errors: errors.length > 0 ? errors : undefined,
-        folderPath: folderPrefix,
+        folderPath: folderPrefix ?? undefined,
         filesList,
       };
     } catch (error: unknown) {
@@ -473,11 +454,7 @@ export const downloadCurrentChatImagesTool = tool({
       .optional()
       .describe("Optional folder prefix for organizing downloads"),
   }),
-  execute: async ({
-    folderPrefix: _folderPrefix,
-  }: {
-    folderPrefix?: string;
-  }) => {
+  execute: async ({ folderPrefix: _folderPrefix }) => {
     // This is a placeholder - actual implementation would need to access chat context
     return {
       success: false,

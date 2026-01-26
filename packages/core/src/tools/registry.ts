@@ -1,5 +1,7 @@
 import { type FunctionTool, tool as openAITool } from "@openai/agents";
-import type { ZodTypeAny, z } from "zod/v3";
+import type { z } from "zod";
+
+type AnyZodObject = z.ZodObject<any, any>;
 
 export interface ToolExecutionContext {
   sessionId?: string;
@@ -14,7 +16,7 @@ export interface ToolMetadata {
 }
 
 export interface UnifiedToolDefinition<
-  TSchema extends ZodTypeAny = ZodTypeAny,
+  TSchema extends AnyZodObject = AnyZodObject,
   TResult = unknown,
 > {
   name: string;
@@ -23,7 +25,7 @@ export interface UnifiedToolDefinition<
   metadata?: ToolMetadata;
   handler: (
     input: z.infer<TSchema>,
-    context: ToolExecutionContext,
+    context?: ToolExecutionContext,
   ) => Promise<TResult> | TResult;
 }
 
@@ -34,7 +36,9 @@ interface RegisteredTool {
 export class ToolRegistry {
   private tools = new Map<string, RegisteredTool>();
 
-  register(definition: UnifiedToolDefinition): () => void {
+  register<TSchema extends AnyZodObject, TResult>(
+    definition: UnifiedToolDefinition<TSchema, TResult>,
+  ): () => void {
     if (this.tools.has(definition.name)) {
       throw new Error(`Tool ${definition.name} is already registered`);
     }
@@ -70,7 +74,7 @@ export class ToolRegistry {
     return await registered.definition.handler(parsedInput, ctx);
   }
 
-  toOpenAIFunctions(): FunctionTool[] {
+  toOpenAIFunctions(): FunctionTool<unknown, AnyZodObject, unknown>[] {
     return this.list().map((definition) =>
       openAITool({
         name: definition.name,

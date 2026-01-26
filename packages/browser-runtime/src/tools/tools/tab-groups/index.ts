@@ -176,16 +176,8 @@ export const createTabGroupTool = tool({
       .optional()
       .describe("Color for the tab group"),
   }),
-  execute: async ({
-    tabIds,
-    title,
-    color,
-  }: {
-    tabIds: number[];
-    title?: string;
-    color?: string;
-  }) => {
-    return await createTabGroup(tabIds, title, color);
+  execute: async ({ tabIds, title, color }) => {
+    return await createTabGroup(tabIds, title ?? undefined, color ?? undefined);
   },
 });
 
@@ -220,16 +212,12 @@ export const updateTabGroupTool = tool({
       .optional()
       .describe("Whether the tab group should be collapsed"),
   }),
-  execute: async ({
-    groupId,
-    ...updates
-  }: {
-    groupId: number;
-    title?: string;
-    color?: string;
-    collapsed?: boolean;
-  }) => {
-    return await updateTabGroup(groupId, updates);
+  execute: async ({ groupId, title, color, collapsed }) => {
+    return await updateTabGroup(groupId, {
+      title: title ?? undefined,
+      color: color ?? undefined,
+      collapsed: collapsed ?? undefined,
+    });
   },
 });
 
@@ -239,7 +227,7 @@ export const deleteTabGroupTool = tool({
   parameters: z.object({
     groupId: z.number().describe("ID of the tab group to delete"),
   }),
-  execute: async ({ groupId }: { groupId: number }) => {
+  execute: async ({ groupId }) => {
     return await deleteTabGroup(groupId);
   },
 });

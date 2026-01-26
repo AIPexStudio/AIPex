@@ -128,13 +128,13 @@ export const createContextMenuItemTool = tool({
       .optional()
       .describe("URL patterns where the menu item should appear"),
   }),
-  execute: async (args: {
-    id: string;
-    title: string;
-    contexts?: string[];
-    documentUrlPatterns?: string[];
-  }) => {
-    return await createContextMenuItem(args);
+  execute: async ({ id, title, contexts, documentUrlPatterns }) => {
+    return await createContextMenuItem({
+      id,
+      title,
+      contexts: contexts ?? undefined,
+      documentUrlPatterns: documentUrlPatterns ?? undefined,
+    });
   },
 });
 
@@ -159,14 +159,12 @@ export const updateContextMenuItemTool = tool({
       .optional()
       .describe("New URL patterns for the menu item"),
   }),
-  execute: async (args: {
-    id: string;
-    title?: string;
-    contexts?: string[];
-    documentUrlPatterns?: string[];
-  }) => {
-    const { id, ...updates } = args;
-    return await updateContextMenuItem(id, updates);
+  execute: async ({ id, title, contexts, documentUrlPatterns }) => {
+    return await updateContextMenuItem(id, {
+      title: title ?? undefined,
+      contexts: contexts ?? undefined,
+      documentUrlPatterns: documentUrlPatterns ?? undefined,
+    });
   },
 });
 
@@ -176,7 +174,7 @@ export const removeContextMenuItemTool = tool({
   parameters: z.object({
     id: z.string().describe("ID of the context menu item to remove"),
   }),
-  execute: async ({ id }: { id: string }) => {
+  execute: async ({ id }) => {
     return await removeContextMenuItem(id);
   },
 });

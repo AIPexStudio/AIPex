@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { ToolRegistry } from "./registry.js";
 
 describe("ToolRegistry", () => {

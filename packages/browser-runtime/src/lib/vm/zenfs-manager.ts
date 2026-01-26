@@ -7,9 +7,20 @@ import { configure, fs } from "@zenfs/core";
 import { IndexedDB } from "@zenfs/dom";
 import type { FileStats } from "./skill-api";
 
+type FsPromises = {
+  mkdir: (...args: any[]) => Promise<any>;
+  readFile: (...args: any[]) => Promise<any>;
+  writeFile: (...args: any[]) => Promise<any>;
+  stat: (...args: any[]) => Promise<any>;
+  readdir: (...args: any[]) => Promise<any>;
+  rmdir: (...args: any[]) => Promise<any>;
+  unlink: (...args: any[]) => Promise<any>;
+};
+
 class ZenFSManager {
   private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private fsPromises: FsPromises | null = null;
 
   /**
    * Initialize ZenFS with IndexedDB backend
@@ -43,7 +54,7 @@ class ZenFSManager {
 
       // Ensure skills directory exists
       try {
-        await fs.promises.mkdir("/skills", { recursive: true });
+        await this.getFsPromises().mkdir("/skills", { recursive: true });
       } catch (err: any) {
         // Directory might already exist, ignore
         if (err.code !== "EEXIST") {
@@ -52,12 +63,24 @@ class ZenFSManager {
       }
 
       this.initialized = true;
+      this.fsPromises = this.getFsPromises();
       console.log("[ZenFS] File system initialized successfully");
     } catch (error) {
       console.error("[ZenFS] Failed to initialize:", error);
       this.initPromise = null;
       throw error;
     }
+  }
+
+  private getFsPromises(): FsPromises {
+    if (this.fsPromises) {
+      return this.fsPromises;
+    }
+    if (!fs.promises) {
+      throw new Error("ZenFS promises API is not available");
+    }
+    this.fsPromises = fs.promises as FsPromises;
+    return this.fsPromises;
   }
 
   /**
@@ -87,9 +110,9 @@ class ZenFSManager {
 
     try {
       if (encoding) {
-        return await fs.promises.readFile(path, encoding);
+        return await this.getFsPromises().readFile(path, encoding);
       }
-      return await fs.promises.readFile(path);
+      return await this.getFsPromises().readFile(path);
     } catch (error: any) {
       console.error(`[ZenFS] Failed to read file: ${path}`, error);
       throw new Error(`Failed to read file: ${path} - ${error.message}`);
@@ -106,10 +129,10 @@ class ZenFSManager {
       // Ensure parent directory exists
       const parentDir = path.substring(0, path.lastIndexOf("/"));
       if (parentDir && parentDir !== "/skills") {
-        await fs.promises.mkdir(parentDir, { recursive: true });
+        await this.getFsPromises().mkdir(parentDir, { recursive: true });
       }
 
-      await fs.promises.writeFile(path, data);
+      await this.getFsPromises().writeFile(path, data);
       console.log(`[ZenFS] File written: ${path}`);
     } catch (error: any) {
       console.error(`[ZenFS] Failed to write file: ${path}`, error);
@@ -124,7 +147,7 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      await fs.promises.stat(path);
+      await this.getFsPromises().stat(path);
       return true;
     } catch {
       return false;
@@ -138,7 +161,7 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      return await fs.promises.readdir(path);
+      return await this.getFsPromises().readdir(path);
     } catch (error: any) {
       console.error(`[ZenFS] Failed to read directory: ${path}`, error);
       throw new Error(`Failed to read directory: ${path} - ${error.message}`);
@@ -152,7 +175,7 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      await fs.promises.mkdir(path, options);
+      await this.getFsPromises().mkdir(path, options);
       console.log(`[ZenFS] Directory created: ${path}`);
     } catch (error: any) {
       if (error.code !== "EEXIST") {
@@ -171,21 +194,21 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      const stat = await fs.promises.stat(path);
+      const stat = await this.getFsPromises().stat(path);
 
       if (stat.isDirectory()) {
         // Use rmdir - recursive deletion
         if (options?.recursive) {
           // Recursively delete directory contents first
-          const entries = await fs.promises.readdir(path);
+          const entries = await this.getFsPromises().readdir(path);
           for (const entry of entries) {
             const fullPath = `${path}/${entry}`;
             await this.rm(fullPath, { recursive: true });
           }
         }
-        await fs.promises.rmdir(path);
+        await this.getFsPromises().rmdir(path);
       } else {
-        await fs.promises.unlink(path);
+        await this.getFsPromises().unlink(path);
       }
 
       console.log(`[ZenFS] Removed: ${path}`);
@@ -207,7 +230,7 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      const stats = await fs.promises.stat(path);
+      const stats = await this.getFsPromises().stat(path);
       return {
         isFile: stats.isFile(),
         isDirectory: stats.isDirectory(),
@@ -302,8 +325,8 @@ class ZenFSManager {
     await this.ensureInitialized();
 
     try {
-      const entries = await fs.promises.readdir("/skills");
-      return entries.filter((entry) => entry !== "." && entry !== "..");
+      const entries = await this.getFsPromises().readdir("/skills");
+      return entries.filter((entry: string) => entry !== "." && entry !== "..");
     } catch (error: any) {
       console.error("[ZenFS] Failed to list skills:", error);
       return [];
@@ -336,18 +359,18 @@ class ZenFSManager {
     currentPath: string,
     files: Map<string, string | Buffer>,
   ): Promise<void> {
-    const entries = await fs.promises.readdir(currentPath);
+    const entries = await this.getFsPromises().readdir(currentPath);
 
     for (const entry of entries) {
       const fullPath = `${currentPath}/${entry}`;
-      const stat = await fs.promises.stat(fullPath);
+      const stat = await this.getFsPromises().stat(fullPath);
 
       if (stat.isDirectory()) {
         await this._readDirRecursive(basePath, fullPath, files);
       } else {
         // Store relative path (without /skills/{skillId}/ prefix)
         const relativePath = fullPath.substring(basePath.length + 1);
-        const content = await fs.promises.readFile(fullPath);
+        const content = await this.getFsPromises().readFile(fullPath);
         files.set(relativePath, content);
       }
     }
@@ -371,14 +394,14 @@ class ZenFSManager {
    * Build file tree structure recursively
    */
   private async _buildFileTree(currentPath: string): Promise<FileTreeNode[]> {
-    const entries = await fs.promises.readdir(currentPath);
+    const entries = await this.getFsPromises().readdir(currentPath);
     const nodes: FileTreeNode[] = [];
 
     for (const entry of entries) {
       if (entry === "." || entry === "..") continue;
 
       const fullPath = `${currentPath}/${entry}`;
-      const stat = await fs.promises.stat(fullPath);
+      const stat = await this.getFsPromises().stat(fullPath);
 
       const node: FileTreeNode = {
         name: entry,
@@ -426,7 +449,7 @@ class ZenFSManager {
     // Read content if it's a text file and small enough (< 1MB)
     if (isText && !stat.isDirectory && stat.size < 1024 * 1024) {
       try {
-        const content = await fs.promises.readFile(path, "utf-8");
+        const content = await this.getFsPromises().readFile(path, "utf-8");
         info.content = content;
       } catch (error) {
         console.error(`Failed to read file content: ${path}`, error);
@@ -495,7 +518,7 @@ class ZenFSManager {
       }
 
       // Read source content
-      const stat = await fs.promises.stat(oldPath);
+      const stat = await this.getFsPromises().stat(oldPath);
 
       if (stat.isDirectory()) {
         // For directories, we need to recursively copy and delete
@@ -503,9 +526,9 @@ class ZenFSManager {
         await this.rm(oldPath, { recursive: true });
       } else {
         // For files, simple read and write
-        const content = await fs.promises.readFile(oldPath);
-        await fs.promises.writeFile(newPath, content);
-        await fs.promises.unlink(oldPath);
+        const content = await this.getFsPromises().readFile(oldPath);
+        await this.getFsPromises().writeFile(newPath, content);
+        await this.getFsPromises().unlink(oldPath);
       }
 
       console.log(`[ZenFS] Renamed: ${oldPath} -> ${newPath}`);
@@ -526,21 +549,21 @@ class ZenFSManager {
     destPath: string,
   ): Promise<void> {
     // Create destination directory
-    await fs.promises.mkdir(destPath, { recursive: true });
+    await this.getFsPromises().mkdir(destPath, { recursive: true });
 
     // Read source directory
-    const entries = await fs.promises.readdir(sourcePath);
+    const entries = await this.getFsPromises().readdir(sourcePath);
 
     for (const entry of entries) {
       const sourceEntryPath = `${sourcePath}/${entry}`;
       const destEntryPath = `${destPath}/${entry}`;
-      const stat = await fs.promises.stat(sourceEntryPath);
+      const stat = await this.getFsPromises().stat(sourceEntryPath);
 
       if (stat.isDirectory()) {
         await this._copyDirectory(sourceEntryPath, destEntryPath);
       } else {
-        const content = await fs.promises.readFile(sourceEntryPath);
-        await fs.promises.writeFile(destEntryPath, content);
+        const content = await this.getFsPromises().readFile(sourceEntryPath);
+        await this.getFsPromises().writeFile(destEntryPath, content);
       }
     }
   }
@@ -557,13 +580,13 @@ class ZenFSManager {
         throw new Error(`Source path does not exist: ${sourcePath}`);
       }
 
-      const stat = await fs.promises.stat(sourcePath);
+      const stat = await this.getFsPromises().stat(sourcePath);
 
       if (stat.isDirectory()) {
         await this._copyDirectory(sourcePath, destPath);
       } else {
-        const content = await fs.promises.readFile(sourcePath);
-        await fs.promises.writeFile(destPath, content);
+        const content = await this.getFsPromises().readFile(sourcePath);
+        await this.getFsPromises().writeFile(destPath, content);
       }
 
       console.log(`[ZenFS] Copied: ${sourcePath} -> ${destPath}`);
@@ -607,13 +630,13 @@ class ZenFSManager {
     usage: DiskUsage,
     basePath: string,
   ): Promise<void> {
-    const entries = await fs.promises.readdir(currentPath);
+    const entries = await this.getFsPromises().readdir(currentPath);
 
     for (const entry of entries) {
       if (entry === "." || entry === "..") continue;
 
       const fullPath = `${currentPath}/${entry}`;
-      const stat = await fs.promises.stat(fullPath);
+      const stat = await this.getFsPromises().stat(fullPath);
 
       if (stat.isDirectory()) {
         usage.directoryCount++;
@@ -646,13 +669,13 @@ class ZenFSManager {
     skillPath: string,
     skillUsage: SkillUsage,
   ): Promise<void> {
-    const entries = await fs.promises.readdir(skillPath);
+    const entries = await this.getFsPromises().readdir(skillPath);
 
     for (const entry of entries) {
       if (entry === "." || entry === "..") continue;
 
       const fullPath = `${skillPath}/${entry}`;
-      const stat = await fs.promises.stat(fullPath);
+      const stat = await this.getFsPromises().stat(fullPath);
 
       if (stat.isDirectory()) {
         skillUsage.directoryCount++;

@@ -1,10 +1,10 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { tool } from "./index.js";
 
 const httpFetchParameters = z.object({
   url: z.string().url().describe("The URL to fetch"),
   headers: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe("Optional HTTP headers to include in the request"),
 });

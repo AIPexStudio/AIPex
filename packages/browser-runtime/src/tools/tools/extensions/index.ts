@@ -158,7 +158,7 @@ export const getExtensionTool = tool({
   parameters: z.object({
     extensionId: z.string().describe("ID of the extension"),
   }),
-  execute: async ({ extensionId }: { extensionId: string }) => {
+  execute: async ({ extensionId }) => {
     return await getExtension(extensionId);
   },
 });
@@ -170,13 +170,7 @@ export const setExtensionEnabledTool = tool({
     extensionId: z.string().describe("ID of the extension"),
     enabled: z.boolean().describe("Whether to enable or disable the extension"),
   }),
-  execute: async ({
-    extensionId,
-    enabled,
-  }: {
-    extensionId: string;
-    enabled: boolean;
-  }) => {
+  execute: async ({ extensionId, enabled }) => {
     return await setExtensionEnabled(extensionId, enabled);
   },
 });
@@ -187,7 +181,7 @@ export const uninstallExtensionTool = tool({
   parameters: z.object({
     extensionId: z.string().describe("ID of the extension to uninstall"),
   }),
-  execute: async ({ extensionId }: { extensionId: string }) => {
+  execute: async ({ extensionId }) => {
     return await uninstallExtension(extensionId);
   },
 });

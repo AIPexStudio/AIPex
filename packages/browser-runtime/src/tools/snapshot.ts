@@ -46,15 +46,7 @@ export const searchElementsTool = tool({
       .default(1)
       .describe("Number of context lines to include"),
   }),
-  execute: async ({
-    tabId,
-    query,
-    contextLevels = 1,
-  }: {
-    tabId: number;
-    query: string;
-    contextLevels?: number;
-  }) => {
+  execute: async ({ tabId, query, contextLevels = 1 }) => {
     try {
       // Verify tab exists
       const tab = await chrome.tabs.get(tabId);

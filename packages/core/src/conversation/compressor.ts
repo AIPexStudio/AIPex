@@ -250,12 +250,12 @@ export class ConversationCompressor {
       type === "function_call" ||
       type === "function_call_result" ||
       type === "hosted_tool_call" ||
-      type === "computer_use_call" ||
+      type === "computer_call" ||
       type === "shell_call" ||
       type === "apply_patch_call" ||
       type === "computer_call_result" ||
-      type === "shell_call_result" ||
-      type === "apply_patch_call_result"
+      type === "shell_call_output" ||
+      type === "apply_patch_call_output"
     );
   }
 }
