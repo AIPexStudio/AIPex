@@ -36,7 +36,7 @@
     "@aipexstudio/aipex-react": "workspace:*",
     "@aipexstudio/browser-runtime": "workspace:*",
     "@aipexstudio/dom-snapshot": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
