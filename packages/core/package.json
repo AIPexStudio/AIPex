@@ -41,7 +41,7 @@
   "type": "module",
   "dependencies": {
     "@openai/agents": "^0.3.8",
-    "@openai/agents-extensions": "^0.3.8",
+    "@openai/agents-extensions": "^0.4.3",
     "lru-cache": "^11.2.4",
     "zod": "^4.1.13"
   },
