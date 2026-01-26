@@ -28,7 +28,7 @@
     "host-access-config.json"
   ],
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.10",
+    "@ai-sdk/anthropic": "^3.0.23",
     "@ai-sdk/google": "^3.0.6",
     "@ai-sdk/openai": "^3.0.12",
     "@ai-sdk/openai-compatible": "^2.0.13",
