@@ -145,16 +145,19 @@ export async function getElementByUid(
     value: node.value,
   });
 
-  // Return ElementHandle if we have backendDOMNodeId
+  const handle = snapshotManager.getElementHandle(tabId, uid);
+  if (!handle) {
+    return null;
+  }
   if (node.backendDOMNodeId) {
     console.log(
       "✅ [DEBUG] Creating SmartElementHandle with backendDOMNodeId:",
       node.backendDOMNodeId,
     );
-    return new SmartElementHandle(tabId, node, node.backendDOMNodeId);
+  } else {
+    console.log("✅ [DEBUG] Creating DOM element handle for uid:", uid);
   }
-
-  return null;
+  return handle;
 }
 
 /**
@@ -686,12 +689,13 @@ export async function searchSnapshotText(params: {
   tabId: number;
   query: string;
   contextLevels: number;
+  strategy?: SnapshotStrategy;
 }): Promise<{
   success: boolean;
   message: string;
   data: string;
 }> {
-  const { tabId, query, contextLevels } = params;
+  const { tabId, query, contextLevels, strategy = "axtree" } = params;
   const isValidTab = await checkTabValid(tabId);
   if (!isValidTab) {
     return { success: false, message: "No accessible tab found", data: "" };
@@ -700,6 +704,7 @@ export async function searchSnapshotText(params: {
     tabId,
     query,
     contextLevels,
+    { snapshotStrategy: strategy },
   );
   if (!result) {
     return {

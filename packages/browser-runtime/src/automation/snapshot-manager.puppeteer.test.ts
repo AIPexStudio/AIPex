@@ -6,6 +6,152 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { html, setupPuppeteerTest } from "./__tests__/puppeteer-test-utils";
 import { SnapshotManager } from "./snapshot-manager";
 
+async function buildDomSnapshot(
+  frame: import("puppeteer").Frame,
+  prefix: string = "dom",
+) {
+  return frame.evaluate((prefixValue) => {
+    const NODE_ID_ATTR = "data-aipex-nodeid";
+    let counter = 0;
+    const ensureId = (element: Element) => {
+      const existing = element.getAttribute(NODE_ID_ATTR);
+      if (existing) {
+        return existing;
+      }
+      const uid = `${prefixValue}_${counter++}`;
+      element.setAttribute(NODE_ID_ATTR, uid);
+      return uid;
+    };
+
+    const selector = "h1,h2,h3,p,button,input,textarea,a,iframe";
+    const idToNode: Record<string, any> = Object.create(null);
+    const interactiveTags = new Set(["button", "a", "input", "textarea"]);
+    const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim();
+
+    const buildStaticTextNodes = (el: Element) => {
+      const tagName = el.tagName.toLowerCase();
+      if (interactiveTags.has(tagName)) {
+        return [] as any[];
+      }
+      const nodes: any[] = [];
+      const childNodes = Array.from(el.childNodes);
+      childNodes.forEach((node, index) => {
+        if (node.nodeType !== Node.TEXT_NODE) {
+          return;
+        }
+        const text = normalizeText(node.textContent || "");
+        if (!text) {
+          return;
+        }
+        const id = `${ensureId(el)}::text-${index}`;
+        const textNode = {
+          id,
+          role: "StaticText",
+          name: text,
+          children: [] as any[],
+        };
+        idToNode[id] = textNode;
+        nodes.push(textNode);
+      });
+      return nodes;
+    };
+
+    const buildNode = (el: Element) => {
+      const tagName = el.tagName.toLowerCase();
+      let role = "generic";
+      if (tagName === "button") role = "button";
+      if (tagName === "a") role = "link";
+      if (tagName === "input" || tagName === "textarea") role = "textbox";
+      if (tagName === "iframe") role = "iframe";
+      if (tagName === "h1" || tagName === "h2" || tagName === "h3") {
+        role = "heading";
+      }
+
+      const isInput =
+        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+      const iframeLabel =
+        tagName === "iframe"
+          ? el.getAttribute("title") ||
+            el.getAttribute("aria-label") ||
+            el.getAttribute("name") ||
+            el.getAttribute("src") ||
+            "iframe"
+          : undefined;
+      const textName = normalizeText(el.textContent || "") || undefined;
+      const name =
+        iframeLabel ||
+        el.getAttribute("aria-label") ||
+        (isInput ? el.placeholder || el.value : undefined) ||
+        (role === "heading" || role === "button" || role === "link"
+          ? textName
+          : undefined);
+
+      const node = {
+        id: ensureId(el),
+        role,
+        name,
+        children: [] as any[],
+        tagName,
+        placeholder: isInput ? el.placeholder || undefined : undefined,
+      };
+
+      idToNode[node.id] = node;
+      return node;
+    };
+
+    const buildChildren = (root: Element) => {
+      const nodes: any[] = [];
+      const elements = Array.from(root.querySelectorAll(selector));
+      for (const el of elements) {
+        const node = buildNode(el);
+        const staticTextNodes = buildStaticTextNodes(el);
+        node.children.push(...staticTextNodes);
+        if (el instanceof HTMLIFrameElement) {
+          let frameDoc: Document | null = null;
+          try {
+            frameDoc = el.contentDocument || el.contentWindow?.document || null;
+          } catch {
+            frameDoc = null;
+          }
+          const iframeRoot = frameDoc?.body || frameDoc?.documentElement;
+          if (iframeRoot) {
+            node.children.push(...buildChildren(iframeRoot));
+          }
+        }
+        nodes.push(node);
+      }
+      return nodes;
+    };
+
+    const rootEl = document.body || document.documentElement;
+    const rootNode = {
+      id: rootEl ? ensureId(rootEl) : `${prefixValue}_root`,
+      role: "RootWebArea",
+      name: document.title || document.URL || "document",
+      children: [] as any[],
+      tagName: rootEl?.tagName.toLowerCase(),
+    };
+
+    idToNode[rootNode.id] = rootNode;
+    if (rootEl) {
+      rootNode.children = buildChildren(rootEl);
+    }
+
+    return {
+      root: rootNode,
+      idToNode,
+      totalNodes: Object.keys(idToNode).length,
+      timestamp: Date.now(),
+      metadata: {
+        title: document.title || "",
+        url: document.URL || "",
+        collectedAt: new Date().toISOString(),
+        options: {},
+      },
+    };
+  }, prefix);
+}
+
 describe("SnapshotManager (Puppeteer)", () => {
   let testContext: Awaited<ReturnType<typeof setupPuppeteerTest>>;
   let snapshotManager: SnapshotManager;
@@ -116,6 +262,45 @@ describe("SnapshotManager (Puppeteer)", () => {
 
     expect(searchResult).toBeDefined();
     expect(searchResult).toContain("Click Me");
+    expect(searchResult).toContain("✓");
+  });
+
+  it("should search snapshot with dom strategy", async () => {
+    await testContext.page.setContent(
+      html`<main>
+        <h1>Dom Snapshot</h1>
+        <p>Searchable text</p>
+        <button>Action</button>
+      </main>`,
+    );
+
+    await testContext.page.waitForSelector("button");
+
+    (globalThis as any).chrome.tabs = {
+      sendMessage: async (
+        _tabId: number,
+        message: { request?: string },
+      ): Promise<{ success: boolean; data?: unknown; error?: string }> => {
+        if (message?.request !== "collect-dom-snapshot") {
+          return { success: false, error: "Unsupported request" };
+        }
+        const snapshot = await buildDomSnapshot(
+          testContext.page.mainFrame(),
+          "main",
+        );
+        return { success: true, data: snapshot };
+      },
+    };
+
+    const searchResult = await snapshotManager.searchAndFormat(
+      testContext.tabId,
+      "Searchable text",
+      1,
+      { snapshotStrategy: "dom" },
+    );
+
+    expect(searchResult).toBeDefined();
+    expect(searchResult).toContain("Searchable text");
     expect(searchResult).toContain("✓");
   });
 

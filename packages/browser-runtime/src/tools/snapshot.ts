@@ -21,7 +21,7 @@ export const takeSnapshotTool = tool({
       throw new Error("No active tab found");
     }
 
-const snapshot = await snapshotProvider.createSnapshot(tab.id);
+    const snapshot = await snapshotProvider.createSnapshot(tab.id);
     if (!snapshot) {
       throw new Error("Failed to create snapshot");
     }

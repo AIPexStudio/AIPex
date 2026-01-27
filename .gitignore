@@ -42,3 +42,5 @@ keys.json
 
 # Cursor AI summaries
 .cursor/
+
+.idea/

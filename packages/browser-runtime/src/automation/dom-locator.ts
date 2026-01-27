@@ -145,7 +145,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: click element
   const clickElement = (
     element: Element,
-    options: ClickOptions & { uid?: string },
+    options: { count?: number; highlight?: boolean; scroll?: boolean },
   ): DomActionResponse => {
     if (!(element instanceof HTMLElement)) {
       return { success: false, error: "Target is not an HTMLElement." };
@@ -172,7 +172,12 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: fill element with value
   const fillElement = (
     element: Element,
-    options: FillOptions,
+    options: {
+      value: string;
+      commit?: boolean;
+      highlight?: boolean;
+      scroll?: boolean;
+    },
   ): DomActionResponse => {
     if (
       !(element instanceof HTMLInputElement) &&
@@ -202,7 +207,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: hover over element
   const hoverElement = (
     element: Element,
-    options: HoverOptions,
+    options: { highlight?: boolean; scroll?: boolean },
   ): DomActionResponse => {
     if (!(element instanceof HTMLElement)) {
       return { success: false, error: "Target is not an HTMLElement." };
@@ -221,7 +226,14 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   };
 
   // Action: get bounding box
-  const getBoundingBox = (element: Element): DomActionResponse<BoundingBox> => {
+  const getBoundingBox = (
+    element: Element,
+  ): DomActionResponse<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }> => {
     if (!(element instanceof HTMLElement)) {
       return { success: false, error: "Target is not an HTMLElement." };
     }

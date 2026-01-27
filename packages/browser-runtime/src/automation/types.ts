@@ -62,6 +62,8 @@ export interface TextSnapshot {
   tabId: number;
 }
 
+export type SnapshotStrategy = "axtree" | "dom";
+
 export interface Locator {
   fill(value: string): Promise<void>;
   click(options?: { count?: number }): Promise<void>;

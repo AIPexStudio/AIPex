@@ -167,6 +167,79 @@ function isElementVisibilityHidden(
   return style.visibility === "hidden" || style.visibility === "collapse";
 }
 
+/**
+ * Traverse iframe element and its content if accessible (same-origin).
+ * Returns nodes with iframe content if same-origin, or just iframe node if cross-origin.
+ */
+function traverseIframe(
+  iframe: HTMLIFrameElement,
+  options: CollectorOptions,
+  idToNode: DomSnapshotFlatMap,
+  rootDocument: Document,
+): TraverseResult {
+  if (!options.includeHidden && isElementHidden(iframe, rootDocument)) {
+    return { nodes: [], hasVisibilityVisible: false };
+  }
+
+  let iframeDocument: Document | null = null;
+  try {
+    iframeDocument = iframe.contentDocument;
+    if (!iframeDocument && iframe.contentWindow) {
+      try {
+        iframeDocument = iframe.contentWindow.document;
+      } catch {
+        // Cross-origin iframe, cannot access.
+      }
+    }
+  } catch {
+    // Cross-origin iframe, SecurityError thrown.
+  }
+
+  const iframeNode = createNodeFromElement(
+    iframe,
+    options,
+    idToNode,
+    rootDocument,
+    false,
+  );
+
+  const iframeChildrenNodes: DomSnapshotNode[] = [];
+  let hasVisibilityVisibleInIframe = false;
+
+  if (iframeDocument) {
+    const iframeBody = iframeDocument.body || iframeDocument.documentElement;
+    if (iframeBody) {
+      const iframeContentResult = traverseElement(
+        iframeBody,
+        options,
+        idToNode,
+        iframeDocument,
+      );
+      iframeChildrenNodes.push(...iframeContentResult.nodes);
+      if (iframeContentResult.hasVisibilityVisible) {
+        hasVisibilityVisibleInIframe = true;
+      }
+    }
+  }
+
+  iframeNode.children = iframeChildrenNodes;
+  idToNode[iframeNode.id] = iframeNode;
+
+  const selfVisibilityHidden =
+    !options.includeHidden && isElementVisibilityHidden(iframe, rootDocument);
+  const hasVisibilityVisible =
+    !selfVisibilityHidden || hasVisibilityVisibleInIframe;
+
+  if (selfVisibilityHidden && !hasVisibilityVisibleInIframe) {
+    return { nodes: [], hasVisibilityVisible: false };
+  }
+
+  return {
+    nodes: [iframeNode],
+    hasVisibilityVisible,
+  };
+}
+
 function traverseElement(
   element: Element,
   options: CollectorOptions,
@@ -189,10 +262,28 @@ function traverseElement(
 
   const childElements = Array.from(element.children);
   for (const child of childElements) {
-    const childResult = traverseElement(child, options, idToNode, rootDocument);
-    childrenNodes.push(...childResult.nodes);
-    if (childResult.hasVisibilityVisible) {
-      hasVisibilityVisibleInChildren = true;
+    if (child.tagName.toLowerCase() === "iframe") {
+      const iframeResult = traverseIframe(
+        child as HTMLIFrameElement,
+        options,
+        idToNode,
+        rootDocument,
+      );
+      childrenNodes.push(...iframeResult.nodes);
+      if (iframeResult.hasVisibilityVisible) {
+        hasVisibilityVisibleInChildren = true;
+      }
+    } else {
+      const childResult = traverseElement(
+        child,
+        options,
+        idToNode,
+        rootDocument,
+      );
+      childrenNodes.push(...childResult.nodes);
+      if (childResult.hasVisibilityVisible) {
+        hasVisibilityVisibleInChildren = true;
+      }
     }
   }
 

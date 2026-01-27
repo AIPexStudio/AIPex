@@ -206,10 +206,14 @@ export async function setupPuppeteerTest(): Promise<TestContext> {
     },
     scripting: {
       executeScript: async (options: {
-        target: { tabId: number };
-        func: () => unknown;
+        target: { tabId: number; frameIds?: number[] };
+        func: (...args: any[]) => unknown;
+        args?: unknown[];
       }) => {
-        const result = await page.evaluate(options.func);
+        const result = await page.evaluate(
+          options.func,
+          ...(options.args ?? []),
+        );
         return [{ result }];
       },
     },

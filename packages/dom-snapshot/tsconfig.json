@@ -4,5 +4,6 @@
     "outDir": "./dist",
     "lib": ["esnext", "dom", "dom.iterable"],
     "emitDeclarationOnly": false
-  }
+  },
+  "include": ["src/**/*"]
 }

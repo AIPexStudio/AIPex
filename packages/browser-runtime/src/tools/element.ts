@@ -32,7 +32,7 @@ async function getElementByUid(
     );
   }
 
-  // Select handle based on snapshot mode
+// Select handle based on snapshot mode
   const mode = await snapshotProvider.getSnapshotMode();
   console.log(`🔧 [element.ts] Using ${mode} mode handle for uid ${uid}`);
 
