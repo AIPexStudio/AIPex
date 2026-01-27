@@ -12,6 +12,11 @@ const complexFixtureUrl = new URL(
   import.meta.url,
 );
 
+const domSnapshotFixtureUrl = new URL(
+  "./__tests__/test-dom-snapshot.html",
+  import.meta.url,
+);
+
 async function buildDomSnapshot(
   frame: import("puppeteer").Frame,
   prefix: string = "dom",
@@ -272,26 +277,48 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click iframe element using dom snapshot", async () => {
-    const iframeContent = html`
-      <button id="dom-btn">Iframe Button</button>
-      <script>
-        window.__clicked = false;
-        document.getElementById("dom-btn").addEventListener("click", () => {
-          window.__clicked = true;
+    await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
+      waitUntil: "load",
+    });
+    await testContext.page.waitForSelector("#iframe3");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const iframe1 = await findFrameByText("Iframe 1 Content");
+    await iframe1.evaluate(() => {
+      (window as any).__clicked = false;
+      const button = document.querySelector("button");
+      if (button) {
+        button.addEventListener("click", () => {
+          (window as any).__clicked = true;
         });
-      </script>
-    `;
+      }
+    });
 
-    await testContext.page.setContent(html`
-      <iframe id="frame" srcdoc='${iframeContent}'></iframe>
-    `);
+    const iframe2 = await findFrameByText("Iframe 2 Content");
+    await iframe2.evaluate(() => {
+      (window as any).__nestedClicked = false;
+      const buttons = document.querySelectorAll("button");
+      const nestedButton = Array.from(buttons).find(
+        (b) => b.textContent === "Nested Button",
+      );
+      if (nestedButton) {
+        nestedButton.addEventListener("click", () => {
+          (window as any).__nestedClicked = true;
+        });
+      }
+    });
 
-    await testContext.page.waitForSelector("#frame");
-    const frame = testContext.page
-      .frames()
-      .find((item) => item.parentFrame() === testContext.page.mainFrame());
-    expect(frame).toBeDefined();
-    await frame!.waitForSelector("#dom-btn");
+    const iframe3 = await findFrameByText("Complex Iframe Content");
+    await iframe3.evaluate(() => {
+      (window as any).__clicked = false;
+      const button = document.querySelector("button[type='submit']");
+      if (button) {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          (window as any).__clicked = true;
+        });
+      }
+    });
 
     (globalThis as any).chrome.tabs = {
       sendMessage: async (
@@ -314,23 +341,233 @@ describe("SmartLocator (Puppeteer)", () => {
       true,
       "dom",
     );
-    const iframeButton = Array.from(snapshot.idToNode.values()).find(
-      (node) => node.role === "button" && node.name === "Iframe Button",
+
+    const iframe1Button = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Iframe 1 Button",
+    );
+    const nestedButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Nested Button",
+    );
+    const submitButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Submit",
     );
 
-    expect(iframeButton).toBeDefined();
+    expect(iframe1Button).toBeDefined();
+    expect(nestedButton).toBeDefined();
+    expect(submitButton).toBeDefined();
 
-    const handle = snapshotManager.getElementHandle(
+    const iframe1Handle = snapshotManager.getElementHandle(
       testContext.tabId,
-      iframeButton!.id,
+      iframe1Button!.id,
     );
-    expect(handle).toBeDefined();
+    const nestedHandle = snapshotManager.getElementHandle(
+      testContext.tabId,
+      nestedButton!.id,
+    );
+    const submitHandle = snapshotManager.getElementHandle(
+      testContext.tabId,
+      submitButton!.id,
+    );
 
-    await handle!.asLocator().click();
-    handle?.dispose();
+    expect(iframe1Handle).toBeDefined();
+    expect(nestedHandle).toBeDefined();
+    expect(submitHandle).toBeDefined();
 
-    const clicked = await frame!.evaluate(() => (window as any).__clicked);
-    expect(clicked).toBe(true);
+    await iframe1Handle!.asLocator().click();
+    await nestedHandle!.asLocator().click();
+    await submitHandle!.asLocator().click();
+
+    iframe1Handle?.dispose();
+    nestedHandle?.dispose();
+    submitHandle?.dispose();
+
+    const iframe1Clicked = await iframe1.evaluate(
+      () => (window as any).__clicked,
+    );
+    const nestedClicked = await iframe2.evaluate(
+      () => (window as any).__nestedClicked,
+    );
+    const iframe3Clicked = await iframe3.evaluate(
+      () => (window as any).__clicked,
+    );
+
+    expect(iframe1Clicked).toBe(true);
+    expect(nestedClicked).toBe(true);
+    expect(iframe3Clicked).toBe(true);
+  });
+
+  it("should verify dom snapshot cannot access cross-origin iframe content without frame collection", async () => {
+    await testContext.page.goto(complexFixtureUrl.toString(), {
+      waitUntil: "load",
+    });
+    await testContext.page.waitForSelector("#iframe3");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    (globalThis as any).chrome.tabs = {
+      sendMessage: async (
+        _tabId: number,
+        message: { request?: string },
+      ): Promise<{ success: boolean; data?: unknown; error?: string }> => {
+        if (message?.request !== "collect-dom-snapshot") {
+          return { success: false, error: "Unsupported request" };
+        }
+        const snapshot = await buildDomSnapshot(
+          testContext.page.mainFrame(),
+          "main",
+        );
+        return { success: true, data: snapshot };
+      },
+    };
+
+    const snapshot = await snapshotManager.createSnapshot(
+      testContext.tabId,
+      true,
+      "dom",
+    );
+
+    const mainPageButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Main Page Button",
+    );
+    expect(mainPageButton).toBeDefined();
+
+    const iframeNodes = Array.from(snapshot.idToNode.values()).filter(
+      (node) => node.role === "iframe",
+    );
+    expect(iframeNodes.length).toBe(3);
+
+    const iframe1Button = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Iframe 1 Button",
+    );
+    const nestedButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Nested Button",
+    );
+    const submitButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Submit",
+    );
+
+    expect(iframe1Button).toBeUndefined();
+    expect(nestedButton).toBeUndefined();
+    expect(submitButton).toBeUndefined();
+
+    for (const iframeNode of iframeNodes) {
+      expect(iframeNode.children?.length || 0).toBe(0);
+    }
+  });
+
+  it("should collect cross-origin iframe elements using dom snapshot with frame collection", async () => {
+    await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
+      waitUntil: "load",
+    });
+    await testContext.page.waitForSelector("#iframe3");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const allFrames = testContext.page.frames();
+    const frameIdMap = new Map<import("puppeteer").Frame, number>();
+    allFrames.forEach((frame, index) => {
+      frameIdMap.set(frame, index);
+    });
+
+    (globalThis as any).chrome.tabs = {
+      sendMessage: async (
+        _tabId: number,
+        message: { request?: string },
+        options?: { frameId?: number },
+      ): Promise<{ success: boolean; data?: unknown; error?: string }> => {
+        if (message?.request !== "collect-dom-snapshot") {
+          return { success: false, error: "Unsupported request" };
+        }
+
+        const targetFrameId = options?.frameId ?? 0;
+        const targetFrame =
+          allFrames.find((f) => frameIdMap.get(f) === targetFrameId) ||
+          testContext.page.mainFrame();
+
+        const prefix = targetFrameId === 0 ? "main" : `frame_${targetFrameId}`;
+        const snapshot = await buildDomSnapshot(targetFrame, prefix);
+        return { success: true, data: snapshot };
+      },
+    };
+
+    (globalThis as any).chrome.webNavigation = {
+      getAllFrames: (
+        _details: { tabId: number },
+        callback: (
+          frames: Array<{
+            frameId: number;
+            url: string;
+            parentFrameId: number;
+          }>,
+        ) => void,
+      ) => {
+        const frames = allFrames.map((frame, index) => ({
+          frameId: index,
+          url: frame.url() || "about:blank",
+          parentFrameId: frame.parentFrame()
+            ? (frameIdMap.get(frame.parentFrame()!) ?? -1)
+            : -1,
+        }));
+        callback(frames);
+      },
+    };
+
+    (globalThis as any).chrome.scripting = {
+      executeScript: async () => {
+        const iframes = await testContext.page.$$eval("iframe", (frames) =>
+          frames.map((f) => ({
+            uid: f.getAttribute("data-aipex-nodeid") || "",
+            src: f.getAttribute("src") || "",
+            resolvedSrc: f.src || "",
+          })),
+        );
+        return [{ result: iframes }];
+      },
+    };
+
+    const snapshot = await snapshotManager.createSnapshot(
+      testContext.tabId,
+      true,
+      "dom",
+    );
+
+    const mainPageButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Main Page Button",
+    );
+    expect(mainPageButton).toBeDefined();
+
+    const iframe1Button = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Iframe 1 Button",
+    );
+    const nestedButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Nested Button",
+    );
+    const submitButton = Array.from(snapshot.idToNode.values()).find(
+      (node) => node.role === "button" && node.name === "Submit",
+    );
+
+    expect(iframe1Button).toBeDefined();
+    expect(nestedButton).toBeDefined();
+    expect(submitButton).toBeDefined();
+
+    const iframe1Handle = snapshotManager.getElementHandle(
+      testContext.tabId,
+      iframe1Button!.id,
+    );
+    const nestedHandle = snapshotManager.getElementHandle(
+      testContext.tabId,
+      nestedButton!.id,
+    );
+    const submitHandle = snapshotManager.getElementHandle(
+      testContext.tabId,
+      submitButton!.id,
+    );
+
+    expect(iframe1Handle).toBeDefined();
+    expect(nestedHandle).toBeDefined();
+    expect(submitHandle).toBeDefined();
+
+    iframe1Handle?.dispose();
+    nestedHandle?.dispose();
+    submitHandle?.dispose();
   });
 
   it("should click elements across fixture iframes", async () => {
