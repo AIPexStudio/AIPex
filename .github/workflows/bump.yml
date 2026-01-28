@@ -1,0 +1,82 @@
+name: Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "How to apply the bump"
+        type: choice
+        options:
+          - pr
+          - push
+        default: pr
+      release:
+        description: "bumpp release type"
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - next
+          - conventional
+          - pre-patch
+          - pre-minor
+          - pre-major
+          - as-is
+        default: next
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Ensure main branch for push mode
+        if: inputs.mode == 'push'
+        run: |
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$BRANCH" != "main" ]; then
+            echo "Push mode must run on main (current: $BRANCH)."
+            exit 1
+          fi
+
+      - name: Bump versions (push)
+        if: inputs.mode == 'push'
+        run: npm run bump -- --release ${{ inputs.release }} --yes
+
+      - name: Bump versions (pr)
+        if: inputs.mode == 'pr'
+        run: npm run bump -- --release ${{ inputs.release }} --no-commit --no-tag --no-push --yes
+
+      - name: Create pull request
+        if: inputs.mode == 'pr'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: release (${{ inputs.release }}) #${{ github.run_id }}"
+          title: "chore: release (${{ inputs.release }})"
+          branch: "release/${{ inputs.release }}-${{ github.run_id }}"
+          base: main
