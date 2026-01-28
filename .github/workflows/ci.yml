@@ -56,4 +56,5 @@ jobs:
         run: pnpm --filter @aipexstudio/browser-runtime exec vitest run --exclude '**/*.puppeteer.test.ts'
 
       - name: Test (Puppeteer - sequential)
-        run: pnpm --filter @aipexstudio/browser-runtime exec vitest run --no-file-parallelism '**/*.puppeteer.test.ts'
+        working-directory: packages/browser-runtime
+        run: pnpm exec vitest run --no-file-parallelism src/automation/*.puppeteer.test.ts
