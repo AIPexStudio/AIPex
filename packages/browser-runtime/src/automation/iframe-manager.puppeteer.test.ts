@@ -2,6 +2,8 @@
  * Iframe Manager Puppeteer Integration Tests
  */
 
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { html, setupPuppeteerTest } from "./__tests__/puppeteer-test-utils";
 import { CdpCommander } from "./cdp-commander";
@@ -12,17 +14,35 @@ const complexFixtureUrl = new URL(
   "./__tests__/test-iframe.html",
   import.meta.url,
 );
+const iframeReadyTimeoutMs = 15000;
+
+async function loadFixture(
+  page: import("puppeteer").Page,
+  fixtureUrl: URL,
+): Promise<void> {
+  const filePath = fileURLToPath(fixtureUrl);
+  const htmlContent = await readFile(filePath, "utf-8");
+  await page.setContent(htmlContent, { waitUntil: "domcontentloaded" });
+}
 
 async function waitForIframeReady(
   page: import("puppeteer").Page,
   selector: string,
 ): Promise<import("puppeteer").Frame> {
-  const iframeHandle = await page.waitForSelector(selector);
+  const iframeHandle = await page.waitForSelector(selector, {
+    timeout: iframeReadyTimeoutMs,
+  });
   const frame = await iframeHandle?.contentFrame();
   if (!frame) {
     throw new Error(`Failed to resolve iframe for selector: ${selector}`);
   }
-  await frame.waitForFunction(() => document.readyState === "complete");
+  await frame.waitForFunction(
+    () => {
+      const body = document.body;
+      return !!body && (body.textContent || "").trim().length > 0;
+    },
+    { timeout: iframeReadyTimeoutMs },
+  );
   return frame;
 }
 
@@ -30,14 +50,22 @@ async function waitForNestedIframeReady(
   parentFrame: import("puppeteer").Frame,
   selector: string,
 ): Promise<import("puppeteer").Frame> {
-  const iframeHandle = await parentFrame.waitForSelector(selector);
+  const iframeHandle = await parentFrame.waitForSelector(selector, {
+    timeout: iframeReadyTimeoutMs,
+  });
   const frame = await iframeHandle?.contentFrame();
   if (!frame) {
     throw new Error(
       `Failed to resolve nested iframe for selector: ${selector}`,
     );
   }
-  await frame.waitForFunction(() => document.readyState === "complete");
+  await frame.waitForFunction(
+    () => {
+      const body = document.body;
+      return !!body && (body.textContent || "").trim().length > 0;
+    },
+    { timeout: iframeReadyTimeoutMs },
+  );
   return frame;
 }
 
@@ -178,9 +206,7 @@ describe("IframeManager (Puppeteer)", () => {
   });
 
   it("should populate iframe content from complex fixture", async () => {
-    await testContext.page.goto(complexFixtureUrl.toString(), {
-      waitUntil: "load",
-    });
+    await loadFixture(testContext.page, complexFixtureUrl);
     const iframe2 = await waitForIframeReady(testContext.page, "#iframe2");
     await Promise.all([
       waitForIframeReady(testContext.page, "#iframe1"),
