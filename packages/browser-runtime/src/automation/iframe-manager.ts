@@ -172,11 +172,17 @@ export class IframeManager {
 
     // Recursively populate iframes
     const processedFrames = new Set<string>(); // Track processed frames to avoid cycles
+    const visitedNodeIds = new Set<string>();
 
     const populateRecursive = async (
       axNode: AXNode,
       nodeMap: Map<string, AXNode>,
     ): Promise<void> => {
+      if (visitedNodeIds.has(axNode.nodeId)) {
+        return;
+      }
+      visitedNodeIds.add(axNode.nodeId);
+
       // Check if this node is an iframe
       // Note: "Iframe" is the role for the iframe element itself
       // "WebArea" or "RootWebArea" is the role for the root of the iframe's content
@@ -232,9 +238,6 @@ export class IframeManager {
               }
               axNode.childIds.push(iframeRoot.nodeId);
               iframeRoot.parentId = axNode.nodeId;
-
-              // Recursively populate nested iframes
-              await populateRecursive(iframeRoot, nodeMap);
             }
           }
         }

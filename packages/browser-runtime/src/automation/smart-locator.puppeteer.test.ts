@@ -11,13 +11,39 @@ const complexFixtureUrl = new URL(
   "./__tests__/test-iframe.html",
   import.meta.url,
 );
-console.log("[DEBUG] complexFixtureUrl:", complexFixtureUrl.toString());
 
 const domSnapshotFixtureUrl = new URL(
   "./__tests__/test-dom-snapshot.html",
   import.meta.url,
 );
-console.log("[DEBUG] domSnapshotFixtureUrl:", domSnapshotFixtureUrl.toString());
+
+async function waitForIframeReady(
+  page: import("puppeteer").Page,
+  selector: string,
+): Promise<import("puppeteer").Frame> {
+  const iframeHandle = await page.waitForSelector(selector);
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) {
+    throw new Error(`Failed to resolve iframe for selector: ${selector}`);
+  }
+  await frame.waitForFunction(() => document.readyState === "complete");
+  return frame;
+}
+
+async function waitForNestedIframeReady(
+  parentFrame: import("puppeteer").Frame,
+  selector: string,
+): Promise<import("puppeteer").Frame> {
+  const iframeHandle = await parentFrame.waitForSelector(selector);
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) {
+    throw new Error(
+      `Failed to resolve nested iframe for selector: ${selector}`,
+    );
+  }
+  await frame.waitForFunction(() => document.readyState === "complete");
+  return frame;
+}
 
 async function buildDomSnapshot(
   frame: import("puppeteer").Frame,
@@ -279,18 +305,14 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click iframe element using dom snapshot", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`,
-    );
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await Promise.all([
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe2"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+    ]);
 
     const iframe1 = await findFrameByText("Iframe 1 Content");
     await iframe1.evaluate(() => {
@@ -406,18 +428,16 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should verify dom snapshot cannot access cross-origin iframe content without frame collection", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
-    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const iframe2Promise = waitForIframeReady(testContext.page, "#iframe2");
+    const [iframe2] = await Promise.all([
+      iframe2Promise,
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+    ]);
+    await waitForNestedIframeReady(iframe2, "iframe");
 
     (globalThis as any).chrome.tabs = {
       sendMessage: async (
@@ -471,18 +491,14 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should collect cross-origin iframe elements using dom snapshot with frame collection", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`,
-    );
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await Promise.all([
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe2"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+    ]);
 
     const allFrames = testContext.page.frames();
     const frameIdMap = new Map<import("puppeteer").Frame, number>();
@@ -594,18 +610,16 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click elements across fixture iframes", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
-    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const iframe2Promise = waitForIframeReady(testContext.page, "#iframe2");
+    const [iframe2] = await Promise.all([
+      iframe2Promise,
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+    ]);
+    await waitForNestedIframeReady(iframe2, "iframe");
 
     const iframe1 = await findFrameByText("Iframe 1 Content");
     await iframe1.evaluate(() => {
@@ -696,18 +710,16 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should fill inputs inside fixture iframes", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
-    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const iframe2Promise = waitForIframeReady(testContext.page, "#iframe2");
+    const [iframe2] = await Promise.all([
+      iframe2Promise,
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+    ]);
+    await waitForNestedIframeReady(iframe2, "iframe");
 
     const iframe1 = await findFrameByText("Iframe 1 Content");
     const iframe3 = await findFrameByText("Complex Iframe Content");

@@ -12,7 +12,34 @@ const complexFixtureUrl = new URL(
   "./__tests__/test-iframe.html",
   import.meta.url,
 );
-console.log("[DEBUG] complexFixtureUrl:", complexFixtureUrl.toString());
+
+async function waitForIframeReady(
+  page: import("puppeteer").Page,
+  selector: string,
+): Promise<import("puppeteer").Frame> {
+  const iframeHandle = await page.waitForSelector(selector);
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) {
+    throw new Error(`Failed to resolve iframe for selector: ${selector}`);
+  }
+  await frame.waitForFunction(() => document.readyState === "complete");
+  return frame;
+}
+
+async function waitForNestedIframeReady(
+  parentFrame: import("puppeteer").Frame,
+  selector: string,
+): Promise<import("puppeteer").Frame> {
+  const iframeHandle = await parentFrame.waitForSelector(selector);
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) {
+    throw new Error(
+      `Failed to resolve nested iframe for selector: ${selector}`,
+    );
+  }
+  await frame.waitForFunction(() => document.readyState === "complete");
+  return frame;
+}
 
 describe("IframeManager (Puppeteer)", () => {
   let testContext: Awaited<ReturnType<typeof setupPuppeteerTest>>;
@@ -151,18 +178,15 @@ describe("IframeManager (Puppeteer)", () => {
   });
 
   it("should populate iframe content from complex fixture", async () => {
-    console.log(
-      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
-    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(
-      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
-    );
-    await testContext.page.waitForSelector("#iframe3");
-    console.log(`[${new Date().toISOString()}] After waitForSelector`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const iframe2 = await waitForIframeReady(testContext.page, "#iframe2");
+    await Promise.all([
+      waitForIframeReady(testContext.page, "#iframe1"),
+      waitForIframeReady(testContext.page, "#iframe3"),
+      waitForNestedIframeReady(iframe2, "iframe"),
+    ]);
 
     const cdpCommander = new CdpCommander(testContext.tabId);
 
