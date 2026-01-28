@@ -143,26 +143,19 @@ describe("ConversationStorage Integration Tests", () => {
       // Mock storage operations
       vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
       const conversations: ConversationData[] = [];
-      const mockSave = vi.fn((_id: string, data: ConversationData) => {
+
+      const internalStorage = (storage as any).storage;
+      const mockSave = vi.fn(async (_id: string, data: ConversationData) => {
         conversations.push(data);
-        return Promise.resolve();
       });
-      const mockListAll = vi.fn(() => Promise.resolve([...conversations]));
-      const mockDelete = vi.fn((id: string) => {
+      const mockListAll = vi.fn(async () => [...conversations]);
+      const mockDelete = vi.fn(async (id: string) => {
         const index = conversations.findIndex((c) => c.id === id);
         if (index !== -1) conversations.splice(index, 1);
-        return Promise.resolve();
       });
-
-      vi.spyOn((storage as any).storage, "save").mockImplementation(
-        mockSave as (id: string, data: ConversationData) => Promise<void>,
-      );
-      vi.spyOn((storage as any).storage, "listAll").mockImplementation(
-        mockListAll as () => Promise<ConversationData[]>,
-      );
-      vi.spyOn((storage as any).storage, "delete").mockImplementation(
-        mockDelete as (id: string) => Promise<void>,
-      );
+      internalStorage.save = mockSave;
+      internalStorage.listAll = mockListAll;
+      internalStorage.delete = mockDelete;
 
       // Save 5 conversations (exceeding limit of 3)
       const ids: string[] = [];
@@ -184,9 +177,8 @@ describe("ConversationStorage Integration Tests", () => {
     it("should migrate conversations from localStorage on first initialization", async () => {
       // For this test, we need to use the real migrate function
       // Reset the mock to use real implementation
-      const { migrate: realMigrate } = await vi.importActual<
-        typeof import("../migration")
-      >("../migration");
+      const { migrate: realMigrate } =
+        await vi.importActual<typeof import("../migration")>("../migration");
 
       // Setup old conversations in localStorage
       const oldConversations: ConversationData[] = [

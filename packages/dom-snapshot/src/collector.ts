@@ -594,6 +594,10 @@ function resolveRole(element: Element): string {
     );
   }
 
+  if (tag === "iframe") {
+    return "iframe";
+  }
+
   if (element instanceof HTMLElement && element.isContentEditable) {
     return "textbox";
   }

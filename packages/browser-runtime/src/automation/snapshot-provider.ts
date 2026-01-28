@@ -144,10 +144,14 @@ async function requestDomSnapshot(
     throw new Error("chrome.tabs API unavailable in this context.");
   }
 
-  const response = (await chrome.tabs.sendMessage(tabId, {
-    type: DOM_SNAPSHOT_MESSAGE,
-    options,
-  } as DomSnapshotMessageRequest)) as DomSnapshotMessageResponse;
+  const response = (await chrome.tabs.sendMessage(
+    tabId,
+    {
+      type: DOM_SNAPSHOT_MESSAGE,
+      options,
+    } as DomSnapshotMessageRequest,
+    { frameId: 0 },
+  )) as DomSnapshotMessageResponse;
 
   if (!response) {
     throw new Error(
