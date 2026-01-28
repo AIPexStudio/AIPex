@@ -8,7 +8,7 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
-    silent: true,
+    silent: false,
     exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });
