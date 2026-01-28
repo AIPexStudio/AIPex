@@ -38,6 +38,7 @@ jobs:
 
       - name: Install Chrome for Puppeteer
         run: node node_modules/puppeteer/install.mjs
+        working-directory: packages/browser-runtime
 
       - name: Format check
         run: npm run format:check
