@@ -37,7 +37,7 @@ jobs:
         run: pnpm install
 
       - name: Install Chrome for Puppeteer
-        run: pnpm --package=puppeteer dlx puppeteer browsers install chrome
+        run: node node_modules/puppeteer/install.mjs
 
       - name: Format check
         run: npm run format:check
