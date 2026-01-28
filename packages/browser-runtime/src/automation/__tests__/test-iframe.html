@@ -63,8 +63,10 @@
 
     <div class="test-section">
       <h2>Iframe 1: Simple Content</h2>
-      <iframe id="iframe1" src="data:text/html;charset=utf-8,
-        <!DOCTYPE html>
+      <iframe
+        id="iframe1"
+        sandbox="allow-scripts"
+        srcdoc="<!DOCTYPE html>
         <html>
         <head><title>Iframe 1</title></head>
         <body>
@@ -74,22 +76,23 @@
           <input type='text' placeholder='Iframe 1 input'>
           <a href='#'>Iframe 1 Link</a>
         </body>
-        </html>
-      "></iframe>
+        </html>"
+      ></iframe>
     </div>
 
     <div class="test-section">
       <h2>Iframe 2: Nested Iframe</h2>
-      <iframe id="iframe2" src="data:text/html;charset=utf-8,
-        <!DOCTYPE html>
+      <iframe
+        id="iframe2"
+        sandbox="allow-scripts"
+        srcdoc="<!DOCTYPE html>
         <html>
         <head><title>Iframe 2</title></head>
         <body>
           <h1>Iframe 2 Content</h1>
           <p>This iframe contains another nested iframe.</p>
           <button>Iframe 2 Button</button>
-          <iframe src='data:text/html;charset=utf-8,
-            <!DOCTYPE html>
+          <iframe sandbox='allow-scripts' srcdoc='<!DOCTYPE html>
             <html>
             <head><title>Nested Iframe</title></head>
             <body>
@@ -100,14 +103,16 @@
             </html>
           ' style='width:100%;height:200px;border:1px solid #ccc;'></iframe>
         </body>
-        </html>
-      "></iframe>
+        </html>"
+      ></iframe>
     </div>
 
     <div class="test-section">
       <h2>Iframe 3: Complex Content</h2>
-      <iframe id="iframe3" src="data:text/html;charset=utf-8,
-        <!DOCTYPE html>
+      <iframe
+        id="iframe3"
+        sandbox="allow-scripts"
+        srcdoc="<!DOCTYPE html>
         <html>
         <head><title>Iframe 3</title></head>
         <body>
@@ -127,8 +132,8 @@
             <input type='radio' name='radio' id='radio1'><label for='radio1'>Radio 1</label>
           </div>
         </body>
-        </html>
-      "></iframe>
+        </html>"
+      ></iframe>
     </div>
 
     <div class="test-section">
