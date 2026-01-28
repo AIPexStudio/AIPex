@@ -292,7 +292,10 @@ const ContentApp = () => {
           });
         }
         return true;
-      } else if (message.type === "aipex:collect-dom-snapshot") {
+      } else if (
+        message.type === "aipex:collect-dom-snapshot" ||
+        message.request === "collect-dom-snapshot"
+      ) {
         // DOM snapshot collection for background mode
         (async () => {
           try {
