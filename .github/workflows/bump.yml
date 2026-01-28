@@ -14,15 +14,15 @@ on:
         description: "bumpp release type"
         type: choice
         options:
-          - next
-          - patch
-          - minor
           - major
-          - prerelease
-          - prepatch
-          - preminor
-          - premajor
+          - minor
+          - patch
+          - next
           - conventional
+          - pre-patch
+          - pre-minor
+          - pre-major
+          - as-is
         default: next
 
 permissions:
