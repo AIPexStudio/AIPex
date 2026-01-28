@@ -112,19 +112,55 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
     return document.querySelector(selector);
   };
 
-  // Helper: highlight element temporarily
-  const highlight = (element: HTMLElement): void => {
-    const originalOutline = element.style.outline;
-    const originalOffset = element.style.outlineOffset;
-    element.style.outline = "3px solid #3b82f6";
-    element.style.outlineOffset = "2px";
-    setTimeout(() => {
-      element.style.outline = originalOutline;
-      element.style.outlineOffset = originalOffset;
-    }, 1500);
+  // Helper: apply highlight effect to element
+  const applyHighlight = (element: HTMLElement): void => {
+    const highlightKey = "__aipexHighlightOriginal";
+    const timeoutKey = "__aipexHighlightTimeoutId";
+    const htmlTarget = element as HTMLElement & {
+      [highlightKey]?: {
+        outline: string;
+        outlineOffset: string;
+        boxShadow: string;
+        transition: string;
+      };
+      [timeoutKey]?: number;
+    };
+
+    if (htmlTarget[timeoutKey]) {
+      window.clearTimeout(htmlTarget[timeoutKey]);
+    }
+
+    if (!htmlTarget[highlightKey]) {
+      htmlTarget[highlightKey] = {
+        outline: htmlTarget.style.outline,
+        outlineOffset: htmlTarget.style.outlineOffset,
+        boxShadow: htmlTarget.style.boxShadow,
+        transition: htmlTarget.style.transition,
+      };
+    }
+
+    htmlTarget.setAttribute("data-aipex-highlighted", "true");
+    htmlTarget.style.outline = "3px solid #3b82f6";
+    htmlTarget.style.outlineOffset = "2px";
+    htmlTarget.style.boxShadow =
+      "0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)";
+    htmlTarget.style.transition = "all 0.2s ease-in-out";
+
+    htmlTarget[timeoutKey] = window.setTimeout(() => {
+      const original = htmlTarget[highlightKey];
+      if (original) {
+        htmlTarget.style.outline = original.outline;
+        htmlTarget.style.outlineOffset = original.outlineOffset;
+        htmlTarget.style.boxShadow = original.boxShadow;
+        htmlTarget.style.transition = original.transition;
+        delete htmlTarget[highlightKey];
+      }
+      htmlTarget.removeAttribute("data-aipex-highlighted");
+      delete htmlTarget[timeoutKey];
+    }, 1200);
   };
 
-  // Helper: prepare element (scroll into view, highlight)
+  // Helper: prepare element (scroll into view, optionally highlight)
   const prepareElement = (
     element: Element,
     options?: { highlight?: boolean; scroll?: boolean },
@@ -137,8 +173,8 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
         behavior: "smooth",
       });
     }
-    if (options?.highlight) {
-      highlight(element);
+    if (options?.highlight !== false) {
+      applyHighlight(element);
     }
   };
 
@@ -183,6 +219,14 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
       !(element instanceof HTMLInputElement) &&
       !(element instanceof HTMLTextAreaElement)
     ) {
+      // Check for contenteditable elements
+      if (element instanceof HTMLElement && element.isContentEditable) {
+        prepareElement(element, options);
+        element.focus();
+        element.textContent = options.value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        return { success: true };
+      }
       return { success: false, error: "Element is not an input or textarea." };
     }
 

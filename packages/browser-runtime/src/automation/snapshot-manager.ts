@@ -248,12 +248,13 @@ export class SnapshotManager {
       throw new Error("chrome.tabs API unavailable for DOM snapshot.");
     }
 
+    const targetFrameId = frameId ?? 0;
     const response = (await chrome.tabs.sendMessage(
       tabId,
       {
         request: "collect-dom-snapshot",
       },
-      frameId !== undefined ? { frameId } : undefined,
+      { frameId: targetFrameId },
     )) as { success: boolean; data?: SerializedDomSnapshot; error?: string };
 
     if (!response) {
