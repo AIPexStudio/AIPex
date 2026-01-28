@@ -49,5 +49,11 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test
-        run: npm run test
+      - name: Test (non-Puppeteer)
+        run: pnpm -r --if-present --filter '!@aipexstudio/browser-runtime' test
+
+      - name: Test (browser-runtime unit tests)
+        run: pnpm --filter @aipexstudio/browser-runtime exec vitest run --exclude '**/*.puppeteer.test.ts'
+
+      - name: Test (Puppeteer - sequential)
+        run: pnpm --filter @aipexstudio/browser-runtime exec vitest run --no-file-parallelism '**/*.puppeteer.test.ts'
