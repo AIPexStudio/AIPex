@@ -279,11 +279,15 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click iframe element using dom snapshot", async () => {
-    console.log(`[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`);
+    console.log(
+      `[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`,
+    );
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
+    console.log(
+      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
+    );
     await testContext.page.waitForSelector("#iframe3");
     console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -402,11 +406,15 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should verify dom snapshot cannot access cross-origin iframe content without frame collection", async () => {
-    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
+    console.log(
+      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
+    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
+    console.log(
+      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
+    );
     await testContext.page.waitForSelector("#iframe3");
     console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -463,11 +471,15 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should collect cross-origin iframe elements using dom snapshot with frame collection", async () => {
-    console.log(`[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`);
+    console.log(
+      `[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`,
+    );
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
+    console.log(
+      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
+    );
     await testContext.page.waitForSelector("#iframe3");
     console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -582,11 +594,15 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click elements across fixture iframes", async () => {
-    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
+    console.log(
+      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
+    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
+    console.log(
+      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
+    );
     await testContext.page.waitForSelector("#iframe3");
     console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -680,11 +696,15 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should fill inputs inside fixture iframes", async () => {
-    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
+    console.log(
+      `[${new Date().toISOString()}] Before page.goto complexFixtureUrl`,
+    );
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
-    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
+    console.log(
+      `[${new Date().toISOString()}] After page.goto, before waitForSelector`,
+    );
     await testContext.page.waitForSelector("#iframe3");
     console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
