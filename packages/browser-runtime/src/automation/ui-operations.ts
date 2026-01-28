@@ -10,6 +10,7 @@
  * The key insight: Puppeteer already filters heavily, we should match that exactly.
  */
 
+import { DomElementHandle } from "./dom-element-handle";
 import { SmartElementHandle } from "./smart-locator";
 import * as snapshotProvider from "./snapshot-provider";
 import type { ElementHandle } from "./types";
@@ -37,7 +38,7 @@ async function getCurrentTab(): Promise<chrome.tabs.Tab | null> {
  * Take accessibility snapshot (exactly like DevTools MCP's take_snapshot)
  * Returns formatted text representation of the page structure
  */
-export async function takeSnapshot(includeIframes: boolean = true): Promise<{
+export async function takeSnapshot(_includeIframes: boolean = true): Promise<{
   success: boolean;
   snapshotId: number;
   snapshot: string;
@@ -65,7 +66,7 @@ export async function takeSnapshot(includeIframes: boolean = true): Promise<{
       tab.id,
     );
 
-const result = await snapshotProvider.createSnapshot(tab.id);
+    const result = await snapshotProvider.createSnapshot(tab.id);
     if (!result?.root) {
       return {
         success: false,
@@ -145,19 +146,25 @@ export async function getElementByUid(
     value: node.value,
   });
 
-  const handle = snapshotManager.getElementHandle(tabId, uid);
-  if (!handle) {
-    return null;
+  // Select handle based on snapshot mode
+  const mode = await snapshotProvider.getSnapshotMode();
+  console.log(`🔧 [ui-operations] Using ${mode} mode handle for uid ${uid}`);
+
+  if (mode === "dom") {
+    // DOM mode: use DomElementHandle (no CDP required)
+    return new DomElementHandle(tabId, node);
   }
+  // CDP mode: use SmartElementHandle (requires backendDOMNodeId)
   if (node.backendDOMNodeId) {
     console.log(
       "✅ [DEBUG] Creating SmartElementHandle with backendDOMNodeId:",
       node.backendDOMNodeId,
     );
-  } else {
-    console.log("✅ [DEBUG] Creating DOM element handle for uid:", uid);
+    return new SmartElementHandle(tabId, node, node.backendDOMNodeId);
   }
-  return handle;
+  throw new Error(
+    `backendDOMNodeId not available for CDP mode. This should not happen.`,
+  );
 }
 
 /**
@@ -689,13 +696,12 @@ export async function searchSnapshotText(params: {
   tabId: number;
   query: string;
   contextLevels: number;
-  strategy?: SnapshotStrategy;
 }): Promise<{
   success: boolean;
   message: string;
   data: string;
 }> {
-  const { tabId, query, contextLevels, strategy = "axtree" } = params;
+  const { tabId, query, contextLevels } = params;
   const isValidTab = await checkTabValid(tabId);
   if (!isValidTab) {
     return { success: false, message: "No accessible tab found", data: "" };
@@ -704,7 +710,6 @@ export async function searchSnapshotText(params: {
     tabId,
     query,
     contextLevels,
-    { snapshotStrategy: strategy },
   );
   if (!result) {
     return {

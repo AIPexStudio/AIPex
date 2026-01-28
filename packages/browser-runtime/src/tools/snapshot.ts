@@ -7,14 +7,8 @@ export const takeSnapshotTool = tool({
   name: "take_snapshot",
   description:
     "Take an accessibility snapshot of the current page. Returns a tree of interactive elements with UIDs for interaction.",
-  parameters: z.object({
-    includeIframes: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("Whether to include iframe content in the snapshot"),
-  }),
-  execute: async ({ includeIframes = true }: { includeIframes?: boolean }) => {
+  parameters: z.object({}),
+  execute: async () => {
     const tab = await getActiveTab();
 
     if (!tab.id) {

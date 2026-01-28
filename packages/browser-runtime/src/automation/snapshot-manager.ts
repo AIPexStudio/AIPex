@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 import pLimit from "p-limit";
 import { CdpCommander } from "./cdp-commander";
 import { debuggerManager } from "./debugger-manager";
-import { DomElementHandle } from "./dom-locator";
+import { DomElementHandle } from "./dom-element-handle";
 import { iframeManager } from "./iframe-manager";
 import { type SearchOptions, SKIP_ROLES, searchSnapshotText } from "./query";
 import { SmartElementHandle } from "./smart-locator";
@@ -1336,7 +1336,7 @@ export class SnapshotManager {
 
     const strategy = this.#snapshotStrategyMap.get(tabId) ?? "axtree";
     if (strategy === "dom") {
-      return new DomElementHandle(tabId, uid);
+      return new DomElementHandle(tabId, node);
     }
 
     if (node.backendDOMNodeId) {
