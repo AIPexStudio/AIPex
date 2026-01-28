@@ -11,11 +11,13 @@ const complexFixtureUrl = new URL(
   "./__tests__/test-iframe.html",
   import.meta.url,
 );
+console.log("[DEBUG] complexFixtureUrl:", complexFixtureUrl.toString());
 
 const domSnapshotFixtureUrl = new URL(
   "./__tests__/test-dom-snapshot.html",
   import.meta.url,
 );
+console.log("[DEBUG] domSnapshotFixtureUrl:", domSnapshotFixtureUrl.toString());
 
 async function buildDomSnapshot(
   frame: import("puppeteer").Frame,
@@ -277,10 +279,13 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click iframe element using dom snapshot", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`);
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const iframe1 = await findFrameByText("Iframe 1 Content");
@@ -397,10 +402,13 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should verify dom snapshot cannot access cross-origin iframe content without frame collection", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     (globalThis as any).chrome.tabs = {
@@ -455,10 +463,13 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should collect cross-origin iframe elements using dom snapshot with frame collection", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto domSnapshotFixtureUrl`);
     await testContext.page.goto(domSnapshotFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const allFrames = testContext.page.frames();
@@ -571,10 +582,13 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should click elements across fixture iframes", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const iframe1 = await findFrameByText("Iframe 1 Content");
@@ -666,10 +680,13 @@ describe("SmartLocator (Puppeteer)", () => {
   });
 
   it("should fill inputs inside fixture iframes", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const iframe1 = await findFrameByText("Iframe 1 Content");

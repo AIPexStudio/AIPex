@@ -12,6 +12,7 @@ const complexFixtureUrl = new URL(
   "./__tests__/test-iframe.html",
   import.meta.url,
 );
+console.log("[DEBUG] complexFixtureUrl:", complexFixtureUrl.toString());
 
 describe("IframeManager (Puppeteer)", () => {
   let testContext: Awaited<ReturnType<typeof setupPuppeteerTest>>;
@@ -32,7 +33,7 @@ describe("IframeManager (Puppeteer)", () => {
         <iframe srcdoc="<p>Hello iframe</p>"></iframe>`,
     );
 
-    await testContext.page.waitForSelector("iframe");
+    await testContext.page.waitForSelector("iframe", { timeout: 10000, visible: true });
 
     const cdpCommander = new CdpCommander(testContext.tabId);
 
@@ -147,10 +148,13 @@ describe("IframeManager (Puppeteer)", () => {
   });
 
   it("should populate iframe content from complex fixture", async () => {
+    console.log(`[${new Date().toISOString()}] Before page.goto complexFixtureUrl`);
     await testContext.page.goto(complexFixtureUrl.toString(), {
       waitUntil: "load",
     });
+    console.log(`[${new Date().toISOString()}] After page.goto, before waitForSelector`);
     await testContext.page.waitForSelector("#iframe3");
+    console.log(`[${new Date().toISOString()}] After waitForSelector`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const cdpCommander = new CdpCommander(testContext.tabId);
