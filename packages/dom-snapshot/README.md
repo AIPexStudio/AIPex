@@ -23,6 +23,7 @@ This library takes a different approach by directly traversing the DOM and build
 - **Text content extraction**: Captures static text nodes for full page context
 - **Configurable options**: Control text length limits, hidden element inclusion, and text node capture
 - **Search functionality**: Built-in glob pattern search across snapshot text
+- **Same-origin iframe support**: Automatically traverses and captures content from same-origin iframes and nested iframes
 
 ## Installation
 
@@ -238,6 +239,23 @@ The following are automatically excluded from snapshots:
 - Elements with `inert` attribute
 - Elements with `display: none`
 - Elements with `visibility: hidden`
+
+## Iframe Handling
+
+The library automatically handles same-origin iframes:
+
+- **Same-origin iframes**: Content is fully traversed and included in the snapshot tree
+- **Nested iframes**: Supports recursive traversal of nested same-origin iframes (up to 10 levels deep)
+- **Cross-origin iframes**: Skipped due to browser security restrictions (SecurityError)
+- **Coordinate tracking**: Element bounding boxes account for iframe offsets for accurate positioning
+
+```typescript
+// Iframe content is automatically included in the snapshot
+const snapshot = collectDomSnapshot(document);
+
+// Elements inside iframes are accessible via their unique IDs
+const iframeElement = snapshot.idToNode['dom_iframe_element_123'];
+```
 
 ## Use Cases
 

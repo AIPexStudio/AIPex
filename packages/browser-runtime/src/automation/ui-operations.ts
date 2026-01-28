@@ -10,6 +10,7 @@
  * The key insight: Puppeteer already filters heavily, we should match that exactly.
  */
 
+import { DomElementHandle } from "./dom-element-handle";
 import { SmartElementHandle } from "./smart-locator";
 import * as snapshotProvider from "./snapshot-provider";
 import type { ElementHandle } from "./types";
@@ -37,7 +38,7 @@ async function getCurrentTab(): Promise<chrome.tabs.Tab | null> {
  * Take accessibility snapshot (exactly like DevTools MCP's take_snapshot)
  * Returns formatted text representation of the page structure
  */
-export async function takeSnapshot(): Promise<{
+export async function takeSnapshot(_includeIframes: boolean = true): Promise<{
   success: boolean;
   snapshotId: number;
   snapshot: string;
@@ -145,7 +146,15 @@ export async function getElementByUid(
     value: node.value,
   });
 
-  // Return ElementHandle if we have backendDOMNodeId
+  // Select handle based on snapshot mode
+  const mode = await snapshotProvider.getSnapshotMode();
+  console.log(`🔧 [ui-operations] Using ${mode} mode handle for uid ${uid}`);
+
+  if (mode === "dom") {
+    // DOM mode: use DomElementHandle (no CDP required)
+    return new DomElementHandle(tabId, node);
+  }
+  // CDP mode: use SmartElementHandle (requires backendDOMNodeId)
   if (node.backendDOMNodeId) {
     console.log(
       "✅ [DEBUG] Creating SmartElementHandle with backendDOMNodeId:",
@@ -153,8 +162,9 @@ export async function getElementByUid(
     );
     return new SmartElementHandle(tabId, node, node.backendDOMNodeId);
   }
-
-  return null;
+  throw new Error(
+    `backendDOMNodeId not available for CDP mode. This should not happen.`,
+  );
 }
 
 /**

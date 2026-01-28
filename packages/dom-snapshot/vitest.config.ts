@@ -5,5 +5,6 @@ export default defineConfig({
     pool: "threads",
     silent: true,
     environment: "jsdom",
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });

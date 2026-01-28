@@ -12,6 +12,7 @@ export interface TextSnapshotNode {
   description?: string;
   children: TextSnapshotNode[];
   backendDOMNodeId?: number;
+  frameId?: string;
   tagName?: string;
   focused?: boolean;
   modal?: boolean;
@@ -60,6 +61,8 @@ export interface TextSnapshot {
   idToNode: Map<string, TextSnapshotNode>;
   tabId: number;
 }
+
+export type SnapshotStrategy = "axtree" | "dom";
 
 export interface Locator {
   fill(value: string): Promise<void>;

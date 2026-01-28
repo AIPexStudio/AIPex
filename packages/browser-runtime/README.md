@@ -68,13 +68,22 @@ Providers included by default:
   - Falls back to `localStorage` when `chrome.storage` is unavailable (useful for non-extension dev)
 - `IndexedDBStorage<T extends { id: string }>`: a small `KeyValueStorage` implementation backed by IndexedDB
 
-### 4) CDP automation helpers
+### 4) Automation helpers
 
-Under `automation/`, you’ll find building blocks for CDP-based workflows (via `chrome.debugger`):
+Under `automation/`, you'll find building blocks for browser automation:
 
+**CDP-based automation** (via `chrome.debugger`):
 - `DebuggerManager`
-- `SnapshotManager`
 - `SmartLocator` / `SmartElementHandle`
+
+**DOM-based automation** (pure JavaScript, no CDP required):
+- `DomLocator` / `DomElementHandle` - Element handles that work with DOM snapshot strategy
+- Supports same-origin iframes with automatic coordinate offset tracking
+
+**Snapshot management**:
+- `SnapshotManager` - Supports dual snapshot strategies:
+  - `cdp`: CDP-based accessibility tree snapshots
+  - `dom`: Pure DOM-based snapshots (using `@aipexstudio/dom-snapshot`)
 - Snapshot text search utilities (`searchSnapshotText`, `parseSearchQuery`, `hasGlobPatterns`)
 
 ## Installation
@@ -174,11 +183,12 @@ const storage = new IndexedDBStorage<{ id: string; value: string }>({
 - `IndexedDBStorage<T>`
 - `IndexedDBConfig`
 
-### Automation (CDP)
+### Automation
 
 - `DebuggerManager`, `debuggerManager`
-- `SnapshotManager`, `snapshotManager`
-- `SmartLocator`, `SmartElementHandle`
+- `SnapshotManager`, `snapshotManager` - supports `SnapshotStrategy` (`"cdp"` | `"dom"`)
+- `SmartLocator`, `SmartElementHandle` - CDP-based element handles
+- `DomLocator`, `DomElementHandle` - DOM-based element handles
 - `searchSnapshotText`, `parseSearchQuery`, `hasGlobPatterns`
 
 ### Runtime contracts
@@ -196,7 +206,28 @@ From the repository root:
 ```bash
 pnpm --filter @aipexstudio/browser-runtime build
 pnpm --filter @aipexstudio/browser-runtime typecheck
+pnpm --filter @aipexstudio/browser-runtime test
 ```
+
+### Testing
+
+This package includes Puppeteer-based integration tests for CDP automation features:
+
+- **Iframe Manager tests**: Test iframe accessibility tree merging (`iframe-manager.puppeteer.test.ts`)
+- **Snapshot Manager tests**: Test snapshot creation, search, and node ID injection (`snapshot-manager.puppeteer.test.ts`)
+
+These tests use Puppeteer to simulate a browser environment without requiring a real Chrome extension. They automatically handle CI environments (GitHub Actions) with appropriate launch flags.
+
+To run tests:
+
+```bash
+pnpm --filter @aipexstudio/browser-runtime test
+```
+
+**CI Considerations**: The tests are configured to work in CI environments (GitHub Actions) with:
+- Automatic Chromium download via Puppeteer
+- Sandbox flags (`--no-sandbox`, `--disable-setuid-sandbox`) for containerized environments
+- Increased timeouts for slower CI runners
 
 ## License
 

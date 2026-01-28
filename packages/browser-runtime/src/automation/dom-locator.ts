@@ -106,30 +106,133 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
     return value.replace(/"/g, '\\"');
   };
 
-  // Helper: query element by uid attribute
+  // Helper: query element by uid attribute (searches iframes recursively)
   const queryByUid = (uid: string): Element | null => {
     const selector = `[data-aipex-nodeid="${cssEscape(uid)}"]`;
-    return document.querySelector(selector);
+
+    // Search in main document first
+    const found = document.querySelector(selector);
+    if (found) {
+      return found;
+    }
+
+    // Search recursively in same-origin iframes
+    const searchInFrames = (doc: Document): Element | null => {
+      const iframes = doc.querySelectorAll("iframe");
+      for (const iframe of iframes) {
+        try {
+          const frameDoc = iframe.contentDocument;
+          if (!frameDoc) continue;
+
+          const foundInFrame = frameDoc.querySelector(selector);
+          if (foundInFrame) {
+            return foundInFrame;
+          }
+
+          // Recursively search nested iframes
+          const nestedResult = searchInFrames(frameDoc);
+          if (nestedResult) {
+            return nestedResult;
+          }
+        } catch {
+          // Cross-origin iframe, skip
+        }
+      }
+      return null;
+    };
+
+    return searchInFrames(document);
   };
 
-  // Helper: highlight element temporarily
-  const highlight = (element: HTMLElement): void => {
-    const originalOutline = element.style.outline;
-    const originalOffset = element.style.outlineOffset;
-    element.style.outline = "3px solid #3b82f6";
-    element.style.outlineOffset = "2px";
-    setTimeout(() => {
-      element.style.outline = originalOutline;
-      element.style.outlineOffset = originalOffset;
-    }, 1500);
+  // Helper: apply highlight effect to element
+  const applyHighlight = (element: HTMLElement): void => {
+    const highlightKey = "__aipexHighlightOriginal";
+    const timeoutKey = "__aipexHighlightTimeoutId";
+    const htmlTarget = element as HTMLElement & {
+      [highlightKey]?: {
+        outline: string;
+        outlineOffset: string;
+        boxShadow: string;
+        transition: string;
+      };
+      [timeoutKey]?: number;
+    };
+
+    if (htmlTarget[timeoutKey]) {
+      window.clearTimeout(htmlTarget[timeoutKey]);
+    }
+
+    if (!htmlTarget[highlightKey]) {
+      htmlTarget[highlightKey] = {
+        outline: htmlTarget.style.outline,
+        outlineOffset: htmlTarget.style.outlineOffset,
+        boxShadow: htmlTarget.style.boxShadow,
+        transition: htmlTarget.style.transition,
+      };
+    }
+
+    htmlTarget.setAttribute("data-aipex-highlighted", "true");
+    htmlTarget.style.outline = "3px solid #3b82f6";
+    htmlTarget.style.outlineOffset = "2px";
+    htmlTarget.style.boxShadow =
+      "0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)";
+    htmlTarget.style.transition = "all 0.2s ease-in-out";
+
+    htmlTarget[timeoutKey] = window.setTimeout(() => {
+      const original = htmlTarget[highlightKey];
+      if (original) {
+        htmlTarget.style.outline = original.outline;
+        htmlTarget.style.outlineOffset = original.outlineOffset;
+        htmlTarget.style.boxShadow = original.boxShadow;
+        htmlTarget.style.transition = original.transition;
+        delete htmlTarget[highlightKey];
+      }
+      htmlTarget.removeAttribute("data-aipex-highlighted");
+      delete htmlTarget[timeoutKey];
+    }, 1200);
   };
 
-  // Helper: prepare element (scroll into view, highlight)
+  // Helper: check if element is HTMLElement (works across iframe boundaries)
+  const isHTMLElement = (el: Element): el is HTMLElement => {
+    // Use duck typing because instanceof fails across iframe boundaries
+    return (
+      el &&
+      typeof (el as HTMLElement).style !== "undefined" &&
+      typeof (el as HTMLElement).click === "function"
+    );
+  };
+
+  // Helper: check if element is input element (works across iframe boundaries)
+  const isInputElement = (el: Element): el is HTMLInputElement => {
+    return (
+      el &&
+      el.tagName?.toLowerCase() === "input" &&
+      "value" in el &&
+      typeof (el as HTMLInputElement).value === "string"
+    );
+  };
+
+  // Helper: check if element is textarea element (works across iframe boundaries)
+  const isTextAreaElement = (el: Element): el is HTMLTextAreaElement => {
+    return (
+      el &&
+      el.tagName?.toLowerCase() === "textarea" &&
+      "value" in el &&
+      typeof (el as HTMLTextAreaElement).value === "string"
+    );
+  };
+
+  // Helper: check if element is contenteditable (works across iframe boundaries)
+  const isContentEditable = (el: Element): boolean => {
+    return isHTMLElement(el) && el.isContentEditable === true;
+  };
+
+  // Helper: prepare element (scroll into view, optionally highlight)
   const prepareElement = (
     element: Element,
     options?: { highlight?: boolean; scroll?: boolean },
   ): void => {
-    if (!(element instanceof HTMLElement)) return;
+    if (!isHTMLElement(element)) return;
     if (options?.scroll !== false) {
       element.scrollIntoView({
         block: "center",
@@ -137,17 +240,17 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
         behavior: "smooth",
       });
     }
-    if (options?.highlight) {
-      highlight(element);
+    if (options?.highlight !== false) {
+      applyHighlight(element);
     }
   };
 
   // Action: click element
   const clickElement = (
     element: Element,
-    options: ClickOptions & { uid?: string },
+    options: { count?: number; highlight?: boolean; scroll?: boolean },
   ): DomActionResponse => {
-    if (!(element instanceof HTMLElement)) {
+    if (!isHTMLElement(element)) {
       return { success: false, error: "Target is not an HTMLElement." };
     }
 
@@ -172,12 +275,22 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: fill element with value
   const fillElement = (
     element: Element,
-    options: FillOptions,
+    options: {
+      value: string;
+      commit?: boolean;
+      highlight?: boolean;
+      scroll?: boolean;
+    },
   ): DomActionResponse => {
-    if (
-      !(element instanceof HTMLInputElement) &&
-      !(element instanceof HTMLTextAreaElement)
-    ) {
+    if (!isInputElement(element) && !isTextAreaElement(element)) {
+      // Check for contenteditable elements
+      if (isContentEditable(element)) {
+        prepareElement(element, options);
+        (element as HTMLElement).focus();
+        element.textContent = options.value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        return { success: true };
+      }
       return { success: false, error: "Element is not an input or textarea." };
     }
 
@@ -202,9 +315,9 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: hover over element
   const hoverElement = (
     element: Element,
-    options: HoverOptions,
+    options: { highlight?: boolean; scroll?: boolean },
   ): DomActionResponse => {
-    if (!(element instanceof HTMLElement)) {
+    if (!isHTMLElement(element)) {
       return { success: false, error: "Target is not an HTMLElement." };
     }
 
@@ -221,8 +334,15 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   };
 
   // Action: get bounding box
-  const getBoundingBox = (element: Element): DomActionResponse<BoundingBox> => {
-    if (!(element instanceof HTMLElement)) {
+  const getBoundingBox = (
+    element: Element,
+  ): DomActionResponse<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }> => {
+    if (!isHTMLElement(element)) {
       return { success: false, error: "Target is not an HTMLElement." };
     }
 
@@ -240,10 +360,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
 
   // Action: get value
   const getValue = (element: Element): DomActionResponse<string> => {
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement
-    ) {
+    if (isInputElement(element) || isTextAreaElement(element)) {
       return { success: true, data: element.value };
     }
     return { success: false, error: "Element does not have a value property." };
@@ -252,10 +369,7 @@ function runDomAction(payload: DomActionPayload): DomActionResponse<any> {
   // Action: get editor value (Monaco, CodeMirror, ACE, or standard inputs)
   const getEditorValue = (element: Element): DomActionResponse<string> => {
     // First try standard input/textarea
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement
-    ) {
+    if (isInputElement(element) || isTextAreaElement(element)) {
       return { success: true, data: element.value };
     }
 

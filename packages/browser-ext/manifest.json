@@ -23,7 +23,9 @@
     {
       "matches": ["<all_urls>"],
       "js": ["src/content.tsx"],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
     }
   ],
   "side_panel": {
@@ -69,6 +71,7 @@
     "management",
     "downloads",
     "debugger",
-    "cookies"
+    "cookies",
+    "webNavigation"
   ]
 }

@@ -1,101 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ConversationStorage } from "../conversation-storage";
 import type { ConversationData, UIMessage } from "../types";
 
-// Mock IndexedDB with in-memory storage
-class MockIDBDatabase {
-  private stores: Map<string, Map<string, any>> = new Map();
+// Mock IndexedDBStorage before importing ConversationStorage
+vi.mock("../../storage/indexeddb-storage", () => ({
+  IndexedDBStorage: class MockIndexedDBStorage {
+    save = vi.fn().mockResolvedValue(undefined);
+    load = vi.fn().mockResolvedValue(null);
+    delete = vi.fn().mockResolvedValue(undefined);
+    list = vi.fn().mockResolvedValue([]);
+    listAll = vi.fn().mockResolvedValue([]);
+    clear = vi.fn().mockResolvedValue(undefined);
+    watch = vi.fn().mockReturnValue(() => {});
+  },
+}));
 
-  constructor(public name: string) {}
+// Mock migration
+vi.mock("../migration", () => ({
+  migrate: vi.fn().mockResolvedValue({ migratedCount: 0, errors: [] }),
+}));
 
-  createObjectStore(name: string) {
-    this.stores.set(name, new Map());
-    return {
-      createIndex: vi.fn(),
-    };
-  }
-
-  transaction(storeNames: string[], _mode: string) {
-    return new MockIDBTransaction(
-      this.stores,
-      storeNames[0] ?? "conversations",
-    );
-  }
-
-  close() {}
-}
-
-class MockIDBTransaction {
-  constructor(
-    private stores: Map<string, Map<string, any>>,
-    _storeName: string,
-  ) {}
-
-  objectStore(name: string) {
-    return new MockIDBObjectStore(this.stores.get(name)!);
-  }
-}
-
-class MockIDBObjectStore {
-  constructor(private store: Map<string, any>) {}
-
-  get(key: string) {
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-      result: this.store.get(key),
-    };
-  }
-
-  getAll() {
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-      result: Array.from(this.store.values()),
-    };
-  }
-
-  put(value: any) {
-    this.store.set(value.id, value);
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-    };
-  }
-
-  delete(key: string) {
-    this.store.delete(key);
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-    };
-  }
-
-  clear() {
-    this.store.clear();
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-    };
-  }
-}
-
-const indexedDBMock = {
-  open: vi.fn((name: string, _version: number) => {
-    const db = new MockIDBDatabase(name);
-    return {
-      onsuccess: null as any,
-      onerror: null as any,
-      onupgradeneeded: null as any,
-      result: db,
-    };
-  }),
-};
-
-Object.defineProperty(global, "indexedDB", {
-  value: indexedDBMock,
-  writable: true,
-});
+// Import after mocks are set up
+import { ConversationStorage } from "../conversation-storage";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -218,26 +143,19 @@ describe("ConversationStorage Integration Tests", () => {
       // Mock storage operations
       vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
       const conversations: ConversationData[] = [];
-      const mockSave = vi.fn((_id: string, data: ConversationData) => {
+
+      const internalStorage = (storage as any).storage;
+      const mockSave = vi.fn(async (_id: string, data: ConversationData) => {
         conversations.push(data);
-        return Promise.resolve();
       });
-      const mockListAll = vi.fn(() => Promise.resolve([...conversations]));
-      const mockDelete = vi.fn((id: string) => {
+      const mockListAll = vi.fn(async () => [...conversations]);
+      const mockDelete = vi.fn(async (id: string) => {
         const index = conversations.findIndex((c) => c.id === id);
         if (index !== -1) conversations.splice(index, 1);
-        return Promise.resolve();
       });
-
-      vi.spyOn((storage as any).storage, "save").mockImplementation(
-        mockSave as (id: string, data: ConversationData) => Promise<void>,
-      );
-      vi.spyOn((storage as any).storage, "listAll").mockImplementation(
-        mockListAll as () => Promise<ConversationData[]>,
-      );
-      vi.spyOn((storage as any).storage, "delete").mockImplementation(
-        mockDelete as (id: string) => Promise<void>,
-      );
+      internalStorage.save = mockSave;
+      internalStorage.listAll = mockListAll;
+      internalStorage.delete = mockDelete;
 
       // Save 5 conversations (exceeding limit of 3)
       const ids: string[] = [];
@@ -257,6 +175,11 @@ describe("ConversationStorage Integration Tests", () => {
 
   describe("Migration Integration", () => {
     it("should migrate conversations from localStorage on first initialization", async () => {
+      // For this test, we need to use the real migrate function
+      // Reset the mock to use real implementation
+      const { migrate: realMigrate } =
+        await vi.importActual<typeof import("../migration")>("../migration");
+
       // Setup old conversations in localStorage
       const oldConversations: ConversationData[] = [
         {
@@ -280,22 +203,18 @@ describe("ConversationStorage Integration Tests", () => {
         JSON.stringify(oldConversations),
       );
 
-      // Create storage instance (should trigger migration)
-      const storage = new ConversationStorage();
-
-      // Mock storage operations
-      const mockSave = vi.fn().mockResolvedValue(undefined);
-      vi.spyOn((storage as any).storage, "save").mockImplementation(mockSave);
-      vi.spyOn(storage as any, "applyLRU").mockResolvedValue(undefined);
-
-      // Manually trigger migration for testing
-      await (storage as any).performMigration();
+      // Run the real migration
+      const mockSaveCallback = vi.fn().mockResolvedValue(undefined);
+      await realMigrate(mockSaveCallback);
 
       // Verify migration flag is set
       expect(localStorage.getItem("aipex-conversations-migrated")).toBe("true");
 
       // Verify old data is removed
       expect(localStorage.getItem("aipex-conversations")).toBeNull();
+
+      // Verify save was called for each conversation
+      expect(mockSaveCallback).toHaveBeenCalledTimes(2);
     });
 
     it("should not migrate if already migrated", async () => {

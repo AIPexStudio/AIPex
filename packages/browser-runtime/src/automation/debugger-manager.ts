@@ -18,12 +18,20 @@ export class DebuggerManager {
     this.initialize();
   }
 
+  private getChrome(): typeof chrome | undefined {
+    return (globalThis as any).chrome as typeof chrome | undefined;
+  }
+
   private initialize(): void {
     if (this.initialized) return;
+    const chromeApi = this.getChrome();
+    if (!chromeApi) {
+      return;
+    }
     this.initialized = true;
 
-    if (chrome.debugger?.onDetach) {
-      chrome.debugger.onDetach.addListener((source, reason) => {
+    if (chromeApi.debugger?.onDetach) {
+      chromeApi.debugger.onDetach.addListener((source, reason) => {
         const tabId = source.tabId;
         if (tabId !== undefined) {
           this.debuggerAttachedTabs.delete(tabId);
@@ -33,8 +41,8 @@ export class DebuggerManager {
       });
     }
 
-    if (chrome.tabs?.onRemoved) {
-      chrome.tabs.onRemoved.addListener((tabId) => {
+    if (chromeApi.tabs?.onRemoved) {
+      chromeApi.tabs.onRemoved.addListener((tabId) => {
         this.debuggerAttachedTabs.delete(tabId);
         this.cancelAutoDetach(tabId);
         rejectPendingCommands(tabId, "Tab closed");
@@ -43,7 +51,11 @@ export class DebuggerManager {
   }
 
   private async ensureNoExtensionFrame(tabId: number): Promise<boolean> {
-    const result = await chrome.scripting.executeScript({
+    const chromeApi = this.getChrome();
+    if (!chromeApi?.scripting?.executeScript) {
+      return false;
+    }
+    const result = await chromeApi.scripting.executeScript({
       target: { tabId },
       func: () => {
         function queryAllDeepShadow<T extends Element>(
@@ -101,7 +113,13 @@ export class DebuggerManager {
   }
 
   async safeAttachDebugger(tabId: number): Promise<boolean> {
+    this.initialize();
     this.cancelAutoDetach(tabId);
+
+    const chromeApi = this.getChrome();
+    if (!chromeApi) {
+      return false;
+    }
 
     if (this.debuggerLock.has(tabId)) {
       const result = await this.debuggerLock.get(tabId)!;
@@ -117,7 +135,7 @@ export class DebuggerManager {
     }
 
     const attachPromise = new Promise<boolean>((resolve) => {
-      if (!chrome.debugger) {
+      if (!chromeApi.debugger) {
         resolve(false);
         return;
       }
@@ -127,11 +145,11 @@ export class DebuggerManager {
         return;
       }
 
-      chrome.debugger.attach({ tabId }, "1.3", () => {
-        if (chrome.runtime.lastError) {
+      chromeApi.debugger.attach({ tabId }, "1.3", () => {
+        if (chromeApi.runtime?.lastError) {
           console.error(
             "❌ [DEBUG] Failed to attach debugger:",
-            chrome.runtime.lastError.message,
+            chromeApi.runtime.lastError.message,
           );
           resolve(false);
         } else {
@@ -159,17 +177,22 @@ export class DebuggerManager {
     tabId: number,
     immediately: boolean = false,
   ): Promise<void> {
+    const chromeApi = this.getChrome();
     if (immediately) {
       this.cancelAutoDetach(tabId);
       rejectPendingCommands(tabId, "Debugger detaching");
 
       return new Promise((resolve) => {
-        if (this.debuggerAttachedTabs.has(tabId)) {
-          chrome.debugger.detach({ tabId }, () => {
+        if (
+          this.debuggerAttachedTabs.has(tabId) &&
+          chromeApi?.debugger?.detach
+        ) {
+          chromeApi.debugger.detach({ tabId }, () => {
             this.debuggerAttachedTabs.delete(tabId);
             resolve();
           });
         } else {
+          this.debuggerAttachedTabs.delete(tabId);
           resolve();
         }
       });

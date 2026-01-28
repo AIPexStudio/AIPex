@@ -1,16 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ConversationStorage } from "../conversation-storage";
 import type { UIMessage } from "../types";
 
-// Mock IndexedDB
-const indexedDBMock = {
-  open: vi.fn(),
-};
+// Mock IndexedDBStorage before importing ConversationStorage
+vi.mock("../../storage/indexeddb-storage", () => ({
+  IndexedDBStorage: class MockIndexedDBStorage {
+    save = vi.fn().mockResolvedValue(undefined);
+    load = vi.fn().mockResolvedValue(null);
+    delete = vi.fn().mockResolvedValue(undefined);
+    list = vi.fn().mockResolvedValue([]);
+    listAll = vi.fn().mockResolvedValue([]);
+    clear = vi.fn().mockResolvedValue(undefined);
+    watch = vi.fn().mockReturnValue(() => {});
+  },
+}));
 
-Object.defineProperty(global, "indexedDB", {
-  value: indexedDBMock,
-  writable: true,
-});
+// Mock migration
+vi.mock("../migration", () => ({
+  migrate: vi.fn().mockResolvedValue({ migratedCount: 0, errors: [] }),
+}));
+
+// Import after mocks are set up
+import { ConversationStorage } from "../conversation-storage";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -224,11 +234,6 @@ describe("ConversationStorage", () => {
     it("should generate conversation ID with correct format", async () => {
       const storage = new ConversationStorage();
       const messages = createMockMessages(2);
-
-      // Mock the storage.save to avoid IndexedDB operations
-      vi.spyOn(storage as any, "ensureMigrated").mockResolvedValue(undefined);
-      vi.spyOn((storage as any).storage, "save").mockResolvedValue(undefined);
-      vi.spyOn(storage as any, "applyLRU").mockResolvedValue(undefined);
 
       const conversationId = await storage.saveConversation(messages);
 

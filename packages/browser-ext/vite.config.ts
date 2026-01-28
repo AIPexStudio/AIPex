@@ -55,6 +55,14 @@ export default defineConfig({
         find: "@aipexstudio/browser-runtime",
         replacement: path.resolve(__dirname, "../browser-runtime/src/index.ts"),
       },
+      {
+        find: /^@aipexstudio\/dom-snapshot\/(.*)$/,
+        replacement: path.resolve(__dirname, "../dom-snapshot/src/$1"),
+      },
+      {
+        find: "@aipexstudio/dom-snapshot",
+        replacement: path.resolve(__dirname, "../dom-snapshot/src/index.ts"),
+      },
     ],
   },
   css: {

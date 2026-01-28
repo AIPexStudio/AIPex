@@ -2,9 +2,21 @@ import { CdpCommander } from "./cdp-commander";
 import { debuggerManager } from "./debugger-manager";
 import type { ElementHandle, Locator, TextSnapshotNode } from "./types";
 
+type FrameTreeNode = {
+  frame: { id: string };
+  childFrames?: FrameTreeNode[];
+};
+
+type Rect = { x: number; y: number; width: number; height: number };
+
 // Smart Locator implementation that uses node information to find elements
 export class SmartLocator implements Locator {
   #cdpCommander: CdpCommander;
+  #frameTreeInfo: {
+    mainFrameId: string;
+    parentByFrameId: Map<string, string | null>;
+  } | null = null;
+  #frameOwnerBackendNodeIdByFrameId = new Map<string, number>();
   constructor(
     private tabId: number,
     private node: TextSnapshotNode,
@@ -49,7 +61,7 @@ export class SmartLocator implements Locator {
       if (!attached) return null;
 
       await this.ensureDOMEnabled();
-      const box = await this.getElementBoundingBox(this.node.id);
+      const box = await this.getElementBoundingBox();
 
       return box;
     } catch (_error) {
@@ -156,82 +168,272 @@ export class SmartLocator implements Locator {
   /**
    * Helper: Get element bounding box using CDP
    */
-  private async getElementBoundingBox(nodeId: string): Promise<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null> {
+  private async getElementBoundingBox(): Promise<Rect | null> {
     try {
-      // 获取元素位置并添加临时高亮样式
-      const isDev = import.meta.env?.DEV;
-      const boxResult = await this.#cdpCommander.sendCommand<{
-        result: {
-          value: { x: number; y: number; width: number; height: number };
-        };
-      }>("Runtime.evaluate", {
-        expression: `
-        (function() {
-          const el = document.querySelector("[data-aipex-nodeid='${nodeId}']");
-          if (!el) return null;
-
-          // Get bounding box
-          const rect = el.getBoundingClientRect();
-
-          // Store original styles
-          const originalStyles = {
-            outline: el.style.outline,
-            outlineOffset: el.style.outlineOffset,
-            boxShadow: el.style.boxShadow,
-            transition: el.style.transition,
-          };
-
-          // Apply beautiful highlight styles (only if not already highlighted)
-          if (!el.hasAttribute('data-aipex-highlighted')) {
-            el.setAttribute('data-aipex-highlighted', 'true');
-            el.style.outline = '3px solid #3b82f6';
-            el.style.outlineOffset = '2px';
-            el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
-            el.style.transition = 'all 0.2s ease-in-out';
-
-            // Schedule removal of highlight after 10 seconds (longer duration)
-            // if dev, keep highlight indefinitely
-            ${
-              isDev
-                ? "// Dev mode: keep highlight forever"
-                : `
-              setTimeout(() => {
-                el.removeAttribute('data-aipex-highlighted');
-                el.style.outline = originalStyles.outline;
-                el.style.outlineOffset = originalStyles.outlineOffset;
-                el.style.boxShadow = originalStyles.boxShadow;
-                el.style.transition = originalStyles.transition;
-              }, 10000);
-            `
-            };
-          }
-
-          return {
-              x: rect.left,
-              y: rect.top,
-              width: rect.width,
-              height: rect.height,
-              left: rect.left,
-              top: rect.top
-            };
-        })()
-      `,
-        returnByValue: true,
+      const rect = await this.getTopLevelContentRectForBackendNode({
+        backendNodeId: this.backendDOMNodeId,
+        frameId: this.node.frameId,
       });
 
-      if (boxResult?.result?.value) {
-        return boxResult.result.value;
+      if (!rect) {
+        return null;
       }
 
-      return null;
+      // Add temporary highlight on the element (in its own frame context)
+      const isDev = Boolean(import.meta.env?.DEV);
+      const remoteObject = await this.resolveNodeToRemoteObject(
+        this.backendDOMNodeId,
+      );
+      const objectId = remoteObject?.object?.objectId;
+      if (objectId) {
+        await this.#cdpCommander
+          .sendCommand("Runtime.callFunctionOn", {
+            objectId,
+            functionDeclaration: `function(isDev) {
+              const el = this;
+              if (!el || !el.style) return false;
+
+              const originalStyles = {
+                outline: el.style.outline,
+                outlineOffset: el.style.outlineOffset,
+                boxShadow: el.style.boxShadow,
+                transition: el.style.transition,
+              };
+
+              if (!el.hasAttribute('data-aipex-highlighted')) {
+                el.setAttribute('data-aipex-highlighted', 'true');
+                el.style.outline = '3px solid #3b82f6';
+                el.style.outlineOffset = '2px';
+                el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
+                el.style.transition = 'all 0.2s ease-in-out';
+
+                if (!isDev) {
+                  setTimeout(() => {
+                    el.removeAttribute('data-aipex-highlighted');
+                    el.style.outline = originalStyles.outline;
+                    el.style.outlineOffset = originalStyles.outlineOffset;
+                    el.style.boxShadow = originalStyles.boxShadow;
+                    el.style.transition = originalStyles.transition;
+                  }, 10000);
+                }
+              }
+
+              return true;
+            }`,
+            arguments: [{ value: isDev }],
+            returnByValue: true,
+          })
+          .catch(() => {});
+
+        await this.#cdpCommander
+          .sendCommand("Runtime.releaseObject", { objectId })
+          .catch(() => {});
+      }
+
+      return rect;
     } catch (_error) {
       return null;
     }
+  }
+
+  private async ensureFrameTreeInfo(): Promise<void> {
+    if (this.#frameTreeInfo) {
+      return;
+    }
+
+    const result = await this.#cdpCommander.sendCommand<{
+      frameTree: FrameTreeNode;
+    }>("Page.getFrameTree", {});
+
+    const mainFrameId = result?.frameTree?.frame?.id;
+    const parentByFrameId = new Map<string, string | null>();
+
+    const walk = (node: FrameTreeNode, parentId: string | null): void => {
+      const id = node.frame?.id;
+      if (id) {
+        parentByFrameId.set(id, parentId);
+      }
+      if (node.childFrames) {
+        for (const child of node.childFrames) {
+          walk(child, id ?? parentId);
+        }
+      }
+    };
+
+    if (result?.frameTree) {
+      walk(result.frameTree, null);
+    }
+
+    this.#frameTreeInfo = {
+      mainFrameId: mainFrameId || "",
+      parentByFrameId,
+    };
+  }
+
+  private async getFrameOwnerBackendNodeId(
+    frameId: string,
+  ): Promise<number | null> {
+    const cached = this.#frameOwnerBackendNodeIdByFrameId.get(frameId);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const owner = await this.#cdpCommander.sendCommand<{
+        backendNodeId?: number;
+      }>("DOM.getFrameOwner", { frameId });
+      if (owner?.backendNodeId) {
+        this.#frameOwnerBackendNodeIdByFrameId.set(
+          frameId,
+          owner.backendNodeId,
+        );
+        return owner.backendNodeId;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private quadToRect(quad: number[]): Rect | null {
+    if (!Array.isArray(quad) || quad.length < 8) {
+      return null;
+    }
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (let i = 0; i < 8; i += 2) {
+      const x = quad[i];
+      const y = quad[i + 1];
+      if (typeof x !== "number" || typeof y !== "number") continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+    if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+      return null;
+    }
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }
+
+  private unionRects(rects: Rect[]): Rect | null {
+    if (rects.length === 0) {
+      return null;
+    }
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const r of rects) {
+      minX = Math.min(minX, r.x);
+      minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.width);
+      maxY = Math.max(maxY, r.y + r.height);
+    }
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }
+
+  private async getBackendNodeContentRect(
+    backendNodeId: number,
+  ): Promise<Rect | null> {
+    try {
+      const quadsResult = await this.#cdpCommander.sendCommand<{
+        quads?: number[][];
+      }>("DOM.getContentQuads", { backendNodeId });
+
+      const quads = quadsResult?.quads || [];
+      const rects = quads
+        .map((quad) => this.quadToRect(quad))
+        .filter((r): r is Rect => Boolean(r));
+      const quadRect = this.unionRects(rects);
+      if (quadRect) {
+        return quadRect;
+      }
+    } catch {
+      // fall through to getBoxModel
+    }
+
+    try {
+      const boxResult = await this.#cdpCommander.sendCommand<{
+        model?: { content?: number[] };
+      }>("DOM.getBoxModel", { backendNodeId });
+      const contentQuad = boxResult?.model?.content;
+      if (contentQuad) {
+        return this.quadToRect(contentQuad);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async getTopLevelContentRectForBackendNode(params: {
+    backendNodeId: number;
+    frameId?: string;
+  }): Promise<Rect | null> {
+    const base = await this.getBackendNodeContentRect(params.backendNodeId);
+    if (!base) {
+      return null;
+    }
+
+    const frameId = params.frameId;
+    if (!frameId) {
+      return base;
+    }
+
+    const baseCenter = {
+      x: base.x + base.width / 2,
+      y: base.y + base.height / 2,
+    };
+    const baseIsCovered = await this.isCoveredAtPoint(baseCenter);
+    if (!baseIsCovered) {
+      return base;
+    }
+
+    await this.ensureFrameTreeInfo();
+    const mainFrameId = this.#frameTreeInfo?.mainFrameId;
+    const parentByFrameId = this.#frameTreeInfo?.parentByFrameId;
+    if (!mainFrameId || !parentByFrameId) {
+      return base;
+    }
+
+    if (frameId === mainFrameId) {
+      return base;
+    }
+
+    let offsetX = 0;
+    let offsetY = 0;
+    let currentFrameId: string | null = frameId;
+    while (currentFrameId && currentFrameId !== mainFrameId) {
+      const ownerBackendNodeId =
+        await this.getFrameOwnerBackendNodeId(currentFrameId);
+      if (!ownerBackendNodeId) {
+        break;
+      }
+
+      const ownerRect =
+        await this.getBackendNodeContentRect(ownerBackendNodeId);
+      if (!ownerRect) {
+        break;
+      }
+
+      offsetX += ownerRect.x;
+      offsetY += ownerRect.y;
+      currentFrameId = parentByFrameId.get(currentFrameId) ?? null;
+    }
+
+    if (offsetX === 0 && offsetY === 0) {
+      return base;
+    }
+
+    return {
+      x: base.x + offsetX,
+      y: base.y + offsetY,
+      width: base.width,
+      height: base.height,
+    };
   }
 
   /**
@@ -334,9 +536,13 @@ export class SmartLocator implements Locator {
     count: number = 1,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const elementId = this.node.id;
-      const box = await this.getElementBoundingBox(elementId);
-      if (!box || box.width === 0 || box.height === 0) {
+      const box = await this.getElementBoundingBox();
+      if (!box) {
+        // Degrade: still try to click via JS on the resolved node
+        const jsClick = await this.clickViaJS(count);
+        return jsClick;
+      }
+      if (box.width === 0 || box.height === 0) {
         return {
           success: false,
           error: "Element not visible or has zero size",
@@ -347,44 +553,13 @@ export class SmartLocator implements Locator {
       const y = box.y + box.height / 2;
 
       for (let i = 0; i < count; i++) {
-        const evalResult = await this.#cdpCommander.sendCommand<{
-          result?: {
-            value?: { found: boolean; isCovered?: boolean; topTag?: string };
-          };
-        }>("Runtime.evaluate", {
-          expression: `
-      (function() {
-        const el = document.querySelector("[data-aipex-nodeid='${elementId}']");
-        if (!el) return { found: false };
-        const topEl = document.elementFromPoint(${x}, ${y});
-        return {
-          found: true,
-          isCovered: topEl !== el && !el.contains(topEl),
-          topTag: topEl ? topEl.tagName : null
-        };
-      })()
-    `,
-          returnByValue: true,
-        });
-
-        const info = evalResult?.result?.value;
-        if (!info?.found) {
-          return { success: false, error: "Element not found" };
-        }
-
-        if (info.isCovered) {
-          await this.#cdpCommander.sendCommand("Runtime.evaluate", {
-            expression: `
-        (function() {
-          const el = document.querySelector("[data-aipex-nodeid='${elementId}']");
-          if (!el) return false;
-          el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-          return true;
-        })()
-      `,
-            returnByValue: true,
-          });
-          return { success: true };
+        const isCovered = await this.isCoveredAtPoint({ x, y });
+        if (isCovered) {
+          const jsClick = await this.clickViaJS(1);
+          if (!jsClick.success) {
+            return jsClick;
+          }
+          continue;
         }
 
         await this.#cdpCommander.sendCommand("Input.dispatchMouseEvent", {
@@ -414,6 +589,117 @@ export class SmartLocator implements Locator {
         success: false,
         error: `Click failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
+    }
+  }
+
+  private async clickViaJS(
+    count: number,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const remoteObject = await this.resolveNodeToRemoteObject(
+        this.backendDOMNodeId,
+      );
+      const objectId = remoteObject?.object?.objectId;
+      if (!objectId) {
+        return { success: false, error: "Element not found" };
+      }
+
+      await this.#cdpCommander.sendCommand("Runtime.callFunctionOn", {
+        objectId,
+        functionDeclaration: `function(count) {
+          const el = this;
+          if (!el) return false;
+          for (let i = 0; i < count; i++) {
+            el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+            if (typeof el.click === 'function') {
+              try { el.click(); } catch {}
+            }
+          }
+          return true;
+        }`,
+        arguments: [{ value: count }],
+        returnByValue: true,
+      });
+
+      await this.#cdpCommander
+        .sendCommand("Runtime.releaseObject", { objectId })
+        .catch(() => {});
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Click failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  private async isCoveredAtPoint(params: {
+    x: number;
+    y: number;
+  }): Promise<boolean> {
+    try {
+      const expectedFrameId = this.node.frameId;
+
+      const hit = await this.#cdpCommander.sendCommand<{
+        backendNodeId: number;
+        frameId: string;
+      }>("DOM.getNodeForLocation", {
+        x: Math.round(params.x),
+        y: Math.round(params.y),
+        includeUserAgentShadowDOM: true,
+        ignorePointerEventsNone: true,
+      });
+
+      if (expectedFrameId && hit?.frameId && hit.frameId !== expectedFrameId) {
+        return true;
+      }
+
+      // If we can resolve both nodes in the same frame, check containment
+      const targetRemote = await this.resolveNodeToRemoteObject(
+        this.backendDOMNodeId,
+      );
+      const targetObjectId = targetRemote?.object?.objectId;
+      if (!targetObjectId) {
+        return true;
+      }
+
+      const hitRemote = await this.resolveNodeToRemoteObject(hit.backendNodeId);
+      const hitObjectId = hitRemote?.object?.objectId;
+      if (!hitObjectId) {
+        await this.#cdpCommander
+          .sendCommand("Runtime.releaseObject", { objectId: targetObjectId })
+          .catch(() => {});
+        return false;
+      }
+
+      const contains = await this.#cdpCommander.sendCommand<{
+        result?: { value?: boolean };
+      }>("Runtime.callFunctionOn", {
+        objectId: targetObjectId,
+        functionDeclaration: `function(topEl) {
+          if (!topEl) return false;
+          if (this === topEl) return true;
+          if (this && typeof this.contains === 'function') {
+            return this.contains(topEl);
+          }
+          return false;
+        }`,
+        arguments: [{ objectId: hitObjectId }],
+        returnByValue: true,
+      });
+
+      await this.#cdpCommander
+        .sendCommand("Runtime.releaseObject", { objectId: hitObjectId })
+        .catch(() => {});
+      await this.#cdpCommander
+        .sendCommand("Runtime.releaseObject", { objectId: targetObjectId })
+        .catch(() => {});
+
+      return contains?.result?.value !== true;
+    } catch {
+      // If we cannot reliably determine, prefer safety (covered => JS click fallback)
+      return true;
     }
   }
 
@@ -711,8 +997,12 @@ export class SmartLocator implements Locator {
     error?: string;
   }> {
     try {
-      const box = await this.getElementBoundingBox(this.node.id);
-      if (!box || box.width === 0 || box.height === 0) {
+      const box = await this.getElementBoundingBox();
+      if (!box) {
+        // Degrade: dispatch hover-ish events via JS
+        return await this.hoverViaJS();
+      }
+      if (box.width === 0 || box.height === 0) {
         return {
           success: false,
           error: "Element not visible or has zero size",
@@ -727,6 +1017,44 @@ export class SmartLocator implements Locator {
         x,
         y,
       });
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Hover failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  private async hoverViaJS(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const remoteObject = await this.resolveNodeToRemoteObject(
+        this.backendDOMNodeId,
+      );
+      const objectId = remoteObject?.object?.objectId;
+      if (!objectId) {
+        return { success: false, error: "Element not found" };
+      }
+
+      await this.#cdpCommander.sendCommand("Runtime.callFunctionOn", {
+        objectId,
+        functionDeclaration: `function() {
+          const el = this;
+          if (!el) return false;
+          try {
+            el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true, view: window }));
+            el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, cancelable: true, view: window }));
+            el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, view: window }));
+          } catch {}
+          return true;
+        }`,
+        returnByValue: true,
+      });
+
+      await this.#cdpCommander
+        .sendCommand("Runtime.releaseObject", { objectId })
+        .catch(() => {});
 
       return { success: true };
     } catch (error) {

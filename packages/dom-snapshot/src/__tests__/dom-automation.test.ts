@@ -2305,4 +2305,197 @@ describe("cursor: pointer detection", () => {
     expect(snapshot.idToNode[nodeId!]).toBeDefined();
     expect(snapshot.idToNode[nodeId!]?.tagName).toBe("tr");
   });
+
+  describe("iframe support", () => {
+    it("captures same-origin iframe content", () => {
+      document.body.innerHTML = `
+        <div>
+          <h1>Main Page</h1>
+        </div>
+      `;
+
+      const iframe = document.createElement("iframe");
+      const iframeDoc = document.implementation.createHTMLDocument("iframe");
+      iframeDoc.body.innerHTML =
+        "<p>Iframe content</p><button>Iframe Button</button>";
+      Object.defineProperty(iframe, "contentDocument", {
+        get: () => iframeDoc,
+        configurable: true,
+      });
+      Object.defineProperty(iframe, "contentWindow", {
+        get: () => ({ document: iframeDoc }),
+        configurable: true,
+      });
+      document.body.appendChild(iframe);
+
+      const snapshot = collectDomSnapshot(document);
+      const nodes = Object.values(snapshot.idToNode);
+      const allText = nodes.map((n) => n.name || "").join(" ");
+
+      expect(allText).toContain("Iframe content");
+      expect(allText).toContain("Iframe Button");
+      expect(allText).toContain("Main Page");
+
+      const iframeNode = nodes.find((n) => n.tagName === "iframe");
+      expect(iframeNode).toBeDefined();
+      expect(iframeNode?.children.length).toBeGreaterThan(0);
+    });
+
+    it("captures nested iframes with same-origin content", () => {
+      document.body.innerHTML = `
+        <div>
+          <h1>Outer Page</h1>
+        </div>
+      `;
+
+      const innerDoc =
+        document.implementation.createHTMLDocument("inner-iframe");
+      innerDoc.body.innerHTML =
+        "<p>Inner iframe</p><button>Inner Button</button>";
+
+      const outerDoc =
+        document.implementation.createHTMLDocument("outer-iframe");
+      outerDoc.body.innerHTML = "<p>Outer iframe</p>";
+      const innerFrame = outerDoc.createElement("iframe");
+      Object.defineProperty(innerFrame, "contentDocument", {
+        get: () => innerDoc,
+        configurable: true,
+      });
+      Object.defineProperty(innerFrame, "contentWindow", {
+        get: () => ({ document: innerDoc }),
+        configurable: true,
+      });
+      outerDoc.body.appendChild(innerFrame);
+
+      const outerFrame = document.createElement("iframe");
+      Object.defineProperty(outerFrame, "contentDocument", {
+        get: () => outerDoc,
+        configurable: true,
+      });
+      Object.defineProperty(outerFrame, "contentWindow", {
+        get: () => ({ document: outerDoc }),
+        configurable: true,
+      });
+      document.body.appendChild(outerFrame);
+
+      const snapshot = collectDomSnapshot(document);
+      const nodes = Object.values(snapshot.idToNode);
+      const allText = nodes.map((n) => n.name || "").join(" ");
+
+      expect(allText).toContain("Outer Page");
+      expect(allText).toContain("Outer iframe");
+      expect(allText).toContain("Inner iframe");
+      expect(allText).toContain("Inner Button");
+    });
+
+    it("skips cross-origin iframe content but preserves iframe node", () => {
+      document.body.innerHTML = `
+        <div>
+          <h1>Main Page</h1>
+          <iframe id="cross-origin-iframe" src="https://example.com"></iframe>
+        </div>
+      `;
+
+      const iframe = document.querySelector(
+        "#cross-origin-iframe",
+      ) as HTMLIFrameElement;
+      if (iframe) {
+        Object.defineProperty(iframe, "contentDocument", {
+          get: () => {
+            throw new DOMException(
+              "Blocked a frame with origin",
+              "SecurityError",
+            );
+          },
+          configurable: true,
+        });
+        Object.defineProperty(iframe, "contentWindow", {
+          get: () => ({
+            document: null,
+          }),
+          configurable: true,
+        });
+      }
+
+      const snapshot = collectDomSnapshot(document);
+      const nodes = Object.values(snapshot.idToNode);
+      const allText = nodes.map((n) => n.name || "").join(" ");
+
+      expect(allText).toContain("Main Page");
+
+      const iframeNode = nodes.find((n) => n.tagName === "iframe");
+      expect(iframeNode).toBeDefined();
+      expect(iframeNode?.children.length).toBe(0);
+    });
+
+    it("captures interactive elements inside same-origin iframe", () => {
+      document.body.innerHTML = `
+        <div>
+          <button>Main Button</button>
+        </div>
+      `;
+
+      const iframe = document.createElement("iframe");
+      const iframeDoc = document.implementation.createHTMLDocument("iframe");
+      iframeDoc.body.innerHTML =
+        "<input type='text' placeholder='Iframe input'><button>Iframe Button</button>";
+      Object.defineProperty(iframe, "contentDocument", {
+        get: () => iframeDoc,
+        configurable: true,
+      });
+      Object.defineProperty(iframe, "contentWindow", {
+        get: () => ({ document: iframeDoc }),
+        configurable: true,
+      });
+      document.body.appendChild(iframe);
+
+      const snapshot = collectDomSnapshot(document);
+      const nodes = Object.values(snapshot.idToNode);
+
+      const iframeInput = nodes.find(
+        (n) => n.role === "textbox" && n.placeholder === "Iframe input",
+      );
+      const iframeButton = nodes.find(
+        (n) => n.role === "button" && n.name === "Iframe Button",
+      );
+
+      expect(iframeInput).toBeDefined();
+      expect(iframeButton).toBeDefined();
+
+      const mainButton = nodes.find(
+        (n) => n.role === "button" && n.name === "Main Button",
+      );
+      expect(mainButton).toBeDefined();
+    });
+
+    it("handles iframe with hidden content correctly", () => {
+      document.body.innerHTML = `
+        <div>
+          <h1>Main Page</h1>
+        </div>
+      `;
+
+      const iframe = document.createElement("iframe");
+      const iframeDoc = document.implementation.createHTMLDocument("iframe");
+      iframeDoc.body.innerHTML =
+        "<div hidden><p>Hidden content</p></div><p>Visible content</p>";
+      Object.defineProperty(iframe, "contentDocument", {
+        get: () => iframeDoc,
+        configurable: true,
+      });
+      Object.defineProperty(iframe, "contentWindow", {
+        get: () => ({ document: iframeDoc }),
+        configurable: true,
+      });
+      document.body.appendChild(iframe);
+
+      const snapshot = collectDomSnapshot(document);
+      const nodes = Object.values(snapshot.idToNode);
+      const allText = nodes.map((n) => n.name || "").join(" ");
+
+      expect(allText).toContain("Visible content");
+      expect(allText).toContain("Main Page");
+      expect(allText).not.toContain("Hidden content");
+    });
+  });
 });
