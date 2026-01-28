@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DomElementHandle, DomLocator } from "./dom-locator";
+import { DomElementHandle } from "./dom-element-handle";
+import { DomLocator } from "./dom-locator";
 
 const mockExecuteScript = vi.fn();
 
@@ -13,7 +14,7 @@ describe("DomLocator", () => {
     } as any;
   });
 
-  it("executes dom action and returns bounding box", async () => {
+  it("executes dom action and returns bounding box response", async () => {
     mockExecuteScript.mockResolvedValueOnce([
       {
         result: {
@@ -23,15 +24,26 @@ describe("DomLocator", () => {
       },
     ]);
 
-    const locator = new DomLocator(1, "uid-1");
-    const box = await locator.boundingBox();
+    const locator = new DomLocator(1);
+    const response = await locator.boundingBox("uid-1");
 
-    expect(box).toEqual({ x: 10, y: 20, width: 100, height: 200 });
+    expect(response).toEqual({
+      success: true,
+      data: { x: 10, y: 20, width: 100, height: 200 },
+    });
     expect(mockExecuteScript).toHaveBeenCalled();
   });
 
   it("creates element handle that exposes a locator", () => {
-    const handle = new DomElementHandle(1, "uid-2");
-    expect(handle.asLocator()).toBeInstanceOf(DomLocator);
+    const mockNode = {
+      id: "uid-2",
+      role: "button",
+      name: "Test Button",
+      children: [],
+    };
+    const handle = new DomElementHandle(1, mockNode);
+    expect(handle.asLocator()).toBeDefined();
+    expect(typeof handle.asLocator().click).toBe("function");
+    expect(typeof handle.asLocator().fill).toBe("function");
   });
 });
