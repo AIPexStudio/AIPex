@@ -12,8 +12,8 @@ importers:
         specifier: ^2.3.12
         version: 2.3.13
       '@j178/prek':
-        specifier: ^0.2.19
-        version: 0.2.19
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/chrome':
         specifier: 0.1.32
         version: 0.1.32
@@ -1099,8 +1099,8 @@ packages:
     resolution: {integrity: sha512-ZT55BDLV0yv0RBm2czMiZ+SqCGO7AvmOM3G/w2xhVPH+te0aKgFjmBvGlL1dH+ql2tgGO3MVrbb3jCKyvpgnxA==}
     engines: {node: 20 || >=22}
 
-  '@j178/prek@0.2.19':
-    resolution: {integrity: sha512-F28RMdIm0t3wfpdyPvoy8vsP4KqOJ2B5EFx1+HFQArdVv8VdFYVMlpeOeucfYZHq2IqGv9rTNjC+mz7DVmncWg==}
+  '@j178/prek@0.3.1':
+    resolution: {integrity: sha512-tRofTp4Il/DbMXg0hZUtSS962ALx3Xt0kqTcuV13DhzU7OYmJ5CpL3W2ELqPaATXxwPu849tEm9DLOzqbd3zCw==}
     engines: {node: '>=14', npm: '>=6'}
     hasBin: true
 
@@ -2452,8 +2452,8 @@ packages:
   axios-proxy-builder@0.1.2:
     resolution: {integrity: sha512-6uBVsBZzkB3tCC8iyx59mCjQckhB8+GQrI9Cop8eC7ybIsvs/KtnNgEBfRMSEa7GqK2VBGUzgjNYMdPIfotyPA==}
 
-  axios@1.13.2:
-    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
+  axios@1.13.4:
+    resolution: {integrity: sha512-1wVkUaAO6WyaYtCkcYCOx12ZgpGf9Zif+qXa4n+oYzK558YryKqiL6UWwd5DqiH3VRW0GYhTZQ/vlgJrCoNQlg==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -6206,9 +6206,9 @@ snapshots:
     dependencies:
       '@isaacs/balanced-match': 4.0.1
 
-  '@j178/prek@0.2.19':
+  '@j178/prek@0.3.1':
     dependencies:
-      axios: 1.13.2
+      axios: 1.13.4
       axios-proxy-builder: 0.1.2
       console.table: 0.10.0
       detect-libc: 2.1.2
@@ -7590,7 +7590,7 @@ snapshots:
     dependencies:
       tunnel: 0.0.6
 
-  axios@1.13.2:
+  axios@1.13.4:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
