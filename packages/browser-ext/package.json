@@ -87,6 +87,6 @@
     "postcss-modules": "^6.0.1",
     "tailwindcss-cli": "^0.1.2",
     "vite": "^7.3.1",
-    "vite-plugin-static-copy": "^3.1.4"
+    "vite-plugin-static-copy": "^3.2.0"
   }
 }
