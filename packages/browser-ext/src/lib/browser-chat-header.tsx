@@ -1,6 +1,6 @@
 /**
  * BrowserChatHeader
- * Custom header with conversation persistence, history dropdown, intervention toggle
+ * Custom header with conversation persistence and history dropdown
  */
 
 import { useChatContext } from "@aipexstudio/aipex-react/components/chatbot";
@@ -13,8 +13,6 @@ import { conversationStorage } from "@aipexstudio/browser-runtime";
 import { PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationHistory } from "./conversation-history";
-import { useInterventionMode } from "./intervention-mode-context";
-import { InterventionModeToggleHeader } from "./intervention-ui";
 import { fromStorageFormat, toStorageFormat } from "./message-adapter";
 
 export function BrowserChatHeader({
@@ -28,7 +26,6 @@ export function BrowserChatHeader({
   const { t } = useTranslation();
   const runtime = getRuntime();
   const { messages, setMessages, interrupt } = useChatContext();
-  const { mode, setMode } = useInterventionMode();
 
   const [currentConversationId, setCurrentConversationId] = useState<
     string | undefined
@@ -146,15 +143,12 @@ export function BrowserChatHeader({
         {t("common.settings")}
       </Button>
 
-      {/* Center - Intervention toggle and History */}
-      <div className="flex items-center gap-2">
-        <InterventionModeToggleHeader mode={mode} onModeChange={setMode} />
-        <ConversationHistory
-          currentConversationId={currentConversationId}
-          onConversationSelect={handleConversationSelect}
-          onNewConversation={handleNewChat}
-        />
-      </div>
+      {/* Center - History */}
+      <ConversationHistory
+        currentConversationId={currentConversationId}
+        onConversationSelect={handleConversationSelect}
+        onNewConversation={handleNewChat}
+      />
 
       {/* Right side - New Chat */}
       <Button
