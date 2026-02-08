@@ -232,8 +232,9 @@ export function fromStorageFormat(
 
     for (const part of convertedParts) {
       if (part.type === "tool") {
-        // Skip if we've already processed this tool call
-        if (processedToolCallIds.has(part.toolCallId)) {
+        const toolCallId = part.toolCallId;
+        // Skip if toolCallId is missing or we've already processed this tool call
+        if (!toolCallId || processedToolCallIds.has(toolCallId)) {
           continue;
         }
 
@@ -241,7 +242,7 @@ export function fromStorageFormat(
         const resultPart = convertedParts.find(
           (p) =>
             p.type === "tool" &&
-            p.toolCallId === part.toolCallId &&
+            p.toolCallId === toolCallId &&
             p.state !== "pending" &&
             p !== part,
         );
@@ -254,7 +255,7 @@ export function fromStorageFormat(
           mergedParts.push(part);
         }
 
-        processedToolCallIds.add(part.toolCallId);
+        processedToolCallIds.add(toolCallId);
       } else {
         mergedParts.push(part);
       }

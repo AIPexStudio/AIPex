@@ -12,6 +12,20 @@ import { z } from "zod";
 // Types
 // ============================================================================
 
+/**
+ * Valid tab group color values (matching chrome.tabGroups.Color enum values)
+ */
+export type TabGroupColor =
+  | "blue"
+  | "red"
+  | "yellow"
+  | "green"
+  | "orange"
+  | "purple"
+  | "pink"
+  | "cyan"
+  | "grey";
+
 export interface TabData {
   id: number;
   title: string;
@@ -22,7 +36,7 @@ export interface TabData {
 export interface TabGroupResult {
   emoji: string;
   category: string;
-  color: chrome.tabGroups.ColorEnum;
+  color: TabGroupColor;
   tabIds: number[];
 }
 
@@ -88,7 +102,7 @@ export function setTabClassificationCallback(
 // Helper Functions
 // ============================================================================
 
-const VALID_COLORS: chrome.tabGroups.ColorEnum[] = [
+const VALID_COLORS: TabGroupColor[] = [
   "blue",
   "red",
   "yellow",
@@ -100,9 +114,13 @@ const VALID_COLORS: chrome.tabGroups.ColorEnum[] = [
   "grey",
 ];
 
-function getRandomColor(): chrome.tabGroups.ColorEnum {
+function getRandomColor(): TabGroupColor {
   return VALID_COLORS[Math.floor(Math.random() * VALID_COLORS.length)]!;
 }
+
+// Regex patterns for character sanitization - using RegExp constructor to satisfy linter
+// biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally matching control characters for sanitization
+const CONTROL_CHARS_REGEX = /[\u0000-\u001F\u007F-\u009F]/g;
 
 /**
  * Sanitize string for AI request - remove problematic characters
@@ -110,7 +128,7 @@ function getRandomColor(): chrome.tabGroups.ColorEnum {
 function sanitizeForAI(str: string): string {
   return str
     .replace(/[\uD800-\uDFFF]/g, "") // Remove surrogate pairs
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
+    .replace(CONTROL_CHARS_REGEX, "") // Remove control characters
     .replace(/[\u{1F600}-\u{1F64F}]/gu, "") // Remove emoji ranges
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")
     .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
@@ -127,7 +145,7 @@ function sanitizeForAI(str: string): string {
 function sanitizeString(str: string): string {
   return str
     .replace(/[\uD800-\uDFFF]/g, "")
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .replace(CONTROL_CHARS_REGEX, "")
     .replace(/[^\x20-\x7E\u4e00-\u9fff]/g, "")
     .trim();
 }
@@ -166,7 +184,7 @@ interface DomainGroup {
   domain: string;
   category: string;
   emoji: string;
-  color: chrome.tabGroups.ColorEnum;
+  color: TabGroupColor;
 }
 
 const DOMAIN_CATEGORIES: DomainGroup[] = [
@@ -227,7 +245,7 @@ function groupTabsByDomain(tabs: TabData[]): TabGroupResult[] {
     {
       category: string;
       emoji: string;
-      color: chrome.tabGroups.ColorEnum;
+      color: TabGroupColor;
       tabIds: number[];
     }
   >();
@@ -346,9 +364,7 @@ export async function groupTabsByAI(): Promise<OrganizeTabsResult> {
             emoji: validateEmoji(g.emoji),
             category: sanitizeString(g.category),
             color: VALID_COLORS.includes(g.color) ? g.color : getRandomColor(),
-            tabIds: g.tabIds.filter((id) =>
-              validTabs.some((t) => t.id === id),
-            ),
+            tabIds: g.tabIds.filter((id) => validTabs.some((t) => t.id === id)),
           }));
         } else {
           console.warn(

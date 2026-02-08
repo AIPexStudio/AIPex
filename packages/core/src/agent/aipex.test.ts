@@ -29,7 +29,9 @@ function createMockRunResult(
   const events = overrides.streamEvents ?? [];
 
   // Build rawResponses: if explicit rawResponses provided, use it; otherwise use usage shorthand
-  let rawResponses: Array<{ usage?: { inputTokens?: number; outputTokens?: number } }> = [];
+  let rawResponses: Array<{
+    usage?: { inputTokens?: number; outputTokens?: number };
+  }> = [];
   if (overrides.rawResponses) {
     rawResponses = overrides.rawResponses;
   } else if (overrides.usage) {
@@ -931,7 +933,7 @@ describe("AIPex", () => {
               item: {
                 rawItem: { name: "api_call", status: "failed" },
                 output:
-                  'Error: Request failed with Authorization: Bearer sk-1234567890abcdef',
+                  "Error: Request failed with Authorization: Bearer sk-1234567890abcdef",
               },
             },
           ],

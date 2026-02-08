@@ -20,6 +20,18 @@ import type {
 import { newQuickJSWASMModuleFromVariant, Scope } from "quickjs-emscripten";
 import type { SkillAPIBridge } from "./skill-api";
 
+/**
+ * QuickJS sync variant interface - matches the structure expected by newQuickJSWASMModuleFromVariant
+ */
+interface QuickJSVariantLike {
+  importModuleLoader: () => Promise<
+    (options?: Record<string, unknown>) => unknown
+  >;
+}
+
+// Type assertion for the variant - the default export type is not fully recognized
+const variant = RELEASE_SYNC as unknown as QuickJSVariantLike;
+
 interface ExecutionContext {
   skillId: string;
   workingDir: string;
@@ -69,10 +81,10 @@ class QuickJSManager {
       // Chrome extensions don't allow 'wasm-eval' which asyncify variants need
       // Wrap the variant to override locateFile so the Emscripten loader can find the wasm
       const variantWithLocateFile = {
-        ...RELEASE_SYNC,
+        ...variant,
         importModuleLoader: async () => {
           // Get the original module loader
-          const originalLoader = await RELEASE_SYNC.importModuleLoader();
+          const originalLoader = await variant.importModuleLoader();
           // Return a wrapped version that injects locateFile
           return (moduleOptions?: Record<string, unknown>) => {
             return originalLoader({

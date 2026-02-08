@@ -453,7 +453,10 @@ describe("ChatAdapter", () => {
       adapter.processEvent({
         type: "tool_call_complete",
         toolName: "organize_tabs",
-        result: { success: false, error: "Cannot organize tabs in incognito window" },
+        result: {
+          success: false,
+          error: "Cannot organize tabs in incognito window",
+        },
       });
 
       const toolPart = adapter
@@ -519,7 +522,11 @@ describe("ChatAdapter", () => {
       adapter.processEvent({
         type: "tool_call_complete",
         toolName: "api_call",
-        result: { success: false, error: "API rate limit exceeded", details: { remaining: 0 } },
+        result: {
+          success: false,
+          error: "API rate limit exceeded",
+          details: { remaining: 0 },
+        },
       });
 
       const toolPart = adapter

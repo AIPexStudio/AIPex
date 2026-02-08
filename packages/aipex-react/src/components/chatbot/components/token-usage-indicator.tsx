@@ -1,11 +1,7 @@
 import type { AgentMetrics } from "@aipexstudio/aipex-core";
 import { useMemo } from "react";
 import { cn } from "../../../lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../../ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 import { useChatContext } from "../context";
 
 // Default thresholds (matching legacy aipex behavior)
@@ -112,6 +108,8 @@ export function TokenUsageIndicator({
               <svg
                 className="w-3.5 h-3.5 transform -rotate-90"
                 viewBox="0 0 16 16"
+                role="img"
+                aria-label="Token usage progress"
               >
                 {/* Background circle */}
                 <circle
@@ -189,7 +187,12 @@ export function TokenUsageIndicator({
     >
       {/* Circular Progress Indicator */}
       <div className="relative w-4 h-4">
-        <svg className="w-4 h-4 transform -rotate-90" viewBox="0 0 16 16">
+        <svg
+          className="w-4 h-4 transform -rotate-90"
+          viewBox="0 0 16 16"
+          role="img"
+          aria-label="Token usage progress"
+        >
           {/* Background circle */}
           <circle
             cx="8"
