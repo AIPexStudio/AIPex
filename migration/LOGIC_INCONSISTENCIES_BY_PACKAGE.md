@@ -337,4 +337,3 @@
 - BYOK token stored securely (chrome.storage.local, masked in UI)
 - High-risk tools (storage/clipboard/extensions/downloads) default-off with explicit opt-in
 - Minimal regression tests added (tool invocation, permission-denied scenarios, background vs focus mode)
-
