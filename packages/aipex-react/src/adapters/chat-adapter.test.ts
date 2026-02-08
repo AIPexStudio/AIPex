@@ -388,7 +388,8 @@ describe("ChatAdapter", () => {
         state: "error",
         errorText: "failed",
       });
-      expect(adapter.getStatus()).toBe("error");
+      // Status should be streaming, not error - agent may continue after tool error
+      expect(adapter.getStatus()).toBe("streaming");
     });
 
     it("should handle multiple calls for same tool sequentially", () => {
@@ -441,6 +442,112 @@ describe("ChatAdapter", () => {
       const toolParts =
         adapter.getMessages()[0]?.parts.filter((p) => p.type === "tool") ?? [];
       expect(toolParts).toHaveLength(0);
+    });
+
+    it("should mark tool as error when result has success: false", () => {
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "organize_tabs",
+        params: {},
+      });
+      adapter.processEvent({
+        type: "tool_call_complete",
+        toolName: "organize_tabs",
+        result: { success: false, error: "Cannot organize tabs in incognito window" },
+      });
+
+      const toolPart = adapter
+        .getMessages()[0]
+        ?.parts.find((p) => p.type === "tool");
+      expect(toolPart).toMatchObject({
+        toolName: "organize_tabs",
+        state: "error",
+        errorText: "Cannot organize tabs in incognito window",
+      });
+      // Status should remain streaming (not error) since this is a business failure
+      expect(adapter.getStatus()).toBe("streaming");
+    });
+
+    it("should use message field when error field is missing in success: false result", () => {
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "screenshot",
+        params: {},
+      });
+      adapter.processEvent({
+        type: "tool_call_complete",
+        toolName: "screenshot",
+        result: { success: false, message: "No active tab found" },
+      });
+
+      const toolPart = adapter
+        .getMessages()[0]
+        ?.parts.find((p) => p.type === "tool");
+      expect(toolPart).toMatchObject({
+        state: "error",
+        errorText: "No active tab found",
+      });
+    });
+
+    it("should show generic error message when success: false has no error/message", () => {
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "failing_tool",
+        params: {},
+      });
+      adapter.processEvent({
+        type: "tool_call_complete",
+        toolName: "failing_tool",
+        result: { success: false },
+      });
+
+      const toolPart = adapter
+        .getMessages()[0]
+        ?.parts.find((p) => p.type === "tool");
+      expect(toolPart).toMatchObject({
+        state: "error",
+        errorText: "Operation failed",
+      });
+    });
+
+    it("should keep output in tool part when marking as error for debugging", () => {
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "api_call",
+        params: {},
+      });
+      adapter.processEvent({
+        type: "tool_call_complete",
+        toolName: "api_call",
+        result: { success: false, error: "API rate limit exceeded", details: { remaining: 0 } },
+      });
+
+      const toolPart = adapter
+        .getMessages()[0]
+        ?.parts.find((p) => p.type === "tool") as UIToolPart | undefined;
+      expect(toolPart?.state).toBe("error");
+      expect(toolPart?.errorText).toBe("API rate limit exceeded");
+      expect(toolPart?.output).toEqual({
+        success: false,
+        error: "API rate limit exceeded",
+        details: { remaining: 0 },
+      });
+    });
+
+    it("should not set overall status to error on tool_call_error", () => {
+      adapter.processEvent({
+        type: "tool_call_start",
+        toolName: "search",
+        params: {},
+      });
+      adapter.processEvent({
+        type: "tool_call_error",
+        toolName: "search",
+        error: new Error("Tool execution failed"),
+      });
+
+      // Status should be streaming, not error - agent may continue
+      expect(adapter.getStatus()).toBe("streaming");
     });
   });
 

@@ -82,6 +82,7 @@ export function ChatbotProvider({
       messages: chatState.messages,
       status: chatState.status,
       sessionId: chatState.sessionId,
+      metrics: chatState.metrics,
       sendMessage: chatState.sendMessage,
       continueConversation: chatState.continueConversation,
       interrupt: chatState.interrupt,

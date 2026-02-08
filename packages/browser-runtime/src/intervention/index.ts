@@ -13,7 +13,10 @@ export {
   userSelectionIntervention,
 } from "./implementations/user-selection.js";
 export { voiceInputIntervention } from "./implementations/voice-input.js";
-export { interventionManager } from "./intervention-manager.js";
+export {
+  type CancelReason,
+  interventionManager,
+} from "./intervention-manager.js";
 export { interventionRegistry } from "./intervention-registry.js";
 // Types
 export type {

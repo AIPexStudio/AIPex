@@ -45,7 +45,7 @@ export class AIPex {
     this.agent = agent;
     this.conversationManager = conversationManager;
     this.contextManager = contextManager;
-    this.maxTurns = maxTurns ?? 10;
+    this.maxTurns = maxTurns ?? 2000;
     this.plugins = plugins;
     this.pluginContext = { agent: this };
     this.initializePlugins();
@@ -237,7 +237,11 @@ export class AIPex {
         metrics: metricsSnapshot,
         sessionId: session?.id ?? undefined,
       });
-      yield { type: "metrics_update", metrics: metricsSnapshot };
+      yield {
+        type: "metrics_update",
+        metrics: metricsSnapshot,
+        sessionId: session?.id,
+      };
 
       if (session) {
         session.addMetrics(metrics);
@@ -267,7 +271,11 @@ export class AIPex {
         metrics: metricsSnapshot,
         sessionId: session?.id ?? undefined,
       });
-      yield { type: "metrics_update", metrics: { ...metrics } };
+      yield {
+        type: "metrics_update",
+        metrics: { ...metrics },
+        sessionId: session?.id,
+      };
       yield { type: "error", error: agentError };
       if (session) {
         session.addMetrics(metrics);
@@ -396,10 +404,12 @@ export class AIPex {
 
     const status = this.getToolStatus(event.item);
     if (status !== "completed") {
+      const toolName = this.extractToolName(event.item);
+      const failureMessage = this.extractToolFailureMessage(event.item, status);
       return {
         type: "tool_call_error",
-        toolName: this.extractToolName(event.item),
-        error: new Error(`Tool call ${status}`),
+        toolName,
+        error: new Error(failureMessage),
       };
     }
 
@@ -459,19 +469,167 @@ export class AIPex {
     return rawOutput;
   }
 
+  /**
+   * Extract a human-readable failure message from a tool execution.
+   * Attempts to find the real error message from various locations in the item,
+   * with basic truncation and sanitization.
+   */
+  private extractToolFailureMessage(
+    item: RunItemStreamEvent["item"],
+    status: string,
+  ): string {
+    const MAX_MESSAGE_LENGTH = 500;
+
+    // Try to extract error message from various sources
+    let message: string | undefined;
+
+    // Check item.output for error info
+    const outputCarrier = item as unknown as { output?: unknown };
+    if (outputCarrier.output !== undefined) {
+      message = this.extractErrorFromValue(outputCarrier.output);
+    }
+
+    // Check rawItem.output
+    if (!message) {
+      const rawOutput = (item as unknown as { rawItem?: { output?: unknown } })
+        .rawItem?.output;
+      if (rawOutput !== undefined) {
+        message = this.extractErrorFromValue(rawOutput);
+      }
+    }
+
+    // Check rawItem.error directly
+    if (!message) {
+      const rawError = (item as unknown as { rawItem?: { error?: unknown } })
+        .rawItem?.error;
+      if (rawError !== undefined) {
+        message = this.extractErrorFromValue(rawError);
+      }
+    }
+
+    // Fallback to status-based message
+    if (!message) {
+      message = `Tool call ${status}`;
+    }
+
+    // Truncate and sanitize
+    return this.sanitizeErrorMessage(message, MAX_MESSAGE_LENGTH);
+  }
+
+  /**
+   * Extract error message from a value that could be:
+   * - A string (possibly JSON)
+   * - An Error object
+   * - An object with error/message properties
+   */
+  private extractErrorFromValue(value: unknown): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    // Handle Error objects
+    if (value instanceof Error) {
+      return value.message;
+    }
+
+    // Handle string values
+    if (typeof value === "string") {
+      // Try to parse as JSON
+      const parsed = safeJsonParse<unknown>(value);
+      if (parsed !== undefined) {
+        return this.extractErrorFromValue(parsed);
+      }
+      return value;
+    }
+
+    // Handle objects with error-related properties
+    if (typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+
+      // Check for common error patterns
+      if (typeof obj.error === "string" && obj.error.length > 0) {
+        return obj.error;
+      }
+      if (typeof obj.message === "string" && obj.message.length > 0) {
+        return obj.message;
+      }
+      if (
+        obj.error &&
+        typeof obj.error === "object" &&
+        typeof (obj.error as Record<string, unknown>).message === "string"
+      ) {
+        return (obj.error as Record<string, unknown>).message as string;
+      }
+
+      // If it's a failure result object, try to extract useful info
+      if (obj.success === false) {
+        if (typeof obj.error === "string") {
+          return obj.error;
+        }
+        // Return a stringified version as last resort
+        try {
+          return JSON.stringify(obj);
+        } catch {
+          return undefined;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Sanitize and truncate error message for safe display.
+   * - Truncates to maxLength
+   * - Masks potential sensitive patterns (tokens, auth headers)
+   */
+  private sanitizeErrorMessage(message: string, maxLength: number): string {
+    let sanitized = message;
+
+    // Mask potential sensitive patterns
+    // Authorization headers
+    sanitized = sanitized.replace(
+      /Authorization:\s*(Bearer\s+)?[^\s,}"\]]+/gi,
+      "Authorization: [REDACTED]",
+    );
+    // API keys patterns
+    sanitized = sanitized.replace(
+      /(['"](api[_-]?key|apikey|token|secret|password)['"]\s*[=:]\s*['"])[^'"]+(['"])/gi,
+      "$1[REDACTED]$3",
+    );
+    // Bearer tokens in JSON
+    sanitized = sanitized.replace(
+      /(bearer\s+)[a-zA-Z0-9._-]{20,}/gi,
+      "$1[REDACTED]",
+    );
+
+    // Truncate if needed
+    if (sanitized.length > maxLength) {
+      sanitized = `${sanitized.substring(0, maxLength - 3)}...`;
+    }
+
+    return sanitized;
+  }
+
   private applyUsageMetrics(
     metrics: AgentMetrics,
     result: { rawResponses?: Array<{ usage?: UsageShape }> },
   ): void {
     const responses = result.rawResponses ?? [];
-    let promptTokens = 0;
-    let completionTokens = 0;
 
-    for (const response of responses) {
-      if (!response.usage) continue;
-      promptTokens += response.usage.inputTokens ?? 0;
-      completionTokens += response.usage.outputTokens ?? 0;
+    // Use the LAST response with usage data (typically the final model response)
+    // This represents the total tokens for this execution, not a running sum
+    let lastUsage: UsageShape | undefined;
+    for (let i = responses.length - 1; i >= 0; i--) {
+      const response = responses[i];
+      if (response?.usage) {
+        lastUsage = response.usage;
+        break;
+      }
     }
+
+    const promptTokens = lastUsage?.inputTokens ?? 0;
+    const completionTokens = lastUsage?.outputTokens ?? 0;
 
     metrics.promptTokens = promptTokens;
     metrics.completionTokens = completionTokens;

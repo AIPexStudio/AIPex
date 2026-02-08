@@ -256,8 +256,10 @@ export const cancelInterventionTool = tool({
         };
       }
 
+      // Pass "user" as the reason since this is an AI/user-initiated cancellation
       const cancelled = interventionManager.cancelIntervention(
         currentIntervention.request.id,
+        "user",
       );
 
       if (cancelled) {

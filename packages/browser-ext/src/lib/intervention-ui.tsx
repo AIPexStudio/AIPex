@@ -65,8 +65,27 @@ export function InterventionUI({ mode }: InterventionUIProps) {
       setTimeout(() => setCurrentIntervention(null), 3000);
     };
 
-    const handleInterventionCancel = () => {
-      setCurrentIntervention(null);
+    const handleInterventionCancel = (event: InterventionEvent) => {
+      // Update state to show the cancellation reason instead of immediately hiding
+      const current = interventionManager.getCurrentIntervention();
+      if (current) {
+        setCurrentIntervention(current);
+      } else if (
+        event.data &&
+        typeof event.data === "object" &&
+        "result" in event.data
+      ) {
+        // If we don't have current intervention but have result data,
+        // log the cancel reason for debugging
+        const result = (event.data as { result?: { error?: string } }).result;
+        if (result?.error) {
+          console.log(
+            `[InterventionUI] Intervention cancelled: ${result.error}`,
+          );
+        }
+      }
+      // Keep visible briefly so user can see the cancellation, then hide
+      setTimeout(() => setCurrentIntervention(null), 2000);
     };
 
     const handleInterventionTimeout = () => {

@@ -7,6 +7,9 @@
  */
 
 import { default as RELEASE_SYNC } from "@jitl/quickjs-ng-wasmfile-release-sync";
+// Import the WASM file as a URL so Vite/bundler handles it correctly
+// This ensures the wasm is properly bundled and the URL is correct at runtime
+import quickjsWasmUrl from "@jitl/quickjs-ng-wasmfile-release-sync/wasm?url";
 import fs from "@zenfs/core";
 import type {
   QuickJSContext,
@@ -54,9 +57,45 @@ class QuickJSManager {
         "[QuickJS] Initializing runtime with RELEASE_SYNC variant...",
       );
 
+      // Sanity check: ensure the WASM URL was properly resolved by Vite
+      if (!quickjsWasmUrl) {
+        throw new Error(
+          "[QuickJS] WASM URL is not defined. Vite may not have bundled the wasm file correctly.",
+        );
+      }
+      console.log(`[QuickJS] WASM URL resolved to: ${quickjsWasmUrl}`);
+
       // Use RELEASE_SYNC variant (required for Chrome extensions due to CSP restrictions)
       // Chrome extensions don't allow 'wasm-eval' which asyncify variants need
-      this.quickjs = await newQuickJSWASMModuleFromVariant(RELEASE_SYNC);
+      // Wrap the variant to override locateFile so the Emscripten loader can find the wasm
+      const variantWithLocateFile = {
+        ...RELEASE_SYNC,
+        importModuleLoader: async () => {
+          // Get the original module loader
+          const originalLoader = await RELEASE_SYNC.importModuleLoader();
+          // Return a wrapped version that injects locateFile
+          return (moduleOptions?: Record<string, unknown>) => {
+            return originalLoader({
+              ...moduleOptions,
+              // Override locateFile to return the correct URL for the wasm file
+              locateFile: (path: string, prefix: string) => {
+                if (path.endsWith(".wasm")) {
+                  console.log(
+                    `[QuickJS] locateFile intercepted for ${path}, returning: ${quickjsWasmUrl}`,
+                  );
+                  return quickjsWasmUrl;
+                }
+                // For non-wasm files, use the default behavior
+                return prefix + path;
+              },
+            });
+          };
+        },
+      };
+
+      this.quickjs = await newQuickJSWASMModuleFromVariant(
+        variantWithLocateFile,
+      );
       this.runtime = this.quickjs.newRuntime();
 
       // Set memory and stack limits

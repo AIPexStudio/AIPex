@@ -51,6 +51,8 @@ export {
   InputArea,
   MessageItem,
   MessageList,
+  TokenUsageIndicator,
+  type TokenUsageIndicatorProps,
   WelcomeScreen,
 } from "./components";
 // Default export for backward compatibility

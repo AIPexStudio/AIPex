@@ -1,4 +1,5 @@
 import type {
+  AgentMetrics,
   AIPex,
   AppSettings,
   KeyValueStorage,
@@ -24,6 +25,8 @@ export interface ChatContextValue {
   status: ChatStatus;
   /** Current session ID */
   sessionId: string | null;
+  /** Latest token metrics from most recent execution */
+  metrics: AgentMetrics | null;
   /** Send a message */
   sendMessage: (
     text: string,

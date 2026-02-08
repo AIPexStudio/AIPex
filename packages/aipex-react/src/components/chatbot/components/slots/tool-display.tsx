@@ -23,10 +23,14 @@ import { formatToolOutput, mapToolState } from "../../tools";
 
 /**
  * Default tool display slot component
+ * Opens by default when there's an error so users can see the failure reason
  */
 export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
+  // Expand by default when in error state to make failure reasons visible
+  const shouldExpandByDefault = tool.state === "error";
+
   return (
-    <Tool defaultOpen={false}>
+    <Tool defaultOpen={shouldExpandByDefault}>
       <ToolHeader
         type={`tool-${tool.toolName}`}
         state={mapToolState(tool.state)}
@@ -48,6 +52,7 @@ export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
 
 /**
  * Compact tool display (single line)
+ * Opens by default when there's an error so users can see the failure reason
  */
 export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
   const getStatusIcon = () => {
@@ -63,8 +68,11 @@ export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
     }
   };
 
+  // Expand by default when in error state to make failure reasons visible
+  const shouldExpandByDefault = tool.state === "error";
+
   return (
-    <Collapsible>
+    <Collapsible defaultOpen={shouldExpandByDefault}>
       <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
         {getStatusIcon()}
         <span className="text-sm font-medium">{tool.toolName}</span>

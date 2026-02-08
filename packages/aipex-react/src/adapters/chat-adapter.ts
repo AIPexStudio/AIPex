@@ -165,7 +165,9 @@ export class ChatAdapter {
 
       case "tool_call_error":
         this.updateToolError(event.toolName, event.error);
-        this.updateStatus("error");
+        // Don't set overall status to "error" for tool errors - the agent may continue
+        // Only set to "error" for actual execution errors (event.type === "error")
+        this.updateStatus("streaming");
         break;
 
       case "execution_complete":
@@ -397,11 +399,57 @@ export class ChatAdapter {
     if (!callId) {
       return;
     }
+
+    // Check if result indicates a business-level failure (success: false pattern)
+    const failureInfo = this.extractBusinessFailure(result);
+    if (failureInfo) {
+      this.updateToolPart(callId, (toolPart) => ({
+        ...toolPart,
+        state: "error",
+        output: result, // Keep full output for debugging
+        errorText: failureInfo.errorMessage,
+      }));
+      return;
+    }
+
     this.updateToolPart(callId, (toolPart) => ({
       ...toolPart,
       state: "completed",
       output: result,
     }));
+  }
+
+  /**
+   * Check if a tool result indicates a business-level failure.
+   * Many tools return { success: false, error: "..." } instead of throwing.
+   */
+  private extractBusinessFailure(
+    result: unknown,
+  ): { errorMessage: string } | null {
+    if (result === null || result === undefined) {
+      return null;
+    }
+
+    if (typeof result !== "object") {
+      return null;
+    }
+
+    const obj = result as Record<string, unknown>;
+
+    // Check for common failure patterns: { success: false, error: ... }
+    if (obj.success === false) {
+      // Extract error message
+      if (typeof obj.error === "string" && obj.error.length > 0) {
+        return { errorMessage: obj.error };
+      }
+      if (typeof obj.message === "string" && obj.message.length > 0) {
+        return { errorMessage: obj.message };
+      }
+      // Generic failure message
+      return { errorMessage: "Operation failed" };
+    }
+
+    return null;
   }
 
   private updateToolError(toolName: string, error: Error): void {

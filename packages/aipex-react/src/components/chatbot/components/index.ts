@@ -14,4 +14,8 @@ export {
 } from "./input-area";
 export { DefaultMessageItem, MessageItem } from "./message-item";
 export { DefaultMessageList, MessageList } from "./message-list";
+export {
+  TokenUsageIndicator,
+  type TokenUsageIndicatorProps,
+} from "./token-usage-indicator";
 export { DefaultWelcomeScreen, WelcomeScreen } from "./welcome-screen";

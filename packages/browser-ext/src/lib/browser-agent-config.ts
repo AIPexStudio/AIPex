@@ -110,5 +110,5 @@ export function useBrowserTools(): FunctionTool[] {
 export const BROWSER_AGENT_CONFIG = {
   instructions: SYSTEM_PROMPT,
   name: "AIPex Browser Assistant",
-  maxTurns: 10,
+  maxTurns: 2000,
 } as const;
