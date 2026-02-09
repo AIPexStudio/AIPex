@@ -5,7 +5,7 @@
 
 import type { TranscriptionResult } from "./elevenlabs-stt";
 
-export type ServerSTTConfig = {};
+export type ServerSTTConfig = Record<string, never>;
 
 interface ServerSTTResponse {
   success: boolean;

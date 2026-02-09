@@ -28,6 +28,7 @@ export const UserProfile: React.FC = () => {
     <div className="relative">
       {/* User Avatar Button */}
       <button
+        type="button"
         onClick={() => setShowDropdown(!showDropdown)}
         className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center hover:ring-2 hover:ring-blue-200 dark:hover:ring-blue-800 transition-all"
         title={user.name || user.email}
@@ -60,6 +61,7 @@ export const UserProfile: React.FC = () => {
 
           {/* Account Button */}
           <button
+            type="button"
             onClick={handleAccountClick}
             className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center"
           >
@@ -68,6 +70,8 @@ export const UserProfile: React.FC = () => {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              role="img"
+              aria-label="Account"
             >
               <path
                 strokeLinecap="round"
@@ -81,6 +85,7 @@ export const UserProfile: React.FC = () => {
 
           {/* Logout Button */}
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center"
           >
@@ -89,6 +94,8 @@ export const UserProfile: React.FC = () => {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              role="img"
+              aria-label="Logout"
             >
               <path
                 strokeLinecap="round"
@@ -107,6 +114,14 @@ export const UserProfile: React.FC = () => {
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowDropdown(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setShowDropdown(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close dropdown"
         />
       )}
     </div>

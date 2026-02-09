@@ -21,7 +21,7 @@ export interface VoiceInputProps {
   onError?: (error: string) => void;
   className?: string;
   isPaused?: boolean; // External control for pause
-  onSwitchToText: () => void;
+  onSwitchToText?: () => void;
 }
 
 type VoiceStatus = "idle" | "listening" | "speaking" | "processing" | "error";
@@ -31,7 +31,6 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   onError,
   className,
   isPaused = false,
-  onSwitchToText,
 }) => {
   const { t } = useTranslation();
   const [status, setStatus] = useState<VoiceStatus>("idle");
@@ -166,7 +165,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
             // Convert audio format
             const audioBlob = AudioRecorder.float32ArrayToWav(audio, 16000);
 
-            let result;
+            let result: { text?: string; error?: string };
 
             // Determine which STT service to use
             if (isByokUser === false) {
