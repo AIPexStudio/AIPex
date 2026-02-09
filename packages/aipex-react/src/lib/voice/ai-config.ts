@@ -14,7 +14,7 @@ export async function isByokUserSimple(): Promise<boolean> {
     const byokValue = await storage.get<string | boolean>("byokEnabled");
     const isByokEnabled = byokValue === "true" || Boolean(byokValue);
     return isByokEnabled;
-  } catch (error) {
+  } catch (_error) {
     // Avoid logging detailed error info for security
     console.error("[AIConfig] Failed to check BYOK flag");
     return false;

@@ -3,9 +3,10 @@
  * Displays user avatar and provides account/logout options
  */
 
-import React, { useState } from "react";
-import { useAuth } from "./AuthProvider";
+import type React from "react";
+import { useState } from "react";
 import { WEBSITE_URL } from "../services/web-auth";
+import { useAuth } from "./AuthProvider";
 
 export const UserProfile: React.FC = () => {
   const { user, logout } = useAuth();

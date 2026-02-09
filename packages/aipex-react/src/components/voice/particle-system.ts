@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { vertexShader, fragmentShader } from "./shaders";
-import type { VoiceState } from "./types";
 import { VOICE_MODE_CONFIG } from "./config";
+import { fragmentShader, vertexShader } from "./shaders";
+import type { VoiceState } from "./types";
 
 /**
  * WebGL-based particle system for voice mode visualization
@@ -134,8 +134,7 @@ export class ParticleSystem {
     this.uniforms.uTime.value = elapsed;
 
     // Smooth radius transition
-    this.currentRadius +=
-      (this.targetRadius - this.currentRadius) * 0.08;
+    this.currentRadius += (this.targetRadius - this.currentRadius) * 0.08;
     this.uniforms.uRadius.value = this.currentRadius;
 
     // Very slow rotation for subtle movement

@@ -3,7 +3,7 @@
  * Uses native Chrome Storage API for extension context
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Chrome Storage class for direct Chrome extension storage access

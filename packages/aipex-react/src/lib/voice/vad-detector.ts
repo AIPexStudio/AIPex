@@ -94,7 +94,7 @@ export class VADDetector {
           model: modelResp.ok,
           wasm: wasmResp.ok,
         });
-      } catch (e) {
+      } catch (_e) {
         console.warn("[VAD] Resource check failed");
       }
 

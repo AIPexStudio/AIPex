@@ -5,9 +5,7 @@
 
 import type { TranscriptionResult } from "./elevenlabs-stt";
 
-export interface ServerSTTConfig {
-  // Server API does not need additional config, uses cookies for authentication
-}
+export type ServerSTTConfig = {};
 
 interface ServerSTTResponse {
   success: boolean;
@@ -54,7 +52,7 @@ export async function transcribeAudioWithServer(
       cookieHeader = relevantCookies
         .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join("; ");
-    } catch (error) {
+    } catch (_error) {
       console.warn("[Server STT] Failed to get cookies");
     }
 

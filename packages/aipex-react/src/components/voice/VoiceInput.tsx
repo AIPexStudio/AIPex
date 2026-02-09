@@ -3,17 +3,18 @@
  * Integrates VAD, audio recording and STT for voice input
  */
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "../../i18n/hooks";
 import { cn } from "../../lib/utils";
-import { ParticleSystem } from "./particle-system";
-import { VADDetector } from "../../lib/voice/vad-detector";
+import { isByokUserSimple } from "../../lib/voice/ai-config";
 import { AudioRecorder } from "../../lib/voice/audio-recorder";
+import { useChromeStorage } from "../../lib/voice/chrome-storage";
 import { transcribeAudioWithRetry } from "../../lib/voice/elevenlabs-stt";
 import { transcribeAudioWithServerRetry } from "../../lib/voice/server-stt";
-import { isByokUserSimple } from "../../lib/voice/ai-config";
-import { useChromeStorage } from "../../lib/voice/chrome-storage";
+import { VADDetector } from "../../lib/voice/vad-detector";
 import { Button } from "../ui/button";
-import { useTranslation } from "../../i18n/hooks";
+import { ParticleSystem } from "./particle-system";
 
 export interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -132,7 +133,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
     try {
       setStatus("idle");
-      setStatusText(t("interventions.voice.initializingMic") || "Initializing...");
+      setStatusText(
+        t("interventions.voice.initializingMic") || "Initializing...",
+      );
 
       const vad = new VADDetector({
         onSpeechStart: () => {
@@ -144,7 +147,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
           console.log("[VoiceInput] Speech started");
           setStatus("speaking");
-          setStatusText(t("interventions.voice.recognizing") || "Recognizing...");
+          setStatusText(
+            t("interventions.voice.recognizing") || "Recognizing...",
+          );
         },
         onSpeechEnd: async (audio: Float32Array) => {
           // Check if paused using ref to get latest value
@@ -223,14 +228,18 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
             // Resume listening after 3 seconds
             setTimeout(() => {
               setStatus("listening");
-              setStatusText(t("interventions.voice.speakPrompt") || "Start speaking...");
+              setStatusText(
+                t("interventions.voice.speakPrompt") || "Start speaking...",
+              );
             }, 3000);
           }
         },
         onVADMisfire: () => {
           console.log("[VoiceInput] VAD misfire");
           setStatus("listening");
-          setStatusText(t("interventions.voice.speakPrompt") || "Continue speaking...");
+          setStatusText(
+            t("interventions.voice.speakPrompt") || "Continue speaking...",
+          );
         },
         onVolumeChange: (vol: number) => {
           if (particleSystemRef.current && !isPaused) {
@@ -243,7 +252,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       vadRef.current = vad;
 
       setStatus("listening");
-      setStatusText(t("interventions.voice.speakPrompt") || "Start speaking...");
+      setStatusText(
+        t("interventions.voice.speakPrompt") || "Start speaking...",
+      );
     } catch (error) {
       console.error("[VoiceInput] Failed to initialize VAD");
 
@@ -267,9 +278,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       }
 
       const errorMsg =
-        error instanceof Error
-          ? error.message
-          : "Unable to access microphone";
+        error instanceof Error ? error.message : "Unable to access microphone";
       setStatus("error");
       setStatusText(errorMsg);
       onErrorRef.current?.(errorMsg);
@@ -322,7 +331,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
       if (vadRef.current) {
         // Stop immediately, don't wait for Promise
-        vadRef.current.stop().catch((err) => {
+        vadRef.current.stop().catch((_err) => {
           console.error("[VoiceInput] Failed to stop VAD during unmount");
         });
         vadRef.current = null;
@@ -354,7 +363,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
           console.log("[VoiceInput] Resuming VAD after external pause");
           vadRef.current.resume();
           setStatus("listening");
-          setStatusText(t("interventions.voice.speakPrompt") || "Start speaking...");
+          setStatusText(
+            t("interventions.voice.speakPrompt") || "Start speaking...",
+          );
         }
       }
 

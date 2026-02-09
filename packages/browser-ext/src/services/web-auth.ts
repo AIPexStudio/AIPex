@@ -28,7 +28,7 @@ export async function getAuthCookieHeader(): Promise<string | undefined> {
     return relevantCookies
       .map((cookie) => `${cookie.name}=${cookie.value}`)
       .join("; ");
-  } catch (error) {
+  } catch (_error) {
     console.warn("[web-auth] Failed to get cookies");
     return undefined;
   }
@@ -44,7 +44,7 @@ export async function hasAuthCookies(): Promise<boolean> {
       (cookie) =>
         cookie.name.includes("better-auth") || cookie.name.includes("session"),
     );
-  } catch (error) {
+  } catch (_error) {
     console.warn("[web-auth] Failed to check cookies");
     return false;
   }

@@ -78,8 +78,7 @@ export class AudioRecorder {
       }
 
       this.mediaRecorder.onstop = () => {
-        const mimeType =
-          this.mediaRecorder?.mimeType || this.config.mimeType!;
+        const mimeType = this.mediaRecorder?.mimeType || this.config.mimeType!;
         const audioBlob = new Blob(this.audioChunks, { type: mimeType });
         this.cleanup();
         console.log(

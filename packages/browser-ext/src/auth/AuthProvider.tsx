@@ -5,13 +5,13 @@
 
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
   type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import { WEBSITE_URL, AUTH_COOKIE_NAMES } from "../services/web-auth";
+import { AUTH_COOKIE_NAMES, WEBSITE_URL } from "../services/web-auth";
 
 /**
  * User data structure
@@ -52,7 +52,7 @@ class AuthStorage {
       const result = await this.area.get("user");
       const user = result.user as User | undefined;
       return user ?? null;
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Failed to get user from storage");
       return null;
     }
@@ -61,7 +61,7 @@ class AuthStorage {
   async setUser(user: User): Promise<void> {
     try {
       await this.area.set({ user });
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Failed to save user to storage");
     }
   }
@@ -69,7 +69,7 @@ class AuthStorage {
   async removeUser(): Promise<void> {
     try {
       await this.area.remove("user");
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Failed to remove user from storage");
     }
   }
@@ -115,8 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check if there are auth-related cookies
       const hasAuthCookie = cookies.some(
-        (c) =>
-          c.name.includes("better-auth") || c.name.includes("session"),
+        (c) => c.name.includes("better-auth") || c.name.includes("session"),
       );
 
       if (!hasAuthCookie) {
@@ -155,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else {
           console.log("[AuthProvider] API returned:", response.status);
         }
-      } catch (apiError) {
+      } catch (_apiError) {
         console.log("[AuthProvider] Direct API call failed");
       }
 
@@ -200,7 +199,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       return false;
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Failed to check cookie auth");
       return false;
     }
@@ -273,7 +272,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               console.log("[AuthProvider] Got auth data from tab");
               await saveUserData(result.user);
             }
-          } catch (error) {
+          } catch (_error) {
             console.error("[AuthProvider] Error checking auth on tab");
           }
         }, 1000);
@@ -363,7 +362,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.error("[AuthProvider] Failed to check cookie auth");
           });
         }
-      } catch (error) {
+      } catch (_error) {
         console.error("[AuthProvider] Failed to load auth data");
       } finally {
         setIsLoading(false);
@@ -387,7 +386,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await chrome.tabs.create({ url: authUrl });
           console.log("[AuthProvider] Tab created successfully");
           tabCreated = true;
-        } catch (chromeError) {
+        } catch (_chromeError) {
           console.error("[AuthProvider] chrome.tabs.create failed");
         }
       }
@@ -401,7 +400,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           window.location.href = authUrl;
         }
       }
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Login failed");
     }
   }, []);
@@ -469,7 +468,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       console.log("[AuthProvider] Logout completed successfully");
-    } catch (error) {
+    } catch (_error) {
       console.error("[AuthProvider] Logout failed");
     }
   }, [clearAuthData]);

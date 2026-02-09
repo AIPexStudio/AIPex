@@ -147,7 +147,7 @@ export async function validateApiKey(apiKey: string): Promise<boolean> {
     });
 
     return response.ok;
-  } catch (error) {
+  } catch (_error) {
     console.error("[ElevenLabs STT] API key validation failed");
     return false;
   }

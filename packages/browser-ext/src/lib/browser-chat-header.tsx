@@ -12,9 +12,9 @@ import type { HeaderProps } from "@aipexstudio/aipex-react/types";
 import { conversationStorage } from "@aipexstudio/browser-runtime";
 import { PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { UserProfile, useAuth } from "../auth";
 import { ConversationHistory } from "./conversation-history";
 import { fromStorageFormat, toStorageFormat } from "./message-adapter";
-import { useAuth, UserProfile } from "../auth";
 
 export function BrowserChatHeader({
   title = "AIPex",
@@ -165,20 +165,14 @@ export function BrowserChatHeader({
         </Button>
 
         {/* User Profile or Login Button */}
-        {!isAuthLoading && (
-          user ? (
+        {!isAuthLoading &&
+          (user ? (
             <UserProfile />
           ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={login}
-              className="gap-2"
-            >
+            <Button variant="ghost" size="sm" onClick={login} className="gap-2">
               Sign In
             </Button>
-          )
-        )}
+          ))}
       </div>
 
       {children}
