@@ -126,7 +126,7 @@ export type AgentEvent =
   | { type: "contexts_attached"; contexts: Context[] }
   | { type: "contexts_loaded"; providerId: string; count: number }
   | { type: "context_error"; providerId: string; error: Error }
-  | { type: "metrics_update"; metrics: AgentMetrics }
+  | { type: "metrics_update"; metrics: AgentMetrics; sessionId?: string }
   | { type: "error"; error: AgentError }
   | {
       type: "execution_complete";

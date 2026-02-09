@@ -37,6 +37,8 @@
     "@aipexstudio/browser-runtime": "workspace:*",
     "@aipexstudio/dom-snapshot": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "@ricky0123/vad-web": "^0.0.27",
+    "onnxruntime-web": "^1.22.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",

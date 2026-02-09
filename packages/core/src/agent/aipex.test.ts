@@ -19,22 +19,35 @@ function createMockRunResult(
   overrides: {
     finalOutput?: string;
     usage?: { promptTokens?: number; completionTokens?: number };
+    /** Multiple raw responses (for testing multi-turn within single execution) */
+    rawResponses?: Array<{
+      usage?: { inputTokens?: number; outputTokens?: number };
+    }>;
     streamEvents?: any[];
   } = {},
 ): StreamedRunResult<unknown, any> {
   const events = overrides.streamEvents ?? [];
+
+  // Build rawResponses: if explicit rawResponses provided, use it; otherwise use usage shorthand
+  let rawResponses: Array<{
+    usage?: { inputTokens?: number; outputTokens?: number };
+  }> = [];
+  if (overrides.rawResponses) {
+    rawResponses = overrides.rawResponses;
+  } else if (overrides.usage) {
+    rawResponses = [
+      {
+        usage: {
+          inputTokens: overrides.usage.promptTokens ?? 0,
+          outputTokens: overrides.usage.completionTokens ?? 0,
+        },
+      },
+    ];
+  }
+
   return {
     finalOutput: overrides.finalOutput ?? "",
-    rawResponses: overrides.usage
-      ? [
-          {
-            usage: {
-              inputTokens: overrides.usage.promptTokens ?? 0,
-              outputTokens: overrides.usage.completionTokens ?? 0,
-            },
-          },
-        ]
-      : [],
+    rawResponses,
     async *[Symbol.asyncIterator]() {
       for (const event of events) {
         yield event;
@@ -388,6 +401,94 @@ describe("AIPex", () => {
       }
     });
 
+    it("should use last rawResponse usage when multiple responses exist", async () => {
+      // Simulate a multi-turn execution where multiple model responses occur
+      // (e.g., tool calls triggering additional model calls)
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "Final response",
+          rawResponses: [
+            // First response (e.g., tool call)
+            { usage: { inputTokens: 100, outputTokens: 50 } },
+            // Second response (e.g., another tool call)
+            { usage: { inputTokens: 200, outputTokens: 100 } },
+            // Final response - this should be used
+            { usage: { inputTokens: 500, outputTokens: 250 } },
+          ],
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Final response" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("Input")) {
+        events.push(event);
+      }
+
+      const metricsEvent = events.find((e) => e.type === "metrics_update");
+      expect(metricsEvent).toBeDefined();
+      if (metricsEvent && metricsEvent.type === "metrics_update") {
+        // Should use the LAST response's usage, not the sum
+        expect(metricsEvent.metrics.promptTokens).toBe(500);
+        expect(metricsEvent.metrics.completionTokens).toBe(250);
+        expect(metricsEvent.metrics.tokensUsed).toBe(750);
+      }
+
+      const completeEvent = events.find((e) => e.type === "execution_complete");
+      expect(completeEvent).toBeDefined();
+      if (completeEvent && completeEvent.type === "execution_complete") {
+        expect(completeEvent.metrics.tokensUsed).toBe(750);
+      }
+    });
+
+    it("should handle rawResponses with some entries missing usage", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "Response",
+          rawResponses: [
+            { usage: { inputTokens: 100, outputTokens: 50 } },
+            {}, // No usage
+            { usage: undefined },
+            { usage: { inputTokens: 300, outputTokens: 150 } }, // Last with usage
+          ],
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Response" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("Input")) {
+        events.push(event);
+      }
+
+      const metricsEvent = events.find((e) => e.type === "metrics_update");
+      expect(metricsEvent).toBeDefined();
+      if (metricsEvent && metricsEvent.type === "metrics_update") {
+        // Should find the last response WITH usage data
+        expect(metricsEvent.metrics.promptTokens).toBe(300);
+        expect(metricsEvent.metrics.completionTokens).toBe(150);
+        expect(metricsEvent.metrics.tokensUsed).toBe(450);
+      }
+    });
+
     it("should accumulate session metrics across multiple conversations", async () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({
@@ -723,6 +824,183 @@ describe("AIPex", () => {
 
       await expect(runPromise).resolves.toBeUndefined();
       expect(events.some((event) => event.type === "error")).toBe(true);
+    });
+
+    it("should extract real error message from tool failure", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "screenshot", arguments: "{}" } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: {
+                  name: "screenshot",
+                  status: "failed",
+                  error: { message: "No active tab found" },
+                },
+                output: undefined,
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("take screenshot")) {
+        events.push(event);
+      }
+
+      const errorEvent = events.find(
+        (event) => event.type === "tool_call_error",
+      );
+      expect(errorEvent).toBeDefined();
+      if (errorEvent?.type === "tool_call_error") {
+        expect(errorEvent.error.message).toBe("No active tab found");
+      }
+    });
+
+    it("should extract error message from JSON output on failure", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "organize_tabs", arguments: "{}" } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "organize_tabs", status: "failed" },
+                output: JSON.stringify({
+                  success: false,
+                  error: "Cannot organize tabs in incognito window",
+                }),
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("organize tabs")) {
+        events.push(event);
+      }
+
+      const errorEvent = events.find(
+        (event) => event.type === "tool_call_error",
+      );
+      expect(errorEvent).toBeDefined();
+      if (errorEvent?.type === "tool_call_error") {
+        expect(errorEvent.error.message).toBe(
+          "Cannot organize tabs in incognito window",
+        );
+      }
+    });
+
+    it("should sanitize sensitive data from error messages", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "api_call", arguments: "{}" } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "api_call", status: "failed" },
+                output:
+                  "Error: Request failed with Authorization: Bearer sk-1234567890abcdef",
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("make api call")) {
+        events.push(event);
+      }
+
+      const errorEvent = events.find(
+        (event) => event.type === "tool_call_error",
+      );
+      expect(errorEvent).toBeDefined();
+      if (errorEvent?.type === "tool_call_error") {
+        expect(errorEvent.error.message).toContain("[REDACTED]");
+        expect(errorEvent.error.message).not.toContain("sk-1234567890abcdef");
+      }
+    });
+
+    it("should truncate long error messages", async () => {
+      const longMessage = "x".repeat(1000);
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "failing_tool", arguments: "{}" } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "failing_tool", status: "failed" },
+                output: longMessage,
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("run failing tool")) {
+        events.push(event);
+      }
+
+      const errorEvent = events.find(
+        (event) => event.type === "tool_call_error",
+      );
+      expect(errorEvent).toBeDefined();
+      if (errorEvent?.type === "tool_call_error") {
+        expect(errorEvent.error.message.length).toBeLessThanOrEqual(500);
+        expect(errorEvent.error.message.endsWith("...")).toBe(true);
+      }
     });
   });
 });

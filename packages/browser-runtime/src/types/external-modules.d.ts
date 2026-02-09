@@ -3,6 +3,12 @@ declare module "@jitl/quickjs-ng-wasmfile-release-sync" {
   export default releaseSyncVariant;
 }
 
+// Declaration for the wasm subpath export with Vite's ?url suffix
+declare module "@jitl/quickjs-ng-wasmfile-release-sync/wasm?url" {
+  const wasmUrl: string;
+  export default wasmUrl;
+}
+
 declare module "@zenfs/core" {
   export const configure: (...args: any[]) => Promise<void>;
   export const fs: {

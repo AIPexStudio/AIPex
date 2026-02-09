@@ -450,6 +450,106 @@ export class SkillManager {
     }
   }
 
+  /**
+   * Refresh skill metadata from SKILL.md file.
+   * This is called when SKILL.md is edited and saved via the file manager.
+   * It re-parses the frontmatter and updates both IndexedDB and the registry.
+   */
+  async refreshSkillMetadata(skillId: string): Promise<void> {
+    if (!this.initialized) {
+      throw new Error("SkillManager not initialized");
+    }
+
+    // Validate skillId to prevent path traversal
+    if (
+      !skillId ||
+      skillId.includes("/") ||
+      skillId.includes("\\") ||
+      skillId.includes("..")
+    ) {
+      throw new Error(`Invalid skill ID: ${skillId}`);
+    }
+
+    try {
+      // Get current metadata
+      const currentMetadata = await skillStorage.getSkillMetadata(skillId);
+      if (!currentMetadata) {
+        throw new Error(`Skill not found: ${skillId}`);
+      }
+
+      // Read the SKILL.md content from ZenFS
+      const skillPath = zenfs.getSkillPath(skillId);
+      const skillMdPath = `${skillPath}/SKILL.md`;
+
+      const skillMdExists = await zenfs.exists(skillMdPath);
+      if (!skillMdExists) {
+        throw new Error(`SKILL.md not found for skill: ${skillId}`);
+      }
+
+      const skillMdContent = (await zenfs.readFile(
+        skillMdPath,
+        "utf8",
+      )) as string;
+
+      // Parse the frontmatter to extract description and version
+      const parsedMetadata = skillRegistry.parseSkillMetadata(skillMdContent);
+
+      // Check that name hasn't changed (we don't support rename)
+      if (parsedMetadata.name && parsedMetadata.name !== skillId) {
+        throw new Error(
+          `Skill name mismatch: expected "${skillId}" but found "${parsedMetadata.name}" in SKILL.md. Skill renaming is not supported.`,
+        );
+      }
+
+      // Build updates object (only update fields that are present in frontmatter)
+      const updates: Partial<SkillMetadata> = {};
+      if (parsedMetadata.description !== undefined) {
+        updates.description = parsedMetadata.description;
+      }
+      if (parsedMetadata.version !== undefined) {
+        updates.version = parsedMetadata.version;
+      }
+
+      // Update in IndexedDB if there are changes
+      if (Object.keys(updates).length > 0) {
+        await skillStorage.updateSkill(skillId, updates);
+      }
+
+      // Get the updated metadata
+      const updatedMetadata = await skillStorage.getSkillMetadata(skillId);
+      if (!updatedMetadata) {
+        throw new Error(
+          `Failed to retrieve updated metadata for skill: ${skillId}`,
+        );
+      }
+
+      // Update the registry with updated metadata and refreshed content
+      const existingSkill = skillRegistry.getSkill(currentMetadata.name);
+      if (existingSkill) {
+        skillRegistry.updateSkill(currentMetadata.name, {
+          metadata: updatedMetadata,
+          skillMdContent: skillMdContent,
+        });
+      }
+
+      console.log(`✅ Skill metadata refreshed: ${skillId}`);
+
+      // Emit an event so UI components can react
+      this._emit("skill_loaded", {
+        type: "skill_metadata_refreshed",
+        skillId,
+        skillName: currentMetadata.name,
+        skillMetadata: updatedMetadata,
+      });
+    } catch (error) {
+      console.error(
+        `❌ Failed to refresh skill metadata for ${skillId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   getRegisteredTools(): any[] {
     return skillExecutor.getRegisteredTools();
   }

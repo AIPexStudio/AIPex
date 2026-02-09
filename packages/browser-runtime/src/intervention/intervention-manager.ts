@@ -23,6 +23,34 @@ import type {
 
 type EventListener = (event: InterventionEvent) => void;
 
+/**
+ * Reasons why an intervention can be cancelled.
+ * Used to provide more informative error messages to users.
+ */
+export type CancelReason =
+  | "user" // User clicked cancel
+  | "tab_switched" // User switched to another tab
+  | "page_navigated" // Page URL changed
+  | "mode_disabled"; // Intervention mode was disabled
+
+/**
+ * Map cancel reasons to human-readable messages
+ */
+function getCancelMessage(reason: CancelReason): string {
+  switch (reason) {
+    case "user":
+      return "Cancelled by user";
+    case "tab_switched":
+      return "Cancelled: browser tab switched";
+    case "page_navigated":
+      return "Cancelled: page navigated to a different URL";
+    case "mode_disabled":
+      return "Cancelled: intervention mode was disabled";
+    default:
+      return "Intervention was cancelled";
+  }
+}
+
 export class InterventionManager {
   private static instance: InterventionManager;
   private currentIntervention: InterventionState | null = null;
@@ -69,7 +97,10 @@ export class InterventionManager {
 
     // If switching to disabled, cancel all ongoing interventions
     if (mode === "disabled" && this.currentIntervention) {
-      this.cancelIntervention(this.currentIntervention.request.id);
+      this.cancelIntervention(
+        this.currentIntervention.request.id,
+        "mode_disabled",
+      );
     }
   }
 
@@ -278,8 +309,10 @@ export class InterventionManager {
 
   /**
    * Cancel an intervention
+   * @param id - The intervention ID to cancel
+   * @param reason - Why the intervention is being cancelled (defaults to "user")
    */
-  cancelIntervention(id: string): boolean {
+  cancelIntervention(id: string, reason: CancelReason = "user"): boolean {
     if (
       !this.currentIntervention ||
       this.currentIntervention.request.id !== id
@@ -290,7 +323,10 @@ export class InterventionManager {
       return false;
     }
 
-    console.log(`[InterventionManager] Cancelling intervention: ${id}`);
+    const cancelMessage = getCancelMessage(reason);
+    console.log(
+      `[InterventionManager] Cancelling intervention: ${id} (reason: ${reason})`,
+    );
 
     // Cancel operation
     if (this.abortController) {
@@ -304,7 +340,7 @@ export class InterventionManager {
 
     const result: InterventionResult = {
       success: false,
-      error: "Cancelled by user",
+      error: cancelMessage,
       status: "cancelled",
       timestamp: Date.now(),
       duration: Date.now() - this.currentIntervention.startTime,
@@ -314,7 +350,7 @@ export class InterventionManager {
     this.currentIntervention.result = result;
     this.currentIntervention.endTime = Date.now();
 
-    this.emitEvent("cancel", id, { result });
+    this.emitEvent("cancel", id, { result, reason });
     this.processNextRequest();
 
     return true;
@@ -389,7 +425,10 @@ export class InterventionManager {
           console.log(
             "[InterventionManager] Tab switched, cancelling intervention",
           );
-          this.cancelIntervention(this.currentIntervention.request.id);
+          this.cancelIntervention(
+            this.currentIntervention.request.id,
+            "tab_switched",
+          );
         }
       }
     });
@@ -405,7 +444,10 @@ export class InterventionManager {
           console.log(
             "[InterventionManager] Page navigated, cancelling intervention",
           );
-          this.cancelIntervention(this.currentIntervention.request.id);
+          this.cancelIntervention(
+            this.currentIntervention.request.id,
+            "page_navigated",
+          );
         }
       }
     });

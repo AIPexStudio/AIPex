@@ -135,8 +135,14 @@ export async function deleteTabGroup(groupId: number): Promise<{
   }
 }
 
+/**
+ * Tool to remove all tab groups in the current window.
+ * Note: This tool uses the name "ungroup_tabs" for consistency with legacy naming.
+ * Do not register this alongside the default ungroupTabsTool from ./tab.ts to avoid
+ * duplicate tool name registration.
+ */
 export const ungroupAllTabsTool = tool({
-  name: "ungroup_all_tabs",
+  name: "ungroup_tabs",
   description: "Remove all tab groups in the current window",
   parameters: z.object({}),
   execute: async () => {

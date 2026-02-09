@@ -1,6 +1,6 @@
 // UI Types
 
-export type { AppSettings } from "@aipexstudio/aipex-core";
+export type { AgentMetrics, AppSettings } from "@aipexstudio/aipex-core";
 // Adapter Types
 export type { ChatAdapterOptions, ChatAdapterState } from "./adapter";
 

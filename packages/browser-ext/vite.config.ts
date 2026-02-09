@@ -20,6 +20,28 @@ export default defineConfig({
           src: "host-access-config.json",
           dest: ".",
         },
+        // VAD assets for voice mode
+        {
+          src: "node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js",
+          dest: "assets/vad",
+        },
+        {
+          src: "node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx",
+          dest: "assets/vad",
+        },
+        {
+          src: "node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx",
+          dest: "assets/vad",
+        },
+        // ONNX runtime WASM files for VAD
+        {
+          src: "node_modules/onnxruntime-web/dist/*.wasm",
+          dest: "assets/onnx",
+        },
+        {
+          src: "node_modules/onnxruntime-web/dist/*.mjs",
+          dest: "assets/onnx",
+        },
       ],
     }),
   ],

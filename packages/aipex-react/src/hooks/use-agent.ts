@@ -88,7 +88,7 @@ export function useAgent({
   tools = [],
   instructions,
   name = "AIPex Assistant",
-  maxTurns = 10,
+  maxTurns = 2000,
   agentOptions = {},
 }: UseAgentOptions): UseAgentReturn {
   const [agent, setAgent] = useState<AIPex | undefined>(undefined);

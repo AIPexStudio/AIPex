@@ -11,6 +11,7 @@ import {
   validateAutomationMode,
 } from "@aipexstudio/aipex-core";
 import type { InputToolbarSlotProps } from "@aipexstudio/aipex-react";
+import { TokenUsageIndicator } from "@aipexstudio/aipex-react/components/chatbot";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
 import {
   DropdownMenu,
@@ -78,6 +79,9 @@ export function AutomationModeInputToolbar({
 
   return (
     <div className="flex items-center gap-1">
+      {/* Token Usage Indicator - compact mode next to automation mode */}
+      <TokenUsageIndicator compact />
+
       {/* Automation Mode Selector */}
       <DropdownMenu>
         <Tooltip>

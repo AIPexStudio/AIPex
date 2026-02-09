@@ -1,4 +1,9 @@
-import type { AgentEvent, AIPex, Context } from "@aipexstudio/aipex-core";
+import type {
+  AgentEvent,
+  AgentMetrics,
+  AIPex,
+  Context,
+} from "@aipexstudio/aipex-core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatAdapter } from "../adapters/chat-adapter";
 import type {
@@ -23,6 +28,8 @@ export interface UseChatReturn {
   status: ChatStatus;
   /** Current session ID */
   sessionId: string | null;
+  /** Latest token metrics from the most recent execution */
+  metrics: AgentMetrics | null;
   /** Send a new message */
   sendMessage: (
     text: string,
@@ -82,6 +89,7 @@ export function useChat(
   );
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
 
   // Refs for stable callbacks
   const handlersRef = useRef(handlers);
@@ -143,6 +151,15 @@ export function useChat(
 
           if (event.type === "tool_call_error" || event.type === "error") {
             handlersRef.current?.onError?.(event.error);
+          }
+
+          // Handle metrics update
+          if (event.type === "metrics_update") {
+            setMetrics(event.metrics);
+            handlersRef.current?.onMetricsUpdate?.(
+              event.metrics,
+              event.sessionId,
+            );
           }
 
           // Process the event through adapter
@@ -245,6 +262,7 @@ export function useChat(
     }
     activeGeneratorRef.current = null;
     setSessionId(null);
+    setMetrics(null);
     adapter.reset(configRef.current?.initialMessages ?? []);
   }, [adapter, agent, sessionId]);
 
@@ -290,6 +308,7 @@ export function useChat(
     messages,
     status,
     sessionId,
+    metrics,
     sendMessage,
     continueConversation,
     interrupt,

@@ -23,26 +23,48 @@ AIPex is split into layers so each stays focused:
 
 ## Features
 
-### 1) `allBrowserTools` (31 tools)
+### 1) `allBrowserTools` (32 tools)
 
 `allBrowserTools` is a curated bundle of `FunctionTool`s that an agent can call.
 It includes:
 
-- **Tab management**: list/switch/open/duplicate/close, basic grouping helpers
-- **UI operations**: locate elements, click, hover, fill inputs/forms, wait
+- **Tab management**: list/open/close, basic grouping helpers
+- **UI operations**: locate elements, click, hover, fill inputs/forms, computer tool
 - **Page content**: metadata, scrolling, highlighting
-- **Screenshots**: capture to data URL / clipboard
-- **Downloads**: save text/images from the agent workflow
+- **Screenshots**: capture to data URL
+- **Downloads**: save images from the agent workflow
 - **Human-in-the-loop interventions**: request/cancel interventions
+- **Skills**: load/execute skill scripts
 
 Tool names included (strings used for tool-calling):
 
-- Tabs: `get_all_tabs`, `get_current_tab`, `switch_to_tab`, `create_new_tab`, `get_tab_info`, `duplicate_tab`, `close_tab`, `organize_tabs`, `ungroup_tabs`
-- UI ops: `search_elements`, `click`, `fill_element_by_uid`, `get_editor_value`, `fill_form`, `hover_element_by_uid`, `wait`
-- Page: `get_page_metadata`, `scroll_to_element`, `highlight_element`, `highlight_text_inline`
-- Screenshot: `capture_screenshot`, `capture_tab_screenshot`, `capture_screenshot_to_clipboard`
-- Download: `download_text_as_markdown`, `download_image`, `download_chat_images`, `download_current_chat_images`
-- Interventions: `list_interventions`, `get_intervention_info`, `request_intervention`, `cancel_intervention`
+- Tabs (7): `get_all_tabs`, `get_current_tab`, `create_new_tab`, `get_tab_info`, `close_tab`, `organize_tabs`, `ungroup_tabs`
+- UI ops (7): `search_elements`, `click`, `fill_element_by_uid`, `get_editor_value`, `fill_form`, `hover_element_by_uid`, `computer`
+- Page (4): `get_page_metadata`, `scroll_to_element`, `highlight_element`, `highlight_text_inline`
+- Screenshot (2): `capture_screenshot`, `capture_tab_screenshot`
+- Download (2): `download_image`, `download_chat_images`
+- Interventions (4): `list_interventions`, `get_intervention_info`, `request_intervention`, `cancel_intervention`
+- Skills (6): `load_skill`, `execute_skill_script`, and 4 other skill tools
+
+**Disabled tools** (exist in code but not in default bundle):
+
+- `switch_to_tab`: causes context switching issues
+- `duplicate_tab`: not enabled
+- `wait`: deprecated, replaced by `computer` tool's wait action
+- `capture_screenshot_to_clipboard`: not enabled
+- `download_text_as_markdown`: not enabled
+- `download_current_chat_images`: architecture issue
+
+**Available but not registered by default** (can be imported separately):
+
+- Bookmarks: `list_bookmarks`, `search_bookmarks`, `create_bookmark`, `delete_bookmark`, etc. (`tools/bookmark.ts`)
+- History: `get_recent_history`, `search_history`, `delete_history_item`, `clear_history`, etc. (`tools/history.ts`)
+- Clipboard: `copy_to_clipboard`, `read_from_clipboard`, `copy_page_as_markdown`, etc. (`tools/tools/clipboard/`)
+- Window management: `get_all_windows`, `switch_to_window`, `create_new_window`, etc. (`tools/tools/window-management/`)
+- Sessions: `get_all_sessions`, `restore_session`, etc. (`tools/tools/sessions/`)
+- Extensions: `get_all_extensions`, `set_extension_enabled`, etc. (`tools/tools/extensions/`)
+- Context menus: `create_context_menu_item`, etc. (`tools/tools/context-menus/`)
+- Tab groups: `create_tab_group`, `get_all_tab_groups`, etc. (`tools/tools/tab-groups/`)
 
 > Note: `take_snapshot` exists but is intentionally not included in `allBrowserTools` because it is used internally.
 

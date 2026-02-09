@@ -405,4 +405,119 @@ describe("useChat", () => {
       state: "completed",
     });
   });
+
+  it("should update metrics state when metrics_update event is received", async () => {
+    const { agent } = setupMockAgent();
+    const metricsEvent = {
+      type: "metrics_update" as const,
+      metrics: {
+        tokensUsed: 500,
+        promptTokens: 300,
+        completionTokens: 200,
+        itemCount: 2,
+        maxTurns: 10,
+        duration: 1500,
+        startTime: Date.now(),
+      },
+      sessionId: "session-1",
+    };
+
+    (agent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
+      createEventGenerator([
+        { type: "session_created", sessionId: "session-1" },
+        metricsEvent,
+        createExecutionCompleteEvent(),
+      ]),
+    );
+
+    const { result } = await renderUseChat(agent);
+
+    // Initially null
+    expect(result.current.metrics).toBeNull();
+
+    await act(async () => {
+      await result.current.sendMessage("Hello");
+    });
+
+    // After processing events, metrics should be updated
+    expect(result.current.metrics).toEqual(metricsEvent.metrics);
+  });
+
+  it("should call onMetricsUpdate handler when metrics_update event is received", async () => {
+    const { agent } = setupMockAgent();
+    const onMetricsUpdate = vi.fn();
+    const metricsEvent = {
+      type: "metrics_update" as const,
+      metrics: {
+        tokensUsed: 1000,
+        promptTokens: 600,
+        completionTokens: 400,
+        itemCount: 3,
+        maxTurns: 10,
+        duration: 2000,
+        startTime: Date.now(),
+      },
+      sessionId: "session-123",
+    };
+
+    (agent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
+      createEventGenerator([
+        { type: "session_created", sessionId: "session-123" },
+        metricsEvent,
+        createExecutionCompleteEvent(),
+      ]),
+    );
+
+    const { result } = await renderUseChat(agent, {
+      handlers: { onMetricsUpdate },
+    });
+
+    await act(async () => {
+      await result.current.sendMessage("Test");
+    });
+
+    expect(onMetricsUpdate).toHaveBeenCalledWith(
+      metricsEvent.metrics,
+      "session-123",
+    );
+  });
+
+  it("should reset metrics to null on chat reset", async () => {
+    const { agent } = setupMockAgent();
+    const metricsEvent = {
+      type: "metrics_update" as const,
+      metrics: {
+        tokensUsed: 100,
+        promptTokens: 60,
+        completionTokens: 40,
+        itemCount: 1,
+        maxTurns: 10,
+        duration: 500,
+        startTime: Date.now(),
+      },
+      sessionId: "session-1",
+    };
+
+    (agent.chat as ReturnType<typeof vi.fn>).mockReturnValue(
+      createEventGenerator([
+        { type: "session_created", sessionId: "session-1" },
+        metricsEvent,
+        createExecutionCompleteEvent(),
+      ]),
+    );
+
+    const { result } = await renderUseChat(agent);
+
+    await act(async () => {
+      await result.current.sendMessage("Hello");
+    });
+
+    expect(result.current.metrics).not.toBeNull();
+
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.metrics).toBeNull();
+  });
 });

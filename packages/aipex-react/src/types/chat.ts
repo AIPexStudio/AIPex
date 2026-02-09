@@ -1,3 +1,4 @@
+import type { AgentMetrics } from "@aipexstudio/aipex-core";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 import type {
   ChatStatus,
@@ -197,4 +198,9 @@ export interface ChatbotEventHandlers {
   onToolExecute?: (toolName: string, input: unknown) => void;
   /** Called when a tool completes */
   onToolComplete?: (toolName: string, result: unknown) => void;
+  /** Called when metrics are updated */
+  onMetricsUpdate?: (metrics: AgentMetrics, sessionId?: string) => void;
 }
+
+// Re-export AgentMetrics for convenience
+export type { AgentMetrics } from "@aipexstudio/aipex-core";
