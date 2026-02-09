@@ -41,14 +41,14 @@
   "type": "module",
   "dependencies": {
     "@openai/agents": "^0.4.3",
-    "@openai/agents-extensions": "^0.4.3",
+    "@openai/agents-extensions": "^0.4.6",
     "lru-cache": "^11.2.4",
-    "zod": "^4.1.13"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^3.0.6",
+    "@ai-sdk/google": "^3.0.22",
     "@ai-sdk/openai": "^3.0.25",
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.2.2",
     "dotenv": "^17.2.3",
     "tsx": "^4.21.0"
   },

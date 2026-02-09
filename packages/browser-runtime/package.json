@@ -42,9 +42,9 @@
     "@zenfs/dom": "^1.2.5",
     "fflate": "^0.8.2",
     "nanoid": "^5.1.6",
-    "p-limit": "^6.1.0",
+    "p-limit": "^7.3.0",
     "quickjs-emscripten": "^0.31.0",
-    "zod": "^4.1.13"
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "@types/chrome": "^0.1.0",
