@@ -140,33 +140,41 @@
 
 ### 2.3 `organize_tabs` Is a Stub (AI Grouping Disabled)
 
+**Status**: ⚠️ Mitigated | **Tool removed from default bundle**
+
 
 | Legacy                                                                         | New                                                                                                                                       |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `aipex/src/mcp-servers/tab-groups.ts` → `groupTabsByAI()` with full LLM prompt | `new-aipex/packages/browser-runtime/src/tools/tab.ts` → returns `{ success: false, message: "...requires additional implementation..." }` |
 
 
-**Impact**: Core feature (smart tab grouping) non-functional.
+**Impact**: ~~Core feature (smart tab grouping) non-functional.~~ Tool is no longer exposed to users.
 
-**Priority**: P0
+**Priority**: N/A — Mitigated
 
-**Migration target**: `packages/browser-runtime`
+**Migration target**: N/A (tool removed from `allBrowserTools`)
+
+**Resolution**: The `organize_tabs` tool has been removed from `allBrowserTools` in `packages/browser-runtime/src/tools/index.ts`. The implementation code is retained for future completion of AI-powered tab grouping. The tool is listed in the "Disabled tools" comment block.
 
 ---
 
 ### 2.4 Tab-Group Tool Naming Inconsistency
 
+**Status**: ✅ Resolved
+
 
 | Tool        | Legacy name    | New (tab.ts)   | New (tab-groups/index.ts) |
 | ----------- | -------------- | -------------- | ------------------------- |
-| Ungroup all | `ungroup_tabs` | `ungroup_tabs` | `ungroup_all_tabs`        |
+| Ungroup all | `ungroup_tabs` | `ungroup_tabs` | `ungroup_tabs`            |
 
 
-**Impact**: Skill scripts / prompts referencing old names may break.
+**Impact**: ~~Skill scripts / prompts referencing old names may break.~~ Resolved.
 
-**Priority**: P1
+**Priority**: N/A — Resolved
 
-**Migration target**: Consolidate naming in `packages/browser-runtime`
+**Migration target**: N/A
+
+**Resolution**: The `ungroupAllTabsTool` in `packages/browser-runtime/src/tools/tools/tab-groups/index.ts` has been renamed from `ungroup_all_tabs` to `ungroup_tabs` for consistency with the legacy naming convention. A comment has been added warning against registering both tools simultaneously to avoid duplicate name conflicts.
 
 ---
 
@@ -222,17 +230,21 @@
 
 ### 2.8 Skill System: `refreshSkillMetadata()` Missing
 
+**Status**: ✅ Resolved
+
 
 | Legacy                                                                       | New                                                                                         |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `aipex/src/skill/lib/services/skill-manager.ts` has `refreshSkillMetadata()` | Not present in `new-aipex/packages/browser-runtime/src/skill/lib/services/skill-manager.ts` |
+| `aipex/src/skill/lib/services/skill-manager.ts` has `refreshSkillMetadata()` | `new-aipex/packages/browser-runtime/src/skill/lib/services/skill-manager.ts` now has `refreshSkillMetadata()` |
 
 
-**Impact**: Skill metadata may become stale after updates.
+**Impact**: ~~Skill metadata may become stale after updates.~~ Resolved.
 
-**Priority**: P2
+**Priority**: N/A — Resolved
 
-**Migration target**: `packages/browser-runtime`
+**Migration target**: N/A
+
+**Resolution**: The `refreshSkillMetadata(skillId: string)` method has been ported to the new `SkillManager`. It reads `SKILL.md` from ZenFS, parses frontmatter, updates IndexedDB metadata via `skillStorage.updateSkill()`, refreshes the registry cache via `skillRegistry.updateSkill()`, and emits a `skill_loaded` event with type `skill_metadata_refreshed`. Path traversal is guarded by rejecting skill IDs containing `/`, `\\`, or `..`.
 
 ---
 
@@ -321,10 +333,10 @@
 
 | Priority | Items                                    |
 | -------- | ---------------------------------------- |
-| P0       | 2.1, 2.2, 2.3, 6                         |
-| P1       | ~~1.1~~, ~~1.2~~ (completed), 2.4, 2.5, 2.7, 3.1, 4.2 (auth) |
-| P2       | ~~1.3~~ (superseded), 2.6, 2.8, 4.2 (non-auth) |
-| Closed   | 1.1 (acceptable difference), 1.2 (resolved), 1.3 (superseded) |
+| P0       | 2.1, 2.2, 6                              |
+| P1       | ~~1.1~~, ~~1.2~~ (completed), ~~2.4~~ (resolved), 2.5, 2.7, 3.1, 4.2 (auth) |
+| P2       | ~~1.3~~ (superseded), 2.6, ~~2.8~~ (resolved), 4.2 (non-auth) |
+| Closed   | 1.1 (acceptable difference), 1.2 (resolved), 1.3 (superseded), 2.3 (mitigated), 2.4 (resolved), 2.8 (resolved) |
 
 
 ---

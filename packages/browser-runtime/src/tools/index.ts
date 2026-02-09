@@ -24,14 +24,13 @@ import {
   getAllTabsTool,
   getCurrentTabTool,
   getTabInfoTool,
-  organizeTabsTool,
   ungroupTabsTool,
 } from "./tab";
 import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
 
 /**
  * All browser tools registered for AI use
- * Total: 32 tools (28 core + 4 intervention tools)
+ * Total: 31 tools (27 core + 4 intervention tools)
  *
  * Disabled tools (per aipex):
  * - switch_to_tab (causes context switching issues)
@@ -40,6 +39,7 @@ import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
  * - capture_screenshot_to_clipboard (not enabled in aipex)
  * - download_text_as_markdown (not enabled in aipex)
  * - download_current_chat_images (architecture issue, not enabled in aipex)
+ * - organize_tabs (stub implementation, temporarily disabled until AI grouping is complete)
  */
 type BrowserFunctionTool = FunctionTool<
   unknown,
@@ -48,13 +48,13 @@ type BrowserFunctionTool = FunctionTool<
 >;
 
 const browserFunctionTools: BrowserFunctionTool[] = [
-  // Browser/Tab Management (7 tools)
+  // Browser/Tab Management (6 tools)
+  // Note: organize_tabs temporarily disabled (stub/not shipped)
   getAllTabsTool,
   getCurrentTabTool,
   createNewTabTool,
   getTabInfoTool,
   closeTabTool,
-  organizeTabsTool,
   ungroupTabsTool,
 
   // UI Operations (7 tools) - computer tool replaces visual XY tools
