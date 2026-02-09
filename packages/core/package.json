@@ -43,7 +43,7 @@
     "@openai/agents": "^0.4.3",
     "@openai/agents-extensions": "^0.4.3",
     "lru-cache": "^11.2.4",
-    "zod": "^4.1.13"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@ai-sdk/google": "^3.0.6",
