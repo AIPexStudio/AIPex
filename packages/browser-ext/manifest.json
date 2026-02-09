@@ -40,7 +40,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
+      "resources": ["assets/*", "assets/vad/*", "assets/onnx/*"],
       "matches": ["<all_urls>"]
     }
   ],

@@ -252,19 +252,26 @@
 
 ### 3.1 UI Components Missing
 
-
-| Component             | Legacy path                                                | New status |
-| --------------------- | ---------------------------------------------------------- | ---------- |
-| `TokenUsageIndicator` | `aipex/src/lib/components/chatbot/TokenUsageIndicator.tsx` | Not found  |
-| `AuthProvider`        | `aipex/src/lib/components/auth/AuthProvider.tsx`           | Not found  |
-| `VoiceInput` (UI)     | `aipex/src/lib/components/voice-mode/voice-input.tsx`      | Not found  |
+**Status**: ✅ Resolved
 
 
-**Impact**: Token monitor, login/user-state, voice-mode UI unavailable.
+| Component             | Legacy path                                                | New status                                                                                         |
+| --------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `TokenUsageIndicator` | `aipex/src/lib/components/chatbot/TokenUsageIndicator.tsx` | Found (`packages/aipex-react/src/components/chatbot/components/token-usage-indicator.tsx`)         |
+| `AuthProvider`        | `aipex/src/lib/components/auth/AuthProvider.tsx`           | Moved to browser-ext (`packages/browser-ext/src/auth/AuthProvider.tsx`)                            |
+| `VoiceInput` (UI)     | `aipex/src/lib/components/voice-mode/voice-input.tsx`      | Found (`packages/aipex-react/src/components/voice/VoiceInput.tsx`)                                 |
 
-**Priority**: P1
 
-**Migration target**: `packages/aipex-react`
+**Impact**: ~~Token monitor, login/user-state, voice-mode UI unavailable.~~ Resolved.
+
+**Priority**: N/A — Resolved
+
+**Migration target**: N/A
+
+**Resolution**:
+- `TokenUsageIndicator` was already migrated and is exported from `@aipexstudio/aipex-react/components/chatbot`.
+- `AuthProvider` and `useAuth` now live in `packages/browser-ext/src/auth/` since authentication logic requires browser-specific Chrome APIs (cookies, tabs, scripting).
+- `VoiceInput` (3D particle UI + VAD + STT) migrated to `packages/aipex-react/src/components/voice/` with supporting voice engine code in `packages/aipex-react/src/lib/voice/`.
 
 ---
 
@@ -334,9 +341,9 @@
 | Priority | Items                                    |
 | -------- | ---------------------------------------- |
 | P0       | 2.1, 2.2, 6                              |
-| P1       | ~~1.1~~, ~~1.2~~ (completed), ~~2.4~~ (resolved), 2.5, 2.7, 3.1, 4.2 (auth) |
+| P1       | ~~1.1~~, ~~1.2~~ (completed), ~~2.4~~ (resolved), 2.5, 2.7, ~~3.1~~ (resolved), 4.2 (auth) |
 | P2       | ~~1.3~~ (superseded), 2.6, ~~2.8~~ (resolved), 4.2 (non-auth) |
-| Closed   | 1.1 (acceptable difference), 1.2 (resolved), 1.3 (superseded), 2.3 (mitigated), 2.4 (resolved), 2.8 (resolved) |
+| Closed   | 1.1 (acceptable difference), 1.2 (resolved), 1.3 (superseded), 2.3 (mitigated), 2.4 (resolved), 2.8 (resolved), 3.1 (resolved) |
 
 
 ---

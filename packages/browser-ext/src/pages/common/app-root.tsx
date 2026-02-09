@@ -13,6 +13,7 @@ import type { Theme } from "@aipexstudio/aipex-react/theme/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
+import { AuthProvider } from "../../auth";
 import { chromeStorageAdapter } from "../../hooks";
 import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
 import {
@@ -97,7 +98,9 @@ export function renderChatApp() {
   const App = () => (
     <I18nProvider storageAdapter={i18nStorageAdapter}>
       <ThemeProvider storageAdapter={themeStorageAdapter}>
-        <ChatApp />
+        <AuthProvider>
+          <ChatApp />
+        </AuthProvider>
       </ThemeProvider>
     </I18nProvider>
   );

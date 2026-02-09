@@ -14,6 +14,7 @@ import { PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationHistory } from "./conversation-history";
 import { fromStorageFormat, toStorageFormat } from "./message-adapter";
+import { useAuth, UserProfile } from "../auth";
 
 export function BrowserChatHeader({
   title = "AIPex",
@@ -26,6 +27,7 @@ export function BrowserChatHeader({
   const { t } = useTranslation();
   const runtime = getRuntime();
   const { messages, setMessages, interrupt } = useChatContext();
+  const { user, login, isLoading: isAuthLoading } = useAuth();
 
   const [currentConversationId, setCurrentConversationId] = useState<
     string | undefined
@@ -150,16 +152,34 @@ export function BrowserChatHeader({
         onNewConversation={handleNewChat}
       />
 
-      {/* Right side - New Chat */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleNewChat}
-        className="gap-2"
-      >
-        <PlusIcon className="size-4" />
-        {t("common.newChat")}
-      </Button>
+      {/* Right side - New Chat and User Profile */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleNewChat}
+          className="gap-2"
+        >
+          <PlusIcon className="size-4" />
+          {t("common.newChat")}
+        </Button>
+
+        {/* User Profile or Login Button */}
+        {!isAuthLoading && (
+          user ? (
+            <UserProfile />
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={login}
+              className="gap-2"
+            >
+              Sign In
+            </Button>
+          )
+        )}
+      </div>
 
       {children}
     </div>
