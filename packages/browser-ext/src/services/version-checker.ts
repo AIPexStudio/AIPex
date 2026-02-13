@@ -3,7 +3,7 @@
  * Checks the current extension version against the latest version from the server
  */
 
-import { buildWebsiteUrl, WEBSITE_URL } from "../config/website";
+import { buildWebsiteUrl } from "../config/website";
 
 export interface VersionInfo {
   version: string;

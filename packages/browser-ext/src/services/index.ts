@@ -1,5 +1,12 @@
 // Web authentication
 
+// Website URL helpers
+export {
+  buildWebsiteUrl,
+  isWebsiteDomain,
+  WEBSITE_HOST,
+  WEBSITE_ORIGIN,
+} from "../config/website";
 // Sound effects
 export {
   playSoundEffect,
@@ -50,10 +57,3 @@ export {
   hasAuthCookies,
   WEBSITE_URL,
 } from "./web-auth";
-// Website URL helpers
-export {
-  buildWebsiteUrl,
-  isWebsiteDomain,
-  WEBSITE_HOST,
-  WEBSITE_ORIGIN,
-} from "../config/website";
