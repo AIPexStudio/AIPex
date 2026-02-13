@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/context";
+import { buildWebsiteUrl } from "../../lib/config/website.js";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../theme/context";
 import { DEFAULT_MODELS } from "../chatbot/constants";
@@ -978,7 +979,7 @@ export function SettingsPage({
                   <TooltipTrigger asChild>
                     <Button asChild size="icon" variant="outline">
                       <a
-                        href="https://www.claudechrome.com/contact"
+                        href={buildWebsiteUrl("/contact")}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -1022,7 +1023,7 @@ export function SettingsPage({
                   <TooltipTrigger asChild>
                     <Button asChild size="icon" variant="outline">
                       <a
-                        href="https://www.claudechrome.com/feedback"
+                        href={buildWebsiteUrl("/feedback")}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

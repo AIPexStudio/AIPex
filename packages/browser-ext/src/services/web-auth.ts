@@ -2,7 +2,10 @@
  * Public website configuration and authentication cookie utilities
  */
 
-export const WEBSITE_URL = "https://www.claudechrome.com";
+// Re-export WEBSITE_URL from centralized config for backward compatibility
+export { WEBSITE_URL } from "../config/website";
+
+import { WEBSITE_URL as _WEBSITE_URL } from "../config/website";
 
 /**
  * Aggregate claudechrome website authentication cookies and generate Cookie header content.
@@ -10,7 +13,7 @@ export const WEBSITE_URL = "https://www.claudechrome.com";
  */
 export async function getAuthCookieHeader(): Promise<string | undefined> {
   try {
-    const cookies = await chrome.cookies.getAll({ url: WEBSITE_URL });
+    const cookies = await chrome.cookies.getAll({ url: _WEBSITE_URL });
 
     const relevantCookies = cookies.filter(
       (cookie) =>
@@ -39,7 +42,7 @@ export async function getAuthCookieHeader(): Promise<string | undefined> {
  */
 export async function hasAuthCookies(): Promise<boolean> {
   try {
-    const cookies = await chrome.cookies.getAll({ url: WEBSITE_URL });
+    const cookies = await chrome.cookies.getAll({ url: _WEBSITE_URL });
     return cookies.some(
       (cookie) =>
         cookie.name.includes("better-auth") || cookie.name.includes("session"),
