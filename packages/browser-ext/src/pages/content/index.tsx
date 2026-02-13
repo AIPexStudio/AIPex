@@ -339,6 +339,102 @@ const ContentApp = () => {
   );
 };
 
+// ============================================================================
+// Breathing Border Overlay — mounted OUTSIDE shadow DOM so z-index works
+// against page elements.  Driven by the "aipex-conversation-active" storage key
+// which the sidepanel writes as a heartbeat.
+// ============================================================================
+const HEARTBEAT_KEY = "aipex-conversation-active";
+const HEARTBEAT_TTL_MS = 6_000; // Hide overlay if heartbeat is stale (>6 s)
+
+function BorderOverlayApp() {
+  const [visible, setVisible] = React.useState(false);
+
+  const handleConversationState = React.useCallback(
+    (timestamp: unknown) => {
+      if (typeof timestamp === "number" && Date.now() - timestamp < HEARTBEAT_TTL_MS) {
+        setVisible(true);
+      } else {
+        setVisible(false);
+      }
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    // Check on mount
+    chrome.storage.local.get(HEARTBEAT_KEY, (result) => {
+      handleConversationState(result[HEARTBEAT_KEY]);
+    });
+
+    // Listen for changes
+    const onChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area === "local" && changes[HEARTBEAT_KEY]) {
+        handleConversationState(changes[HEARTBEAT_KEY].newValue);
+      }
+    };
+    chrome.storage.onChanged.addListener(onChange);
+
+    // Poll heartbeat staleness every 3 s
+    const interval = setInterval(() => {
+      chrome.storage.local.get(HEARTBEAT_KEY, (result) => {
+        handleConversationState(result[HEARTBEAT_KEY]);
+      });
+    }, 3000);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(onChange);
+      clearInterval(interval);
+    };
+  }, [handleConversationState]);
+
+  if (!visible) return null;
+
+  return (
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 999998,
+          pointerEvents: "none",
+          animation: "aipexBreathe 2.5s ease-in-out infinite",
+          boxShadow: `
+            inset 0 0 15px 3px rgba(37, 99, 235, 0.5),
+            inset 0 0 25px 5px rgba(59, 130, 246, 0.4),
+            inset 0 0 35px 7px rgba(96, 165, 250, 0.3),
+            inset 0 0 45px 9px rgba(147, 197, 253, 0.2)
+          `,
+        }}
+      />
+      <style>{`
+        @keyframes aipexBreathe {
+          0%, 100% {
+            box-shadow:
+              inset 0 0 12px 3px rgba(37,99,235,0.35),
+              inset 0 0 20px 5px rgba(59,130,246,0.28),
+              inset 0 0 28px 6px rgba(96,165,250,0.22),
+              inset 0 0 35px 8px rgba(147,197,253,0.15);
+          }
+          50% {
+            box-shadow:
+              inset 0 0 20px 5px rgba(37,99,235,0.7),
+              inset 0 0 30px 7px rgba(59,130,246,0.6),
+              inset 0 0 40px 9px rgba(96,165,250,0.5),
+              inset 0 0 50px 11px rgba(147,197,253,0.35);
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
 // Wait for DOM to be ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initContentScript);
@@ -347,17 +443,15 @@ if (document.readyState === "loading") {
 }
 
 function initContentScript() {
-  // Mount the content script
+  // Mount the content script (shadow DOM for isolation)
   const container = document.createElement("div");
   container.id = "aipex-content-root";
   document.body.appendChild(container);
 
-  // Create shadow DOM to isolate styles
   const shadowRoot = container.attachShadow({ mode: "open" });
   const shadowContainer = document.createElement("div");
   shadowRoot.appendChild(shadowContainer);
 
-  // Inject Tailwind CSS into shadow DOM
   const style = document.createElement("style");
   style.textContent = `
     :host {
@@ -367,11 +461,22 @@ function initContentScript() {
   `;
   shadowRoot.appendChild(style);
 
-  // Render the app
   const root = ReactDOM.createRoot(shadowContainer);
   root.render(
     <React.StrictMode>
       <ContentApp />
+    </React.StrictMode>,
+  );
+
+  // Mount breathing border overlay OUTSIDE shadow DOM so z-index works
+  const borderContainer = document.createElement("div");
+  borderContainer.id = "aipex-border-overlay";
+  document.body.appendChild(borderContainer);
+
+  const borderRoot = ReactDOM.createRoot(borderContainer);
+  borderRoot.render(
+    <React.StrictMode>
+      <BorderOverlayApp />
     </React.StrictMode>,
   );
 }

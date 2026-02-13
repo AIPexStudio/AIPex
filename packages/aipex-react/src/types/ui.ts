@@ -65,11 +65,22 @@ export type UIPart =
   | UIToolPart
   | UIContextPart;
 
+export interface UIMessageMetadata {
+  needLogin?: boolean;
+  needBuyToken?: boolean;
+  needChangeModel?: boolean;
+  supportedModels?: string[];
+  currentCredits?: number;
+  requiredCredits?: number;
+  errorCode?: string;
+}
+
 export interface UIMessage {
   id: string;
   role: UIRole;
   parts: UIPart[];
   timestamp?: number;
+  metadata?: UIMessageMetadata;
 }
 
 // ============ Context Item Types ============

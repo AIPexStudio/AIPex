@@ -33,6 +33,8 @@ export function DefaultMessageList({
     <div className={cn("flex-1 overflow-hidden", className)} {...props}>
       <Conversation className="h-full">
         <ConversationContent>
+          {/* Before messages slot - for banners, announcements */}
+          {slots.beforeMessages?.()}
           {displayMessages.length === 0 ? (
             <WelcomeScreen
               onSuggestionClick={(text) => {

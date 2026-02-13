@@ -139,6 +139,8 @@ export interface ChatbotProps extends Omit<ChatbotProviderProps, "children"> {
   placeholderTexts?: string[];
   /** Header title */
   title?: string;
+  /** Initial input value to pre-fill the text area */
+  initialInput?: string;
 }
 
 /**
@@ -177,6 +179,7 @@ export function Chatbot({
   models = DEFAULT_MODELS,
   placeholderTexts,
   title = "AIPex",
+  initialInput,
 }: ChatbotProps) {
   return (
     <ChatbotProvider
@@ -195,6 +198,7 @@ export function Chatbot({
         models={models}
         placeholderTexts={placeholderTexts}
         title={title}
+        initialInput={initialInput}
       />
     </ChatbotProvider>
   );
@@ -207,10 +211,12 @@ function ChatbotContent({
   models,
   placeholderTexts,
   title,
+  initialInput: initialInputProp,
 }: {
   models: Array<{ name: string; value: string }>;
   placeholderTexts?: string[];
   title: string;
+  initialInput?: string;
 }) {
   const themeCtx = useContext(ThemeContext);
   const chatCtx = useContext(ChatContext);
@@ -221,7 +227,7 @@ function ChatbotContent({
     chatCtx || {};
   const { isReady: isAgentReady } = agentCtx || {};
 
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialInputProp ?? "");
   const [inputResetCount, setInputResetCount] = useState(0);
 
   const handleSubmit = useCallback(

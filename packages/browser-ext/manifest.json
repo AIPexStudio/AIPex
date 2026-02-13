@@ -44,6 +44,14 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "externally_connectable": {
+    "matches": [
+      "https://www.claudechrome.com/*",
+      "https://claudechrome.com/*",
+      "https://aipex.ing/*",
+      "http://localhost:*/*"
+    ]
+  },
   "host_permissions": ["https://*/*", "http://*/*", "<all_urls>"],
   "commands": {
     "open-aipex": {

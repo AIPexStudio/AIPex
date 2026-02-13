@@ -67,6 +67,8 @@ export interface TranslationResources {
     settings: string;
     close: string;
     stopResponse: string;
+    switchToVoice: string;
+    switchToText: string;
   };
   mode: {
     focus: string;
@@ -95,10 +97,11 @@ export interface TranslationResources {
   welcome: {
     title: string;
     subtitle: string;
-    organizeTabs: string;
     analyzePage: string;
+    organizeTabs: string;
     research: string;
-    comparePrice: string;
+    screenRecording: string;
+    uxAuditGoal: string;
   };
   config: {
     title: string;
@@ -244,6 +247,8 @@ export type BaseTranslationKey =
   | "tooltip.settings"
   | "tooltip.close"
   | "tooltip.stopResponse"
+  | "tooltip.switchToVoice"
+  | "tooltip.switchToText"
   | "mode.focus"
   | "mode.background"
   | "mode.selectMode"
@@ -262,10 +267,11 @@ export type BaseTranslationKey =
   | "input.placeholder3"
   | "welcome.title"
   | "welcome.subtitle"
-  | "welcome.organizeTabs"
   | "welcome.analyzePage"
+  | "welcome.organizeTabs"
   | "welcome.research"
-  | "welcome.comparePrice"
+  | "welcome.screenRecording"
+  | "welcome.uxAuditGoal"
   | "config.title"
   | "config.description"
   | "config.apiTokenRequired"

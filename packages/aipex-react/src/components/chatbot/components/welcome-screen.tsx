@@ -1,53 +1,73 @@
 import {
-  DollarSignIcon,
+  CameraIcon,
   FileTextIcon,
   LayersIcon,
+  ScanSearchIcon,
   SearchIcon,
 } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslation } from "../../../i18n/context";
 import { cn } from "../../../lib/utils";
 import type { WelcomeScreenProps, WelcomeSuggestion } from "../../../types";
 import { Suggestion, Suggestions } from "../../ai-elements/suggestion";
 import { useComponentsContext } from "../context";
 
 /**
- * Default suggestions for the welcome screen
+ * Build i18n-driven default suggestions matching legacy AIPex layout.
  */
-const DEFAULT_SUGGESTIONS: WelcomeSuggestion[] = [
-  {
-    icon: LayersIcon,
-    text: "Help me organize my browser tabs by topic",
-    iconColor: "text-blue-600",
-    bgColor: "bg-blue-100",
-  },
-  {
-    icon: FileTextIcon,
-    text: "Summarize this page for me",
-    iconColor: "text-green-600",
-    bgColor: "bg-green-100",
-  },
-  {
-    icon: SearchIcon,
-    text: "Research a topic across multiple tabs",
-    iconColor: "text-purple-600",
-    bgColor: "bg-purple-100",
-  },
-  {
-    icon: DollarSignIcon,
-    text: "Compare prices across shopping tabs",
-    iconColor: "text-orange-600",
-    bgColor: "bg-orange-100",
-  },
-];
+function useDefaultSuggestions(): WelcomeSuggestion[] {
+  const { t } = useTranslation();
+
+  return useMemo(
+    () => [
+      {
+        icon: FileTextIcon,
+        text: t("welcome.analyzePage"),
+        iconColor: "text-green-600",
+        bgColor: "bg-green-100",
+      },
+      {
+        icon: LayersIcon,
+        text: t("welcome.organizeTabs"),
+        iconColor: "text-blue-600",
+        bgColor: "bg-blue-100",
+      },
+      {
+        icon: SearchIcon,
+        text: t("welcome.research"),
+        iconColor: "text-purple-600",
+        bgColor: "bg-purple-100",
+      },
+      {
+        icon: CameraIcon,
+        text: t("welcome.screenRecording"),
+        iconColor: "text-orange-600",
+        bgColor: "bg-orange-100",
+      },
+      {
+        icon: ScanSearchIcon,
+        text: t("welcome.uxAuditGoal"),
+        iconColor: "text-cyan-600",
+        bgColor: "bg-cyan-100",
+      },
+    ],
+    [t],
+  );
+}
 
 /**
  * Default WelcomeScreen component
  */
 export function DefaultWelcomeScreen({
   onSuggestionClick,
-  suggestions = DEFAULT_SUGGESTIONS,
+  suggestions,
   className,
   ...props
 }: WelcomeScreenProps) {
+  const { t } = useTranslation();
+  const defaultSuggestions = useDefaultSuggestions();
+  const effectiveSuggestions = suggestions ?? defaultSuggestions;
+
   return (
     <div
       className={cn(
@@ -58,16 +78,16 @@ export function DefaultWelcomeScreen({
     >
       <div className="text-center mb-6 sm:mb-8">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          Welcome to AIPex
+          {t("welcome.title")}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Your AI-powered browser assistant
+          {t("welcome.subtitle")}
         </p>
       </div>
 
       <div className="w-full max-w-2xl">
         <Suggestions className="grid gap-3 sm:gap-4 sm:grid-cols-2 w-full">
-          {suggestions.map((suggestion) => {
+          {effectiveSuggestions.map((suggestion) => {
             const Icon = suggestion.icon;
             return (
               <Suggestion

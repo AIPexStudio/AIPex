@@ -66,7 +66,9 @@
     "newChat": "新对话",
     "settings": "设置",
     "close": "关闭",
-    "stopResponse": "停止 AI 回应"
+    "stopResponse": "停止 AI 回应",
+    "switchToVoice": "切换到语音模式",
+    "switchToText": "切换到文字模式"
   },
   "mode": {
     "focus": "聚焦模式",
@@ -101,10 +103,11 @@
   "welcome": {
     "title": "欢迎使用 AIpex",
     "subtitle": "选择一个快捷操作或询问任何问题来开始",
+    "analyzePage": "总结此页面",
     "organizeTabs": "请按主题和用途整理我的打开标签页",
-    "analyzePage": "总结此页面并将关键点保存到剪贴板",
     "research": "请使用 Google 研究主题 'MCP'",
-    "comparePrice": "比较 iPhone 17 的价格"
+    "screenRecording": "开始创建用户操作手册",
+    "uxAuditGoal": "深度审计您的 UX 目标"
   },
   "config": {
     "title": "需要配置",

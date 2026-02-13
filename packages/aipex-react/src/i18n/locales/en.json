@@ -66,7 +66,9 @@
     "newChat": "New Chat",
     "settings": "Settings",
     "close": "Close",
-    "stopResponse": "Stop AI response"
+    "stopResponse": "Stop AI response",
+    "switchToVoice": "Switch to voice mode",
+    "switchToText": "Switch to text mode"
   },
   "mode": {
     "focus": "Focus Mode",
@@ -101,10 +103,11 @@
   "welcome": {
     "title": "Welcome to AIpex",
     "subtitle": "Choose a quick action or ask anything to get started",
+    "analyzePage": "Summarize this page",
     "organizeTabs": "Please organize my open tabs by topic and purpose",
-    "analyzePage": "Summarize this page and save key points to clipboard",
     "research": "Please use Google to research topic 'MCP'",
-    "comparePrice": "Compare the price of iPhone 17"
+    "screenRecording": "Start User Manual Guide creation",
+    "uxAuditGoal": "Deep audit your UX goals"
   },
   "config": {
     "title": "Setup Required",

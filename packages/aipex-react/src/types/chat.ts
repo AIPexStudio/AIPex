@@ -120,8 +120,12 @@ export interface ChatbotSlots {
   emptyState?: (props: WelcomeScreenProps) => ReactNode;
   /** Custom loading indicator */
   loadingIndicator?: () => ReactNode;
+  /** Content to render before all messages (e.g., update banners, announcements) */
+  beforeMessages?: () => ReactNode;
   /** Content to render after all messages (for platform-specific features like interventions) */
   afterMessages?: () => ReactNode;
+  /** Extra content rendered inside PromptInput (e.g., context/skill loaders) */
+  promptExtras?: () => ReactNode;
 }
 
 // ============ Components Configuration ============
