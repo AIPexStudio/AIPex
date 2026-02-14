@@ -38,10 +38,16 @@ import { formatBytes } from "./file-components/utils.js";
 
 interface FileExplorerProps {
   basePath?: string;
+  /** When set, auto-opens preview for this file path (deep-link from SkillDetails). */
+  initialFilePath?: string | null;
+  /** Called after initialFilePath has been opened, so parent can clear the pending path. */
+  onInitialFileOpened?: () => void;
 }
 
 export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
   basePath = "/skills",
+  initialFilePath,
+  onInitialFileOpened,
 }) => {
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
   const [diskUsage, setDiskUsage] = useState<DiskUsage | null>(null);
@@ -80,6 +86,15 @@ export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
   useEffect(() => {
     void loadFileSystem();
   }, [loadFileSystem]);
+
+  // Handle deep-link: when initialFilePath is set, open that file in the preview
+  useEffect(() => {
+    if (initialFilePath && !loading) {
+      setSelectedFile(initialFilePath);
+      setPreviewOpen(true);
+      onInitialFileOpened?.();
+    }
+  }, [initialFilePath, loading, onInitialFileOpened]);
 
   const handleRefresh = () => {
     void loadFileSystem();
@@ -282,6 +297,7 @@ export const FileExplorerWrapper: React.FC<FileExplorerProps> = ({
         filePath={selectedFile}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+        onFileSaved={handleRefresh}
       />
     </div>
   );

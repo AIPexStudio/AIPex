@@ -14,7 +14,7 @@ import {
 import { Input } from "@aipexstudio/aipex-react/components/ui/input";
 import { AlertCircle, Filter, RefreshCw, Search } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SkillCard } from "./SkillCard";
 import { SkillDetails } from "./SkillDetails";
 import type { SkillClient, SkillMetadata } from "./types";
@@ -22,11 +22,16 @@ import type { SkillClient, SkillMetadata } from "./types";
 interface SkillListProps {
   skillClient: SkillClient;
   onSkillUpdate: () => void;
+  onNavigateToFile?: (filePath: string) => void;
+  /** Pre-open a specific skill's detail dialog by name (from URL deep-link). */
+  initialSkill?: string;
 }
 
 export const SkillList: React.FC<SkillListProps> = ({
   skillClient,
   onSkillUpdate,
+  onNavigateToFile,
+  initialSkill,
 }) => {
   const [skills, setSkills] = useState<SkillMetadata[]>([]);
   const [filteredSkills, setFilteredSkills] = useState<SkillMetadata[]>([]);
@@ -64,6 +69,26 @@ export const SkillList: React.FC<SkillListProps> = ({
   useEffect(() => {
     loadSkills();
   }, [loadSkills]);
+
+  // Auto-open a skill's detail dialog when initialSkill is provided (from URL deep-link)
+  const initialSkillHandled = useRef(false);
+  useEffect(() => {
+    if (
+      initialSkill &&
+      !loading &&
+      skills.length > 0 &&
+      !initialSkillHandled.current
+    ) {
+      const match = skills.find(
+        (s) => s.name === initialSkill || s.id === initialSkill,
+      );
+      if (match) {
+        setSelectedSkill(match);
+        setDetailsOpen(true);
+        initialSkillHandled.current = true;
+      }
+    }
+  }, [initialSkill, loading, skills]);
 
   useEffect(() => {
     // Filter skills based on search query and enabled filter
@@ -257,6 +282,8 @@ export const SkillList: React.FC<SkillListProps> = ({
         skillClient={skillClient}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+        onEditInFileManager={onNavigateToFile}
+        onSkillUpdated={onSkillUpdate}
       />
     </div>
   );

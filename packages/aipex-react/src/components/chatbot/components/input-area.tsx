@@ -22,6 +22,8 @@ import {
   PromptInputModelSelectItem,
   PromptInputModelSelectTrigger,
   PromptInputModelSelectValue,
+  PromptInputSkillTag,
+  PromptInputSkillTags,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputToolbar,
@@ -149,6 +151,14 @@ export function DefaultInputArea({
           <PromptInputContextTags>
             {(context) => <PromptInputContextTag data={context} />}
           </PromptInputContextTags>
+
+          {/* Skill Tags */}
+          <PromptInputSkillTags>
+            {(skill) => <PromptInputSkillTag data={skill} />}
+          </PromptInputSkillTags>
+
+          {/* Platform-specific extras (e.g., context/skill data loaders) */}
+          {slots.promptExtras?.()}
 
           {/* Attachments */}
           <PromptInputAttachments>

@@ -6,6 +6,7 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n/hooks";
+import { buildWebsiteUrl } from "../../lib/config/website.js";
 import { cn } from "../../lib/utils";
 import { isByokUserSimple } from "../../lib/voice/ai-config";
 import { AudioRecorder } from "../../lib/voice/audio-recorder";
@@ -271,7 +272,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
         );
         setIsPermissionError(true);
         // Open voice guide page
-        window.open("https://www.claudechrome.com/voice/guide", "_blank");
+        window.open(buildWebsiteUrl("/voice/guide"), "_blank");
       } else {
         setIsPermissionError(false);
       }
@@ -442,10 +443,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
                 size="sm"
                 className="text-muted-foreground"
                 onClick={() => {
-                  window.open(
-                    "https://www.claudechrome.com/voice/guide",
-                    "_blank",
-                  );
+                  window.open(buildWebsiteUrl("/voice/guide"), "_blank");
                 }}
               >
                 View Guide

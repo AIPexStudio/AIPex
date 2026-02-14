@@ -11,7 +11,13 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { AUTH_COOKIE_NAMES, WEBSITE_URL } from "../services/web-auth";
+import {
+  buildWebsiteUrl,
+  isWebsiteDomain,
+  WEBSITE_ORIGIN,
+  WEBSITE_URL,
+} from "../config/website";
+import { AUTH_COOKIE_NAMES } from "../services/web-auth";
 
 /**
  * User data structure
@@ -105,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log("[AuthProvider] Checking authentication via API...");
 
-      // Get all claudechrome.com cookies
+      // Get all website cookies
       const cookies = await chrome.cookies.getAll({
         url: WEBSITE_URL,
       });
@@ -125,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Call website's auth verify API
       try {
-        const response = await fetch(`${WEBSITE_URL}/api/auth/verify`, {
+        const response = await fetch(buildWebsiteUrl("/api/auth/verify"), {
           method: "GET",
           credentials: "include",
         });
@@ -208,7 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Listen for message from auth success page
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== WEBSITE_URL) return;
+      if (event.origin !== WEBSITE_ORIGIN) return;
 
       if (event.data.type === "AUTH_SUCCESS") {
         const { user: newUser } = event.data;
@@ -294,8 +300,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleCookieChange = async (
       changeInfo: chrome.cookies.CookieChangeInfo,
     ) => {
-      // Only care about claudechrome.com domain auth cookies
-      if (!changeInfo.cookie.domain.includes("claudechrome.com")) return;
+      // Only care about website domain auth cookies
+      if (!isWebsiteDomain(changeInfo.cookie.domain)) return;
       if (!AUTH_COOKIE_NAMES.includes(changeInfo.cookie.name)) return;
 
       console.log("[AuthProvider] Auth cookie changed:", {
@@ -376,7 +382,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = useCallback(async () => {
     console.log("[AuthProvider] Login function called");
     try {
-      const authUrl = `${WEBSITE_URL}/auth/login?source=extension`;
+      const authUrl = buildWebsiteUrl("/auth/login?source=extension");
       console.log("[AuthProvider] Opening auth URL");
 
       let tabCreated = false;
@@ -429,7 +435,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // 3. Notify website to sign out
       try {
-        await fetch(`${WEBSITE_URL}/api/auth/signout`, {
+        await fetch(buildWebsiteUrl("/api/auth/signout"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -61,6 +61,31 @@ export interface SkillClient {
    * Get detailed skill information
    */
   getSkill(skillNameOrId: string): Promise<SkillDetail | null>;
+
+  /**
+   * Get skill SKILL.md content
+   */
+  getSkillContent(skillName: string): Promise<string>;
+
+  /**
+   * Get a specific script's content
+   */
+  getSkillScript(skillName: string, scriptPath: string): Promise<string>;
+
+  /**
+   * Get a specific reference's content
+   */
+  getSkillReference(skillName: string, refPath: string): Promise<string>;
+
+  /**
+   * Write a file under /skills/ via ZenFS
+   */
+  writeFile(filePath: string, content: string): Promise<void>;
+
+  /**
+   * Refresh skill metadata after file changes
+   */
+  refreshSkillMetadata(skillId: string): Promise<void>;
 }
 
 /**

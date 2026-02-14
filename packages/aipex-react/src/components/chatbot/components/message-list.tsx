@@ -19,10 +19,12 @@ export function DefaultMessageList({
   onRegenerate,
   onCopy,
   onSuggestionClick,
+  onUxAuditClick,
   className,
   ...props
 }: MessageListProps & {
   onSuggestionClick?: (text: string) => void;
+  onUxAuditClick?: () => void;
 }) {
   const { slots } = useComponentsContext();
 
@@ -33,11 +35,14 @@ export function DefaultMessageList({
     <div className={cn("flex-1 overflow-hidden", className)} {...props}>
       <Conversation className="h-full">
         <ConversationContent>
+          {/* Before messages slot - for banners, announcements */}
+          {slots.beforeMessages?.()}
           {displayMessages.length === 0 ? (
             <WelcomeScreen
               onSuggestionClick={(text) => {
                 onSuggestionClick?.(text);
               }}
+              onUxAuditClick={onUxAuditClick}
             />
           ) : (
             displayMessages.map((message, index) => (
@@ -67,7 +72,10 @@ export function DefaultMessageList({
  * MessageList - Renders either custom or default message list
  */
 export function MessageList(
-  props: MessageListProps & { onSuggestionClick?: (text: string) => void },
+  props: MessageListProps & {
+    onSuggestionClick?: (text: string) => void;
+    onUxAuditClick?: () => void;
+  },
 ) {
   const { components } = useComponentsContext();
 

@@ -21,11 +21,17 @@ import {
 import { skillClientAdapter } from "../../lib/skill-client-adapter";
 import { FileExplorerWrapper } from "./file-explorer-wrapper";
 
-export function SkillsOptionsTab() {
+interface SkillsOptionsTabProps {
+  /** Pre-open a specific skill's detail dialog by name. */
+  initialSkill?: string;
+}
+
+export function SkillsOptionsTab({ initialSkill }: SkillsOptionsTabProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [skillsSubTab, setSkillsSubTab] = useState<"skills" | "files">(
     "skills",
   );
+  const [pendingFilePath, setPendingFilePath] = useState<string | null>(null);
 
   const handleUploadSuccess = useCallback((skill: SkillMetadata) => {
     console.log("Skill uploaded successfully:", skill.name);
@@ -40,6 +46,17 @@ export function SkillsOptionsTab() {
   const handleSkillUpdate = useCallback(() => {
     // Trigger refresh of skill list
     setRefreshKey((prev) => prev + 1);
+  }, []);
+
+  const handleNavigateToFile = useCallback((filePath: string) => {
+    // Switch to the files sub-tab and set the file to open
+    setPendingFilePath(filePath);
+    setSkillsSubTab("files");
+  }, []);
+
+  const handleInitialFileOpened = useCallback(() => {
+    // Clear the pending file path after it's been opened
+    setPendingFilePath(null);
   }, []);
 
   return (
@@ -76,12 +93,17 @@ export function SkillsOptionsTab() {
             key={refreshKey}
             skillClient={skillClientAdapter}
             onSkillUpdate={handleSkillUpdate}
+            onNavigateToFile={handleNavigateToFile}
+            initialSkill={initialSkill}
           />
         </TabsContent>
 
         {/* File System Sub-tab */}
         <TabsContent value="files">
-          <FileExplorerWrapper />
+          <FileExplorerWrapper
+            initialFilePath={pendingFilePath}
+            onInitialFileOpened={handleInitialFileOpened}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -12,6 +12,7 @@ import {
   Loader2Icon,
   PaperclipIcon,
   PlusIcon,
+  PuzzleIcon,
   SendIcon,
   SquareIcon,
   XIcon,
@@ -206,6 +207,35 @@ export const usePromptInputContexts = () => {
 
   if (!context) {
     throw new Error("usePromptInputContexts must be used within a PromptInput");
+  }
+
+  return context;
+};
+
+// ============ Skill Items Context ============
+
+export type SkillItem = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+type SkillItemsContext = {
+  items: SkillItem[];
+  add: (item: SkillItem) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+  availableSkills: SkillItem[];
+  setAvailableSkills: (items: SkillItem[]) => void;
+};
+
+const SkillItemsContext = createContext<SkillItemsContext | null>(null);
+
+export const usePromptInputSkills = () => {
+  const context = useContext(SkillItemsContext);
+
+  if (!context) {
+    throw new Error("usePromptInputSkills must be used within a PromptInput");
   }
 
   return context;
@@ -421,10 +451,122 @@ export function PromptInputContextTags({
   );
 }
 
+// ============ Skill Items Components ============
+
+export type PromptInputSkillTagProps = HTMLAttributes<HTMLDivElement> & {
+  data: SkillItem;
+  className?: string;
+};
+
+export function PromptInputSkillTag({
+  data,
+  className,
+  ...props
+}: PromptInputSkillTagProps) {
+  const skills = usePromptInputSkills();
+
+  const handleLabelClick = () => {
+    // Open options page with skills tab
+    if (typeof chrome !== "undefined" && chrome.tabs?.create) {
+      const skillParam = encodeURIComponent(data.name.slice(0, 200));
+      chrome.tabs.create({
+        url: chrome.runtime.getURL(
+          `src/pages/options/index.html?tab=skills&skill=${skillParam}`,
+        ),
+      });
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "group inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded-md",
+        "bg-primary/10 hover:bg-primary/20 transition-colors",
+        "border border-primary/30",
+        className,
+      )}
+      {...props}
+    >
+      <span className="text-primary">
+        <PuzzleIcon className="size-4" />
+      </span>
+      <button
+        type="button"
+        className="max-w-[200px] truncate cursor-pointer hover:underline text-primary bg-transparent border-none p-0 font-inherit text-left"
+        onClick={handleLabelClick}
+        title="Click to open skill settings"
+      >
+        {data.name}
+      </button>
+      <Button
+        aria-label="Remove skill"
+        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => skills.remove(data.id)}
+        size="icon"
+        type="button"
+        variant="ghost"
+      >
+        <XIcon className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+export type PromptInputSkillTagsProps = Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "children"
+> & {
+  children?: (item: SkillItem) => ReactNode;
+};
+
+export function PromptInputSkillTags({
+  className,
+  children,
+  ...props
+}: PromptInputSkillTagsProps) {
+  const skills = usePromptInputSkills();
+  const [height, setHeight] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) {
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      setHeight(el.getBoundingClientRect().height);
+    });
+    ro.observe(el);
+    setHeight(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      aria-live="polite"
+      className={cn(
+        "overflow-hidden transition-[height] duration-200 ease-out",
+        className,
+      )}
+      style={{ height: skills.items.length ? height : 0 }}
+      {...props}
+    >
+      <div className="flex flex-wrap gap-2 p-3 pb-0" ref={contentRef}>
+        {skills.items.map((item) => (
+          <Fragment key={item.id}>
+            {children ? children(item) : <PromptInputSkillTag data={item} />}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export type PromptInputMessage = {
   text?: string;
   files?: FileUIPart[];
   contexts?: ContextItem[];
+  skills?: SkillItem[];
 };
 
 export type PromptInputProps = Omit<
@@ -466,6 +608,8 @@ export const PromptInput = ({
   const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
   const [contextItems, setContextItems] = useState<ContextItem[]>([]);
   const [availableContexts, setAvailableContexts] = useState<ContextItem[]>([]);
+  const [skillItems, setSkillItems] = useState<SkillItem[]>([]);
+  const [availableSkills, setAvailableSkills] = useState<SkillItem[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -586,6 +730,25 @@ export const PromptInput = ({
     setContextItems([]);
   }, []);
 
+  // Skill management callbacks
+  const addSkill = useCallback((skill: SkillItem) => {
+    setSkillItems((prev) => {
+      // Avoid duplicates
+      if (prev.some((item) => item.id === skill.id)) {
+        return prev;
+      }
+      return [...prev, skill];
+    });
+  }, []);
+
+  const removeSkill = useCallback((id: string) => {
+    setSkillItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const clearSkills = useCallback(() => {
+    setSkillItems([]);
+  }, []);
+
   // Note: File input cannot be programmatically set for security reasons
   // The syncHiddenInput prop is no longer functional
   useEffect(() => {
@@ -684,9 +847,13 @@ export const PromptInput = ({
         return item;
       }),
     ).then((files: FileUIPart[]) => {
-      onSubmit({ text, files, contexts: contextItems }, event);
+      onSubmit(
+        { text, files, contexts: contextItems, skills: skillItems },
+        event,
+      );
       clear();
       clearContexts();
+      clearSkills();
     });
   };
 
@@ -714,28 +881,42 @@ export const PromptInput = ({
     [contextItems, addContext, removeContext, clearContexts, availableContexts],
   );
 
+  const skillsCtx = useMemo<SkillItemsContext>(
+    () => ({
+      items: skillItems,
+      add: addSkill,
+      remove: removeSkill,
+      clear: clearSkills,
+      availableSkills,
+      setAvailableSkills,
+    }),
+    [skillItems, addSkill, removeSkill, clearSkills, availableSkills],
+  );
+
   return (
     <AttachmentsContext.Provider value={ctx}>
       <ContextItemsContext.Provider value={contextsCtx}>
-        <span aria-hidden="true" className="hidden" ref={anchorRef} />
-        <input
-          accept={accept}
-          className="hidden"
-          multiple={multiple}
-          onChange={handleChange}
-          ref={inputRef}
-          type="file"
-        />
-        <form
-          className={cn(
-            "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
-            className,
-          )}
-          onSubmit={handleSubmit}
-          {...props}
-        >
-          {children}
-        </form>
+        <SkillItemsContext.Provider value={skillsCtx}>
+          <span aria-hidden="true" className="hidden" ref={anchorRef} />
+          <input
+            accept={accept}
+            className="hidden"
+            multiple={multiple}
+            onChange={handleChange}
+            ref={inputRef}
+            type="file"
+          />
+          <form
+            className={cn(
+              "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
+              className,
+            )}
+            onSubmit={handleSubmit}
+            {...props}
+          >
+            {children}
+          </form>
+        </SkillItemsContext.Provider>
       </ContextItemsContext.Provider>
     </AttachmentsContext.Provider>
   );
@@ -781,6 +962,7 @@ export const PromptInputTextarea = ({
 }: PromptInputTextareaProps) => {
   const attachments = usePromptInputAttachments();
   const contexts = usePromptInputContexts();
+  const skills = usePromptInputSkills();
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -795,6 +977,13 @@ export const PromptInputTextarea = ({
   });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
+
+  // Skill slash command state
+  const [showSkillMenu, setShowSkillMenu] = useState(false);
+  const [slashSearchQuery, setSlashSearchQuery] = useState("");
+  const [slashPosition, setSlashPosition] = useState<number | null>(null);
+  const [selectedSkillIndex, setSelectedSkillIndex] = useState(0);
+  const selectedSkillItemRef = useRef<HTMLButtonElement>(null);
 
   // Sync hasValue with external value prop (for controlled components)
   useEffect(() => {
@@ -820,6 +1009,40 @@ export const PromptInputTextarea = ({
       : placeholder;
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    // Handle skill menu navigation
+    if (showSkillMenu && filteredSkills.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedSkillIndex((prev) => (prev + 1) % filteredSkills.length);
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedSkillIndex(
+          (prev) => (prev - 1 + filteredSkills.length) % filteredSkills.length,
+        );
+        return;
+      }
+
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const selectedSkill = filteredSkills[selectedSkillIndex];
+        if (selectedSkill) {
+          handleSkillSelect(selectedSkill);
+        }
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowSkillMenu(false);
+        setSlashSearchQuery("");
+        setSlashPosition(null);
+        return;
+      }
+    }
+
     // Handle context menu navigation
     if (showContextMenu && filteredContexts.length > 0) {
       if (e.key === "ArrowDown") {
@@ -917,6 +1140,50 @@ export const PromptInputTextarea = ({
     [atPosition, contexts, props.value, onChange],
   );
 
+  // Handle skill selection
+  const handleSkillSelect = useCallback(
+    (skill: SkillItem) => {
+      if (!textareaRef.current || slashPosition === null) return;
+
+      // Add skill to the skills context
+      skills.add({
+        id: skill.id,
+        name: skill.name,
+        description: skill.description,
+      });
+
+      // Remove /xxx from textarea (similar to @ handling)
+      const currentValue = String(props.value || "");
+      const beforeSlash = currentValue.slice(0, slashPosition);
+      const afterSearch = currentValue.slice(
+        textareaRef.current.selectionStart,
+      );
+      const newValue = beforeSlash + afterSearch;
+
+      // Trigger onChange with new value
+      const syntheticEvent = {
+        target: { value: newValue },
+        currentTarget: { value: newValue },
+      } as ChangeEvent<HTMLTextAreaElement>;
+      onChange?.(syntheticEvent);
+
+      // Close menu
+      setShowSkillMenu(false);
+      setSlashSearchQuery("");
+      setSlashPosition(null);
+
+      // Refocus textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.selectionStart = beforeSlash.length;
+          textareaRef.current.selectionEnd = beforeSlash.length;
+        }
+      }, 0);
+    },
+    [slashPosition, skills, props.value, onChange],
+  );
+
   const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = (event) => {
     const items = event.clipboardData?.items;
 
@@ -962,6 +1229,19 @@ export const PromptInputTextarea = ({
       setShowContextMenu(false);
       setSearchQuery("");
       setAtPosition(null);
+    }
+
+    // Detect / command for skills
+    const slashMatch = beforeCursor.match(/\/([^\s]*)$/);
+    if (slashMatch) {
+      const slashQuery = slashMatch[1]; // Text after /
+      setSlashPosition(beforeCursor.lastIndexOf("/"));
+      setSlashSearchQuery(slashQuery ?? "");
+      setShowSkillMenu(true);
+    } else {
+      setShowSkillMenu(false);
+      setSlashSearchQuery("");
+      setSlashPosition(null);
     }
 
     onChange?.(e);
@@ -1011,10 +1291,42 @@ export const PromptInputTextarea = ({
     });
   }, [contexts.availableContexts, searchQuery]);
 
+  // Filter skills based on search query with fuzzy matching
+  const filteredSkills = useMemo(() => {
+    if (!slashSearchQuery) return skills.availableSkills;
+
+    const query = slashSearchQuery.toLowerCase();
+
+    return skills.availableSkills.filter((skill) => {
+      // Match against name
+      if (skill.name.toLowerCase().includes(query)) return true;
+
+      // Match against description
+      if (skill.description?.toLowerCase().includes(query)) return true;
+
+      // Fuzzy match: check if query characters appear in order in name
+      const nameLower = skill.name.toLowerCase();
+      let queryIndex = 0;
+      for (let i = 0; i < nameLower.length && queryIndex < query.length; i++) {
+        if (nameLower[i] === query[queryIndex]) {
+          queryIndex++;
+        }
+      }
+      if (queryIndex === query.length) return true;
+
+      return false;
+    });
+  }, [skills.availableSkills, slashSearchQuery]);
+
   // Reset selected index when filtered contexts change
   useEffect(() => {
     setSelectedIndex(filteredContexts.length ? 0 : -1);
   }, [filteredContexts]);
+
+  // Reset selected skill index when filtered skills change
+  useEffect(() => {
+    setSelectedSkillIndex(0);
+  }, []);
 
   // Auto-scroll to selected item when navigating with keyboard
   useEffect(() => {
@@ -1030,10 +1342,20 @@ export const PromptInputTextarea = ({
     }
   }, [selectedIndex]);
 
-  // Calculate menu position when showing context menu
+  // Auto-scroll to selected skill item when navigating with keyboard
+  useEffect(() => {
+    if (selectedSkillItemRef.current) {
+      selectedSkillItemRef.current.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, []);
+
+  // Calculate menu position when showing context menu or skill menu
   useEffect(() => {
     const updatePosition = () => {
-      if (showContextMenu && textareaRef.current) {
+      if ((showContextMenu || showSkillMenu) && textareaRef.current) {
         const rect = textareaRef.current.getBoundingClientRect();
         const windowHeight = window.innerHeight;
         setMenuPosition({
@@ -1047,7 +1369,7 @@ export const PromptInputTextarea = ({
     updatePosition();
 
     // Update position on scroll and resize
-    if (!showContextMenu) {
+    if (!showContextMenu && !showSkillMenu) {
       return;
     }
 
@@ -1058,7 +1380,7 @@ export const PromptInputTextarea = ({
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [showContextMenu]);
+  }, [showContextMenu, showSkillMenu]);
 
   return (
     <div className="relative">
@@ -1139,6 +1461,76 @@ export const PromptInputTextarea = ({
                       </span>
                     </button>
                   ))}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {/* Skill Command Menu - Portal Implementation */}
+      {showSkillMenu &&
+        filteredSkills.length > 0 &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed z-[9999] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
+            style={{
+              bottom: `${menuPosition.bottom}px`,
+              left: `${menuPosition.left}px`,
+              width: `${menuPosition.width}px`,
+            }}
+          >
+            <div className="bg-popover border rounded-lg shadow-xl max-h-[400px] overflow-hidden mb-2">
+              {/* Search hint */}
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/50">
+                {slashSearchQuery ? (
+                  <>
+                    Searching skills:{" "}
+                    <span className="font-medium">/{slashSearchQuery}</span>
+                    {filteredSkills.length > 0 && (
+                      <span className="ml-2">
+                        ({filteredSkills.length} found)
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span>{filteredSkills.length} skills available</span>
+                )}
+              </div>
+
+              {/* Skills Results */}
+              <div className="max-h-[350px] overflow-y-auto">
+                {filteredSkills.map((skill, index) => (
+                  <button
+                    key={skill.id}
+                    ref={
+                      index === selectedSkillIndex ? selectedSkillItemRef : null
+                    }
+                    type="button"
+                    className={cn(
+                      "w-full flex flex-col gap-1 px-3 py-2 text-sm transition-colors text-left min-w-0 border-b last:border-b-0",
+                      index === selectedSkillIndex
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-accent/50",
+                    )}
+                    onClick={() => handleSkillSelect(skill)}
+                    onMouseEnter={() => setSelectedSkillIndex(index)}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <span className="font-medium truncate flex-1 min-w-0">
+                        {skill.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0 px-1.5 py-0.5 rounded bg-background/50">
+                        skill
+                      </span>
+                    </div>
+                    {skill.description && (
+                      <span className="text-xs text-muted-foreground line-clamp-2">
+                        {skill.description}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           </div>,

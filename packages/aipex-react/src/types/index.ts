@@ -32,6 +32,7 @@ export type {
   UIContextPart,
   UIFilePart,
   UIMessage,
+  UIMessageMetadata,
   UIPart,
   UIReasoningPart,
   UIRole,
