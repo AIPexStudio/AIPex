@@ -80,6 +80,7 @@
     "downloads",
     "debugger",
     "cookies",
-    "webNavigation"
+    "webNavigation",
+    "audioCapture"
   ]
 }

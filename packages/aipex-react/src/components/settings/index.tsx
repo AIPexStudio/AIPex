@@ -1564,18 +1564,60 @@ export function SettingsPage({
                               {t("settings.aiModel")}
                               <span className="text-destructive ml-1">*</span>
                             </Label>
-                            <Input
-                              id="aiModel"
-                              type="text"
-                              value={selectedModel.aiModel || ""}
-                              onChange={(e) =>
-                                handleModelFieldChange(
-                                  "aiModel",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder={t("settings.modelPlaceholder")}
-                            />
+                            {selectedProviderMeta.models.length > 0 ? (
+                              <Select
+                                value={selectedModel.aiModel || ""}
+                                onValueChange={(value: string) =>
+                                  handleModelFieldChange("aiModel", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t(
+                                      "settings.modelPlaceholder",
+                                    )}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {selectedProviderMeta.models.map(
+                                    (model: string) => (
+                                      <SelectItem key={model} value={model}>
+                                        {model}
+                                      </SelectItem>
+                                    ),
+                                  )}
+                                  {/* Allow keeping a custom value that is not in the preset list */}
+                                  {selectedModel.aiModel &&
+                                    !selectedProviderMeta.models.includes(
+                                      selectedModel.aiModel as never,
+                                    ) && (
+                                      <SelectItem
+                                        value={selectedModel.aiModel}
+                                      >
+                                        {selectedModel.aiModel}
+                                      </SelectItem>
+                                    )}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                id="aiModel"
+                                type="text"
+                                value={selectedModel.aiModel || ""}
+                                onChange={(e) =>
+                                  handleModelFieldChange(
+                                    "aiModel",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder={t("settings.modelPlaceholder")}
+                              />
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {language === "zh"
+                                ? "提示: 选择适合你需求的模型。"
+                                : "Tip: Choose a model that fits your needs."}
+                            </p>
                           </div>
                         </>
                       ) : (

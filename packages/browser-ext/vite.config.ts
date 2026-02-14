@@ -94,7 +94,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        sidepanel: path.resolve(__dirname, "src/pages/sidepanel/index.html"),
+        // Note: sidepanel entry is handled by @crxjs/vite-plugin via manifest.json
+        // side_panel.default_path -> src/sidepanel.html -> pages/sidepanel/index.tsx
         options: path.resolve(__dirname, "src/pages/options/index.html"),
       },
     },
