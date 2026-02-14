@@ -22,7 +22,7 @@
     "aiHost": "AI 服务地址",
     "aiToken": "API 密钥",
     "aiModel": "AI 模型",
-    "hostPlaceholder": "https://api.deepseek.com/chat/completions",
+    "hostPlaceholder": "https://api.deepseek.com/v1",
     "tokenPlaceholder": "请输入您的 API 令牌",
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "设置保存成功！",

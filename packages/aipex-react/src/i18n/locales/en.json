@@ -22,7 +22,7 @@
     "aiHost": "AI Host",
     "aiToken": "API Key",
     "aiModel": "AI Model",
-    "hostPlaceholder": "https://api.deepseek.com/chat/completions",
+    "hostPlaceholder": "https://api.deepseek.com/v1",
     "tokenPlaceholder": "Enter your API token",
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "Settings saved successfully!",

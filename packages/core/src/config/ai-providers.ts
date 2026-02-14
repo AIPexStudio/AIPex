@@ -23,7 +23,7 @@ export const AI_PROVIDERS = {
   openai: {
     name: "OpenAI",
     icon: "🤖",
-    host: "https://api.openai.com/v1/chat/completions",
+    host: "https://api.openai.com/v1",
     models: ["gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"] as const,
     tokenPlaceholder: "sk-...",
     docs: "https://platform.openai.com/api-keys",
@@ -32,7 +32,7 @@ export const AI_PROVIDERS = {
   anthropic: {
     name: "Anthropic",
     icon: "🧠",
-    host: "https://api.anthropic.com/v1/messages",
+    host: "https://api.anthropic.com",
     models: [
       "claude-sonnet-4-20250514",
       "claude-3-5-sonnet-20241022",
@@ -57,7 +57,7 @@ export const AI_PROVIDERS = {
   openrouter: {
     name: "OpenRouter",
     icon: "🔀",
-    host: "https://openrouter.ai/api/v1/chat/completions",
+    host: "https://openrouter.ai/api/v1",
     models: [
       "anthropic/claude-3.5-sonnet",
       "openai/gpt-4o",
@@ -72,7 +72,7 @@ export const AI_PROVIDERS = {
   deepseek: {
     name: "DeepSeek",
     icon: "🔍",
-    host: "https://api.deepseek.com/v1/chat/completions",
+    host: "https://api.deepseek.com/v1",
     models: ["deepseek-chat", "deepseek-coder"] as const,
     tokenPlaceholder: "sk-...",
     docs: "https://platform.deepseek.com/api_keys",
@@ -81,7 +81,7 @@ export const AI_PROVIDERS = {
   groq: {
     name: "Groq",
     icon: "⚡",
-    host: "https://api.groq.com/openai/v1/chat/completions",
+    host: "https://api.groq.com/openai/v1",
     models: [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
@@ -94,7 +94,7 @@ export const AI_PROVIDERS = {
   together: {
     name: "Together AI",
     icon: "🤝",
-    host: "https://api.together.xyz/v1/chat/completions",
+    host: "https://api.together.xyz/v1",
     models: [
       "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
       "mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -107,7 +107,7 @@ export const AI_PROVIDERS = {
   mistral: {
     name: "Mistral AI",
     icon: "🌬️",
-    host: "https://api.mistral.ai/v1/chat/completions",
+    host: "https://api.mistral.ai/v1",
     models: [
       "mistral-large-latest",
       "mistral-medium-latest",
@@ -120,7 +120,7 @@ export const AI_PROVIDERS = {
   cohere: {
     name: "Cohere",
     icon: "🔗",
-    host: "https://api.cohere.ai/v1/chat",
+    host: "https://api.cohere.ai/v1",
     models: ["command-r-plus", "command-r", "command"] as const,
     tokenPlaceholder: "...",
     docs: "https://dashboard.cohere.com/api-keys",
@@ -129,7 +129,7 @@ export const AI_PROVIDERS = {
   perplexity: {
     name: "Perplexity",
     icon: "🔎",
-    host: "https://api.perplexity.ai/chat/completions",
+    host: "https://api.perplexity.ai",
     models: [
       "llama-3.1-sonar-large-128k-online",
       "llama-3.1-sonar-small-128k-online",
@@ -141,7 +141,7 @@ export const AI_PROVIDERS = {
   fireworks: {
     name: "Fireworks AI",
     icon: "🎆",
-    host: "https://api.fireworks.ai/inference/v1/chat/completions",
+    host: "https://api.fireworks.ai/inference/v1",
     models: [
       "accounts/fireworks/models/llama-v3p1-70b-instruct",
       "accounts/fireworks/models/mixtral-8x7b-instruct",
@@ -153,7 +153,7 @@ export const AI_PROVIDERS = {
   replicate: {
     name: "Replicate",
     icon: "🔁",
-    host: "https://api.replicate.com/v1/models",
+    host: "https://api.replicate.com/v1",
     models: [
       "meta/llama-2-70b-chat",
       "mistralai/mixtral-8x7b-instruct-v0.1",
@@ -165,7 +165,7 @@ export const AI_PROVIDERS = {
   azure: {
     name: "Azure OpenAI",
     icon: "☁️",
-    host: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT/chat/completions?api-version=2024-02-15-preview",
+    host: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT",
     models: ["gpt-4", "gpt-35-turbo"] as const,
     tokenPlaceholder: "YOUR-API-KEY",
     docs: "https://portal.azure.com",
