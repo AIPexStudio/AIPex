@@ -109,6 +109,38 @@
     "screenRecording": "Start User Manual Guide creation",
     "uxAuditGoal": "Deep audit your UX goals"
   },
+  "uxAuditGoal": {
+    "dialog": {
+      "title": "Deep Audit Your UX Goals",
+      "description": "Provide details about the interface you want to audit"
+    },
+    "fields": {
+      "targetLink": "Target Link",
+      "targetLinkPlaceholder": "Enter the URL you want to audit",
+      "platform": "Platform",
+      "platformHint": "Select the platform for this audit",
+      "jtbd": "Task Description (JTBD)",
+      "jtbdPlaceholder": "e.g., A Zoom user wants to schedule a meeting for tomorrow morning...",
+      "jtbdHint": "Briefly describe the flow you want to test",
+      "targetUsers": "Target Users",
+      "targetUsersPlaceholder": "e.g., First-time users, power users, elderly...",
+      "targetUsersHint": "Optional: Describe your target audience"
+    },
+    "platform": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "web": "Web"
+    },
+    "actions": {
+      "start": "Start Audit",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "required": "This field is required",
+      "invalidUrl": "Please enter a valid URL (http:// or https://)"
+    },
+    "messageTemplate": "Please perform a UX audit walkthrough on the following target:\n\n**Target URL:** {{url}}\n**Platform:** {{platform}}\n**Task (JTBD):** {{jtbd}}{{targetUsersLine}}\n\nPlease use the ux-audit-walkthrough skill to conduct a thorough UX evaluation."
+  },
   "config": {
     "title": "Setup Required",
     "description": "To start using AIPex, please configure your AI settings.",

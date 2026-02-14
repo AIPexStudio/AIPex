@@ -103,6 +103,38 @@ export interface TranslationResources {
     screenRecording: string;
     uxAuditGoal: string;
   };
+  uxAuditGoal: {
+    dialog: {
+      title: string;
+      description: string;
+    };
+    fields: {
+      targetLink: string;
+      targetLinkPlaceholder: string;
+      platform: string;
+      platformHint: string;
+      jtbd: string;
+      jtbdPlaceholder: string;
+      jtbdHint: string;
+      targetUsers: string;
+      targetUsersPlaceholder: string;
+      targetUsersHint: string;
+    };
+    platform: {
+      desktop: string;
+      mobile: string;
+      web: string;
+    };
+    actions: {
+      start: string;
+      cancel: string;
+    };
+    validation: {
+      required: string;
+      invalidUrl: string;
+    };
+    messageTemplate: string;
+  };
   config: {
     title: string;
     description: string;
@@ -272,6 +304,26 @@ export type BaseTranslationKey =
   | "welcome.research"
   | "welcome.screenRecording"
   | "welcome.uxAuditGoal"
+  | "uxAuditGoal.dialog.title"
+  | "uxAuditGoal.dialog.description"
+  | "uxAuditGoal.fields.targetLink"
+  | "uxAuditGoal.fields.targetLinkPlaceholder"
+  | "uxAuditGoal.fields.platform"
+  | "uxAuditGoal.fields.platformHint"
+  | "uxAuditGoal.fields.jtbd"
+  | "uxAuditGoal.fields.jtbdPlaceholder"
+  | "uxAuditGoal.fields.jtbdHint"
+  | "uxAuditGoal.fields.targetUsers"
+  | "uxAuditGoal.fields.targetUsersPlaceholder"
+  | "uxAuditGoal.fields.targetUsersHint"
+  | "uxAuditGoal.platform.desktop"
+  | "uxAuditGoal.platform.mobile"
+  | "uxAuditGoal.platform.web"
+  | "uxAuditGoal.actions.start"
+  | "uxAuditGoal.actions.cancel"
+  | "uxAuditGoal.validation.required"
+  | "uxAuditGoal.validation.invalidUrl"
+  | "uxAuditGoal.messageTemplate"
   | "config.title"
   | "config.description"
   | "config.apiTokenRequired"

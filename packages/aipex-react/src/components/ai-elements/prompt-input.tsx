@@ -465,6 +465,18 @@ export function PromptInputSkillTag({
 }: PromptInputSkillTagProps) {
   const skills = usePromptInputSkills();
 
+  const handleLabelClick = () => {
+    // Open options page with skills tab
+    if (typeof chrome !== "undefined" && chrome.tabs?.create) {
+      const skillParam = encodeURIComponent(data.name.slice(0, 200));
+      chrome.tabs.create({
+        url: chrome.runtime.getURL(
+          `src/pages/options/index.html?tab=skills&skill=${skillParam}`,
+        ),
+      });
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -478,7 +490,13 @@ export function PromptInputSkillTag({
       <span className="text-primary">
         <PuzzleIcon className="size-4" />
       </span>
-      <span className="max-w-[200px] truncate text-primary">{data.name}</span>
+      <span
+        className="max-w-[200px] truncate cursor-pointer hover:underline text-primary"
+        onClick={handleLabelClick}
+        title="Click to open skill settings"
+      >
+        {data.name}
+      </span>
       <Button
         aria-label="Remove skill"
         className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"

@@ -109,6 +109,38 @@
     "screenRecording": "开始创建用户操作手册",
     "uxAuditGoal": "深度审计您的 UX 目标"
   },
+  "uxAuditGoal": {
+    "dialog": {
+      "title": "深度审查你的UX目标",
+      "description": "请提供您想要审查的界面详情"
+    },
+    "fields": {
+      "targetLink": "目标链接",
+      "targetLinkPlaceholder": "输入想要测试的目标链接",
+      "platform": "运行平台",
+      "platformHint": "选择此次审查的平台",
+      "jtbd": "任务描述(JTBD)",
+      "jtbdPlaceholder": "举例: 用户想要预定明天早上的会议...",
+      "jtbdHint": "简单概括你想要测试的flow",
+      "targetUsers": "目标用户",
+      "targetUsersPlaceholder": "例如：首次用户、高级用户、老年人...",
+      "targetUsersHint": "可选：描述您的目标受众"
+    },
+    "platform": {
+      "desktop": "桌面端",
+      "mobile": "移动端",
+      "web": "网页端"
+    },
+    "actions": {
+      "start": "开始测试",
+      "cancel": "取消"
+    },
+    "validation": {
+      "required": "此字段为必填项",
+      "invalidUrl": "请输入有效的URL（http:// 或 https://）"
+    },
+    "messageTemplate": "请对以下目标进行UX审查走查：\n\n**目标URL：** {{url}}\n**平台：** {{platform}}\n**任务(JTBD)：** {{jtbd}}{{targetUsersLine}}\n\n请使用 ux-audit-walkthrough 技能进行全面的UX评估。"
+  },
   "config": {
     "title": "需要配置",
     "description": "使用 AIPex 前，请先配置您的 AI 设置。",

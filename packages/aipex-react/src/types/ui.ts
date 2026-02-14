@@ -107,4 +107,6 @@ export interface WelcomeSuggestion {
   text: string;
   iconColor?: string;
   bgColor?: string;
+  /** When true, clicking this suggestion triggers the UX audit dialog instead of sending the text directly. */
+  isUxAudit?: boolean;
 }

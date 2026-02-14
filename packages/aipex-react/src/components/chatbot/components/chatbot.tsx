@@ -1,5 +1,6 @@
 import { useCallback, useContext, useMemo, useState } from "react";
 import { useChat, useChatConfig } from "../../../hooks";
+import { useTranslation } from "../../../i18n/context";
 import { cn } from "../../../lib/utils";
 import type { ChatbotThemeVariables, ContextItem } from "../../../types";
 import { DEFAULT_MODELS } from "../constants";
@@ -15,6 +16,10 @@ import { ConfigurationGuide } from "./configuration-guide";
 import { Header } from "./header";
 import { InputArea } from "./input-area";
 import { MessageList } from "./message-list";
+import {
+  UxAuditGoalDialog,
+  type UxAuditFormData,
+} from "./ux-audit-goal-dialog";
 
 /**
  * Convert theme variables to CSS style object
@@ -227,8 +232,10 @@ function ChatbotContent({
     chatCtx || {};
   const { isReady: isAgentReady } = agentCtx || {};
 
+  const { t } = useTranslation();
   const [input, setInput] = useState(initialInputProp ?? "");
   const [inputResetCount, setInputResetCount] = useState(0);
+  const [isUxAuditDialogOpen, setIsUxAuditDialogOpen] = useState(false);
 
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
@@ -243,6 +250,28 @@ function ChatbotContent({
       void sendMessage?.(text);
     },
     [sendMessage],
+  );
+
+  const handleUxAuditClick = useCallback(() => {
+    setIsUxAuditDialogOpen(true);
+  }, []);
+
+  const handleUxAuditSubmit = useCallback(
+    (formData: UxAuditFormData) => {
+      const platformDisplay = t(`uxAuditGoal.platform.${formData.platform}`);
+      const targetUsersLine = formData.targetUsers
+        ? `\n**Target Users:** ${formData.targetUsers}`
+        : "";
+
+      const messageText = t("uxAuditGoal.messageTemplate")
+        .replace("{{url}}", formData.targetLink)
+        .replace("{{platform}}", platformDisplay)
+        .replace("{{jtbd}}", formData.jtbd)
+        .replace("{{targetUsersLine}}", targetUsersLine);
+
+      void sendMessage?.(messageText);
+    },
+    [t, sendMessage],
   );
 
   const handleCopy = useCallback((text: string) => {
@@ -278,6 +307,7 @@ function ChatbotContent({
             onRegenerate={regenerate}
             onCopy={handleCopy}
             onSuggestionClick={handleSuggestion}
+            onUxAuditClick={handleUxAuditClick}
           />
 
           {/* Input Area */}
@@ -293,6 +323,13 @@ function ChatbotContent({
           />
         </>
       )}
+
+      {/* UX Audit Goal Dialog */}
+      <UxAuditGoalDialog
+        open={isUxAuditDialogOpen}
+        onOpenChange={setIsUxAuditDialogOpen}
+        onSubmit={handleUxAuditSubmit}
+      />
     </div>
   );
 }

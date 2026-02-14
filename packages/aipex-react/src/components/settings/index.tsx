@@ -222,6 +222,8 @@ export function SettingsPage({
   onTestConnection,
   skillsContent,
   sttConfig,
+  initialTab,
+  initialSkill,
 }: SettingsPageProps) {
   const { t, language, changeLanguage } = useTranslation();
   const { theme, changeTheme, effectiveTheme } = useTheme();
@@ -248,7 +250,7 @@ export function SettingsPage({
     message: "",
   });
   const [showToken, setShowToken] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab ?? "general");
   const [searchTerm, setSearchTerm] = useState("");
   const [dataSharingEnabled, setDataSharingEnabled] = useState(true);
 

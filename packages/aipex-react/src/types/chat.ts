@@ -57,6 +57,8 @@ export interface InputAreaProps
 
 export interface WelcomeScreenProps extends HTMLAttributes<HTMLDivElement> {
   onSuggestionClick: (text: string) => void;
+  /** Handler for the UX audit suggestion; when provided, clicking that suggestion opens the audit dialog instead of sending the text directly. */
+  onUxAuditClick?: () => void;
   suggestions?: WelcomeSuggestion[];
 }
 

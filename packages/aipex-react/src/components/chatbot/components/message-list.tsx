@@ -19,10 +19,12 @@ export function DefaultMessageList({
   onRegenerate,
   onCopy,
   onSuggestionClick,
+  onUxAuditClick,
   className,
   ...props
 }: MessageListProps & {
   onSuggestionClick?: (text: string) => void;
+  onUxAuditClick?: () => void;
 }) {
   const { slots } = useComponentsContext();
 
@@ -40,6 +42,7 @@ export function DefaultMessageList({
               onSuggestionClick={(text) => {
                 onSuggestionClick?.(text);
               }}
+              onUxAuditClick={onUxAuditClick}
             />
           ) : (
             displayMessages.map((message, index) => (
@@ -69,7 +72,10 @@ export function DefaultMessageList({
  * MessageList - Renders either custom or default message list
  */
 export function MessageList(
-  props: MessageListProps & { onSuggestionClick?: (text: string) => void },
+  props: MessageListProps & {
+    onSuggestionClick?: (text: string) => void;
+    onUxAuditClick?: () => void;
+  },
 ) {
   const { components } = useComponentsContext();
 

@@ -5,7 +5,11 @@
  * used by browser-ext UI components.
  */
 
-import { SkillConflictError, skillManager } from "@aipexstudio/browser-runtime";
+import {
+  SkillConflictError,
+  skillManager,
+  zenfs,
+} from "@aipexstudio/browser-runtime";
 import type {
   SkillClient,
   SkillDetail,
@@ -76,6 +80,40 @@ export class SkillClientAdapter implements SkillClient {
       console.error(`Failed to get skill ${skillNameOrId}:`, error);
       return null;
     }
+  }
+
+  async getSkillContent(skillName: string): Promise<string> {
+    return await skillManager.getSkillContent(skillName);
+  }
+
+  async getSkillScript(
+    skillName: string,
+    scriptPath: string,
+  ): Promise<string> {
+    return await skillManager.getSkillScript(skillName, scriptPath);
+  }
+
+  async getSkillReference(
+    skillName: string,
+    refPath: string,
+  ): Promise<string> {
+    return await skillManager.getSkillReference(skillName, refPath);
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    // Validate path: must start with /skills/, no path traversal
+    if (!filePath.startsWith("/skills/")) {
+      throw new Error("File path must be under /skills/");
+    }
+    const decoded = decodeURIComponent(filePath);
+    if (decoded.includes("..")) {
+      throw new Error("Path traversal (..) is not allowed");
+    }
+    await zenfs.writeFile(filePath, content);
+  }
+
+  async refreshSkillMetadata(skillId: string): Promise<void> {
+    await skillManager.refreshSkillMetadata(skillId);
   }
 }
 

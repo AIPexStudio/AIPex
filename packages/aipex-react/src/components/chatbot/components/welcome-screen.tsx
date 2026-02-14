@@ -49,6 +49,7 @@ function useDefaultSuggestions(): WelcomeSuggestion[] {
         text: t("welcome.uxAuditGoal"),
         iconColor: "text-cyan-600",
         bgColor: "bg-cyan-100",
+        isUxAudit: true,
       },
     ],
     [t],
@@ -60,6 +61,7 @@ function useDefaultSuggestions(): WelcomeSuggestion[] {
  */
 export function DefaultWelcomeScreen({
   onSuggestionClick,
+  onUxAuditClick,
   suggestions,
   className,
   ...props
@@ -89,11 +91,16 @@ export function DefaultWelcomeScreen({
         <Suggestions className="grid gap-3 sm:gap-4 sm:grid-cols-2 w-full">
           {effectiveSuggestions.map((suggestion) => {
             const Icon = suggestion.icon;
+            // For UX audit suggestion, use the special handler if available
+            const handleClick =
+              suggestion.isUxAudit && onUxAuditClick
+                ? () => onUxAuditClick()
+                : onSuggestionClick;
             return (
               <Suggestion
                 key={suggestion.text}
                 suggestion={suggestion.text}
-                onClick={onSuggestionClick}
+                onClick={handleClick}
                 variant="outline"
                 size="lg"
                 className={cn(

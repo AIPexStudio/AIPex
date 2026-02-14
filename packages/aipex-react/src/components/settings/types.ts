@@ -24,6 +24,10 @@ export interface SettingsPageProps {
   skillsContent?: ReactNode;
   /** Optional ElevenLabs STT config adapter; when provided the STT card is shown. */
   sttConfig?: STTConfigAdapter;
+  /** Pre-select a tab on mount (e.g. from URL params). */
+  initialTab?: SettingsTab;
+  /** Pre-select a skill to open details for (used with initialTab="skills"). */
+  initialSkill?: string;
 }
 
 export interface ProviderConfig {
