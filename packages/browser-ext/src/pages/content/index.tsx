@@ -350,16 +350,16 @@ const HEARTBEAT_TTL_MS = 6_000; // Hide overlay if heartbeat is stale (>6 s)
 function BorderOverlayApp() {
   const [visible, setVisible] = React.useState(false);
 
-  const handleConversationState = React.useCallback(
-    (timestamp: unknown) => {
-      if (typeof timestamp === "number" && Date.now() - timestamp < HEARTBEAT_TTL_MS) {
-        setVisible(true);
-      } else {
-        setVisible(false);
-      }
-    },
-    [],
-  );
+  const handleConversationState = React.useCallback((timestamp: unknown) => {
+    if (
+      typeof timestamp === "number" &&
+      Date.now() - timestamp < HEARTBEAT_TTL_MS
+    ) {
+      setVisible(true);
+    } else {
+      setVisible(false);
+    }
+  }, []);
 
   React.useEffect(() => {
     // Check on mount

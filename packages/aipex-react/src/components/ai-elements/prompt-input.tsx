@@ -1019,8 +1019,7 @@ export const PromptInputTextarea = ({
       if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedSkillIndex(
-          (prev) =>
-            (prev - 1 + filteredSkills.length) % filteredSkills.length,
+          (prev) => (prev - 1 + filteredSkills.length) % filteredSkills.length,
         );
         return;
       }
@@ -1307,11 +1306,7 @@ export const PromptInputTextarea = ({
       // Fuzzy match: check if query characters appear in order in name
       const nameLower = skill.name.toLowerCase();
       let queryIndex = 0;
-      for (
-        let i = 0;
-        i < nameLower.length && queryIndex < query.length;
-        i++
-      ) {
+      for (let i = 0; i < nameLower.length && queryIndex < query.length; i++) {
         if (nameLower[i] === query[queryIndex]) {
           queryIndex++;
         }
@@ -1330,7 +1325,7 @@ export const PromptInputTextarea = ({
   // Reset selected skill index when filtered skills change
   useEffect(() => {
     setSelectedSkillIndex(0);
-  }, [filteredSkills]);
+  }, []);
 
   // Auto-scroll to selected item when navigating with keyboard
   useEffect(() => {
@@ -1354,7 +1349,7 @@ export const PromptInputTextarea = ({
         behavior: "smooth",
       });
     }
-  }, [selectedSkillIndex]);
+  }, []);
 
   // Calculate menu position when showing context menu or skill menu
   useEffect(() => {
@@ -1508,9 +1503,7 @@ export const PromptInputTextarea = ({
                   <button
                     key={skill.id}
                     ref={
-                      index === selectedSkillIndex
-                        ? selectedSkillItemRef
-                        : null
+                      index === selectedSkillIndex ? selectedSkillItemRef : null
                     }
                     type="button"
                     className={cn(

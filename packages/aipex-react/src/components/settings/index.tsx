@@ -18,8 +18,8 @@ import {
   Info,
   Mail,
   MessageCircle,
-  Mic,
   MessageSquare,
+  Mic,
   Package,
   Palette,
   Plus,
@@ -250,7 +250,9 @@ export function SettingsPage({
     message: "",
   });
   const [showToken, setShowToken] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab ?? "general");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    initialTab ?? "general",
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [dataSharingEnabled, setDataSharingEnabled] = useState(true);
 
@@ -1061,8 +1063,10 @@ export function SettingsPage({
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
                           {language === "zh" ? "保存中..." : "Saving..."}
                         </>
+                      ) : language === "zh" ? (
+                        "保存配置"
                       ) : (
-                        <>{language === "zh" ? "保存配置" : "Save Configuration"}</>
+                        "Save Configuration"
                       )}
                     </Button>
                     {sttApiKey && (

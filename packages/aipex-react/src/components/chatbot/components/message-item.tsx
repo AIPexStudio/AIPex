@@ -218,9 +218,7 @@ export function DefaultMessageItem({
           {message.metadata.needLogin && (
             <LoginPrompt
               showByokOption
-              onOpenSettings={() =>
-                chrome.runtime?.openOptionsPage?.()
-              }
+              onOpenSettings={() => chrome.runtime?.openOptionsPage?.()}
             />
           )}
           {message.metadata.needBuyToken && (

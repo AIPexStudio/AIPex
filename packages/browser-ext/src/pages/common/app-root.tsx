@@ -16,7 +16,6 @@ import ReactDOM from "react-dom/client";
 import { AuthProvider } from "../../auth";
 import { chromeStorageAdapter } from "../../hooks";
 import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
-import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 import {
   BROWSER_AGENT_CONFIG,
   useBrowserContextProviders,
@@ -31,6 +30,7 @@ import { BrowserMessageList } from "../../lib/browser-message-list";
 import { InputModeProvider } from "../../lib/input-mode-context";
 import { InterventionModeProvider } from "../../lib/intervention-mode-context";
 import { InterventionUI } from "../../lib/intervention-ui";
+import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
@@ -108,9 +108,7 @@ function useConversationHeartbeat() {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    chrome.storage.local
-      .remove("aipex-conversation-active")
-      .catch(() => {});
+    chrome.storage.local.remove("aipex-conversation-active").catch(() => {});
   }, []);
 
   // Cleanup on unmount
@@ -165,11 +163,9 @@ function ChatApp() {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Stop any active recording
-        chrome.runtime
-          .sendMessage({ request: "stop-recording" })
-          .catch(() => {
-            /* background may be busy */
-          });
+        chrome.runtime.sendMessage({ request: "stop-recording" }).catch(() => {
+          /* background may be busy */
+        });
         // Stop element capture on the active tab
         chrome.runtime
           .sendMessage({

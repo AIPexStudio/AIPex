@@ -4,8 +4,8 @@
  * version-checking services.
  */
 
-import { useCallback } from "react";
 import { UpdateBanner } from "@aipexstudio/aipex-react/components/chatbot";
+import { useCallback } from "react";
 import {
   checkVersion,
   dismissUpdate,

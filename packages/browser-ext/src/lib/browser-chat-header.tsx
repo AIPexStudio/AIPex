@@ -10,12 +10,7 @@ import { getRuntime } from "@aipexstudio/aipex-react/lib/runtime";
 import { cn } from "@aipexstudio/aipex-react/lib/utils";
 import type { HeaderProps } from "@aipexstudio/aipex-react/types";
 import { conversationStorage } from "@aipexstudio/browser-runtime";
-import {
-  KeyboardIcon,
-  MicIcon,
-  PlusIcon,
-  SettingsIcon,
-} from "lucide-react";
+import { KeyboardIcon, MicIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserProfile, useAuth } from "../auth";
 import { ConversationHistory } from "./conversation-history";

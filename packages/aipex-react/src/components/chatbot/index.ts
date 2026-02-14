@@ -39,6 +39,7 @@ export type {
 } from "../../types";
 // Individual component exports
 export {
+  type AutomationModeValue,
   BuyTokenPrompt,
   ConfigurationGuide,
   type ConfigurationGuideProps,
@@ -53,7 +54,6 @@ export {
   LoginPrompt,
   MessageItem,
   MessageList,
-  type AutomationModeValue,
   ModeIndicator,
   ModelChangePrompt,
   type ModelInfo,

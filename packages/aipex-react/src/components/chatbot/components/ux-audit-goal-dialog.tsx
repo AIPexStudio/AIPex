@@ -169,9 +169,7 @@ export function UxAuditGoalDialog({
                     formData.platform === platform ? "default" : "outline"
                   }
                   size="sm"
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, platform }))
-                  }
+                  onClick={() => setFormData((prev) => ({ ...prev, platform }))}
                 >
                   {t(`uxAuditGoal.platform.${platform}`)}
                 </Button>

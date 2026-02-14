@@ -8,12 +8,12 @@
  */
 
 import {
+  type SkillItem,
   usePromptInputContexts,
   usePromptInputSkills,
-  type SkillItem,
 } from "@aipexstudio/aipex-react/components/ai-elements/prompt-input";
-import { skillManager, skillStorage } from "@aipexstudio/browser-runtime";
 import type { SkillMetadata } from "@aipexstudio/browser-runtime";
+import { skillManager, skillStorage } from "@aipexstudio/browser-runtime";
 import { useEffect } from "react";
 import { useTabsSync } from "../hooks/use-tabs-sync";
 
@@ -84,7 +84,7 @@ export function BrowserContextLoader() {
       unsubscribeDisabled();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [skills]);
 
   return null;
 }

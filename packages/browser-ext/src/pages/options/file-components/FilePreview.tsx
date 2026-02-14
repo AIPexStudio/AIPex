@@ -123,7 +123,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       setEditedContent("");
       setSaveError(null);
     }
-  }, [open, filePath]);
+  }, [open]);
 
   const handleStartEdit = () => {
     if (fileInfo?.content) {

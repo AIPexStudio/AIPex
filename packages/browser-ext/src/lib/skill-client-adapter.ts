@@ -86,17 +86,11 @@ export class SkillClientAdapter implements SkillClient {
     return await skillManager.getSkillContent(skillName);
   }
 
-  async getSkillScript(
-    skillName: string,
-    scriptPath: string,
-  ): Promise<string> {
+  async getSkillScript(skillName: string, scriptPath: string): Promise<string> {
     return await skillManager.getSkillScript(skillName, scriptPath);
   }
 
-  async getSkillReference(
-    skillName: string,
-    refPath: string,
-  ): Promise<string> {
+  async getSkillReference(skillName: string, refPath: string): Promise<string> {
     return await skillManager.getSkillReference(skillName, refPath);
   }
 

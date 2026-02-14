@@ -20,7 +20,10 @@ export function BrowserChatInputArea(props: InputAreaProps) {
       // Send the transcribed text as a message
       props.onSubmit(text);
     },
-    [props.onSubmit],
+    [
+      props.onSubmit, // Send the transcribed text as a message
+      props,
+    ],
   );
 
   const handleSwitchToText = useCallback(() => {

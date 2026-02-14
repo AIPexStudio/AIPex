@@ -73,7 +73,12 @@ export const SkillList: React.FC<SkillListProps> = ({
   // Auto-open a skill's detail dialog when initialSkill is provided (from URL deep-link)
   const initialSkillHandled = useRef(false);
   useEffect(() => {
-    if (initialSkill && !loading && skills.length > 0 && !initialSkillHandled.current) {
+    if (
+      initialSkill &&
+      !loading &&
+      skills.length > 0 &&
+      !initialSkillHandled.current
+    ) {
       const match = skills.find(
         (s) => s.name === initialSkill || s.id === initialSkill,
       );

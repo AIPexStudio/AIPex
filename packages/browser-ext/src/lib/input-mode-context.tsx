@@ -3,7 +3,8 @@
  * Shared context for voice/text input mode toggle, persisted in chrome.storage.local.
  */
 
-import React, {
+import type React from "react";
+import {
   createContext,
   useCallback,
   useContext,
@@ -25,23 +26,22 @@ const InputModeContext = createContext<InputModeContextValue>({
 
 const STORAGE_KEY = "aipex-input-mode";
 
-export function InputModeProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function InputModeProvider({ children }: { children: React.ReactNode }) {
   const [inputMode, setInputModeState] = useState<InputMode>("text");
 
   // Load persisted value on mount
   useEffect(() => {
-    chrome.storage.local.get(STORAGE_KEY).then((result) => {
-      const stored = result[STORAGE_KEY];
-      if (stored === "voice" || stored === "text") {
-        setInputModeState(stored);
-      }
-    }).catch(() => {
-      // storage may not be available yet
-    });
+    chrome.storage.local
+      .get(STORAGE_KEY)
+      .then((result) => {
+        const stored = result[STORAGE_KEY];
+        if (stored === "voice" || stored === "text") {
+          setInputModeState(stored);
+        }
+      })
+      .catch(() => {
+        // storage may not be available yet
+      });
   }, []);
 
   // Listen for external changes (e.g. another instance)

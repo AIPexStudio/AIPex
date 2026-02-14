@@ -17,8 +17,8 @@ import { Header } from "./header";
 import { InputArea } from "./input-area";
 import { MessageList } from "./message-list";
 import {
-  UxAuditGoalDialog,
   type UxAuditFormData,
+  UxAuditGoalDialog,
 } from "./ux-audit-goal-dialog";
 
 /**
