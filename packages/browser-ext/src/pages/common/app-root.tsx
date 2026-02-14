@@ -59,7 +59,7 @@ function usePendingPrompt() {
         if (prompt && typeof prompt === "string") {
           const now = Date.now();
           // Only use prompts that are less than 5 seconds old
-          if (timestamp && now - timestamp < 5000) {
+          if (typeof timestamp === "number" && now - timestamp < 5000) {
             setPendingInput(prompt);
           }
         }

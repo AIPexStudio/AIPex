@@ -11,7 +11,6 @@ const DEFAULT_WEBSITE_URL = "https://www.claudechrome.com";
  */
 function resolveWebsiteUrl(): string {
   // Try to read from import.meta.env (Vite) if available
-  // biome-ignore lint/suspicious/noExplicitAny: import.meta.env may not exist in all environments
   const envUrl = (import.meta as any)?.env?.VITE_WEBSITE_URL;
 
   if (!envUrl || typeof envUrl !== "string" || envUrl.trim() === "") {

@@ -223,8 +223,10 @@ export function SettingsPage({
   skillsContent,
   sttConfig,
   initialTab,
-  initialSkill,
+  initialSkill: _initialSkill,
 }: SettingsPageProps) {
+  // initialSkill is reserved for future use (pre-select a skill when initialTab="skills")
+  void _initialSkill;
   const { t, language, changeLanguage } = useTranslation();
   const { theme, changeTheme, effectiveTheme } = useTheme();
 

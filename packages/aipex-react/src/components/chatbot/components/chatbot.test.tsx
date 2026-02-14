@@ -104,7 +104,7 @@ describe("Chatbot Component", () => {
     it("should render welcome screen when no messages", async () => {
       await renderWithAct(<Chatbot agent={mockAgent} />);
 
-      expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
+      expect(screen.getByText("Welcome to AIpex")).toBeInTheDocument();
     });
   });
 
@@ -233,14 +233,14 @@ describe("Chatbot Component", () => {
       fireEvent.click(newChatButton);
 
       // Verify the chat was reset (no messages)
-      expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
+      expect(screen.getByText("Welcome to AIpex")).toBeInTheDocument();
     });
 
     it("should send suggestion text when welcome suggestion is clicked", async () => {
       await renderWithAct(<Chatbot agent={mockAgent} />);
 
       const suggestion = screen.getByText(
-        "Help me organize my browser tabs by topic",
+        "Please organize my open tabs by topic and purpose",
       );
       fireEvent.click(suggestion);
 
@@ -408,7 +408,7 @@ describe("Chatbot State Management", () => {
     await renderWithAct(<Chatbot agent={mockAgent} />);
 
     // Initially should show welcome screen
-    expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
+    expect(screen.getByText("Welcome to AIpex")).toBeInTheDocument();
   });
 
   it("should preserve state across re-renders", async () => {
@@ -429,7 +429,7 @@ describe("Chatbot State Management", () => {
     });
 
     // Should still show the same content
-    expect(screen.getByText("Welcome to AIPex")).toBeInTheDocument();
+    expect(screen.getByText("Welcome to AIpex")).toBeInTheDocument();
   });
 });
 
