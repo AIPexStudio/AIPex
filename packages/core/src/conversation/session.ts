@@ -8,6 +8,11 @@ import type {
   SessionSummary,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
+import {
+  isTransientScreenshotItem,
+  pruneTransientScreenshotItems,
+  shapeScreenshotItems,
+} from "../utils/screenshot-shaping.js";
 
 function createEmptySessionMetrics(): SessionMetrics {
   return {
@@ -53,7 +58,11 @@ export class Session implements OpenAISession {
   }
 
   async addItems(items: AgentInputItem[]): Promise<void> {
-    this.items.push(...items);
+    // Shape screenshot tool results: strip base64 imageData from the tool
+    // result and inject a transient user message with the real image so the
+    // model can consume it via the standard vision path.
+    const shaped = shapeScreenshotItems(items);
+    this.items.push(...shaped);
     this.metadata["lastActiveAt"] = Date.now();
     this.updatePreview();
   }
@@ -156,7 +165,12 @@ export class Session implements OpenAISession {
   private updatePreview(): void {
     const latestUserMessage = [...this.items]
       .reverse()
-      .find((item) => item.type === "message" && item.role === "user");
+      .find(
+        (item) =>
+          item.type === "message" &&
+          item.role === "user" &&
+          !isTransientScreenshotItem(item),
+      );
 
     const previewSource =
       this.extractContent(latestUserMessage) ??
@@ -207,7 +221,9 @@ export class Session implements OpenAISession {
   toJSON(): SerializedSession {
     return {
       id: this.id,
-      items: this.items,
+      // Prune transient screenshot user-image messages before persisting
+      // to avoid storing large base64 blobs in conversation history.
+      items: pruneTransientScreenshotItems(this.items),
       metadata: this.metadata,
       config: this.config,
       metrics: this.sessionMetrics,

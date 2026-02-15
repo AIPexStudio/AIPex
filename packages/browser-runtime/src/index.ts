@@ -19,6 +19,8 @@ export type {
 } from "./lib/vm/zenfs-manager.js";
 // Virtual File System
 export { zenfs } from "./lib/vm/zenfs-manager.js";
+// Screenshot Storage (IndexedDB)
+export { RuntimeScreenshotStorage } from "./lib/screenshot-storage.js";
 export * from "./runtime/automation-mode.js";
 export * from "./runtime/browser-automation-host.js";
 export * from "./runtime/context-providers.js";

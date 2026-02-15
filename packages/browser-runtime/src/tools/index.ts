@@ -15,7 +15,18 @@ import {
   highlightTextInlineTool,
   scrollToElementTool,
 } from "./page";
-import { captureScreenshotTool, captureTabScreenshotTool } from "./screenshot";
+import {
+  captureScreenshotTool,
+  captureScreenshotWithHighlightTool,
+  captureTabScreenshotTool,
+} from "./screenshot";
+// Clipboard image tools – available but not registered in the default bundle.
+// Enable explicitly if the product decides to ship clipboard access.
+// import {
+//   captureScreenshotToClipboardTool,
+//   readClipboardImageTool,
+//   getClipboardImageInfoTool,
+// } from "./screenshot";
 import { skillTools } from "./skill";
 import { searchElementsTool } from "./snapshot";
 import {
@@ -30,13 +41,15 @@ import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
 
 /**
  * All browser tools registered for AI use
- * Total: 31 tools (27 core + 4 intervention tools)
+ * Total: 32 tools (28 core + 4 intervention tools)
  *
  * Disabled tools (per aipex):
  * - switch_to_tab (causes context switching issues)
  * - duplicate_tab (not in aipex)
  * - wait (replaced by computer tool's wait action)
- * - capture_screenshot_to_clipboard (not enabled in aipex)
+ * - capture_screenshot_to_clipboard (not enabled in aipex default bundle)
+ * - read_clipboard_image (P1 clipboard tool – not enabled by default; requires security review)
+ * - get_clipboard_image_info (P1 clipboard tool – not enabled by default; requires security review)
  * - download_text_as_markdown (not enabled in aipex)
  * - download_current_chat_images (architecture issue, not enabled in aipex)
  * - organize_tabs (stub implementation, temporarily disabled until AI grouping is complete)
@@ -72,8 +85,9 @@ const browserFunctionTools: BrowserFunctionTool[] = [
   highlightElementTool,
   highlightTextInlineTool,
 
-  // Screenshot (2 tools)
+  // Screenshot (3 tools)
   captureScreenshotTool,
+  captureScreenshotWithHighlightTool,
   captureTabScreenshotTool,
 
   // Download (2 tools)

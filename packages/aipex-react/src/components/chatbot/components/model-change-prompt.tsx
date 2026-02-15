@@ -1,5 +1,6 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { fetchModelsForPrompt } from "../../../lib/models";
 
 export interface ModelInfo {
   id: string;
@@ -46,24 +47,36 @@ export const ModelChangePrompt: React.FC<ModelChangePromptProps> = ({
   const [allModels, setAllModels] = useState<ModelInfo[]>(availableModels);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
-  // Fetch models from API
-  useEffect(() => {
-    const loadModels = async () => {
-      if (!onFetchModels) return;
+  // Resolve the fetch function: use the provided callback or fall back to
+  // the built-in fetchModelsForPrompt so models are always loaded.
+  const resolvedFetch = useCallback(
+    () => (onFetchModels ? onFetchModels() : fetchModelsForPrompt()),
+    [onFetchModels],
+  );
 
+  // Fetch models from API (always runs — no longer gated on onFetchModels)
+  useEffect(() => {
+    let cancelled = false;
+    const loadModels = async () => {
       setIsLoadingModels(true);
       try {
-        const fetchedModels = await onFetchModels();
-        setAllModels(fetchedModels);
-      } catch (error) {
-        console.error("Failed to load models:", error);
+        const fetched = await resolvedFetch();
+        if (!cancelled) {
+          setAllModels(fetched);
+        }
+      } catch (_error) {
         // Keep using availableModels as fallback
       } finally {
-        setIsLoadingModels(false);
+        if (!cancelled) {
+          setIsLoadingModels(false);
+        }
       }
     };
     loadModels();
-  }, [onFetchModels]);
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedFetch]);
 
   // Update models when availableModels prop changes
   useEffect(() => {

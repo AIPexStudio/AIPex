@@ -4,6 +4,8 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
+import { useTranslation } from "../../../../i18n/context";
+import { translatedToolName } from "../../../../i18n/tool-names";
 import { cn } from "../../../../lib/utils";
 import type { ToolDisplaySlotProps } from "../../../../types";
 import { Response } from "../../../ai-elements/response";
@@ -13,6 +15,7 @@ import {
   ToolHeader,
   ToolInput,
   ToolOutput,
+  ToolScreenshot,
 } from "../../../ai-elements/tool";
 import {
   Collapsible,
@@ -26,13 +29,15 @@ import { formatToolOutput, mapToolState } from "../../tools";
  * Opens by default when there's an error so users can see the failure reason
  */
 export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
+  const { t } = useTranslation();
+  const displayName = translatedToolName(t, tool.toolName);
   // Expand by default when in error state to make failure reasons visible
   const shouldExpandByDefault = tool.state === "error";
 
   return (
     <Tool defaultOpen={shouldExpandByDefault}>
       <ToolHeader
-        type={`tool-${tool.toolName}`}
+        type={displayName}
         state={mapToolState(tool.state)}
       />
       <ToolContent>
@@ -45,6 +50,10 @@ export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
           }
           errorText={tool.errorText}
         />
+        <ToolScreenshot
+          screenshot={tool.screenshot}
+          screenshotUid={tool.screenshotUid}
+        />
       </ToolContent>
     </Tool>
   );
@@ -55,6 +64,8 @@ export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
  * Opens by default when there's an error so users can see the failure reason
  */
 export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
+  const { t } = useTranslation();
+  const displayName = translatedToolName(t, tool.toolName);
   const getStatusIcon = () => {
     switch (tool.state) {
       case "pending":
@@ -75,7 +86,7 @@ export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
     <Collapsible defaultOpen={shouldExpandByDefault}>
       <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
         {getStatusIcon()}
-        <span className="text-sm font-medium">{tool.toolName}</span>
+        <span className="text-sm font-medium">{displayName}</span>
         {tool.duration && (
           <span className="text-xs text-muted-foreground ml-auto">
             {tool.duration}ms
@@ -118,6 +129,8 @@ export function CompactToolDisplay({ tool }: ToolDisplaySlotProps) {
  * Minimal tool display (just status indicator)
  */
 export function MinimalToolDisplay({ tool }: ToolDisplaySlotProps) {
+  const { t } = useTranslation();
+  const displayName = translatedToolName(t, tool.toolName);
   const getStatusColor = () => {
     switch (tool.state) {
       case "pending":
@@ -134,7 +147,7 @@ export function MinimalToolDisplay({ tool }: ToolDisplaySlotProps) {
   return (
     <div className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-full bg-muted">
       <div className={cn("w-2 h-2 rounded-full", getStatusColor())} />
-      <span>{tool.toolName}</span>
+      <span>{displayName}</span>
       {tool.state === "executing" && (
         <Loader2Icon className="size-3 animate-spin" />
       )}

@@ -47,6 +47,10 @@ export interface UIToolPart {
   state: UIToolState;
   errorText?: string;
   duration?: number;
+  /** Base64 data URL of the screenshot (inline) */
+  screenshot?: string;
+  /** UID referencing a screenshot in ScreenshotStorage (IndexedDB) */
+  screenshotUid?: string;
 }
 
 export interface UIContextPart {

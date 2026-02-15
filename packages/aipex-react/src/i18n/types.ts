@@ -13,6 +13,8 @@ export interface TranslationResources {
     stop: string;
     processing: string;
     noActions: string;
+    showThinkingDetails: string;
+    clickToExpand: string;
   };
   settings: {
     title: string;
@@ -229,6 +231,8 @@ export type BaseTranslationKey =
   | "common.stop"
   | "common.processing"
   | "common.noActions"
+  | "common.showThinkingDetails"
+  | "common.clickToExpand"
   | "settings.title"
   | "settings.subtitle"
   | "settings.language"

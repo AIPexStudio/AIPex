@@ -10,7 +10,9 @@
     "send": "发送",
     "stop": "停止",
     "processing": "处理中...",
-    "noActions": "无可用操作"
+    "noActions": "无可用操作",
+    "showThinkingDetails": "显示思考过程",
+    "clickToExpand": "点击展开"
   },
   "settings": {
     "title": "设置",

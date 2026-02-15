@@ -10,7 +10,9 @@
     "send": "Send",
     "stop": "Stop",
     "processing": "Processing...",
-    "noActions": "No actions"
+    "noActions": "No actions",
+    "showThinkingDetails": "Show thinking details",
+    "clickToExpand": "Click to expand"
   },
   "settings": {
     "title": "Settings",

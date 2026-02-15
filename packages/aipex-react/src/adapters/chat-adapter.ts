@@ -1,5 +1,11 @@
 import type { AgentEvent } from "@aipexstudio/aipex-core";
 import { generateId } from "@aipexstudio/aipex-core";
+import { ScreenshotStorage } from "../lib/screenshot-storage";
+import {
+  extractScreenshotFromToolResult,
+  isCaptureScreenshotTool,
+  type ScreenshotExtraction,
+} from "../lib/screenshot-utils";
 import type {
   ChatAdapterOptions,
   ChatAdapterState,
@@ -412,11 +418,76 @@ export class ChatAdapter {
       return;
     }
 
+    // Extract screenshot data from screenshot tools
+    if (isCaptureScreenshotTool(toolName)) {
+      const screenshotInfo = extractScreenshotFromToolResult(
+        toolName,
+        result,
+      );
+      if (screenshotInfo) {
+        this.applyScreenshotToolResult(callId, result, screenshotInfo);
+        return;
+      }
+    }
+
     this.updateToolPart(callId, (toolPart) => ({
       ...toolPart,
       state: "completed",
       output: result,
     }));
+  }
+
+  /**
+   * Handle a completed screenshot tool result.
+   *
+   * Uses the tool-provided screenshotUid (the tool already saved to IndexedDB)
+   * rather than generating a new one. Falls back to UI-side storage only if
+   * screenshotUid is missing (e.g., IndexedDB save failed in the tool).
+   */
+  private applyScreenshotToolResult(
+    callId: string,
+    result: unknown,
+    info: ScreenshotExtraction,
+  ): void {
+    if (info.screenshotUid) {
+      // Tool already saved to IndexedDB — use its uid directly
+      this.updateToolPart(callId, (toolPart) => ({
+        ...toolPart,
+        state: "completed",
+        output: result,
+        screenshotUid: info.screenshotUid!,
+        // Keep inline screenshot for immediate rendering if base64 is present
+        ...(info.imageData ? { screenshot: info.imageData } : {}),
+      }));
+    } else if (info.imageData) {
+      // Fallback: tool didn't provide a uid (storage failure) — save in UI
+      this.updateToolPart(callId, (toolPart) => ({
+        ...toolPart,
+        state: "completed",
+        output: result,
+        screenshot: info.imageData!,
+      }));
+      ScreenshotStorage.saveScreenshot(info.imageData)
+        .then((uid) => {
+          this.updateToolPart(callId, (toolPart) => ({
+            ...toolPart,
+            screenshotUid: uid,
+          }));
+        })
+        .catch(() => {
+          // Storage failed — screenshot still visible via inline data
+        });
+    } else {
+      // No image data at all (sendToLLM=false path) — just complete
+      this.updateToolPart(callId, (toolPart) => ({
+        ...toolPart,
+        state: "completed",
+        output: result,
+        ...(info.screenshotUid
+          ? { screenshotUid: info.screenshotUid }
+          : {}),
+      }));
+    }
   }
 
   /**

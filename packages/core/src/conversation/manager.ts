@@ -7,6 +7,7 @@ import type {
   SessionTree,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
+import { pruneTransientScreenshotItems } from "../utils/screenshot-shaping.js";
 import type { ConversationCompressor } from "./compressor.js";
 import { Session } from "./session.js";
 
@@ -87,7 +88,10 @@ export class ConversationManager {
   }
 
   private async doCompress(session: Session): Promise<{ summary: string }> {
-    const items = await session.getItems();
+    // Prune transient screenshot user-image messages before compression
+    // to avoid sending large base64 blobs to the compressor/LLM.
+    const rawItems = await session.getItems();
+    const items = pruneTransientScreenshotItems(rawItems);
     const { summary, compressedItems } =
       await this.compressor!.compressItems(items);
 

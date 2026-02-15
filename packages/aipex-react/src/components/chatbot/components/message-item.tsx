@@ -1,7 +1,15 @@
-import { CopyIcon, RefreshCcwIcon } from "lucide-react";
-import { Fragment } from "react";
+import { CopyIcon, RefreshCcwIcon, WrenchIcon } from "lucide-react";
+import { Fragment, useMemo } from "react";
+import { useTranslation } from "../../../i18n/context";
+import { translatedToolName } from "../../../i18n/tool-names";
+import { transformScreenshotPlaceholders } from "../../../lib/screenshot-utils";
 import { cn } from "../../../lib/utils";
-import type { MessageItemProps, UISourceUrlPart } from "../../../types";
+import type {
+  MessageItemProps,
+  UIMessage,
+  UISourceUrlPart,
+  UIToolPart,
+} from "../../../types";
 import { Action, Actions } from "../../ai-elements/actions";
 import { Message, MessageContent } from "../../ai-elements/message";
 import {
@@ -55,6 +63,21 @@ export function DefaultMessageItem({
     return null;
   }
 
+  // Collect screenshot data from tool parts for placeholder resolution
+  const { screenshotUidList, screenshotDataMap } = useMemo(() => {
+    const uids: string[] = [];
+    const dataMap = new Map<string, string>();
+    for (const p of message.parts) {
+      if (p.type === "tool" && p.screenshotUid) {
+        uids.push(p.screenshotUid);
+        if (p.screenshot) {
+          dataMap.set(p.screenshotUid, p.screenshot);
+        }
+      }
+    }
+    return { screenshotUidList: uids, screenshotDataMap: dataMap };
+  }, [message.parts]);
+
   // Render sources if present
   const sourceUrls = message.parts.filter(
     (part): part is UISourceUrlPart => part.type === "source-url",
@@ -79,12 +102,27 @@ export function DefaultMessageItem({
         const key = `${message.id}-${i}`;
 
         switch (part.type) {
-          case "text":
+          case "text": {
+            // Transform [[screenshot:...]] placeholders to markdown images.
+            // First resolve to special URLs, then replace with actual
+            // base64 data URLs when available for inline rendering.
+            let processedText = part.text;
+            if (screenshotUidList.length > 0) {
+              processedText = transformScreenshotPlaceholders(
+                processedText,
+                screenshotUidList,
+              );
+              // Replace aipex-screenshot.invalid URLs with actual data
+              for (const [uid, data] of screenshotDataMap) {
+                const placeholder = `https://aipex-screenshot.invalid/${uid}`;
+                processedText = processedText.split(placeholder).join(data);
+              }
+            }
             return (
               <Fragment key={key}>
                 <Message from={message.role as "user" | "assistant" | "system"}>
                   <MessageContent>
-                    <Response>{part.text}</Response>
+                    <Response>{processedText}</Response>
                   </MessageContent>
                 </Message>
                 {/* Actions for last assistant message */}
@@ -112,6 +150,7 @@ export function DefaultMessageItem({
                   ))}
               </Fragment>
             );
+          }
 
           case "file":
             return (
@@ -237,6 +276,59 @@ export function DefaultMessageItem({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ============ Collapsed tool display for folded messages ============
+
+function CollapsedToolDisplay({ tool }: { tool: UIToolPart }) {
+  const { t } = useTranslation();
+  const displayName = translatedToolName(t, tool.toolName);
+  return (
+    <div className="text-xs text-muted-foreground py-1 px-2 flex items-center gap-1.5">
+      <WrenchIcon className="size-3" />
+      {displayName}
+    </div>
+  );
+}
+
+// ============ Collapsed message item for intermediate assistant messages ============
+
+/**
+ * CollapsedMessageItem – simplified rendering for intermediate assistant
+ * messages inside a folded "thinking details" section.
+ * Shows text as bullet points and tools as compact single-line displays.
+ */
+export function CollapsedMessageItem({ message }: { message: UIMessage }) {
+  return (
+    <div>
+      {message.parts.map((part, i) => {
+        const key = `${message.id}-collapsed-${i}`;
+        switch (part.type) {
+          case "text":
+            return (
+              <div key={key} className="text-sm text-muted-foreground py-1">
+                - {part.text}
+              </div>
+            );
+          case "tool":
+            return <CollapsedToolDisplay key={key} tool={part} />;
+          case "reasoning":
+            return (
+              <div
+                key={key}
+                className="text-xs text-muted-foreground/70 py-0.5 italic"
+              >
+                {part.text.length > 120
+                  ? `${part.text.slice(0, 120)}…`
+                  : part.text}
+              </div>
+            );
+          default:
+            return null;
+        }
+      })}
     </div>
   );
 }

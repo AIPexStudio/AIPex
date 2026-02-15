@@ -41,32 +41,58 @@ export function ChatImagesListener() {
 
         for (const msg of messages) {
           for (const part of msg.parts) {
-            // Tool parts may carry screenshot data in their output
+            // Tool parts may carry screenshot data inline (screenshot field)
+            // or in their output (imageData field)
             if (part.type === "tool") {
-              const output = (part as { output?: unknown }).output;
+              const toolPart = part as {
+                output?: unknown;
+                screenshot?: string;
+                toolName?: string;
+              };
+
+              // Prefer the inline screenshot field (set by ChatAdapter)
+              const screenshotData = toolPart.screenshot;
               if (
-                output &&
-                typeof output === "object" &&
-                "imageData" in output
+                screenshotData &&
+                typeof screenshotData === "string" &&
+                screenshotData.startsWith("data:image/")
               ) {
-                const imageData = (output as { imageData?: string }).imageData;
+                images.push({
+                  id: msg.id,
+                  parts: [
+                    {
+                      type: "image",
+                      imageData: screenshotData,
+                      imageTitle: toolPart.toolName || "Screenshot",
+                    },
+                  ],
+                });
+              } else {
+                // Fall back to extracting from output
+                const output = toolPart.output;
                 if (
-                  imageData &&
-                  typeof imageData === "string" &&
-                  imageData.startsWith("data:image/")
+                  output &&
+                  typeof output === "object" &&
+                  "imageData" in output
                 ) {
-                  images.push({
-                    id: msg.id,
-                    parts: [
-                      {
-                        type: "image",
-                        imageData,
-                        imageTitle:
-                          (part as { toolName?: string }).toolName ||
-                          "Screenshot",
-                      },
-                    ],
-                  });
+                  const imageData = (output as { imageData?: string })
+                    .imageData;
+                  if (
+                    imageData &&
+                    typeof imageData === "string" &&
+                    imageData.startsWith("data:image/")
+                  ) {
+                    images.push({
+                      id: msg.id,
+                      parts: [
+                        {
+                          type: "image",
+                          imageData,
+                          imageTitle: toolPart.toolName || "Screenshot",
+                        },
+                      ],
+                    });
+                  }
                 }
               }
             }

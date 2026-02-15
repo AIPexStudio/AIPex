@@ -1,6 +1,7 @@
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useChat, useChatConfig } from "../../../hooks";
 import { useTranslation } from "../../../i18n/context";
+import { fetchModelsForSelector } from "../../../lib/models";
 import { cn } from "../../../lib/utils";
 import type { ChatbotThemeVariables, ContextItem } from "../../../types";
 import { DEFAULT_MODELS } from "../constants";
@@ -237,6 +238,27 @@ function ChatbotContent({
   const [inputResetCount, setInputResetCount] = useState(0);
   const [isUxAuditDialogOpen, setIsUxAuditDialogOpen] = useState(false);
 
+  // Fetch server model list on mount, fall back to prop-provided models
+  const [fetchedModels, setFetchedModels] = useState<
+    Array<{ name: string; value: string }> | null
+  >(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchModelsForSelector()
+      .then((serverModels) => {
+        if (!cancelled && serverModels.length > 0) {
+          setFetchedModels(serverModels);
+        }
+      })
+      .catch(() => {
+        // Fallback to prop-provided models — already used below
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const effectiveModels = fetchedModels ?? models;
+
   const handleSubmit = useCallback(
     (text: string, files?: File[], contexts?: ContextItem[]) => {
       void sendMessage?.(text, files, contexts);
@@ -318,7 +340,7 @@ function ChatbotContent({
             onSubmit={handleSubmit}
             onStop={interrupt}
             status={status || "idle"}
-            models={models}
+            models={effectiveModels}
             placeholderTexts={placeholderTexts}
           />
         </>
