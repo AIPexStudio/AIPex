@@ -333,9 +333,7 @@ describe("shapeScreenshotItems", () => {
     // Even for flat input (no data wrapper), stripped output is wrapped
     const items = [createScreenshotToolResult()];
     const shaped = shapeScreenshotItems(items);
-    const parsed = JSON.parse(
-      (shaped[0] as { output: string }).output,
-    );
+    const parsed = JSON.parse((shaped[0] as { output: string }).output);
 
     expect(parsed).toHaveProperty("success", true);
     expect(parsed).toHaveProperty("data");

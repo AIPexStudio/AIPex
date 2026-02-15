@@ -97,65 +97,71 @@ export function toStorageFormat(
   return messages.map((msg) => ({
     id: msg.id,
     role: msg.role === "tool" ? "assistant" : msg.role, // Map "tool" to "assistant"
-    parts: msg.parts.flatMap((part) => {
-      switch (part.type) {
-        case "text":
-          return { type: "text", text: part.text };
-        case "file":
-          // Map file to image (store URL as imageData)
-          return {
-            type: "image",
-            imageData: part.url,
-            imageTitle: part.filename,
-          };
-        case "tool":
-          // Map tool to tool_use + tool_result pair (when completed)
-          // or just tool_use (when pending/executing).
-          // Emitting both ensures fromStorageFormat can correlate them
-          // to restore the proper toolName and input.
-          if (part.output !== undefined) {
-            // Avoid double-stringifying if output is already a string.
-            let content =
-              typeof part.output === "string"
-                ? part.output
-                : JSON.stringify(part.output);
-
-            // Strip base64 imageData from screenshot tool results before
-            // persisting to keep stored conversations small and avoid
-            // storing large blobs. The screenshotUid is preserved in the
-            // output so images can be loaded from IndexedDB on restore.
-            content = stripImageDataFromToolOutput(part.toolName, content);
-
-            return [
-              {
-                type: "tool_use",
-                id: part.toolCallId,
-                name: part.toolName,
-                input: part.input as Record<string, unknown>,
-              },
-              {
-                type: "tool_result",
-                tool_use_id: part.toolCallId,
-                content,
-                is_error: part.state === "error",
-              },
-            ];
-          }
-          return {
-            type: "tool_use",
-            id: part.toolCallId,
-            name: part.toolName,
-            input: part.input as Record<string, unknown>,
-          };
-        default:
-          // For context, source-url, reasoning - store as text
-          if ("text" in part) {
+    parts: msg.parts.flatMap(
+      (
+        part,
+      ):
+        | RuntimeUIMessage["parts"][number]
+        | RuntimeUIMessage["parts"][number][] => {
+        switch (part.type) {
+          case "text":
             return { type: "text", text: part.text };
-          }
-          // Fallback: store as text with type info
-          return { type: "text", text: `[${part.type}]` };
-      }
-    }),
+          case "file":
+            // Map file to image (store URL as imageData)
+            return {
+              type: "image",
+              imageData: part.url,
+              imageTitle: part.filename,
+            };
+          case "tool":
+            // Map tool to tool_use + tool_result pair (when completed)
+            // or just tool_use (when pending/executing).
+            // Emitting both ensures fromStorageFormat can correlate them
+            // to restore the proper toolName and input.
+            if (part.output !== undefined) {
+              // Avoid double-stringifying if output is already a string.
+              let content =
+                typeof part.output === "string"
+                  ? part.output
+                  : JSON.stringify(part.output);
+
+              // Strip base64 imageData from screenshot tool results before
+              // persisting to keep stored conversations small and avoid
+              // storing large blobs. The screenshotUid is preserved in the
+              // output so images can be loaded from IndexedDB on restore.
+              content = stripImageDataFromToolOutput(part.toolName, content);
+
+              return [
+                {
+                  type: "tool_use",
+                  id: part.toolCallId,
+                  name: part.toolName,
+                  input: part.input as Record<string, unknown>,
+                },
+                {
+                  type: "tool_result",
+                  tool_use_id: part.toolCallId,
+                  content,
+                  is_error: part.state === "error",
+                },
+              ];
+            }
+            return {
+              type: "tool_use",
+              id: part.toolCallId,
+              name: part.toolName,
+              input: part.input as Record<string, unknown>,
+            };
+          default:
+            // For context, source-url, reasoning - store as text
+            if ("text" in part) {
+              return { type: "text", text: part.text };
+            }
+            // Fallback: store as text with type info
+            return { type: "text", text: `[${part.type}]` };
+        }
+      },
+    ),
     timestamp: msg.timestamp,
   })) as RuntimeUIMessage[];
 }

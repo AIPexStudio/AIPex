@@ -12,7 +12,6 @@ import { ConversationManager } from "../conversation/manager.js";
 import type { Session } from "../conversation/session.js";
 import { SessionStorage } from "../conversation/storage.js";
 import { InMemoryStorage } from "../storage/memory.js";
-import { shapeScreenshotItems } from "../utils/screenshot-shaping.js";
 import type {
   AfterResponsePayload,
   AgentEvent,
@@ -28,6 +27,7 @@ import type {
 } from "../types.js";
 import { AgentError, ErrorCode } from "../utils/errors.js";
 import { safeJsonParse } from "../utils/json.js";
+import { shapeScreenshotItems } from "../utils/screenshot-shaping.js";
 
 export class AIPex {
   private agent: OpenAIAgent;

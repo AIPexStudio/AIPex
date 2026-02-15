@@ -58,11 +58,6 @@ export function DefaultMessageItem({
 }: MessageItemProps) {
   const { slots } = useComponentsContext();
 
-  // Filter out system messages
-  if (message.role === "system") {
-    return null;
-  }
-
   // Collect screenshot data from tool parts for placeholder resolution
   const { screenshotUidList, screenshotDataMap } = useMemo(() => {
     const uids: string[] = [];
@@ -77,6 +72,11 @@ export function DefaultMessageItem({
     }
     return { screenshotUidList: uids, screenshotDataMap: dataMap };
   }, [message.parts]);
+
+  // Filter out system messages
+  if (message.role === "system") {
+    return null;
+  }
 
   // Render sources if present
   const sourceUrls = message.parts.filter(
