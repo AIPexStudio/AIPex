@@ -6,6 +6,88 @@
 import type { UIMessage as ReactUIMessage } from "@aipexstudio/aipex-react/types";
 import type { UIMessage as RuntimeUIMessage } from "@aipexstudio/browser-runtime";
 
+/** Tool names whose results may include screenshot image data */
+const SCREENSHOT_TOOL_NAMES = new Set([
+  "capture_screenshot",
+  "capture_screenshot_with_highlight",
+  "capture_tab_screenshot",
+]);
+
+/** Placeholder that replaces base64 imageData in stored tool results */
+const IMAGE_DATA_PLACEHOLDER =
+  "[Image data removed - see following user message]";
+
+interface ScreenshotToolInfo {
+  /** The base64 data URL if present (may be null if already stripped) */
+  imageData: string | null;
+  /** The screenshot uid if present */
+  screenshotUid: string | null;
+}
+
+/**
+ * Navigate into the parsed tool result to find the "actual data" layer.
+ * Handles nesting: { data: { ... } }, { data: { data: { ... } } }, or flat.
+ */
+function getScreenshotActualData(
+  parsedOutput: unknown,
+): Record<string, unknown> | null {
+  if (typeof parsedOutput !== "object" || parsedOutput === null) return null;
+  const obj = parsedOutput as Record<string, unknown>;
+  const middleLayer = obj.data as Record<string, unknown> | undefined;
+  return (middleLayer?.data as Record<string, unknown>) ?? middleLayer ?? obj;
+}
+
+/**
+ * Extract screenshot info (imageData + screenshotUid) from a parsed tool result.
+ */
+function extractScreenshotInfo(
+  toolName: string,
+  parsedOutput: unknown,
+): ScreenshotToolInfo | null {
+  if (!SCREENSHOT_TOOL_NAMES.has(toolName)) return null;
+  const actual = getScreenshotActualData(parsedOutput);
+  if (!actual) return null;
+
+  const imageData =
+    typeof actual.imageData === "string" &&
+    actual.imageData.startsWith("data:image/")
+      ? actual.imageData
+      : null;
+  const screenshotUid =
+    typeof actual.screenshotUid === "string" ? actual.screenshotUid : null;
+
+  if (!imageData && !screenshotUid) return null;
+  return { imageData, screenshotUid };
+}
+
+/**
+ * Strip base64 imageData from a screenshot tool result string, replacing it
+ * with a placeholder. Returns the stripped string (or the original if not applicable).
+ */
+function stripImageDataFromToolOutput(
+  toolName: string,
+  content: string,
+): string {
+  if (!SCREENSHOT_TOOL_NAMES.has(toolName)) return content;
+
+  const parsed = safeJsonParse<Record<string, unknown>>(content);
+  if (!parsed) return content;
+
+  const actual = getScreenshotActualData(parsed);
+  if (!actual) return content;
+
+  if (
+    typeof actual.imageData !== "string" ||
+    !actual.imageData.startsWith("data:image/")
+  ) {
+    return content;
+  }
+
+  // Replace imageData in the actual data layer
+  actual.imageData = IMAGE_DATA_PLACEHOLDER;
+  return JSON.stringify(parsed);
+}
+
 /**
  * Convert aipex-react UIMessage to runtime UIMessage for storage
  */
@@ -15,47 +97,71 @@ export function toStorageFormat(
   return messages.map((msg) => ({
     id: msg.id,
     role: msg.role === "tool" ? "assistant" : msg.role, // Map "tool" to "assistant"
-    parts: msg.parts.map((part) => {
-      switch (part.type) {
-        case "text":
-          return { type: "text", text: part.text };
-        case "file":
-          // Map file to image (store URL as imageData)
-          return {
-            type: "image",
-            imageData: part.url,
-            imageTitle: part.filename,
-          };
-        case "tool":
-          // Map tool to tool_use or tool_result based on state
-          if (part.output !== undefined) {
-            // Avoid double-stringifying if output is already a string
-            const content =
-              typeof part.output === "string"
-                ? part.output
-                : JSON.stringify(part.output);
-            return {
-              type: "tool_result",
-              tool_use_id: part.toolCallId,
-              content,
-              is_error: part.state === "error",
-            };
-          }
-          return {
-            type: "tool_use",
-            id: part.toolCallId,
-            name: part.toolName,
-            input: part.input as Record<string, unknown>,
-          };
-        default:
-          // For context, source-url, reasoning - store as text
-          if ("text" in part) {
+    parts: msg.parts.flatMap(
+      (
+        part,
+      ):
+        | RuntimeUIMessage["parts"][number]
+        | RuntimeUIMessage["parts"][number][] => {
+        switch (part.type) {
+          case "text":
             return { type: "text", text: part.text };
-          }
-          // Fallback: store as text with type info
-          return { type: "text", text: `[${part.type}]` };
-      }
-    }),
+          case "file":
+            // Map file to image (store URL as imageData)
+            return {
+              type: "image",
+              imageData: part.url,
+              imageTitle: part.filename,
+            };
+          case "tool":
+            // Map tool to tool_use + tool_result pair (when completed)
+            // or just tool_use (when pending/executing).
+            // Emitting both ensures fromStorageFormat can correlate them
+            // to restore the proper toolName and input.
+            if (part.output !== undefined) {
+              // Avoid double-stringifying if output is already a string.
+              let content =
+                typeof part.output === "string"
+                  ? part.output
+                  : JSON.stringify(part.output);
+
+              // Strip base64 imageData from screenshot tool results before
+              // persisting to keep stored conversations small and avoid
+              // storing large blobs. The screenshotUid is preserved in the
+              // output so images can be loaded from IndexedDB on restore.
+              content = stripImageDataFromToolOutput(part.toolName, content);
+
+              return [
+                {
+                  type: "tool_use",
+                  id: part.toolCallId,
+                  name: part.toolName,
+                  input: part.input as Record<string, unknown>,
+                },
+                {
+                  type: "tool_result",
+                  tool_use_id: part.toolCallId,
+                  content,
+                  is_error: part.state === "error",
+                },
+              ];
+            }
+            return {
+              type: "tool_use",
+              id: part.toolCallId,
+              name: part.toolName,
+              input: part.input as Record<string, unknown>,
+            };
+          default:
+            // For context, source-url, reasoning - store as text
+            if ("text" in part) {
+              return { type: "text", text: part.text };
+            }
+            // Fallback: store as text with type info
+            return { type: "text", text: `[${part.type}]` };
+        }
+      },
+    ),
     timestamp: msg.timestamp,
   })) as RuntimeUIMessage[];
 }
@@ -210,7 +316,8 @@ export function fromStorageFormat(
             };
           }
 
-          // Normal successful completion
+          // Normal successful completion – restore screenshot data
+          const screenshotInfo = extractScreenshotInfo(toolName, parsedOutput);
           return {
             type: "tool",
             toolName,
@@ -218,6 +325,15 @@ export function fromStorageFormat(
             input,
             output: parsedOutput,
             state: "completed" as const,
+            // Restore screenshotUid so UI can load from IndexedDB
+            ...(screenshotInfo?.screenshotUid
+              ? { screenshotUid: screenshotInfo.screenshotUid }
+              : {}),
+            // Restore inline screenshot only if actual base64 is present
+            // (not when it's been replaced with a placeholder)
+            ...(screenshotInfo?.imageData
+              ? { screenshot: screenshotInfo.imageData }
+              : {}),
           };
         }
         default:

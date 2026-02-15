@@ -11,6 +11,8 @@ export * from "./conversation/index.js";
 // export * from "./hooks/index.js";
 // Intervention
 export * from "./intervention/index.js";
+// Screenshot Storage (IndexedDB)
+export { RuntimeScreenshotStorage } from "./lib/screenshot-storage.js";
 export type {
   DiskUsage,
   FileInfo,

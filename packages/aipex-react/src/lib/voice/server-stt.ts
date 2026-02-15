@@ -1,8 +1,9 @@
 /**
  * Server-side Speech-to-Text Integration
- * Uses claudechrome.com server API for speech-to-text transcription
+ * Uses configured server API for speech-to-text transcription
  */
 
+import { buildWebsiteUrl, WEBSITE_URL } from "../config/website.js";
 import type { TranscriptionResult } from "./elevenlabs-stt";
 
 export type ServerSTTConfig = Record<string, never>;
@@ -33,7 +34,7 @@ export async function transcribeAudioWithServer(
     let cookieHeader = "";
     try {
       const cookies = await chrome.cookies.getAll({
-        url: "https://www.claudechrome.com",
+        url: WEBSITE_URL,
       });
 
       const relevantCookies = cookies.filter(
@@ -66,14 +67,11 @@ export async function transcribeAudioWithServer(
       headers["Cookie"] = cookieHeader;
     }
 
-    const response = await fetch(
-      "https://www.claudechrome.com/api/speech-to-text",
-      {
-        method: "POST",
-        headers,
-        body: formData,
-      },
-    );
+    const response = await fetch(buildWebsiteUrl("/api/speech-to-text"), {
+      method: "POST",
+      headers,
+      body: formData,
+    });
 
     if (!response.ok) {
       // Do not log detailed error response for security

@@ -47,6 +47,10 @@ export interface UIToolPart {
   state: UIToolState;
   errorText?: string;
   duration?: number;
+  /** Base64 data URL of the screenshot (inline) */
+  screenshot?: string;
+  /** UID referencing a screenshot in ScreenshotStorage (IndexedDB) */
+  screenshotUid?: string;
 }
 
 export interface UIContextPart {
@@ -65,11 +69,22 @@ export type UIPart =
   | UIToolPart
   | UIContextPart;
 
+export interface UIMessageMetadata {
+  needLogin?: boolean;
+  needBuyToken?: boolean;
+  needChangeModel?: boolean;
+  supportedModels?: string[];
+  currentCredits?: number;
+  requiredCredits?: number;
+  errorCode?: string;
+}
+
 export interface UIMessage {
   id: string;
   role: UIRole;
   parts: UIPart[];
   timestamp?: number;
+  metadata?: UIMessageMetadata;
 }
 
 // ============ Context Item Types ============
@@ -96,4 +111,6 @@ export interface WelcomeSuggestion {
   text: string;
   iconColor?: string;
   bgColor?: string;
+  /** When true, clicking this suggestion triggers the UX audit dialog instead of sending the text directly. */
+  isUxAudit?: boolean;
 }

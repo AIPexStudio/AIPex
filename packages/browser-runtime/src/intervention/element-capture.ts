@@ -9,6 +9,7 @@
  * - Screenshot functionality
  */
 
+import { captureVisibleTabWithElementCrop } from "../tools/screenshot-helpers.js";
 import type { ElementCaptureEvent, ElementCaptureOptions } from "./types.js";
 
 type CaptureCallback = (event: ElementCaptureEvent) => void;
@@ -232,34 +233,43 @@ export class ElementCaptureService {
   }
 
   /**
-   * Capture screenshot functionality (with highlight)
+   * Capture screenshot functionality (with highlight / element crop).
+   *
+   * Delegates to the shared `captureVisibleTabWithElementCrop` helper so that
+   * the element-rect resolution, DPR scaling, crop, and restricted-page
+   * checks are consistent with `captureScreenshotWithHighlightTool`.
+   *
+   * Falls back to a full-page screenshot if the selector cannot be resolved.
    */
   async captureScreenshot(
-    _selector: string,
-    _options?: {
+    selector: string,
+    options?: {
       cropToElement?: boolean;
       padding?: number;
     },
   ): Promise<string | null> {
     try {
-      // Use Chrome's captureVisibleTab API directly
       if (!this.currentTabId) {
         console.warn("⚠️ [ElementCaptureService] No current tab for screenshot");
         return null;
       }
 
-      // Get the tab to find its window ID
       const tab = await chrome.tabs.get(this.currentTabId);
       if (!tab.windowId) {
         console.warn("⚠️ [ElementCaptureService] No window ID for tab");
         return null;
       }
 
-      const screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
-        format: "png",
+      const result = await captureVisibleTabWithElementCrop({
+        tabId: this.currentTabId,
+        windowId: tab.windowId,
+        tabUrl: tab.url,
+        selector,
+        cropToElement: options?.cropToElement ?? true,
+        padding: options?.padding ?? 50,
       });
 
-      return screenshot;
+      return result.dataUrl;
     } catch (error) {
       console.error("❌ [ElementCaptureService] Screenshot error:", error);
       return null;

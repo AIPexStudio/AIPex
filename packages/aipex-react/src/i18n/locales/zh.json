@@ -10,7 +10,9 @@
     "send": "发送",
     "stop": "停止",
     "processing": "处理中...",
-    "noActions": "无可用操作"
+    "noActions": "无可用操作",
+    "showThinkingDetails": "显示思考过程",
+    "clickToExpand": "点击展开"
   },
   "settings": {
     "title": "设置",
@@ -22,7 +24,7 @@
     "aiHost": "AI 服务地址",
     "aiToken": "API 密钥",
     "aiModel": "AI 模型",
-    "hostPlaceholder": "https://api.deepseek.com/chat/completions",
+    "hostPlaceholder": "https://api.deepseek.com/v1",
     "tokenPlaceholder": "请输入您的 API 令牌",
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "设置保存成功！",
@@ -66,7 +68,9 @@
     "newChat": "新对话",
     "settings": "设置",
     "close": "关闭",
-    "stopResponse": "停止 AI 回应"
+    "stopResponse": "停止 AI 回应",
+    "switchToVoice": "切换到语音模式",
+    "switchToText": "切换到文字模式"
   },
   "mode": {
     "focus": "聚焦模式",
@@ -101,10 +105,43 @@
   "welcome": {
     "title": "欢迎使用 AIpex",
     "subtitle": "选择一个快捷操作或询问任何问题来开始",
+    "analyzePage": "总结此页面",
     "organizeTabs": "请按主题和用途整理我的打开标签页",
-    "analyzePage": "总结此页面并将关键点保存到剪贴板",
     "research": "请使用 Google 研究主题 'MCP'",
-    "comparePrice": "比较 iPhone 17 的价格"
+    "screenRecording": "开始创建用户操作手册",
+    "uxAuditGoal": "深度审计您的 UX 目标"
+  },
+  "uxAuditGoal": {
+    "dialog": {
+      "title": "深度审查你的UX目标",
+      "description": "请提供您想要审查的界面详情"
+    },
+    "fields": {
+      "targetLink": "目标链接",
+      "targetLinkPlaceholder": "输入想要测试的目标链接",
+      "platform": "运行平台",
+      "platformHint": "选择此次审查的平台",
+      "jtbd": "任务描述(JTBD)",
+      "jtbdPlaceholder": "举例: 用户想要预定明天早上的会议...",
+      "jtbdHint": "简单概括你想要测试的flow",
+      "targetUsers": "目标用户",
+      "targetUsersPlaceholder": "例如：首次用户、高级用户、老年人...",
+      "targetUsersHint": "可选：描述您的目标受众"
+    },
+    "platform": {
+      "desktop": "桌面端",
+      "mobile": "移动端",
+      "web": "网页端"
+    },
+    "actions": {
+      "start": "开始测试",
+      "cancel": "取消"
+    },
+    "validation": {
+      "required": "此字段为必填项",
+      "invalidUrl": "请输入有效的URL（http:// 或 https://）"
+    },
+    "messageTemplate": "请对以下目标进行UX审查走查：\n\n**目标URL：** {{url}}\n**平台：** {{platform}}\n**任务(JTBD)：** {{jtbd}}{{targetUsersLine}}\n\n请使用 ux-audit-walkthrough 技能进行全面的UX评估。"
   },
   "config": {
     "title": "需要配置",

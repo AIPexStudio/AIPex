@@ -10,7 +10,9 @@
     "send": "Send",
     "stop": "Stop",
     "processing": "Processing...",
-    "noActions": "No actions"
+    "noActions": "No actions",
+    "showThinkingDetails": "Show thinking details",
+    "clickToExpand": "Click to expand"
   },
   "settings": {
     "title": "Settings",
@@ -22,7 +24,7 @@
     "aiHost": "AI Host",
     "aiToken": "API Key",
     "aiModel": "AI Model",
-    "hostPlaceholder": "https://api.deepseek.com/chat/completions",
+    "hostPlaceholder": "https://api.deepseek.com/v1",
     "tokenPlaceholder": "Enter your API token",
     "modelPlaceholder": "deepseek-chat",
     "saveSuccess": "Settings saved successfully!",
@@ -66,7 +68,9 @@
     "newChat": "New Chat",
     "settings": "Settings",
     "close": "Close",
-    "stopResponse": "Stop AI response"
+    "stopResponse": "Stop AI response",
+    "switchToVoice": "Switch to voice mode",
+    "switchToText": "Switch to text mode"
   },
   "mode": {
     "focus": "Focus Mode",
@@ -101,10 +105,43 @@
   "welcome": {
     "title": "Welcome to AIpex",
     "subtitle": "Choose a quick action or ask anything to get started",
+    "analyzePage": "Summarize this page",
     "organizeTabs": "Please organize my open tabs by topic and purpose",
-    "analyzePage": "Summarize this page and save key points to clipboard",
     "research": "Please use Google to research topic 'MCP'",
-    "comparePrice": "Compare the price of iPhone 17"
+    "screenRecording": "Start User Manual Guide creation",
+    "uxAuditGoal": "Deep audit your UX goals"
+  },
+  "uxAuditGoal": {
+    "dialog": {
+      "title": "Deep Audit Your UX Goals",
+      "description": "Provide details about the interface you want to audit"
+    },
+    "fields": {
+      "targetLink": "Target Link",
+      "targetLinkPlaceholder": "Enter the URL you want to audit",
+      "platform": "Platform",
+      "platformHint": "Select the platform for this audit",
+      "jtbd": "Task Description (JTBD)",
+      "jtbdPlaceholder": "e.g., A Zoom user wants to schedule a meeting for tomorrow morning...",
+      "jtbdHint": "Briefly describe the flow you want to test",
+      "targetUsers": "Target Users",
+      "targetUsersPlaceholder": "e.g., First-time users, power users, elderly...",
+      "targetUsersHint": "Optional: Describe your target audience"
+    },
+    "platform": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "web": "Web"
+    },
+    "actions": {
+      "start": "Start Audit",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "required": "This field is required",
+      "invalidUrl": "Please enter a valid URL (http:// or https://)"
+    },
+    "messageTemplate": "Please perform a UX audit walkthrough on the following target:\n\n**Target URL:** {{url}}\n**Platform:** {{platform}}\n**Task (JTBD):** {{jtbd}}{{targetUsersLine}}\n\nPlease use the ux-audit-walkthrough skill to conduct a thorough UX evaluation."
   },
   "config": {
     "title": "Setup Required",

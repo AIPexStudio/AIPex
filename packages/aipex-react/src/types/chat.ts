@@ -57,6 +57,8 @@ export interface InputAreaProps
 
 export interface WelcomeScreenProps extends HTMLAttributes<HTMLDivElement> {
   onSuggestionClick: (text: string) => void;
+  /** Handler for the UX audit suggestion; when provided, clicking that suggestion opens the audit dialog instead of sending the text directly. */
+  onUxAuditClick?: () => void;
   suggestions?: WelcomeSuggestion[];
 }
 
@@ -120,8 +122,12 @@ export interface ChatbotSlots {
   emptyState?: (props: WelcomeScreenProps) => ReactNode;
   /** Custom loading indicator */
   loadingIndicator?: () => ReactNode;
+  /** Content to render before all messages (e.g., update banners, announcements) */
+  beforeMessages?: () => ReactNode;
   /** Content to render after all messages (for platform-specific features like interventions) */
   afterMessages?: () => ReactNode;
+  /** Extra content rendered inside PromptInput (e.g., context/skill loaders) */
+  promptExtras?: () => ReactNode;
 }
 
 // ============ Components Configuration ============

@@ -10,10 +10,11 @@ import { getRuntime } from "@aipexstudio/aipex-react/lib/runtime";
 import { cn } from "@aipexstudio/aipex-react/lib/utils";
 import type { HeaderProps } from "@aipexstudio/aipex-react/types";
 import { conversationStorage } from "@aipexstudio/browser-runtime";
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { KeyboardIcon, MicIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserProfile, useAuth } from "../auth";
 import { ConversationHistory } from "./conversation-history";
+import { useInputMode } from "./input-mode-context";
 import { fromStorageFormat, toStorageFormat } from "./message-adapter";
 
 export function BrowserChatHeader({
@@ -126,6 +127,12 @@ export function BrowserChatHeader({
     onNewChat?.();
   }, [onNewChat]);
 
+  const { inputMode, setInputMode } = useInputMode();
+
+  const toggleInputMode = useCallback(() => {
+    setInputMode(inputMode === "voice" ? "text" : "voice");
+  }, [inputMode, setInputMode]);
+
   return (
     <div
       className={cn(
@@ -134,26 +141,47 @@ export function BrowserChatHeader({
       )}
       {...props}
     >
-      {/* Left side - Settings */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleOpenOptions}
-        className="gap-2"
-      >
-        <SettingsIcon className="size-4" />
-        {t("common.settings")}
-      </Button>
+      {/* Left side - Settings + Voice/Text toggle + History */}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleOpenOptions}
+          title={t("tooltip.settings")}
+          className="size-8"
+        >
+          <SettingsIcon className="size-4" />
+        </Button>
 
-      {/* Center - History */}
-      <ConversationHistory
-        currentConversationId={currentConversationId}
-        onConversationSelect={handleConversationSelect}
-        onNewConversation={handleNewChat}
-      />
+        {/* Voice / Text toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleInputMode}
+          title={
+            inputMode === "voice"
+              ? t("tooltip.switchToText")
+              : t("tooltip.switchToVoice")
+          }
+          className="size-8"
+        >
+          {inputMode === "voice" ? (
+            <KeyboardIcon className="size-4" />
+          ) : (
+            <MicIcon className="size-4" />
+          )}
+        </Button>
+
+        {/* Conversation History */}
+        <ConversationHistory
+          currentConversationId={currentConversationId}
+          onConversationSelect={handleConversationSelect}
+          onNewConversation={handleNewChat}
+        />
+      </div>
 
       {/* Right side - New Chat and User Profile */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="sm"

@@ -19,6 +19,7 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
+  Mic,
   Package,
   Palette,
   Plus,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/context";
+import { buildWebsiteUrl } from "../../lib/config/website.js";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../../theme/context";
 import { DEFAULT_MODELS } from "../chatbot/constants";
@@ -219,7 +221,12 @@ export function SettingsPage({
   onSave,
   onTestConnection,
   skillsContent,
+  sttConfig,
+  initialTab,
+  initialSkill: _initialSkill,
 }: SettingsPageProps) {
+  // initialSkill is reserved for future use (pre-select a skill when initialTab="skills")
+  void _initialSkill;
   const { t, language, changeLanguage } = useTranslation();
   const { theme, changeTheme, effectiveTheme } = useTheme();
 
@@ -245,9 +252,17 @@ export function SettingsPage({
     message: "",
   });
   const [showToken, setShowToken] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    initialTab ?? "general",
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [dataSharingEnabled, setDataSharingEnabled] = useState(true);
+
+  // ElevenLabs STT state (independent of main settings blob)
+  const [sttApiKey, setSttApiKey] = useState("");
+  const [sttModelId, setSttModelId] = useState("");
+  const [showSttKey, setShowSttKey] = useState(false);
+  const [isSavingStt, setIsSavingStt] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -314,6 +329,15 @@ export function SettingsPage({
 
     loadSettings();
   }, [storageAdapter, storageKey]);
+
+  // Load ElevenLabs STT config when adapter is provided
+  useEffect(() => {
+    if (!sttConfig) return;
+    sttConfig.load().then(({ apiKey, modelId }) => {
+      setSttApiKey(apiKey);
+      setSttModelId(modelId);
+    });
+  }, [sttConfig]);
 
   const updateSettingsFromModel = useCallback((model: CustomModelConfig) => {
     const providerKey = resolveProviderKey(model);
@@ -676,6 +700,21 @@ export function SettingsPage({
     [storageAdapter, storageKey, settings],
   );
 
+  const handleSaveStt = useCallback(async () => {
+    if (!sttConfig) return;
+    setIsSavingStt(true);
+    try {
+      await sttConfig.save({ apiKey: sttApiKey, modelId: sttModelId });
+      setSaveStatus({ type: "success", message: t("settings.saveSuccess") });
+      setTimeout(() => setSaveStatus({ type: "", message: "" }), 3000);
+    } catch (error) {
+      console.error("Error saving STT settings:", error);
+      setSaveStatus({ type: "error", message: t("settings.saveError") });
+    } finally {
+      setIsSavingStt(false);
+    }
+  }, [sttConfig, sttApiKey, sttModelId, t]);
+
   const filteredModels = useMemo(() => {
     const term = searchTerm.toLowerCase();
     if (!term) return customModels;
@@ -930,6 +969,144 @@ export function SettingsPage({
               </CardContent>
             </Card>
 
+            {/* ElevenLabs STT Configuration (shown when adapter provided) */}
+            {sttConfig && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mic className="h-5 w-5" />
+                    {language === "zh"
+                      ? "ElevenLabs 语音转文本"
+                      : "ElevenLabs Speech-to-Text"}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === "zh"
+                      ? "配置 ElevenLabs API 密钥以启用语音注释功能"
+                      : "Configure ElevenLabs API key to enable voice annotation feature"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sttApiKey">
+                      {language === "zh" ? "API 密钥" : "API Key"}
+                      <span className="text-destructive ml-1">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="sttApiKey"
+                        type={showSttKey ? "text" : "password"}
+                        value={sttApiKey}
+                        onChange={(e) => setSttApiKey(e.target.value)}
+                        placeholder="xi-..."
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowSttKey(!showSttKey)}
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      >
+                        {showSttKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "zh"
+                        ? "在 ElevenLabs 获取 API 密钥："
+                        : "Get your API key from ElevenLabs:"}{" "}
+                      <a
+                        href="https://elevenlabs.io/app/developers/api-keys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        elevenlabs.io
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sttModelId">
+                      {language === "zh"
+                        ? "模型 ID（可选）"
+                        : "Model ID (Optional)"}
+                    </Label>
+                    <Input
+                      id="sttModelId"
+                      type="text"
+                      value={sttModelId}
+                      onChange={(e) => setSttModelId(e.target.value)}
+                      placeholder={
+                        language === "zh"
+                          ? "留空使用默认模型"
+                          : "Leave blank to use default model"
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === "zh"
+                        ? "默认使用通用多语言模型。如需指定特定模型，请输入模型 ID。"
+                        : "Default uses the general multilingual model. Specify a model ID if needed."}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveStt}
+                      disabled={isSavingStt}
+                      size="sm"
+                    >
+                      {isSavingStt ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                          {language === "zh" ? "保存中..." : "Saving..."}
+                        </>
+                      ) : language === "zh" ? (
+                        "保存配置"
+                      ) : (
+                        "Save Configuration"
+                      )}
+                    </Button>
+                    {sttApiKey && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSttApiKey("");
+                          setSaveStatus({
+                            type: "info",
+                            message:
+                              language === "zh"
+                                ? "已清空，点击保存以生效"
+                                : "Cleared. Click Save to apply.",
+                          });
+                        }}
+                      >
+                        {language === "zh" ? "清空" : "Clear"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {sttApiKey && (
+                    <Alert>
+                      <AlertDescription className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm">
+                          {language === "zh"
+                            ? "API 密钥已配置"
+                            : "API key is configured"}
+                        </span>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* About Us Section */}
             <Card>
               <CardHeader>
@@ -978,7 +1155,7 @@ export function SettingsPage({
                   <TooltipTrigger asChild>
                     <Button asChild size="icon" variant="outline">
                       <a
-                        href="https://www.claudechrome.com/contact"
+                        href={buildWebsiteUrl("/contact")}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -1022,7 +1199,7 @@ export function SettingsPage({
                   <TooltipTrigger asChild>
                     <Button asChild size="icon" variant="outline">
                       <a
-                        href="https://www.claudechrome.com/feedback"
+                        href={buildWebsiteUrl("/feedback")}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -1387,18 +1564,56 @@ export function SettingsPage({
                               {t("settings.aiModel")}
                               <span className="text-destructive ml-1">*</span>
                             </Label>
-                            <Input
-                              id="aiModel"
-                              type="text"
-                              value={selectedModel.aiModel || ""}
-                              onChange={(e) =>
-                                handleModelFieldChange(
-                                  "aiModel",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder={t("settings.modelPlaceholder")}
-                            />
+                            {selectedProviderMeta.models.length > 0 ? (
+                              <Select
+                                value={selectedModel.aiModel || ""}
+                                onValueChange={(value: string) =>
+                                  handleModelFieldChange("aiModel", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t("settings.modelPlaceholder")}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {selectedProviderMeta.models.map(
+                                    (model: string) => (
+                                      <SelectItem key={model} value={model}>
+                                        {model}
+                                      </SelectItem>
+                                    ),
+                                  )}
+                                  {/* Allow keeping a custom value that is not in the preset list */}
+                                  {selectedModel.aiModel &&
+                                    !selectedProviderMeta.models.includes(
+                                      selectedModel.aiModel as never,
+                                    ) && (
+                                      <SelectItem value={selectedModel.aiModel}>
+                                        {selectedModel.aiModel}
+                                      </SelectItem>
+                                    )}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                id="aiModel"
+                                type="text"
+                                value={selectedModel.aiModel || ""}
+                                onChange={(e) =>
+                                  handleModelFieldChange(
+                                    "aiModel",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder={t("settings.modelPlaceholder")}
+                              />
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {language === "zh"
+                                ? "提示: 选择适合你需求的模型。"
+                                : "Tip: Choose a model that fits your needs."}
+                            </p>
                           </div>
                         </>
                       ) : (
@@ -1471,4 +1686,4 @@ export function SettingsPage({
   );
 }
 
-export type { SettingsPageProps } from "./types";
+export type { SettingsPageProps, STTConfigAdapter } from "./types";

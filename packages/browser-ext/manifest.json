@@ -1,18 +1,18 @@
 {
   "manifest_version": 3,
   "name": "AIPex",
-  "version": "0.0.2",
-  "description": "Automate your browser with natural language commands - The open source browser-use solution",
+  "version": "2.2.39",
+  "description": "Make your browser an AI browser - no migration, no browser installation, no code writing",
   "icons": {
-    "16": "assets/icon16.svg",
-    "48": "assets/icon48.svg",
-    "128": "assets/icon128.svg"
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
   },
   "action": {
     "default_icon": {
-      "16": "assets/icon16.svg",
-      "48": "assets/icon48.svg",
-      "128": "assets/icon128.svg"
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
     }
   },
   "background": {
@@ -44,6 +44,14 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "externally_connectable": {
+    "matches": [
+      "https://www.claudechrome.com/*",
+      "https://claudechrome.com/*",
+      "https://aipex.ing/*",
+      "http://localhost:*/*"
+    ]
+  },
   "host_permissions": ["https://*/*", "http://*/*", "<all_urls>"],
   "commands": {
     "open-aipex": {
@@ -72,6 +80,7 @@
     "downloads",
     "debugger",
     "cookies",
-    "webNavigation"
+    "webNavigation",
+    "audioCapture"
   ]
 }

@@ -91,6 +91,9 @@ export function useChat(
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
 
+  // Cumulative session-level metrics (sum across all runs)
+  const cumulativeMetricsRef = useRef<AgentMetrics | null>(null);
+
   // Refs for stable callbacks
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
@@ -153,13 +156,24 @@ export function useChat(
             handlersRef.current?.onError?.(event.error);
           }
 
-          // Handle metrics update
+          // Handle metrics update – accumulate across the session
           if (event.type === "metrics_update") {
-            setMetrics(event.metrics);
-            handlersRef.current?.onMetricsUpdate?.(
-              event.metrics,
-              event.sessionId,
-            );
+            const prev = cumulativeMetricsRef.current;
+            const cumulative: AgentMetrics = {
+              tokensUsed: (prev?.tokensUsed ?? 0) + event.metrics.tokensUsed,
+              promptTokens:
+                (prev?.promptTokens ?? 0) + event.metrics.promptTokens,
+              completionTokens:
+                (prev?.completionTokens ?? 0) + event.metrics.completionTokens,
+              // Non-cumulative fields: use latest values
+              itemCount: event.metrics.itemCount,
+              maxTurns: event.metrics.maxTurns,
+              duration: (prev?.duration ?? 0) + event.metrics.duration,
+              startTime: prev?.startTime ?? event.metrics.startTime,
+            };
+            cumulativeMetricsRef.current = cumulative;
+            setMetrics(cumulative);
+            handlersRef.current?.onMetricsUpdate?.(cumulative, event.sessionId);
           }
 
           // Process the event through adapter
@@ -263,6 +277,7 @@ export function useChat(
     activeGeneratorRef.current = null;
     setSessionId(null);
     setMetrics(null);
+    cumulativeMetricsRef.current = null;
     adapter.reset(configRef.current?.initialMessages ?? []);
   }, [adapter, agent, sessionId]);
 

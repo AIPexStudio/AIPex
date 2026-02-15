@@ -8,6 +8,10 @@ import type {
   SessionSummary,
 } from "../types.js";
 import { generateId } from "../utils/id-generator.js";
+import {
+  isTransientScreenshotItem,
+  pruneTransientScreenshotItems,
+} from "../utils/screenshot-shaping.js";
 
 function createEmptySessionMetrics(): SessionMetrics {
   return {
@@ -156,7 +160,12 @@ export class Session implements OpenAISession {
   private updatePreview(): void {
     const latestUserMessage = [...this.items]
       .reverse()
-      .find((item) => item.type === "message" && item.role === "user");
+      .find(
+        (item) =>
+          item.type === "message" &&
+          item.role === "user" &&
+          !isTransientScreenshotItem(item),
+      );
 
     const previewSource =
       this.extractContent(latestUserMessage) ??
@@ -207,7 +216,9 @@ export class Session implements OpenAISession {
   toJSON(): SerializedSession {
     return {
       id: this.id,
-      items: this.items,
+      // Prune transient screenshot user-image messages before persisting
+      // to avoid storing large base64 blobs in conversation history.
+      items: pruneTransientScreenshotItems(this.items),
       metadata: this.metadata,
       config: this.config,
       metrics: this.sessionMetrics,

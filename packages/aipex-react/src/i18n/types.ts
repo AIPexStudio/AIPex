@@ -13,6 +13,8 @@ export interface TranslationResources {
     stop: string;
     processing: string;
     noActions: string;
+    showThinkingDetails: string;
+    clickToExpand: string;
   };
   settings: {
     title: string;
@@ -67,6 +69,8 @@ export interface TranslationResources {
     settings: string;
     close: string;
     stopResponse: string;
+    switchToVoice: string;
+    switchToText: string;
   };
   mode: {
     focus: string;
@@ -95,10 +99,43 @@ export interface TranslationResources {
   welcome: {
     title: string;
     subtitle: string;
-    organizeTabs: string;
     analyzePage: string;
+    organizeTabs: string;
     research: string;
-    comparePrice: string;
+    screenRecording: string;
+    uxAuditGoal: string;
+  };
+  uxAuditGoal: {
+    dialog: {
+      title: string;
+      description: string;
+    };
+    fields: {
+      targetLink: string;
+      targetLinkPlaceholder: string;
+      platform: string;
+      platformHint: string;
+      jtbd: string;
+      jtbdPlaceholder: string;
+      jtbdHint: string;
+      targetUsers: string;
+      targetUsersPlaceholder: string;
+      targetUsersHint: string;
+    };
+    platform: {
+      desktop: string;
+      mobile: string;
+      web: string;
+    };
+    actions: {
+      start: string;
+      cancel: string;
+    };
+    validation: {
+      required: string;
+      invalidUrl: string;
+    };
+    messageTemplate: string;
   };
   config: {
     title: string;
@@ -194,6 +231,8 @@ export type BaseTranslationKey =
   | "common.stop"
   | "common.processing"
   | "common.noActions"
+  | "common.showThinkingDetails"
+  | "common.clickToExpand"
   | "settings.title"
   | "settings.subtitle"
   | "settings.language"
@@ -244,6 +283,8 @@ export type BaseTranslationKey =
   | "tooltip.settings"
   | "tooltip.close"
   | "tooltip.stopResponse"
+  | "tooltip.switchToVoice"
+  | "tooltip.switchToText"
   | "mode.focus"
   | "mode.background"
   | "mode.selectMode"
@@ -262,10 +303,31 @@ export type BaseTranslationKey =
   | "input.placeholder3"
   | "welcome.title"
   | "welcome.subtitle"
-  | "welcome.organizeTabs"
   | "welcome.analyzePage"
+  | "welcome.organizeTabs"
   | "welcome.research"
-  | "welcome.comparePrice"
+  | "welcome.screenRecording"
+  | "welcome.uxAuditGoal"
+  | "uxAuditGoal.dialog.title"
+  | "uxAuditGoal.dialog.description"
+  | "uxAuditGoal.fields.targetLink"
+  | "uxAuditGoal.fields.targetLinkPlaceholder"
+  | "uxAuditGoal.fields.platform"
+  | "uxAuditGoal.fields.platformHint"
+  | "uxAuditGoal.fields.jtbd"
+  | "uxAuditGoal.fields.jtbdPlaceholder"
+  | "uxAuditGoal.fields.jtbdHint"
+  | "uxAuditGoal.fields.targetUsers"
+  | "uxAuditGoal.fields.targetUsersPlaceholder"
+  | "uxAuditGoal.fields.targetUsersHint"
+  | "uxAuditGoal.platform.desktop"
+  | "uxAuditGoal.platform.mobile"
+  | "uxAuditGoal.platform.web"
+  | "uxAuditGoal.actions.start"
+  | "uxAuditGoal.actions.cancel"
+  | "uxAuditGoal.validation.required"
+  | "uxAuditGoal.validation.invalidUrl"
+  | "uxAuditGoal.messageTemplate"
   | "config.title"
   | "config.description"
   | "config.apiTokenRequired"

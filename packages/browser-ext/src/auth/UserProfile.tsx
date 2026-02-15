@@ -5,7 +5,7 @@
 
 import type React from "react";
 import { useState } from "react";
-import { WEBSITE_URL } from "../services/web-auth";
+import { buildWebsiteUrl } from "../config/website";
 import { useAuth } from "./AuthProvider";
 
 export const UserProfile: React.FC = () => {
@@ -21,7 +21,7 @@ export const UserProfile: React.FC = () => {
 
   const handleAccountClick = () => {
     setShowDropdown(false);
-    chrome.tabs.create({ url: `${WEBSITE_URL}/settings/credits` });
+    chrome.tabs.create({ url: buildWebsiteUrl("/settings/credits") });
   };
 
   return (

@@ -9,7 +9,13 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
+import { ScreenshotStorage } from "../../lib/screenshot-storage";
 import { cn } from "../../lib/utils";
 import { Badge } from "../ui/badge";
 import {
@@ -29,7 +35,8 @@ export const Tool = ({ className, ...props }: ToolProps) => (
 );
 
 export type ToolHeaderProps = {
-  type: ToolUIPart["type"];
+  /** Display label for the tool – either a raw `tool-${name}` key or a translated name */
+  type: string;
   state: ToolUIPart["state"] | "executing";
   className?: string;
 };
@@ -151,6 +158,79 @@ export const ToolOutput = ({
         {errorText && <div>{errorText}</div>}
         {Output}
       </div>
+    </div>
+  );
+};
+
+// ============ Screenshot Display ============
+
+export type ToolScreenshotProps = ComponentProps<"div"> & {
+  /** Inline base64 screenshot data URL */
+  screenshot?: string;
+  /** UID referencing a screenshot stored in ScreenshotStorage (IndexedDB) */
+  screenshotUid?: string;
+};
+
+/**
+ * ToolScreenshot – renders a screenshot captured by a tool.
+ * Supports both inline base64 data and IndexedDB uid references.
+ */
+export const ToolScreenshot = ({
+  className,
+  screenshot,
+  screenshotUid,
+  ...props
+}: ToolScreenshotProps) => {
+  const [imageData, setImageData] = useState<string | null>(screenshot ?? null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Prefer inline screenshot
+    if (screenshot) {
+      setImageData(screenshot);
+      return;
+    }
+
+    // Load from IndexedDB by uid
+    if (screenshotUid) {
+      setLoading(true);
+      setError(null);
+      ScreenshotStorage.getScreenshot(screenshotUid)
+        .then((data) => {
+          setImageData(data);
+          if (!data) setError("Screenshot not found");
+        })
+        .catch(() => {
+          setError("Failed to load screenshot");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [screenshot, screenshotUid]);
+
+  if (!screenshot && !screenshotUid) return null;
+
+  return (
+    <div className={cn("space-y-2 p-4", className)} {...props}>
+      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        Screenshot
+      </h4>
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <ClockIcon className="size-4 animate-spin" />
+          <span>Loading screenshot...</span>
+        </div>
+      ) : error ? (
+        <div className="text-destructive text-sm">{error}</div>
+      ) : imageData ? (
+        <img
+          src={imageData}
+          alt="Screenshot"
+          className="cursor-pointer rounded-md max-w-full"
+        />
+      ) : null}
     </div>
   );
 };
