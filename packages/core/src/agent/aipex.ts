@@ -7,10 +7,12 @@ import type { ContextManager } from "../context/manager.js";
 import type { Context } from "../context/types.js";
 import { formatContextsForPrompt, resolveContexts } from "../context/utils.js";
 import { ConversationCompressor } from "../conversation/compressor.js";
+import { EphemeralSession } from "../conversation/ephemeral-session.js";
 import { ConversationManager } from "../conversation/manager.js";
 import type { Session } from "../conversation/session.js";
 import { SessionStorage } from "../conversation/storage.js";
 import { InMemoryStorage } from "../storage/memory.js";
+import { shapeScreenshotItems } from "../utils/screenshot-shaping.js";
 import type {
   AfterResponsePayload,
   AgentEvent,
@@ -120,6 +122,13 @@ export class AIPex {
     const startTime = Date.now();
     const metrics = this.initMetrics(startTime, session);
 
+    // Always provide a session to the runner so that screenshot shaping
+    // (strip base64 imageData, inject transient user image message) runs
+    // even in stateless mode.  The EphemeralSession is in-memory only and
+    // never persisted.
+    const runSession: Session | EphemeralSession =
+      session ?? new EphemeralSession();
+
     // Track tool-call argument streaming during a single model response.
     // This is best-effort and provider-dependent (e.g. OpenAI ChatCompletions tool_calls deltas).
     const toolArgsStreamByIndex = new Map<
@@ -130,8 +139,15 @@ export class AIPex {
     try {
       const result = await run(this.agent, input, {
         maxTurns: this.maxTurns,
-        session: session ?? undefined,
+        session: runSession,
         stream: true,
+        // Shape screenshot tool results before every model call:
+        // strip base64 imageData from tool results and inject a transient
+        // user image message so the model can consume images via the vision path.
+        callModelInputFilter: async ({ modelData }) => ({
+          input: shapeScreenshotItems(modelData.input),
+          instructions: modelData.instructions,
+        }),
       });
 
       let streamedOutput = "";

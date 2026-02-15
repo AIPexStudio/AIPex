@@ -158,6 +158,143 @@ describe("AIPex", () => {
       expect(events[0]?.type).toBe("content_delta");
     });
 
+    it("should pass an EphemeralSession to run() in stateless mode", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "Reply",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Reply" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+        conversation: false,
+      });
+
+      for await (const _event of agent.chat("Hi")) {
+        // consume events
+      }
+
+      // Verify run() was called with a session (EphemeralSession) even in stateless mode
+      expect(run).toHaveBeenCalledTimes(1);
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const runOptions = runCallArgs[2] as { session?: unknown };
+      expect(runOptions.session).toBeDefined();
+      // EphemeralSession has getSessionId, addItems, getItems, popItem, clearSession
+      expect(typeof (runOptions.session as any).getSessionId).toBe("function");
+      expect(typeof (runOptions.session as any).addItems).toBe("function");
+    });
+
+    it("should pass callModelInputFilter to run() for screenshot shaping", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "Reply",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Reply" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+        conversation: false,
+      });
+
+      for await (const _event of agent.chat("Hi")) {
+        // consume events
+      }
+
+      expect(run).toHaveBeenCalledTimes(1);
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const runOptions = runCallArgs[2] as { callModelInputFilter?: unknown };
+      expect(runOptions.callModelInputFilter).toBeDefined();
+      expect(typeof runOptions.callModelInputFilter).toBe("function");
+    });
+
+    it("callModelInputFilter should shape screenshot items before model call", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "Reply",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "Reply" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      for await (const _event of agent.chat("Hi")) {
+        // consume events
+      }
+
+      // Extract the callModelInputFilter and invoke it with a screenshot tool result
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const runOptions = runCallArgs[2] as unknown as {
+        callModelInputFilter: (args: {
+          modelData: { input: unknown[]; instructions?: string };
+          agent: unknown;
+          context: unknown;
+        }) => Promise<{ input: unknown[]; instructions?: string }>;
+      };
+
+      const screenshotToolResult = {
+        type: "function_call_result",
+        name: "capture_screenshot",
+        callId: "call_test",
+        output: JSON.stringify({
+          success: true,
+          imageData: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==",
+          sendToLLM: true,
+          screenshotUid: "screenshot_123_abc",
+        }),
+      };
+
+      const result = await runOptions.callModelInputFilter({
+        modelData: {
+          input: [screenshotToolResult],
+          instructions: "Test instructions",
+        },
+        agent: {},
+        context: undefined,
+      });
+
+      // Should have 2 items: stripped tool result + transient user image message
+      expect(result.input.length).toBe(2);
+
+      // First item: stripped tool result with imageData replaced
+      const stripped = result.input[0] as { type: string; output: string };
+      expect(stripped.type).toBe("function_call_result");
+      const parsed = JSON.parse(stripped.output);
+      expect(parsed.success).toBe(true);
+      expect(parsed.data.imageData).toBe(
+        "[Image data removed - see following user message]",
+      );
+
+      // Second item: transient user image message
+      const userMsg = result.input[1] as { type: string; role: string };
+      expect(userMsg.type).toBe("message");
+      expect(userMsg.role).toBe("user");
+
+      // Instructions should pass through unchanged
+      expect(result.instructions).toBe("Test instructions");
+    });
+
     it("should work with custom conversationManager", async () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({

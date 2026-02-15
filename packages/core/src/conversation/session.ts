@@ -11,7 +11,6 @@ import { generateId } from "../utils/id-generator.js";
 import {
   isTransientScreenshotItem,
   pruneTransientScreenshotItems,
-  shapeScreenshotItems,
 } from "../utils/screenshot-shaping.js";
 
 function createEmptySessionMetrics(): SessionMetrics {
@@ -58,11 +57,7 @@ export class Session implements OpenAISession {
   }
 
   async addItems(items: AgentInputItem[]): Promise<void> {
-    // Shape screenshot tool results: strip base64 imageData from the tool
-    // result and inject a transient user message with the real image so the
-    // model can consume it via the standard vision path.
-    const shaped = shapeScreenshotItems(items);
-    this.items.push(...shaped);
+    this.items.push(...items);
     this.metadata["lastActiveAt"] = Date.now();
     this.updatePreview();
   }

@@ -52,7 +52,7 @@ export function shapeScreenshotItems(
       type: "function_call_result";
       name: string;
       callId: string;
-      output: string;
+      output: unknown;
       [key: string]: unknown;
     };
 
@@ -61,8 +61,18 @@ export function shapeScreenshotItems(
       continue;
     }
 
+    // Normalize output: the SDK wraps tool return values in
+    // { type: 'text', text: '...' }, but older paths may use plain strings.
+    const { jsonString, outputFormat } = extractOutputJsonString(
+      funcResult.output,
+    );
+    if (!jsonString) {
+      result.push(item);
+      continue;
+    }
+
     // Try to parse the output and extract imageData
-    const parsed = safeJsonParse<Record<string, unknown>>(funcResult.output);
+    const parsed = safeJsonParse<Record<string, unknown>>(jsonString);
     if (!parsed) {
       result.push(item);
       continue;
@@ -75,11 +85,17 @@ export function shapeScreenshotItems(
       continue;
     }
 
-    // 1. Rewrite the tool result with imageData stripped
+    // 1. Rewrite the tool result with imageData stripped,
+    //    preserving the original output format (object wrapper or plain string)
     const strippedOutput = buildStrippedOutput(parsed, extracted.screenshotUid);
+    const strippedJson = JSON.stringify(strippedOutput);
+    const newOutput =
+      outputFormat === "text_object"
+        ? { type: "text", text: strippedJson }
+        : strippedJson;
     const strippedItem: AgentInputItem = {
       ...item,
-      output: JSON.stringify(strippedOutput),
+      output: newOutput,
     } as AgentInputItem;
     result.push(strippedItem);
 
@@ -135,6 +151,59 @@ export function isTransientScreenshotItem(item: AgentInputItem): boolean {
 
 // ===================== Internal helpers =====================
 
+/** Describes how the SDK stored the output value */
+type OutputFormat = "plain_string" | "text_object";
+
+/**
+ * Extract the JSON string from a tool result `output` field.
+ *
+ * The `@openai/agents` SDK wraps tool return values through
+ * `getToolCallOutputItem()`. For non-structured outputs the SDK produces:
+ *   `{ type: 'text', text: '<json string>' }`
+ *
+ * Older code paths or tests may use a plain string instead.
+ * We also handle arrays where the first element is a text object.
+ */
+function extractOutputJsonString(output: unknown): {
+  jsonString: string | null;
+  outputFormat: OutputFormat;
+} {
+  // Plain string (legacy / test path)
+  if (typeof output === "string") {
+    return { jsonString: output, outputFormat: "plain_string" };
+  }
+
+  // SDK object wrapper: { type: 'text', text: '...' }
+  if (
+    output !== null &&
+    typeof output === "object" &&
+    !Array.isArray(output) &&
+    (output as Record<string, unknown>).type === "text" &&
+    typeof (output as Record<string, unknown>).text === "string"
+  ) {
+    return {
+      jsonString: (output as { text: string }).text,
+      outputFormat: "text_object",
+    };
+  }
+
+  // SDK array wrapper: [{ type: 'text', text: '...' }, ...]
+  if (Array.isArray(output)) {
+    const textEntry = output.find(
+      (entry: unknown) =>
+        entry !== null &&
+        typeof entry === "object" &&
+        (entry as Record<string, unknown>).type === "text" &&
+        typeof (entry as Record<string, unknown>).text === "string",
+    ) as { text: string } | undefined;
+    if (textEntry) {
+      return { jsonString: textEntry.text, outputFormat: "text_object" };
+    }
+  }
+
+  return { jsonString: null, outputFormat: "plain_string" };
+}
+
 interface ExtractedImage {
   imageData: string;
   screenshotUid?: string;
@@ -142,18 +211,19 @@ interface ExtractedImage {
 
 /**
  * Extract imageData from parsed tool output.
- * Handles nested structures:
- *   { success, data: { imageData, sendToLLM, screenshotUid } }
- *   { success, imageData, sendToLLM, screenshotUid }
+ * Handles nested structures matching the old aipex pattern:
+ *   { success, imageData, sendToLLM, screenshotUid }           (flat)
+ *   { success, data: { imageData, sendToLLM, screenshotUid } } (one level)
+ *   { data: { data: { imageData, sendToLLM, screenshotUid } } } (two levels)
  */
 function extractImageData(
   parsed: Record<string, unknown>,
 ): ExtractedImage | null {
   if (!parsed.success) return null;
 
-  // Navigate possible nesting levels
-  const data = parsed.data as Record<string, unknown> | undefined;
-  const actual = data ?? parsed;
+  // Navigate possible nesting levels (mirrors old aipex:
+  //   middleLayer?.data || middleLayer || parsedContent)
+  const actual = resolveActualData(parsed);
 
   // Must have sendToLLM === true
   if (actual.sendToLLM !== true) return null;
@@ -173,14 +243,40 @@ function extractImageData(
 }
 
 /**
+ * Navigate into a parsed tool result to reach the "actual data" layer.
+ * Handles:
+ *   - flat:       { success, imageData, ... }
+ *   - one level:  { success, data: { imageData, ... } }
+ *   - two levels: { data: { data: { imageData, ... } } }
+ *
+ * Mirrors the old aipex pattern:
+ *   middleLayer?.data || middleLayer || parsedContent
+ */
+function resolveActualData(
+  parsed: Record<string, unknown>,
+): Record<string, unknown> {
+  const middleLayer = parsed.data as Record<string, unknown> | undefined;
+  if (middleLayer && typeof middleLayer === "object") {
+    const innerData = middleLayer.data as Record<string, unknown> | undefined;
+    if (innerData && typeof innerData === "object") {
+      return innerData;
+    }
+    return middleLayer;
+  }
+  return parsed;
+}
+
+/**
  * Build the stripped tool output object (imageData replaced with placeholder).
+ *
+ * Always produces the `{ success: true, data: { ...actualData } }` envelope
+ * to match the message format expected by the old aipex codebase.
  */
 function buildStrippedOutput(
   parsed: Record<string, unknown>,
   screenshotUid?: string,
 ): Record<string, unknown> {
-  const data = parsed.data as Record<string, unknown> | undefined;
-  const actual = data ?? parsed;
+  const actual = resolveActualData(parsed);
 
   const stripped: Record<string, unknown> = {
     ...actual,
@@ -191,9 +287,6 @@ function buildStrippedOutput(
     stripped.screenshotUid = screenshotUid;
   }
 
-  // If there was a `data` wrapper, preserve it
-  if (data) {
-    return { success: true, data: stripped };
-  }
-  return { success: true, ...stripped };
+  // Always wrap in { success: true, data: { ... } } to match aipex convention
+  return { success: true, data: stripped };
 }
