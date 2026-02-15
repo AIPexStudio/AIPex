@@ -31,10 +31,52 @@ export interface ProviderConfig {
  * const model = provider("gpt-4");
  * ```
  */
+/**
+ * Validate that a user-provided host URL is safe to use.
+ * Rejects private/internal addresses to mitigate SSRF risks.
+ */
+function validateHostUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid aiHost URL: ${url}`);
+  }
+
+  // Only allow http/https schemes
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error(
+      `Unsupported protocol in aiHost: ${parsed.protocol} (only http/https allowed)`,
+    );
+  }
+
+  // Block common internal/private hostnames
+  const hostname = parsed.hostname.toLowerCase();
+  const blocked = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "[::1]",
+    "metadata.google.internal",
+    "169.254.169.254",
+  ];
+
+  // In production, block private addresses
+  if (import.meta.env.PROD && blocked.includes(hostname)) {
+    throw new Error(
+      `aiHost points to a restricted address: ${hostname}`,
+    );
+  }
+
+  return parsed.origin + parsed.pathname.replace(/\/+$/, "");
+}
+
 export function createAIProvider(settings: AppSettings) {
   const provider = settings.aiProvider ?? "openai";
   const apiKey = settings.aiToken ?? "";
-  const baseURL = settings.aiHost || undefined;
+  const baseURL = validateHostUrl(settings.aiHost || undefined);
 
   switch (provider) {
     case "anthropic":

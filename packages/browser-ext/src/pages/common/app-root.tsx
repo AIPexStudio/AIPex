@@ -10,6 +10,7 @@ import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
 import type { Theme } from "@aipexstudio/aipex-react/theme/types";
+import { ErrorBoundary } from "@aipexstudio/aipex-react/components/error/ErrorBoundary";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
@@ -35,6 +36,76 @@ import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
+
+// ---------------------------------------------------------------------------
+// Replay setup listener
+// ---------------------------------------------------------------------------
+
+/** Replay step shape coming from the external website */
+interface ReplayStepData {
+  id?: number;
+  event: { type: string; [key: string]: unknown };
+  url?: string | null;
+  aiTitle?: string | null;
+  aiSummary?: string | null;
+}
+
+/**
+ * Listens for `NAVIGATE_AND_SETUP_REPLAY` messages forwarded by the
+ * background service worker after an external `REPLAY_USER_MANUAL` request.
+ *
+ * The replay steps are persisted to `chrome.storage.local` under
+ * `aipex-pending-replay` so they can be consumed by the use-case system
+ * when it is available.
+ */
+function useReplaySetup() {
+  useEffect(() => {
+    const handler = (message: Record<string, unknown>) => {
+      if (message?.request !== "NAVIGATE_AND_SETUP_REPLAY") return;
+
+      const data = message.data as {
+        manualId?: number;
+        startFromStep?: number;
+        steps?: ReplayStepData[];
+      } | undefined;
+
+      if (!data || !Array.isArray(data.steps) || data.steps.length === 0) {
+        console.warn("[ReplaySetup] Invalid or empty replay data received");
+        return;
+      }
+
+      // Persist replay data for future use-case system consumption
+      chrome.storage.local
+        .set({
+          "aipex-pending-replay": {
+            manualId: data.manualId,
+            startFromStep: data.startFromStep ?? 0,
+            steps: data.steps,
+            receivedAt: Date.now(),
+          },
+        })
+        .catch(() => {
+          /* storage may be unavailable */
+        });
+
+      console.log(
+        "[ReplaySetup] Replay data stored:",
+        data.steps.length,
+        "steps for manual",
+        data.manualId,
+      );
+    };
+
+    chrome.runtime.onMessage.addListener(handler);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handler);
+    };
+  }, []);
+}
+
+// ---------------------------------------------------------------------------
+// Pending prompt
+// ---------------------------------------------------------------------------
 
 /**
  * Reads and consumes a pending prompt saved by the openWithPrompt external
@@ -141,6 +212,7 @@ function ChatApp() {
 
   const pendingInput = usePendingPrompt();
   const heartbeat = useConversationHeartbeat();
+  useReplaySetup();
 
   const handleStatusChange = useCallback(
     (status: string) => {
@@ -242,13 +314,15 @@ export function renderChatApp() {
   }
 
   const App = () => (
-    <I18nProvider storageAdapter={i18nStorageAdapter}>
-      <ThemeProvider storageAdapter={themeStorageAdapter}>
-        <AuthProvider>
-          <ChatApp />
-        </AuthProvider>
-      </ThemeProvider>
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider storageAdapter={i18nStorageAdapter}>
+        <ThemeProvider storageAdapter={themeStorageAdapter}>
+          <AuthProvider>
+            <ChatApp />
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 
   ReactDOM.createRoot(rootElement).render(

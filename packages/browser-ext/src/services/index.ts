@@ -7,6 +7,33 @@ export {
   WEBSITE_HOST,
   WEBSITE_ORIGIN,
 } from "../config/website";
+// Recording upload
+export {
+  uploadRecordingSession,
+  type UploadRecordingSessionPayload,
+  type UploadRecordingSessionResult,
+  type UploadRecordingStepPayload,
+} from "./recording-upload";
+// Replay controller
+export {
+  ManualReplayController,
+  type ClickEvent,
+  type ExecutionResult,
+  type NavigationEvent,
+  type ReplayEventCallback,
+  type ReplayStatus,
+  type ReplayStep,
+} from "./replay-controller";
+// Screenshot upload
+export {
+  uploadScreenshot,
+  type UploadScreenshotResult,
+} from "./screenshot-upload";
+// Share conversation
+export {
+  shareConversation,
+  type ShareResult,
+} from "./share-conversation";
 // Sound effects
 export {
   playSoundEffect,
@@ -34,6 +61,16 @@ export {
   toolManager,
   unregisterDynamicTool,
 } from "./tool-manager";
+// User manuals API
+export {
+  deleteUserManual,
+  fetchMyUserManuals,
+  fetchUserManualDetail,
+  type FetchUserManualDetailResponse,
+  type UserManualDetail,
+  type UserManualListItem,
+  type UserManualStep,
+} from "./user-manuals-api";
 // Version checking
 export {
   checkVersion,
