@@ -55,8 +55,7 @@ export function extractScreenshotFromToolResult(
   if (!isCaptureScreenshotTool(toolName)) return null;
 
   try {
-    const content =
-      typeof result === "string" ? JSON.parse(result) : result;
+    const content = typeof result === "string" ? JSON.parse(result) : result;
     if (content === null || content === undefined) return null;
 
     // SDK structured array format:
@@ -86,8 +85,7 @@ export function extractScreenshotFromToolResult(
     // Extract imageData (may be a real data URL or a placeholder)
     const rawImageData = actualData.imageData;
     const imageData =
-      typeof rawImageData === "string" &&
-      rawImageData.startsWith("data:image/")
+      typeof rawImageData === "string" && rawImageData.startsWith("data:image/")
         ? rawImageData
         : null;
 
@@ -168,7 +166,7 @@ export function transformScreenshotPlaceholders(
       // Case 2: Numeric 1-based index
       const index = parseInt(trimmed, 10);
       if (
-        !isNaN(index) &&
+        !Number.isNaN(index) &&
         index >= 1 &&
         index <= screenshotUidList.length
       ) {

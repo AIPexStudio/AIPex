@@ -379,10 +379,7 @@ export const captureScreenshotWithHighlightTool = tool({
     sendToLLM = true,
   }) => {
     const mode = await getAutomationMode();
-    console.log(
-      "🔧 [captureScreenshotWithHighlight] Automation mode:",
-      mode,
-    );
+    console.log("🔧 [captureScreenshotWithHighlight] Automation mode:", mode);
 
     if (mode === "background") {
       throw new Error(
@@ -463,10 +460,7 @@ export const captureScreenshotWithHighlightTool = tool({
         viewportHeight: viewport?.height ?? 0,
       });
     } catch (err) {
-      console.error(
-        "[ScreenshotHighlight] Failed to save to IndexedDB:",
-        err,
-      );
+      console.error("[ScreenshotHighlight] Failed to save to IndexedDB:", err);
     }
 
     if (sendToLLM) {
@@ -579,8 +573,7 @@ export const readClipboardImageTool = tool({
 
       return { success: false, error: "No image found in clipboard" };
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: `Failed to read clipboard: ${message}`,
@@ -613,8 +606,7 @@ export const getClipboardImageInfoTool = tool({
 
       return { success: true, hasImage: false };
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: `Failed to read clipboard: ${message}`,

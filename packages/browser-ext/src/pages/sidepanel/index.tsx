@@ -1,5 +1,5 @@
-import { quickjs } from "@aipexstudio/browser-runtime/lib/vm/quickjs-manager";
 import { zenfs } from "@aipexstudio/browser-runtime";
+import { quickjs } from "@aipexstudio/browser-runtime/lib/vm/quickjs-manager";
 import { renderChatApp } from "../common/app-root";
 
 // Pre-initialize QuickJS and ZenFS on sidepanel startup so that

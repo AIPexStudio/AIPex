@@ -9,7 +9,12 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
-import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { ScreenshotStorage } from "../../lib/screenshot-storage";
 import { cn } from "../../lib/utils";
 import { Badge } from "../ui/badge";
@@ -176,9 +181,7 @@ export const ToolScreenshot = ({
   screenshotUid,
   ...props
 }: ToolScreenshotProps) => {
-  const [imageData, setImageData] = useState<string | null>(
-    screenshot ?? null,
-  );
+  const [imageData, setImageData] = useState<string | null>(screenshot ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -239,9 +239,10 @@ function ChatbotContent({
   const [isUxAuditDialogOpen, setIsUxAuditDialogOpen] = useState(false);
 
   // Fetch server model list on mount, fall back to prop-provided models
-  const [fetchedModels, setFetchedModels] = useState<
-    Array<{ name: string; value: string }> | null
-  >(null);
+  const [fetchedModels, setFetchedModels] = useState<Array<{
+    name: string;
+    value: string;
+  }> | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetchModelsForSelector()

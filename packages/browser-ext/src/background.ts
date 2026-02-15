@@ -243,7 +243,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                 error: "Unable to access current chat",
               });
             }
-          } catch (tabError) {
+          } catch (_tabError) {
             sendResponse({
               success: false,
               error: "Unable to access current chat images",
@@ -327,7 +327,8 @@ async function downloadChatImagesInBackground(
     }
 
     const folderPrefixError = validatePathSegment(folderPrefix, "folderPrefix");
-    if (folderPrefixError) return { success: false, errors: [folderPrefixError] };
+    if (folderPrefixError)
+      return { success: false, errors: [folderPrefixError] };
 
     if (imageNames) {
       for (let i = 0; i < imageNames.length; i++) {
@@ -423,46 +424,47 @@ async function downloadChatImagesInBackground(
 }
 
 // Global function callable from QuickJS skill runtime
-(globalThis as Record<string, unknown>).downloadCurrentChatImagesFromBackground =
-  async function (
-    folderPrefix: string,
-    imageNames?: string[],
-    filenamingStrategy: string = "descriptive",
-    displayResults: boolean = true,
-  ) {
-    try {
-      const sidepanelResponse = await chrome.runtime.sendMessage({
-        request: "provide-current-chat-images",
+(
+  globalThis as Record<string, unknown>
+).downloadCurrentChatImagesFromBackground = async (
+  folderPrefix: string,
+  imageNames?: string[],
+  filenamingStrategy: string = "descriptive",
+  displayResults: boolean = true,
+) => {
+  try {
+    const sidepanelResponse = await chrome.runtime.sendMessage({
+      request: "provide-current-chat-images",
+      folderPrefix,
+      imageNames,
+      filenamingStrategy,
+      displayResults,
+    });
+
+    if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
+      const result = await downloadChatImagesInBackground(
+        sidepanelResponse.images,
         folderPrefix,
         imageNames,
-        filenamingStrategy,
-        displayResults,
-      });
-
-      if (sidepanelResponse?.images && sidepanelResponse.images.length > 0) {
-        const result = await downloadChatImagesInBackground(
-          sidepanelResponse.images,
-          folderPrefix,
-          imageNames,
-        );
-        return {
-          success: result.success,
-          downloadedCount: result.downloadedCount,
-          downloadIds: result.downloadIds,
-          folderPath: folderPrefix,
-          filesList: result.filesList ?? [],
-          error: result.errors?.join(", "),
-        };
-      }
-
-      return { success: false, error: "No images found in current chat" };
-    } catch (error) {
+      );
       return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
+        success: result.success,
+        downloadedCount: result.downloadedCount,
+        downloadIds: result.downloadIds,
+        folderPath: folderPrefix,
+        filesList: result.filesList ?? [],
+        error: result.errors?.join(", "),
       };
     }
-  };
+
+    return { success: false, error: "No images found in current chat" };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
 
 // =============================================================================
 // External Message Listener - Website Integration

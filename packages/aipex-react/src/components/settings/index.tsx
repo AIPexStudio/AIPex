@@ -1573,9 +1573,7 @@ export function SettingsPage({
                               >
                                 <SelectTrigger>
                                   <SelectValue
-                                    placeholder={t(
-                                      "settings.modelPlaceholder",
-                                    )}
+                                    placeholder={t("settings.modelPlaceholder")}
                                   />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1591,9 +1589,7 @@ export function SettingsPage({
                                     !selectedProviderMeta.models.includes(
                                       selectedModel.aiModel as never,
                                     ) && (
-                                      <SelectItem
-                                        value={selectedModel.aiModel}
-                                      >
+                                      <SelectItem value={selectedModel.aiModel}>
                                         {selectedModel.aiModel}
                                       </SelectItem>
                                     )}

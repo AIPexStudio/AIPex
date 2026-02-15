@@ -9,8 +9,8 @@
  * - Screenshot functionality
  */
 
-import type { ElementCaptureEvent, ElementCaptureOptions } from "./types.js";
 import { captureVisibleTabWithElementCrop } from "../tools/screenshot-helpers.js";
+import type { ElementCaptureEvent, ElementCaptureOptions } from "./types.js";
 
 type CaptureCallback = (event: ElementCaptureEvent) => void;
 
@@ -250,9 +250,7 @@ export class ElementCaptureService {
   ): Promise<string | null> {
     try {
       if (!this.currentTabId) {
-        console.warn(
-          "⚠️ [ElementCaptureService] No current tab for screenshot",
-        );
+        console.warn("⚠️ [ElementCaptureService] No current tab for screenshot");
         return null;
       }
 

@@ -244,9 +244,7 @@ describe("shapeScreenshotItems", () => {
     const shaped = shapeScreenshotItems([item]);
     expect(shaped.length).toBe(2);
 
-    const parsedOutput = JSON.parse(
-      (shaped[0] as { output: string }).output,
-    );
+    const parsedOutput = JSON.parse((shaped[0] as { output: string }).output);
     expect(parsedOutput.success).toBe(true);
     expect(parsedOutput.data.imageData).toBe(PLACEHOLDER);
     expect(parsedOutput.data.screenshotUid).toBe(TEST_SCREENSHOT_UID);

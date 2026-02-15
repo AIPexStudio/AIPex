@@ -105,8 +105,7 @@ export function ChatImagesListener() {
                 filename?: string;
               };
               if (
-                filePart.url &&
-                filePart.url.startsWith("data:image/") &&
+                filePart.url?.startsWith("data:image/") &&
                 filePart.mediaType?.startsWith("image/")
               ) {
                 images.push({

@@ -73,7 +73,10 @@ export function DefaultMessageList({
   const displayMessages = messages.filter((m) => m.role !== "system");
 
   // Group into conversation turns for folding
-  const turns = useMemo(() => groupIntoTurns(displayMessages), [displayMessages]);
+  const turns = useMemo(
+    () => groupIntoTurns(displayMessages),
+    [displayMessages],
+  );
 
   // Determine if a message is the very last display message
   const lastMessage = displayMessages[displayMessages.length - 1];
@@ -108,62 +111,60 @@ export function DefaultMessageList({
                 )}
 
                 {/* Render assistant messages with folding */}
-                {turn.assistantMessages.length > 1 ? (
-                  (() => {
-                    const finalMsg =
-                      turn.assistantMessages[
-                        turn.assistantMessages.length - 1
-                      ]!;
-                    return (
-                      <>
-                        {/* Intermediate messages – collapsed by default */}
-                        <Collapsible defaultOpen={false} className="mb-2">
-                          <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-                            <BrainIcon className="size-4" />
-                            <span className="flex-1 text-left">
-                              {t("common.showThinkingDetails")}
-                            </span>
-                            <ChevronDownIcon className="size-4 transition-transform [[data-state=open]>&]:rotate-180" />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-2">
-                            <div className="rounded-md border border-muted/50 bg-muted/10 p-3 space-y-2">
-                              {turn.assistantMessages
-                                .slice(0, -1)
-                                .map((msg) => (
-                                  <CollapsedMessageItem
-                                    key={msg.id}
-                                    message={msg}
-                                  />
-                                ))}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
+                {turn.assistantMessages.length > 1
+                  ? (() => {
+                      const finalMsg =
+                        turn.assistantMessages[
+                          turn.assistantMessages.length - 1
+                        ]!;
+                      return (
+                        <>
+                          {/* Intermediate messages – collapsed by default */}
+                          <Collapsible defaultOpen={false} className="mb-2">
+                            <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
+                              <BrainIcon className="size-4" />
+                              <span className="flex-1 text-left">
+                                {t("common.showThinkingDetails")}
+                              </span>
+                              <ChevronDownIcon className="size-4 transition-transform [[data-state=open]>&]:rotate-180" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="rounded-md border border-muted/50 bg-muted/10 p-3 space-y-2">
+                                {turn.assistantMessages
+                                  .slice(0, -1)
+                                  .map((msg) => (
+                                    <CollapsedMessageItem
+                                      key={msg.id}
+                                      message={msg}
+                                    />
+                                  ))}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
 
-                        {/* Final assistant message – always expanded */}
-                        <MessageItem
-                          key={finalMsg.id}
-                          message={finalMsg}
-                          isLast={finalMsg.id === lastMessageId}
-                          isStreaming={status === "streaming"}
-                          onRegenerate={onRegenerate}
-                          onCopy={onCopy}
-                        />
-                      </>
-                    );
-                  })()
-                ) : (
-                  // Single assistant message – render normally
-                  turn.assistantMessages.map((msg) => (
-                    <MessageItem
-                      key={msg.id}
-                      message={msg}
-                      isLast={msg.id === lastMessageId}
-                      isStreaming={status === "streaming"}
-                      onRegenerate={onRegenerate}
-                      onCopy={onCopy}
-                    />
-                  ))
-                )}
+                          {/* Final assistant message – always expanded */}
+                          <MessageItem
+                            key={finalMsg.id}
+                            message={finalMsg}
+                            isLast={finalMsg.id === lastMessageId}
+                            isStreaming={status === "streaming"}
+                            onRegenerate={onRegenerate}
+                            onCopy={onCopy}
+                          />
+                        </>
+                      );
+                    })()
+                  : // Single assistant message – render normally
+                    turn.assistantMessages.map((msg) => (
+                      <MessageItem
+                        key={msg.id}
+                        message={msg}
+                        isLast={msg.id === lastMessageId}
+                        isStreaming={status === "streaming"}
+                        onRegenerate={onRegenerate}
+                        onCopy={onCopy}
+                      />
+                    ))}
               </div>
             ))
           )}

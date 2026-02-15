@@ -147,9 +147,7 @@ export async function fetchModels(): Promise<ModelInfo[]> {
 
     if (data.success && data.data.models.length > 0) {
       // Apply safety cap
-      const models = data.data.models
-        .slice(0, MAX_MODELS)
-        .map(convertApiModel);
+      const models = data.data.models.slice(0, MAX_MODELS).map(convertApiModel);
       cachedModels = models;
       lastFetchTime = Date.now();
       return cachedModels;

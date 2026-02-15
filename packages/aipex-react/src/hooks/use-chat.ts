@@ -160,26 +160,20 @@ export function useChat(
           if (event.type === "metrics_update") {
             const prev = cumulativeMetricsRef.current;
             const cumulative: AgentMetrics = {
-              tokensUsed:
-                (prev?.tokensUsed ?? 0) + event.metrics.tokensUsed,
+              tokensUsed: (prev?.tokensUsed ?? 0) + event.metrics.tokensUsed,
               promptTokens:
                 (prev?.promptTokens ?? 0) + event.metrics.promptTokens,
               completionTokens:
-                (prev?.completionTokens ?? 0) +
-                event.metrics.completionTokens,
+                (prev?.completionTokens ?? 0) + event.metrics.completionTokens,
               // Non-cumulative fields: use latest values
               itemCount: event.metrics.itemCount,
               maxTurns: event.metrics.maxTurns,
-              duration:
-                (prev?.duration ?? 0) + event.metrics.duration,
+              duration: (prev?.duration ?? 0) + event.metrics.duration,
               startTime: prev?.startTime ?? event.metrics.startTime,
             };
             cumulativeMetricsRef.current = cumulative;
             setMetrics(cumulative);
-            handlersRef.current?.onMetricsUpdate?.(
-              cumulative,
-              event.sessionId,
-            );
+            handlersRef.current?.onMetricsUpdate?.(cumulative, event.sessionId);
           }
 
           // Process the event through adapter

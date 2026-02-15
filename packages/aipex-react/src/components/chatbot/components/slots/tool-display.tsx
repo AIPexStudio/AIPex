@@ -36,10 +36,7 @@ export function DefaultToolDisplay({ tool }: ToolDisplaySlotProps) {
 
   return (
     <Tool defaultOpen={shouldExpandByDefault}>
-      <ToolHeader
-        type={displayName}
-        state={mapToolState(tool.state)}
-      />
+      <ToolHeader type={displayName} state={mapToolState(tool.state)} />
       <ToolContent>
         <ToolInput input={tool.input} />
         <ToolOutput

@@ -34,9 +34,7 @@ function getScreenshotActualData(
   if (typeof parsedOutput !== "object" || parsedOutput === null) return null;
   const obj = parsedOutput as Record<string, unknown>;
   const middleLayer = obj.data as Record<string, unknown> | undefined;
-  return (
-    (middleLayer?.data as Record<string, unknown>) ?? middleLayer ?? obj
-  );
+  return (middleLayer?.data as Record<string, unknown>) ?? middleLayer ?? obj;
 }
 
 /**
@@ -313,10 +311,7 @@ export function fromStorageFormat(
           }
 
           // Normal successful completion – restore screenshot data
-          const screenshotInfo = extractScreenshotInfo(
-            toolName,
-            parsedOutput,
-          );
+          const screenshotInfo = extractScreenshotInfo(toolName, parsedOutput);
           return {
             type: "tool",
             toolName,

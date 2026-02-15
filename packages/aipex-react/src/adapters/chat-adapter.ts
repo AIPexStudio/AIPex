@@ -420,10 +420,7 @@ export class ChatAdapter {
 
     // Extract screenshot data from screenshot tools
     if (isCaptureScreenshotTool(toolName)) {
-      const screenshotInfo = extractScreenshotFromToolResult(
-        toolName,
-        result,
-      );
+      const screenshotInfo = extractScreenshotFromToolResult(toolName, result);
       if (screenshotInfo) {
         this.applyScreenshotToolResult(callId, result, screenshotInfo);
         return;
@@ -483,9 +480,7 @@ export class ChatAdapter {
         ...toolPart,
         state: "completed",
         output: result,
-        ...(info.screenshotUid
-          ? { screenshotUid: info.screenshotUid }
-          : {}),
+        ...(info.screenshotUid ? { screenshotUid: info.screenshotUid } : {}),
       }));
     }
   }
