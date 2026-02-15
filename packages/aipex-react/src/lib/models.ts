@@ -134,12 +134,14 @@ export async function fetchModels(): Promise<ModelInfo[]> {
 
   try {
     const response = await fetch(MODELS_API_URL);
+    console.log("response", response);
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data: unknown = await response.json();
+    console.log("data", data);
 
     if (!isValidApiResponse(data)) {
       throw new Error("Invalid API response structure");
