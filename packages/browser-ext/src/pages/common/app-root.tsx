@@ -5,12 +5,12 @@
 
 import { useAgent, useChatConfig } from "@aipexstudio/aipex-react";
 import ChatBot from "@aipexstudio/aipex-react/components/chatbot";
+import { ErrorBoundary } from "@aipexstudio/aipex-react/components/error/ErrorBoundary";
 import type { InterventionMode } from "@aipexstudio/aipex-react/components/intervention";
 import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
 import type { Theme } from "@aipexstudio/aipex-react/theme/types";
-import { ErrorBoundary } from "@aipexstudio/aipex-react/components/error/ErrorBoundary";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
@@ -63,11 +63,13 @@ function useReplaySetup() {
     const handler = (message: Record<string, unknown>) => {
       if (message?.request !== "NAVIGATE_AND_SETUP_REPLAY") return;
 
-      const data = message.data as {
-        manualId?: number;
-        startFromStep?: number;
-        steps?: ReplayStepData[];
-      } | undefined;
+      const data = message.data as
+        | {
+            manualId?: number;
+            startFromStep?: number;
+            steps?: ReplayStepData[];
+          }
+        | undefined;
 
       if (!data || !Array.isArray(data.steps) || data.steps.length === 0) {
         console.warn("[ReplaySetup] Invalid or empty replay data received");

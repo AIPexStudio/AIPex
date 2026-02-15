@@ -75,7 +75,6 @@ export async function uploadRecordingSession(
     stepsInserted:
       typeof json.stepsInserted === "number" ? json.stepsInserted : undefined,
     slug: typeof json.slug === "string" ? json.slug : undefined,
-    sessionId:
-      typeof json.sessionId === "string" ? json.sessionId : undefined,
+    sessionId: typeof json.sessionId === "string" ? json.sessionId : undefined,
   };
 }

@@ -11,7 +11,10 @@
 
 export interface ReplayStep {
   id?: number;
-  event: NavigationEvent | ClickEvent | { type: string; [key: string]: unknown };
+  event:
+    | NavigationEvent
+    | ClickEvent
+    | { type: string; [key: string]: unknown };
   url: string | null;
   aiTitle: string | null;
   aiSummary: string | null;
@@ -233,7 +236,8 @@ export class ManualReplayController {
   ): Promise<ExecutionResult> {
     try {
       const url = event.url || step.url;
-      if (!url) return { success: false, error: "No URL provided for navigation" };
+      if (!url)
+        return { success: false, error: "No URL provided for navigation" };
 
       if (this.targetTabId) {
         await chrome.tabs.update(this.targetTabId, { url, active: true });
@@ -323,8 +327,7 @@ export class ManualReplayController {
             details: response,
           };
         } catch (error) {
-          const msg =
-            error instanceof Error ? error.message : String(error);
+          const msg = error instanceof Error ? error.message : String(error);
 
           if (
             (msg.includes("Receiving end does not exist") ||

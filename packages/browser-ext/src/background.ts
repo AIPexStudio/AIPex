@@ -551,7 +551,8 @@ chrome.runtime.onMessageExternal.addListener(
       ) {
         sendResponse({
           success: false,
-          error: "Invalid replay data: manualId (number) and non-empty steps (array) are required",
+          error:
+            "Invalid replay data: manualId (number) and non-empty steps (array) are required",
         });
         return true;
       }

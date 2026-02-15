@@ -34,10 +34,7 @@ export class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Log error without exposing sensitive data
-    console.error(
-      "[ErrorBoundary] Uncaught rendering error:",
-      error.message,
-    );
+    console.error("[ErrorBoundary] Uncaught rendering error:", error.message);
 
     this.props.onError?.(error, errorInfo);
   }

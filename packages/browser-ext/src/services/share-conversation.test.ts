@@ -40,7 +40,8 @@ describe("shareConversation", () => {
     const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ url: "https://www.claudechrome.com/share/abc" }),
+      json: () =>
+        Promise.resolve({ url: "https://www.claudechrome.com/share/abc" }),
     });
 
     const messages = [

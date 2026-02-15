@@ -66,7 +66,9 @@ function makeClickStep(): ReplayStep {
 
 describe("ManualReplayController", () => {
   it("initializes with idle status", () => {
-    const controller = new ManualReplayController([makeNavigationStep("https://example.com")]);
+    const controller = new ManualReplayController([
+      makeNavigationStep("https://example.com"),
+    ]);
     expect(controller.getStatus()).toBe("idle");
     expect(controller.getCurrentStepIndex()).toBe(0);
   });
@@ -98,10 +100,7 @@ describe("ManualReplayController", () => {
   });
 
   it("can be paused", () => {
-    const steps = [
-      makeNavigationStep("https://example.com"),
-      makeClickStep(),
-    ];
+    const steps = [makeNavigationStep("https://example.com"), makeClickStep()];
     const controller = new ManualReplayController(steps);
 
     controller.pause();

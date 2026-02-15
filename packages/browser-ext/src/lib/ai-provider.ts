@@ -65,9 +65,7 @@ function validateHostUrl(url: string | undefined): string | undefined {
 
   // In production, block private addresses
   if (import.meta.env.PROD && blocked.includes(hostname)) {
-    throw new Error(
-      `aiHost points to a restricted address: ${hostname}`,
-    );
+    throw new Error(`aiHost points to a restricted address: ${hostname}`);
   }
 
   return parsed.origin + parsed.pathname.replace(/\/+$/, "");
