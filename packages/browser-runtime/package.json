@@ -43,7 +43,7 @@
     "fflate": "^0.8.2",
     "nanoid": "^5.1.6",
     "p-limit": "^7.3.0",
-    "quickjs-emscripten": "^0.31.0",
+    "quickjs-emscripten": "^0.32.0",
     "zod": "^4.3.6"
   },
   "peerDependencies": {
