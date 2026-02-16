@@ -48,7 +48,7 @@
   "devDependencies": {
     "@ai-sdk/google": "^3.0.22",
     "@ai-sdk/openai": "^3.0.25",
-    "@types/node": "^25.2.2",
+    "@types/node": "^25.2.3",
     "dotenv": "^17.2.3",
     "tsx": "^4.21.0"
   },
