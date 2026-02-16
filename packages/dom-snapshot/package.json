@@ -37,6 +37,6 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^25.2.2"
+    "@types/node": "^25.2.3"
   }
 }
