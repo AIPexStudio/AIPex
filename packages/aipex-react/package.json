@@ -181,7 +181,7 @@
     "@types/three": "^0.177.0",
     "jsdom": "^27.4.0",
     "react": "19.2.4",
-    "react-dom": "19.2.3",
+    "react-dom": "19.2.4",
     "tsc-alias": "^1.8.13",
     "vitest": "^4.0.14"
   }
