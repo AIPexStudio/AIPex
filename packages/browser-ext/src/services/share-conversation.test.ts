@@ -66,7 +66,7 @@ describe("shareConversation", () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    const callBody = JSON.parse(mockFetch.mock.calls[0]![1].body);
     // Should only have 2 messages (user + assistant), not the system one
     expect(callBody.messages).toHaveLength(2);
     expect(callBody.messages[0].role).toBe("user");
@@ -162,7 +162,7 @@ describe("shareConversation", () => {
 
     await shareConversation(messages);
 
-    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    const callBody = JSON.parse(mockFetch.mock.calls[0]![1].body);
     const toolPart = callBody.messages[0].content.parts[0];
     // screenshot field should NOT be included in the shared payload
     expect(toolPart.screenshot).toBeUndefined();

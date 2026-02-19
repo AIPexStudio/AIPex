@@ -220,9 +220,12 @@ export class ManualReplayController {
 
     switch (event.type) {
       case "navigation":
-        return this.executeNavigation(event as NavigationEvent, step);
+        return this.executeNavigation(
+          event as unknown as NavigationEvent,
+          step,
+        );
       case "click":
-        return this.executeClick(event as ClickEvent, step);
+        return this.executeClick(event as unknown as ClickEvent, step);
       default:
         return { success: false, error: `Unknown event type: ${event.type}` };
     }
@@ -365,10 +368,7 @@ export class ManualReplayController {
 
   private waitForTabLoad(): Promise<void> {
     return new Promise((resolve) => {
-      const listener = (
-        tabId: number,
-        changeInfo: chrome.tabs.TabChangeInfo,
-      ) => {
+      const listener = (tabId: number, changeInfo: { status?: string }) => {
         if (tabId === this.targetTabId && changeInfo.status === "complete") {
           chrome.tabs.onUpdated.removeListener(listener);
           resolve();

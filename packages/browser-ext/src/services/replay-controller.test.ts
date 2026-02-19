@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ManualReplayController,
   type ReplayEventCallback,
@@ -22,10 +22,12 @@ beforeEach(() => {
     .mockResolvedValue([{ id: 100, url: "https://example.com" }]);
   mockTabs.sendMessage = vi.fn().mockResolvedValue({ success: true });
   mockTabs.onUpdated = {
-    addListener: vi.fn((cb: Function) => {
-      // Immediately call with 'complete' to simulate page load
-      setTimeout(() => cb(100, { status: "complete" }), 0);
-    }),
+    addListener: vi.fn(
+      (cb: (tabId: number, changeInfo: { status?: string }) => void) => {
+        // Immediately call with 'complete' to simulate page load
+        setTimeout(() => cb(100, { status: "complete" }), 0);
+      },
+    ),
     removeListener: vi.fn(),
   };
 });

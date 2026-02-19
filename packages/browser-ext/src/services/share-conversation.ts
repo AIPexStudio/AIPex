@@ -98,7 +98,7 @@ export async function shareConversation(
     id: msg.id,
     role: msg.role,
     content: { parts: msg.parts.map(toShareablePart) },
-    metadata: msg.metadata,
+    metadata: msg.metadata as Record<string, unknown> | undefined,
   }));
 
   const cookieHeader = await getAuthCookieHeader();
