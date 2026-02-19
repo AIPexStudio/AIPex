@@ -11,11 +11,13 @@ import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
 import type { Theme } from "@aipexstudio/aipex-react/theme/types";
+import type { AuthCheckResult } from "@aipexstudio/aipex-react/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AuthProvider } from "../../auth";
 import { chromeStorageAdapter } from "../../hooks";
+import { isByokConfigured } from "../../lib/ai-provider";
 import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
 import {
   BROWSER_AGENT_CONFIG,
@@ -191,6 +193,34 @@ function useConversationHeartbeat() {
   return { start, stop };
 }
 
+/**
+ * Pre-flight auth check for non-BYOK users.
+ *
+ * Mirrors old aipex logic: if BYOK is not configured and the user is not
+ * logged in (no auth cookies for claudechrome.com), the user needs to
+ * authenticate before sending a message.
+ */
+async function checkAuth(
+  settings: ReturnType<typeof useChatConfig>["settings"],
+): Promise<AuthCheckResult> {
+  // If user has BYOK configured, no auth check needed
+  if (isByokConfigured(settings)) {
+    return { needsAuth: false, hasCustomConfig: true };
+  }
+
+  // Non-BYOK path: check if user is logged in
+  try {
+    const savedUser = await chrome.storage.local.get("user");
+    if (savedUser?.user) {
+      return { needsAuth: false, hasCustomConfig: false };
+    }
+  } catch {
+    // Storage access failed – fall through to needsAuth
+  }
+
+  return { needsAuth: true, hasCustomConfig: false };
+}
+
 function ChatApp() {
   const { settings, isLoading } = useChatConfig({
     storageAdapter: chromeStorageAdapter,
@@ -215,6 +245,15 @@ function ChatApp() {
   const pendingInput = usePendingPrompt();
   const heartbeat = useConversationHeartbeat();
   useReplaySetup();
+
+  // Keep a ref to settings so the auth check always sees latest values
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const handleCheckAuth = useCallback(
+    () => checkAuth(settingsRef.current),
+    [],
+  );
 
   const handleStatusChange = useCallback(
     (status: string) => {
@@ -283,6 +322,7 @@ function ChatApp() {
           initialInput={pendingInput}
           handlers={{
             onStatusChange: handleStatusChange,
+            checkAuthBeforeSend: handleCheckAuth,
           }}
           components={{
             Header: BrowserChatHeader,
