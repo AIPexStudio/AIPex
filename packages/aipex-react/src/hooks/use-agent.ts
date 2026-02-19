@@ -184,7 +184,6 @@ export function useAgent({
     aiToken,
     aiModel,
     aiProvider,
-    byokEnabled,
     instructions,
     name,
     maxTurns,

@@ -250,10 +250,7 @@ function ChatApp() {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const handleCheckAuth = useCallback(
-    () => checkAuth(settingsRef.current),
-    [],
-  );
+  const handleCheckAuth = useCallback(() => checkAuth(settingsRef.current), []);
 
   const handleStatusChange = useCallback(
     (status: string) => {
