@@ -7,6 +7,7 @@ export type { ChatAdapterOptions, ChatAdapterState } from "./adapter";
 // Chat Types
 export type {
   AIProvider,
+  AuthCheckResult,
   ChatbotComponents,
   ChatbotEventHandlers,
   ChatbotSlots,

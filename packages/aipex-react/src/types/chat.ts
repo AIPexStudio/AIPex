@@ -191,6 +191,14 @@ export interface ChatbotThemeVariables {
 
 // ============ Event Handlers ============
 
+/** Result of a pre-flight auth check before sending a message */
+export interface AuthCheckResult {
+  /** Whether the user needs to authenticate */
+  needsAuth: boolean;
+  /** Whether the user has a custom BYOK configuration */
+  hasCustomConfig: boolean;
+}
+
 export interface ChatbotEventHandlers {
   /** Called when a message is sent */
   onMessageSent?: (message: UIMessage) => void;
@@ -206,6 +214,12 @@ export interface ChatbotEventHandlers {
   onToolComplete?: (toolName: string, result: unknown) => void;
   /** Called when metrics are updated */
   onMetricsUpdate?: (metrics: AgentMetrics, sessionId?: string) => void;
+  /**
+   * Pre-flight auth check called before sending a message.
+   * If this returns `{ needsAuth: true }`, the chatbot will display a
+   * LoginPrompt inline instead of sending the message.
+   */
+  checkAuthBeforeSend?: () => Promise<AuthCheckResult>;
 }
 
 // Re-export AgentMetrics for convenience
