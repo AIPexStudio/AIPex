@@ -5,20 +5,24 @@ import { getAutomationMode } from "../runtime/automation-mode";
 
 export const computerTool = tool({
   name: "computer",
-  description: `Use mouse and keyboard to interact with a web browser based on screenshot coordinates. NOTE: This tool requires focus mode.
+  description: `[HIGH-COST FALLBACK] Coordinate-based mouse/keyboard interaction using screenshot pixels.
 
-IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag), you MUST first call capture_screenshot(sendToLLM=true) to take a screenshot. All coordinate values are in screenshot pixel space and will be mapped to viewport CSS pixels.
+PREFER UID-BASED TOOLS FIRST: For clicking buttons, filling forms, or hovering elements, use search_elements to get UIDs, then use click/fill_element_by_uid/hover_element_by_uid. These are faster and more reliable.
 
-* Whenever you intend to click on an element like an icon, consult the screenshot to determine the coordinates of the element.
-* If you tried clicking on a program or link but it failed to load, try adjusting your click location so that the cursor tip visually falls on the element center.
-* Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element. Don't click boxes on their edges unless asked.`,
+USE THIS TOOL ONLY WHEN:
+- search_elements returned 0 matches after trying 2 different query patterns
+- UID-based actions failed twice (element not interactable)
+- The goal requires visual/pixel-level interaction: canvas apps, drag-and-drop, sliders, charts, hover-only menus
+
+PREREQUISITE: If you choose coordinate actions, you MUST first call capture_screenshot(sendToLLM=true). Coordinates are in screenshot pixel space.
+
+* Click element centers, not edges. Adjust if clicks miss.`,
   parameters: z.object({
     action: z
       .enum([
         "left_click",
         "right_click",
         "type",
-        "wait",
         "scroll",
         "key",
         "left_click_drag",
@@ -33,7 +37,6 @@ IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag
 * \`double_click\`: Double-click the left mouse button at the specified coordinates.
 * \`triple_click\`: Triple-click the left mouse button at the specified coordinates.
 * \`type\`: Type a string of text at the current cursor position.
-* \`wait\`: Wait for a specified number of seconds.
 * \`scroll\`: Scroll up, down, left, or right at the specified coordinates.
 * \`key\`: Press a specific keyboard key or key combination.
 * \`left_click_drag\`: Drag from start_coordinate to coordinate.
@@ -43,14 +46,12 @@ IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag
       .array(z.number())
       .min(2)
       .max(2)
-      .nullable()
       .optional()
       .describe(
         "(x, y): The x (pixels from the left edge) and y (pixels from the top edge) coordinates in screenshot pixel space. Required for left_click, right_click, double_click, triple_click, scroll, and hover. For left_click_drag, this is the end position.",
       ),
     text: z
       .string()
-      .nullable()
       .optional()
       .describe(
         'The text to type (for type action) or the key(s) to press (for key action). For key action: Provide space-separated keys (e.g., "Backspace Backspace Delete"). Supports keyboard shortcuts using the platform modifier key (use "cmd" on Mac, "ctrl" on Windows/Linux, e.g., "cmd+a" for select all). Common keys: Enter, Tab, Escape, ArrowUp/Down/Left/Right, Backspace, Delete.',
@@ -59,38 +60,28 @@ IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag
       .array(z.number())
       .min(2)
       .max(2)
-      .nullable()
       .optional()
       .describe(
         "Starting coordinates for left_click_drag action in screenshot pixel space.",
       ),
     scroll_direction: z
       .enum(["up", "down", "left", "right"])
-      .nullable()
       .optional()
       .describe("Direction to scroll for scroll action."),
     scroll_amount: z
       .number()
-      .nullable()
       .optional()
       .describe(
         "Number of pixels to scroll. Defaults to ~2 viewport heights for standard scrolling.",
       ),
-    duration: z
-      .number()
-      .nullable()
-      .optional()
-      .describe("Duration in seconds for wait action."),
     tabId: z
       .number()
-      .nullable()
       .optional()
       .describe(
         "The ID of the tab to operate on. Defaults to current active tab.",
       ),
     uid: z
       .string()
-      .nullable()
       .optional()
       .describe("Element UID from snapshot for scroll_to action."),
   }),
@@ -119,7 +110,6 @@ IMPORTANT: Before using any coordinate-based actions (click, hover, scroll, drag
         : undefined,
       scroll_direction: params.scroll_direction ?? undefined,
       scroll_amount: params.scroll_amount ?? undefined,
-      duration: params.duration ?? undefined,
       tabId: params.tabId ?? undefined,
       uid: params.uid ?? undefined,
     });

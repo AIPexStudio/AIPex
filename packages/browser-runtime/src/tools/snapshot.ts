@@ -33,8 +33,15 @@ export const takeSnapshotTool = tool({
 
 export const searchElementsTool = tool({
   name: "search_elements",
-  description:
-    "Search for elements in the current page using a query string with grep/glob pattern support",
+  description: `[FAST - USE FIRST] Search for elements in the current page using a query string with grep/glob pattern support. Returns all matching elements with their UIDs for direct interaction via click/fill_element_by_uid.
+
+Example queries:
+- Broad scan: '{button,link,input,StaticText}*'
+- Find buttons: 'button*' or '*[Ss]ubmit*'
+- Find inputs: '{input,textarea,select}*'
+- Find by text: '*[Ll]ogin*', '*[Ss]earch*'
+
+This is the PREFERRED first step for page interaction - faster and more reliable than screenshots.`,
   parameters: z.object({
     tabId: z.number().describe("The ID of the tab to search the elements in"),
     query: z
