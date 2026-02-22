@@ -20,7 +20,10 @@ import {
   type PromptInputMessage,
   PromptInputModelSelect,
   PromptInputModelSelectContent,
+  PromptInputModelSelectGroup,
   PromptInputModelSelectItem,
+  PromptInputModelSelectLabel,
+  PromptInputModelSelectSeparator,
   PromptInputModelSelectTrigger,
   PromptInputModelSelectValue,
   PromptInputSkillTag,
@@ -61,7 +64,7 @@ export function DefaultInputArea({
 }: ExtendedInputAreaProps) {
   const { t } = useTranslation();
   const { slots } = useComponentsContext();
-  const { settings, updateSetting, updateSettings } = useConfigContext();
+  const { settings, updateSettings } = useConfigContext();
 
   const effectivePlaceholder = placeholder ?? t("input.placeholder1");
 
@@ -95,45 +98,41 @@ export function DefaultInputArea({
   }, []);
 
   const enabledCustomModels = useMemo(() => {
-    if (!settings.byokEnabled) return [] as CustomModelConfig[];
+    // Always collect enabled BYOK models regardless of byokEnabled flag,
+    // so they appear in the BYOK group even when proxy mode is active.
     return (settings.customModels ?? []).filter((model) => model.enabled);
-  }, [settings.byokEnabled, settings.customModels]);
+  }, [settings.customModels]);
 
-  // Compute effective models list:
-  // 1. BYOK enabled with custom models → show only custom models
-  // 2. Otherwise → prefer API-fetched models, fall back to prop-provided models
-  // 3. If current aiModel is not in the list, prepend it as a custom entry
-  const effectiveModels = useMemo(() => {
-    if (settings.byokEnabled && enabledCustomModels.length > 0) {
-      // When BYOK is enabled, only show enabled custom models
-      return enabledCustomModels.map((model) => ({
+  // Server-side (AIPex) models: API-fetched or prop fallback
+  const serverModels = fetchedModels ?? models;
+
+  // BYOK model entries formatted for the selector
+  const byokModelEntries = useMemo(
+    () =>
+      enabledCustomModels.map((model) => ({
         name:
           model.name?.trim() ||
           `${model.aiModel} (custom-${model.providerType})`,
         value: model.aiModel,
-      }));
-    }
+      })),
+    [enabledCustomModels],
+  );
 
-    // Prefer API-fetched models, fall back to prop-provided models
-    const base = fetchedModels ?? models;
+  // Flat list of all models for resolvedDefaultModel and the slot API.
+  // BYOK models first so the current BYOK selection resolves correctly.
+  const effectiveModels = useMemo(() => {
+    const byokValues = new Set(byokModelEntries.map((m) => m.value));
+    const dedupedServer = serverModels.filter((m) => !byokValues.has(m.value));
+    const combined = [...byokModelEntries, ...dedupedServer];
 
-    // If the user's current model is not in the list, prepend it as a custom entry
+    // If the user's current model is not in any group, prepend it as a custom entry
     const currentModel = settings.aiModel?.trim();
-    if (currentModel && !base.some((m) => m.value === currentModel)) {
-      return [
-        { name: `${currentModel} (Custom)`, value: currentModel },
-        ...base,
-      ];
+    if (currentModel && !combined.some((m) => m.value === currentModel)) {
+      return [{ name: `${currentModel} (Custom)`, value: currentModel }, ...combined];
     }
 
-    return base;
-  }, [
-    settings.byokEnabled,
-    enabledCustomModels,
-    fetchedModels,
-    models,
-    settings.aiModel,
-  ]);
+    return combined;
+  }, [byokModelEntries, serverModels, settings.aiModel]);
 
   const resolvedDefaultModel = useMemo(() => {
     const candidates = [
@@ -193,31 +192,29 @@ export function DefaultInputArea({
 
       setSelectedModel(trimmed);
 
-      // Persist the model selection to settings so the agent recreates with the new model
-      if (settings.byokEnabled && enabledCustomModels.length > 0) {
-        // BYOK mode: find the matching custom model config and update all provider settings
-        const customConfig = enabledCustomModels.find(
-          (m) => m.aiModel === trimmed,
-        );
-        if (customConfig) {
-          void updateSettings({
-            aiModel: trimmed,
-            aiToken: customConfig.aiToken,
-            aiHost: customConfig.aiHost ?? "",
-            providerType: customConfig.providerType,
-          });
-          return;
-        }
+      // Check if the selected model belongs to the BYOK group
+      const customConfig = enabledCustomModels.find(
+        (m) => m.aiModel === trimmed,
+      );
+
+      if (customConfig) {
+        // BYOK model selected → switch to BYOK mode with this config
+        void updateSettings({
+          aiModel: trimmed,
+          aiToken: customConfig.aiToken,
+          aiHost: customConfig.aiHost ?? "",
+          providerType: customConfig.providerType,
+          byokEnabled: true,
+        });
+        return;
       }
 
-      // Non-BYOK mode (or custom model not found): just update aiModel
-      void updateSetting("aiModel", trimmed);
+      // Server (AIPex) model selected → switch to proxy mode
+      void updateSettings({ aiModel: trimmed, byokEnabled: false });
     },
     [
       selectedModel,
-      settings.byokEnabled,
       enabledCustomModels,
-      updateSetting,
       updateSettings,
     ],
   );
@@ -300,19 +297,54 @@ export function DefaultInputArea({
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                       Loading...
                     </div>
-                  ) : effectiveModels.length > 0 ? (
-                    effectiveModels.map((model) => (
-                      <PromptInputModelSelectItem
-                        key={model.value}
-                        value={model.value}
-                      >
-                        {model.name}
-                      </PromptInputModelSelectItem>
-                    ))
                   ) : (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      No models available
-                    </div>
+                    <>
+                      {/* AIPex Models — server-side proxy */}
+                      {serverModels.length > 0 && (
+                        <PromptInputModelSelectGroup>
+                          <PromptInputModelSelectLabel>
+                            AIPex Models
+                          </PromptInputModelSelectLabel>
+                          {serverModels.map((model) => (
+                            <PromptInputModelSelectItem
+                              key={model.value}
+                              value={model.value}
+                            >
+                              {model.name}
+                            </PromptInputModelSelectItem>
+                          ))}
+                        </PromptInputModelSelectGroup>
+                      )}
+
+                      {/* BYOK Models — user's own API key */}
+                      {byokModelEntries.length > 0 && (
+                        <>
+                          {serverModels.length > 0 && (
+                            <PromptInputModelSelectSeparator />
+                          )}
+                          <PromptInputModelSelectGroup>
+                            <PromptInputModelSelectLabel>
+                              BYOK Models
+                            </PromptInputModelSelectLabel>
+                            {byokModelEntries.map((model) => (
+                              <PromptInputModelSelectItem
+                                key={model.value}
+                                value={model.value}
+                              >
+                                {model.name}
+                              </PromptInputModelSelectItem>
+                            ))}
+                          </PromptInputModelSelectGroup>
+                        </>
+                      )}
+
+                      {serverModels.length === 0 &&
+                        byokModelEntries.length === 0 && (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            No models available
+                          </div>
+                        )}
+                    </>
                   )}
                 </PromptInputModelSelectContent>
               </PromptInputModelSelect>
