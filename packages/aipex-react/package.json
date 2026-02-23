@@ -179,7 +179,7 @@
     "@types/react-dom": "19.2.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/three": "^0.177.0",
-    "jsdom": "^27.4.0",
+    "jsdom": "^28.1.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tsc-alias": "^1.8.13",
