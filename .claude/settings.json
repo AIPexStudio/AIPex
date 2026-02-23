@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm --filter @aipexstudio/mcp-server test:*)",
+      "Bash(pnpm --filter @aipexstudio/mcp-server typecheck:*)"
+    ]
+  }
+}

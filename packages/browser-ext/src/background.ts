@@ -535,4 +535,28 @@ chrome.runtime.onMessageExternal.addListener(
   },
 );
 
+// =============================================================================
+// MCP Bridge Client (opt-in via chrome.storage setting)
+// =============================================================================
+import {
+  startMcpBridgeClient,
+  stopMcpBridgeClient,
+} from "./services/mcp-bridge-client";
+
+chrome.storage.local.get("aipex-mcp-bridge-enabled", (result) => {
+  if (result["aipex-mcp-bridge-enabled"]) {
+    startMcpBridgeClient();
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes["aipex-mcp-bridge-enabled"]) {
+    if (changes["aipex-mcp-bridge-enabled"].newValue) {
+      startMcpBridgeClient();
+    } else {
+      stopMcpBridgeClient();
+    }
+  }
+});
+
 console.log("AIPex background service worker started");

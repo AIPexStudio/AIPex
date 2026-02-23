@@ -1,0 +1,46 @@
+{
+  "name": "@aipexstudio/mcp-server",
+  "version": "0.0.1",
+  "description": "MCP server for controlling AIPex browser extension from external AI agents",
+  "type": "module",
+  "bin": {
+    "aipex-mcp": "./dist/src/index.js"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
+    "!dist/src/**/*.test.js",
+    "!dist/src/**/*.test.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/src/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "browser",
+    "automation",
+    "aipex"
+  ],
+  "author": "AIPex Studio",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "ws": "^8.18.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.0",
+    "@types/node": "^25.2.3"
+  }
+}
