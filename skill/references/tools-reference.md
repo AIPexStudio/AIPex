@@ -111,8 +111,8 @@ Search the page's accessibility tree using glob patterns. Returns matching eleme
 {button,input,textarea,select,a}*    — all interactive elements
 {button,link,a}*                      — clickable elements only
 *[Ss]ubmit*, *[Ss]ave*, *[Cc]onfirm* — action buttons
-*[Ll]ogin*, *[Ss]ign*                 — auth elements
-*[Ss]earch*                           — search inputs
+*login*, *sign*                 — auth elements
+*search*                           — search inputs
 {input,textbox,combobox}*             — text inputs
 ```
 
