@@ -61,6 +61,68 @@ AIPex is the answer. Install the extension, bring your own API key, and automate
 
 ---
 
+## Use with AI Coding Agents (MCP)
+
+AIPex now supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io), giving AI coding agents like Cursor, Claude Code, and VS Code Copilot direct control over your browser.
+
+```
+AI Agent ──stdio──▶ aipex-mcp-bridge ──WebSocket──▶ AIPex Extension ──▶ Browser
+```
+
+### Step 1: Configure your agent
+
+**Cursor** (`.cursor/mcp.json`) · **Claude Desktop** (`claude_desktop_config.json`) · **Windsurf** (`mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+**Claude Code**:
+
+```bash
+claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
+```
+
+**VS Code Copilot** (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+### Step 2: Connect the extension
+
+1. Open Chrome → AIPex icon → **Options**
+2. Set WebSocket URL to `ws://localhost:9223`
+3. Click **Connect**
+
+Your agent now has 30+ browser automation tools available via MCP. See [mcp-bridge/README.md](mcp-bridge/README.md) for advanced options.
+
+---
+
+## Skill
+
+AIPex ships an **`aipex-browser`** skill — a ready-to-use skill package for agents that support the skill protocol (such as [Claude Code](https://claude.ai/code) and [OpenClaw](https://openclaw.dev)-compatible runtimes).
+
+The skill bundles tool usage strategy, complete parameter schemas for all 30+ browser tools, and common automation patterns — so an agent can control the browser effectively without discovering tools from scratch.
+
+See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition.
+
+---
+
 ## Demos
 
 ### "I have 100 tabs open. Help."
@@ -102,9 +164,9 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 - Integration
 
-  - [ ] Cursor
+  - [x] Cursor
 
-  - [ ] Claude Code
+  - [x] Claude Code
 
 - Skills
 

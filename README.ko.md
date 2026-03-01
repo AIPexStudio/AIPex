@@ -60,6 +60,68 @@ AIPex가 그 대답입니다. 확장 프로그램을 설치하고, 자신의 API
 
 ---
 
+## AI 에이전트와 연동 (MCP)
+
+AIPex는 이제 [Model Context Protocol(MCP)](https://modelcontextprotocol.io)을 지원하여 Cursor, Claude Code, VS Code Copilot 등 AI 에이전트가 브라우저를 직접 제어할 수 있습니다.
+
+```
+AI Agent ──stdio──▶ aipex-mcp-bridge ──WebSocket──▶ AIPex Extension ──▶ Browser
+```
+
+### 1단계: 에이전트 설정
+
+**Cursor** (`.cursor/mcp.json`) · **Claude Desktop** (`claude_desktop_config.json`) · **Windsurf** (`mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+**Claude Code**:
+
+```bash
+claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
+```
+
+**VS Code Copilot** (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+### 2단계: 확장 프로그램 연결
+
+1. Chrome → AIPex 아이콘 → **옵션** 열기
+2. WebSocket URL을 `ws://localhost:9223`으로 설정
+3. **연결** 클릭
+
+이제 에이전트는 MCP를 통해 30개 이상의 브라우저 자동화 도구를 사용할 수 있습니다. 자세한 설정은 [mcp-bridge/README.md](mcp-bridge/README.md)를 참고하세요.
+
+---
+
+## 스킬 (Skill)
+
+AIPex는 **`aipex-browser`** 스킬을 제공합니다. [Claude Code](https://claude.ai/code) 및 [OpenClaw](https://openclaw.dev) 호환 런타임 등 스킬 프로토콜을 지원하는 에이전트가 바로 사용할 수 있는 브라우저 자동화 스킬 패키지입니다.
+
+스킬에는 도구 사용 전략, 30개 이상의 브라우저 도구 파라미터 스키마, 자주 쓰이는 자동화 패턴이 포함되어 있어 에이전트가 시행착오 없이 효율적으로 브라우저를 제어할 수 있습니다.
+
+자세한 내용은 [`skill/SKILL.md`](skill/SKILL.md)를 참고하세요.
+
+---
+
 ## 데모
 
 ### "탭이 100개 열려 있습니다. 도와주세요."

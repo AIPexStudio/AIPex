@@ -59,6 +59,68 @@ AIPex 就是答案。安装扩展，输入你自己的 API Key，然后直接开
 
 ---
 
+## 与 AI 编程助手集成（MCP）
+
+AIPex 现已支持 [模型上下文协议（MCP）](https://modelcontextprotocol.io)，让 Cursor、Claude Code、VS Code Copilot 等 AI 助手能够直接控制你的浏览器。
+
+```
+AI Agent ──stdio──▶ aipex-mcp-bridge ──WebSocket──▶ AIPex Extension ──▶ Browser
+```
+
+### 第一步：配置你的 AI 工具
+
+**Cursor** (`.cursor/mcp.json`) · **Claude Desktop** (`claude_desktop_config.json`) · **Windsurf** (`mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+**Claude Code**:
+
+```bash
+claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
+```
+
+**VS Code Copilot** (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "aipex-browser": {
+      "command": "npx",
+      "args": ["-y", "aipex-mcp-bridge"]
+    }
+  }
+}
+```
+
+### 第二步：连接扩展程序
+
+1. 打开 Chrome → 点击 AIPex 图标 → **选项**
+2. 将 WebSocket URL 设置为 `ws://localhost:9223`
+3. 点击 **连接**
+
+你的 AI 助手现在可以通过 MCP 使用 30+ 个浏览器自动化工具。更多配置详见 [mcp-bridge/README.md](mcp-bridge/README.md)。
+
+---
+
+## Skill
+
+AIPex 提供了一个 **`aipex-browser`** skill —— 供支持 skill 协议的 agent（如 [Claude Code](https://claude.ai/code) 及兼容 [OpenClaw](https://openclaw.dev) 的运行时）使用的即开即用自动化技能包。
+
+该 skill 内置了工具使用策略、所有 30+ 浏览器工具的完整参数 schema，以及常用自动化模式，让 agent 无需自行摸索即可高效控制浏览器。
+
+详见 [`skill/SKILL.md`](skill/SKILL.md)。
+
+---
+
 ## 演示
 
 ### "我开了100个标签页，救命"

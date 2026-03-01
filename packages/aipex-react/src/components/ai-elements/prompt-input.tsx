@@ -52,7 +52,10 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
@@ -1727,4 +1730,34 @@ export const PromptInputModelSelectValue = ({
   ...props
 }: PromptInputModelSelectValueProps) => (
   <SelectValue className={cn(className)} {...props} />
+);
+
+export type PromptInputModelSelectGroupProps = ComponentProps<
+  typeof SelectGroup
+>;
+
+export const PromptInputModelSelectGroup = (
+  props: PromptInputModelSelectGroupProps,
+) => <SelectGroup {...props} />;
+
+export type PromptInputModelSelectLabelProps = ComponentProps<
+  typeof SelectLabel
+>;
+
+export const PromptInputModelSelectLabel = ({
+  className,
+  ...props
+}: PromptInputModelSelectLabelProps) => (
+  <SelectLabel className={cn(className)} {...props} />
+);
+
+export type PromptInputModelSelectSeparatorProps = ComponentProps<
+  typeof SelectSeparator
+>;
+
+export const PromptInputModelSelectSeparator = ({
+  className,
+  ...props
+}: PromptInputModelSelectSeparatorProps) => (
+  <SelectSeparator className={cn(className)} {...props} />
 );

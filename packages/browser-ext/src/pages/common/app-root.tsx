@@ -5,16 +5,19 @@
 
 import { useAgent, useChatConfig } from "@aipexstudio/aipex-react";
 import ChatBot from "@aipexstudio/aipex-react/components/chatbot";
+import { ErrorBoundary } from "@aipexstudio/aipex-react/components/error/ErrorBoundary";
 import type { InterventionMode } from "@aipexstudio/aipex-react/components/intervention";
 import { I18nProvider } from "@aipexstudio/aipex-react/i18n/context";
 import type { Language } from "@aipexstudio/aipex-react/i18n/types";
 import { ThemeProvider } from "@aipexstudio/aipex-react/theme/context";
 import type { Theme } from "@aipexstudio/aipex-react/theme/types";
+import type { AuthCheckResult } from "@aipexstudio/aipex-react/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AuthProvider } from "../../auth";
 import { chromeStorageAdapter } from "../../hooks";
+import { isByokConfigured } from "../../lib/ai-provider";
 import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
 import {
   BROWSER_AGENT_CONFIG,
@@ -35,6 +38,78 @@ import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
 const themeStorageAdapter = new ChromeStorageAdapter<Theme>();
+
+// ---------------------------------------------------------------------------
+// Replay setup listener
+// ---------------------------------------------------------------------------
+
+/** Replay step shape coming from the external website */
+interface ReplayStepData {
+  id?: number;
+  event: { type: string; [key: string]: unknown };
+  url?: string | null;
+  aiTitle?: string | null;
+  aiSummary?: string | null;
+}
+
+/**
+ * Listens for `NAVIGATE_AND_SETUP_REPLAY` messages forwarded by the
+ * background service worker after an external `REPLAY_USER_MANUAL` request.
+ *
+ * The replay steps are persisted to `chrome.storage.local` under
+ * `aipex-pending-replay` so they can be consumed by the use-case system
+ * when it is available.
+ */
+function useReplaySetup() {
+  useEffect(() => {
+    const handler = (message: Record<string, unknown>) => {
+      if (message?.request !== "NAVIGATE_AND_SETUP_REPLAY") return;
+
+      const data = message.data as
+        | {
+            manualId?: number;
+            startFromStep?: number;
+            steps?: ReplayStepData[];
+          }
+        | undefined;
+
+      if (!data || !Array.isArray(data.steps) || data.steps.length === 0) {
+        console.warn("[ReplaySetup] Invalid or empty replay data received");
+        return;
+      }
+
+      // Persist replay data for future use-case system consumption
+      chrome.storage.local
+        .set({
+          "aipex-pending-replay": {
+            manualId: data.manualId,
+            startFromStep: data.startFromStep ?? 0,
+            steps: data.steps,
+            receivedAt: Date.now(),
+          },
+        })
+        .catch(() => {
+          /* storage may be unavailable */
+        });
+
+      console.log(
+        "[ReplaySetup] Replay data stored:",
+        data.steps.length,
+        "steps for manual",
+        data.manualId,
+      );
+    };
+
+    chrome.runtime.onMessage.addListener(handler);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handler);
+    };
+  }, []);
+}
+
+// ---------------------------------------------------------------------------
+// Pending prompt
+// ---------------------------------------------------------------------------
 
 /**
  * Reads and consumes a pending prompt saved by the openWithPrompt external
@@ -118,6 +193,34 @@ function useConversationHeartbeat() {
   return { start, stop };
 }
 
+/**
+ * Pre-flight auth check for non-BYOK users.
+ *
+ * Mirrors old aipex logic: if BYOK is not configured and the user is not
+ * logged in (no auth cookies for claudechrome.com), the user needs to
+ * authenticate before sending a message.
+ */
+async function checkAuth(
+  settings: ReturnType<typeof useChatConfig>["settings"],
+): Promise<AuthCheckResult> {
+  // If user has BYOK configured, no auth check needed
+  if (isByokConfigured(settings)) {
+    return { needsAuth: false, hasCustomConfig: true };
+  }
+
+  // Non-BYOK path: check if user is logged in
+  try {
+    const savedUser = await chrome.storage.local.get("user");
+    if (savedUser?.user) {
+      return { needsAuth: false, hasCustomConfig: false };
+    }
+  } catch {
+    // Storage access failed – fall through to needsAuth
+  }
+
+  return { needsAuth: true, hasCustomConfig: false };
+}
+
 function ChatApp() {
   const { settings, isLoading } = useChatConfig({
     storageAdapter: chromeStorageAdapter,
@@ -141,6 +244,13 @@ function ChatApp() {
 
   const pendingInput = usePendingPrompt();
   const heartbeat = useConversationHeartbeat();
+  useReplaySetup();
+
+  // Keep a ref to settings so the auth check always sees latest values
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const handleCheckAuth = useCallback(() => checkAuth(settingsRef.current), []);
 
   const handleStatusChange = useCallback(
     (status: string) => {
@@ -209,6 +319,7 @@ function ChatApp() {
           initialInput={pendingInput}
           handlers={{
             onStatusChange: handleStatusChange,
+            checkAuthBeforeSend: handleCheckAuth,
           }}
           components={{
             Header: BrowserChatHeader,
@@ -242,13 +353,15 @@ export function renderChatApp() {
   }
 
   const App = () => (
-    <I18nProvider storageAdapter={i18nStorageAdapter}>
-      <ThemeProvider storageAdapter={themeStorageAdapter}>
-        <AuthProvider>
-          <ChatApp />
-        </AuthProvider>
-      </ThemeProvider>
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider storageAdapter={i18nStorageAdapter}>
+        <ThemeProvider storageAdapter={themeStorageAdapter}>
+          <AuthProvider>
+            <ChatApp />
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 
   ReactDOM.createRoot(rootElement).render(
