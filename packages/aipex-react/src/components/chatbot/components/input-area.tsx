@@ -1,4 +1,3 @@
-import type { CustomModelConfig } from "@aipexstudio/aipex-core";
 import type { ChatStatus } from "ai";
 import { ClockIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -128,7 +127,10 @@ export function DefaultInputArea({
     // If the user's current model is not in any group, prepend it as a custom entry
     const currentModel = settings.aiModel?.trim();
     if (currentModel && !combined.some((m) => m.value === currentModel)) {
-      return [{ name: `${currentModel} (Custom)`, value: currentModel }, ...combined];
+      return [
+        { name: `${currentModel} (Custom)`, value: currentModel },
+        ...combined,
+      ];
     }
 
     return combined;
@@ -212,11 +214,7 @@ export function DefaultInputArea({
       // Server (AIPex) model selected → switch to proxy mode
       void updateSettings({ aiModel: trimmed, byokEnabled: false });
     },
-    [
-      selectedModel,
-      enabledCustomModels,
-      updateSettings,
-    ],
+    [selectedModel, enabledCustomModels, updateSettings],
   );
 
   // Map status to ChatStatus type

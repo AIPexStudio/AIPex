@@ -1732,13 +1732,17 @@ export const PromptInputModelSelectValue = ({
   <SelectValue className={cn(className)} {...props} />
 );
 
-export type PromptInputModelSelectGroupProps = ComponentProps<typeof SelectGroup>;
+export type PromptInputModelSelectGroupProps = ComponentProps<
+  typeof SelectGroup
+>;
 
 export const PromptInputModelSelectGroup = (
   props: PromptInputModelSelectGroupProps,
 ) => <SelectGroup {...props} />;
 
-export type PromptInputModelSelectLabelProps = ComponentProps<typeof SelectLabel>;
+export type PromptInputModelSelectLabelProps = ComponentProps<
+  typeof SelectLabel
+>;
 
 export const PromptInputModelSelectLabel = ({
   className,
