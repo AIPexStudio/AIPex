@@ -39,7 +39,7 @@ Example queries:
 - Broad scan: '{button,link,input,StaticText}*'
 - Find buttons: 'button*' or '*[Ss]ubmit*'
 - Find inputs: '{input,textarea,select}*'
-- Find by text: '*[Ll]ogin*', '*[Ss]earch*'
+- Find by text: '*login*', '*search*'
 
 This is the PREFERRED first step for page interaction - faster and more reliable than screenshots.`,
   parameters: z.object({
