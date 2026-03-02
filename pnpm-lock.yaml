@@ -84,8 +84,8 @@ importers:
         specifier: ^0.0.27
         version: 0.0.27
       ai:
-        specifier: ^6.0.28
-        version: 6.0.28(zod@4.3.6)
+        specifier: ^6.0.105
+        version: 6.0.105(zod@4.3.6)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -241,8 +241,8 @@ importers:
         specifier: ^3.9.6
         version: 3.9.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       ai:
-        specifier: ^6.0.28
-        version: 6.0.28(zod@4.3.6)
+        specifier: ^6.0.105
+        version: 6.0.105(zod@4.3.6)
       assistant-ui:
         specifier: ^0.0.78
         version: 0.0.78
@@ -412,10 +412,10 @@ importers:
         version: 0.4.3(ws@8.19.0)(zod@4.3.6)
       '@openai/agents-extensions':
         specifier: ^0.4.10
-        version: 0.4.10(@ai-sdk/provider@3.0.8)(@openai/agents@0.4.3(ws@8.19.0)(zod@4.3.6))(ai@6.0.28(zod@4.3.6))(ws@8.19.0)(zod@4.3.6)
+        version: 0.4.10(@ai-sdk/provider@3.0.8)(@openai/agents@0.4.3(ws@8.19.0)(zod@4.3.6))(ai@6.0.105(zod@4.3.6))(ws@8.19.0)(zod@4.3.6)
       '@openrouter/ai-sdk-provider':
         specifier: ^2.0.0
-        version: 2.1.1(ai@6.0.28(zod@4.3.6))(zod@4.3.6)
+        version: 2.1.1(ai@6.0.105(zod@4.3.6))(zod@4.3.6)
       lru-cache:
         specifier: ^11.2.4
         version: 11.2.4
@@ -465,8 +465,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/gateway@3.0.11':
-    resolution: {integrity: sha512-gLrgNXA95wdo/zAlA0miX/SJEYKSYCHg+e0Y/uQeABLScZAMjPw3jWaeANta/Db1T4xfi8cBvY3nnV8Pa27z+w==}
+  '@ai-sdk/gateway@3.0.59':
+    resolution: {integrity: sha512-MbtheWHgEFV/8HL1Z6E3hOAsmP73zZlNFg0F0nJAD0Adnjp4J/plqNK00Y896d+dWTw+r0OXzyov9/2wCFjH0Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -509,6 +509,12 @@ packages:
 
   '@ai-sdk/provider-utils@4.0.15':
     resolution: {integrity: sha512-8XiKWbemmCbvNN0CLR9u3PQiet4gtEVIrX4zzLxnCj06AwsEDJwJVBbKrEI4t6qE8XRSIvU2irka0dcpziKW6w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@4.0.16':
+    resolution: {integrity: sha512-kBvDqNkt5EwlzF9FujmNhhtl8FYg3e8FO8P5uneKliqfRThWemzBj+wfYr7ZCymAQhTRnwSSz1/SOqhOAwmx9g==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2300,8 +2306,8 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  ai@6.0.28:
-    resolution: {integrity: sha512-TshF7p7Vhg8Ty8MMijiUKB3k334GTqgD7eK5XQzaxAcrc4JXuZClRrS0nhxrbs0LOtCVbqYTRLb7qJ7VG2djnQ==}
+  ai@6.0.105:
+    resolution: {integrity: sha512-rp+exWtZS3J0DDvZIfetpKCIg7D3cCsvBPoFN3I67IDTs9aoBZDbpecoIkmNLT+U9RBkoEial3OGHRvme23HCw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2459,6 +2465,7 @@ packages:
   basic-ftp@5.1.0:
     resolution: {integrity: sha512-RkaJzeJKDbaDWTIPiJwubyljaEPwpVWkm9Rt5h9Nd6h7tEXTJ3VB4qxdZBioV7JO5yLUaOKwz7vDOzlncUsegw==}
     engines: {node: '>=10.0.0'}
+    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
@@ -5134,10 +5141,10 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       zod: 4.3.6
 
-  '@ai-sdk/gateway@3.0.11(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.59(zod@4.3.6)':
     dependencies:
-      '@ai-sdk/provider': 3.0.2
-      '@ai-sdk/provider-utils': 4.0.4(zod@4.3.6)
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.16(zod@4.3.6)
       '@vercel/oidc': 3.1.0
       zod: 4.3.6
 
@@ -5181,6 +5188,13 @@ snapshots:
       zod: 4.3.6
 
   '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.8
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.0.6
+      zod: 4.3.6
+
+  '@ai-sdk/provider-utils@4.0.16(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
@@ -5918,7 +5932,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-extensions@0.4.10(@ai-sdk/provider@3.0.8)(@openai/agents@0.4.3(ws@8.19.0)(zod@4.3.6))(ai@6.0.28(zod@4.3.6))(ws@8.19.0)(zod@4.3.6)':
+  '@openai/agents-extensions@0.4.10(@ai-sdk/provider@3.0.8)(@openai/agents@0.4.3(ws@8.19.0)(zod@4.3.6))(ai@6.0.105(zod@4.3.6))(ws@8.19.0)(zod@4.3.6)':
     dependencies:
       '@openai/agents': 0.4.3(ws@8.19.0)(zod@4.3.6)
       '@openai/agents-core': 0.4.10(ws@8.19.0)(zod@4.3.6)
@@ -5928,7 +5942,7 @@ snapshots:
       zod: 4.3.6
     optionalDependencies:
       '@ai-sdk/provider': 3.0.8
-      ai: 6.0.28(zod@4.3.6)
+      ai: 6.0.105(zod@4.3.6)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -5972,9 +5986,9 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@openrouter/ai-sdk-provider@2.1.1(ai@6.0.28(zod@4.3.6))(zod@4.3.6)':
+  '@openrouter/ai-sdk-provider@2.1.1(ai@6.0.105(zod@4.3.6))(zod@4.3.6)':
     dependencies:
-      ai: 6.0.28(zod@4.3.6)
+      ai: 6.0.105(zod@4.3.6)
       zod: 4.3.6
 
   '@opentelemetry/api@1.9.0': {}
@@ -6994,11 +7008,11 @@ snapshots:
       screenfull: 5.2.0
       tslib: 2.8.1
 
-  ai@6.0.28(zod@4.3.6):
+  ai@6.0.105(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.11(zod@4.3.6)
-      '@ai-sdk/provider': 3.0.2
-      '@ai-sdk/provider-utils': 4.0.4(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.59(zod@4.3.6)
+      '@ai-sdk/provider': 3.0.8
+      '@ai-sdk/provider-utils': 4.0.16(zod@4.3.6)
       '@opentelemetry/api': 1.9.0
       zod: 4.3.6
 
