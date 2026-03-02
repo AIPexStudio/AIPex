@@ -78,7 +78,7 @@
     "@crxjs/vite-plugin": "^2.3.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "^16.3.2",
     "@types/chrome": "0.1.32",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
