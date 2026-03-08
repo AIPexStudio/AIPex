@@ -12,16 +12,17 @@ import React, { useCallback, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { chromeStorageAdapter } from "../../hooks";
 import { createAIProvider } from "../../lib/ai-provider";
+import { McpBridgePanel } from "./mcp-bridge-panel";
 import { SkillsOptionsTab } from "./skills-tab";
 
 /** Parse and validate URL params for deep-linking. */
 function parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const tabAllowlist = new Set(["general", "ai", "skills"]);
+  const tabAllowlist = new Set(["general", "ai", "skills", "connection"]);
   const rawTab = params.get("tab");
   const tab =
     rawTab && tabAllowlist.has(rawTab)
-      ? (rawTab as "general" | "ai" | "skills")
+      ? (rawTab as "general" | "ai" | "skills" | "connection")
       : undefined;
   const rawSkill = params.get("skill");
   // Bound skill name length to prevent abuse
@@ -77,16 +78,15 @@ function OptionsPageContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <SettingsPage
-        storageAdapter={chromeStorageAdapter}
-        onTestConnection={handleTestConnection}
-        skillsContent={<SkillsOptionsTab initialSkill={initialSkill} />}
-        sttConfig={chromeSttAdapter}
-        initialTab={initialTab}
-        initialSkill={initialSkill}
-      />
-    </div>
+    <SettingsPage
+      storageAdapter={chromeStorageAdapter}
+      onTestConnection={handleTestConnection}
+      skillsContent={<SkillsOptionsTab initialSkill={initialSkill} />}
+      connectionContent={<McpBridgePanel />}
+      sttConfig={chromeSttAdapter}
+      initialTab={initialTab}
+      initialSkill={initialSkill}
+    />
   );
 }
 

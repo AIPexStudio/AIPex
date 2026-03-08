@@ -22,6 +22,7 @@ import {
   Mic,
   Package,
   Palette,
+  Plug,
   Plus,
   Search,
   Settings,
@@ -221,6 +222,7 @@ export function SettingsPage({
   onSave,
   onTestConnection,
   skillsContent,
+  connectionContent,
   sttConfig,
   initialTab,
   initialSkill: _initialSkill,
@@ -826,9 +828,14 @@ export function SettingsPage({
           className="w-full"
         >
           <TabsList
-            className={`grid w-full mb-6 ${
-              skillsContent ? "grid-cols-3" : "grid-cols-2"
-            }`}
+            className={cn(
+              "grid w-full mb-6",
+              skillsContent && connectionContent
+                ? "grid-cols-4"
+                : skillsContent || connectionContent
+                  ? "grid-cols-3"
+                  : "grid-cols-2",
+            )}
           >
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -842,6 +849,15 @@ export function SettingsPage({
               <TabsTrigger value="skills" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 {t("settings.skillsTab")}
+              </TabsTrigger>
+            )}
+            {connectionContent && (
+              <TabsTrigger
+                value="connection"
+                className="flex items-center gap-2"
+              >
+                <Plug className="h-4 w-4" />
+                {language === "zh" ? "连接" : "Connection"}
               </TabsTrigger>
             )}
           </TabsList>
@@ -1678,6 +1694,13 @@ export function SettingsPage({
           {skillsContent && (
             <TabsContent value="skills" className="space-y-6">
               {skillsContent}
+            </TabsContent>
+          )}
+
+          {/* Connection Tab */}
+          {connectionContent && (
+            <TabsContent value="connection" className="space-y-6">
+              {connectionContent}
             </TabsContent>
           )}
         </Tabs>

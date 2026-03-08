@@ -37,3 +37,5 @@ export * from "./storage/index.js";
 export * from "./tools/index.js";
 // Voice
 // export * from "./voice/index.js";
+// WebSocket MCP Bridge
+export * from "./ws-bridge/index.js";

@@ -1,4 +1,4 @@
-import type { ProviderType } from "./settings.js";
+import type { ProviderType } from "./types.js";
 
 export interface AIProviderConfig {
   name: string;

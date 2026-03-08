@@ -128,6 +128,8 @@ export interface ChatbotSlots {
   afterMessages?: () => ReactNode;
   /** Extra content rendered inside PromptInput (e.g., context/skill loaders) */
   promptExtras?: () => ReactNode;
+  /** Handler called when user clicks Login in a LoginPrompt inside a message */
+  onLogin?: () => void;
 }
 
 // ============ Components Configuration ============

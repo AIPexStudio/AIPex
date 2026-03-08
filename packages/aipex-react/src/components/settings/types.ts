@@ -22,6 +22,8 @@ export interface SettingsPageProps {
   onSave?: (settings: AppSettings) => void;
   onTestConnection?: (settings: AppSettings) => Promise<boolean>;
   skillsContent?: ReactNode;
+  /** Optional content for a "Connection" tab (e.g. MCP bridge panel). */
+  connectionContent?: ReactNode;
   /** Optional ElevenLabs STT config adapter; when provided the STT card is shown. */
   sttConfig?: STTConfigAdapter;
   /** Pre-select a tab on mount (e.g. from URL params). */
@@ -38,7 +40,7 @@ export interface ProviderConfig {
 
 export type ProviderConfigs = Record<AIProviderKey, ProviderConfig>;
 
-export type SettingsTab = "general" | "ai" | "skills";
+export type SettingsTab = "general" | "ai" | "skills" | "connection";
 
 export interface SaveStatus {
   type: "success" | "error" | "info" | "";

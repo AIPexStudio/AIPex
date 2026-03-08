@@ -140,6 +140,14 @@ export class ChatAdapter {
         break;
 
       case "content_delta":
+        // When text arrives after tool calls, start a new assistant message.
+        // This mirrors aipex's behavior where each model response after tool
+        // execution becomes a separate message, enabling the turn-based
+        // collapsing logic in the message list.
+        if (this.toolsAddedSinceLastText) {
+          this.state.currentAssistantMessageId = null;
+          this.toolsAddedSinceLastText = false;
+        }
         this.ensureAssistantMessage();
         this.updateStatus("streaming");
         this.appendContentDelta(event.delta);
@@ -179,11 +187,13 @@ export class ChatAdapter {
       case "execution_complete":
         this.updateStatus("idle");
         this.state.currentAssistantMessageId = null;
+        this.toolsAddedSinceLastText = false;
         break;
 
       case "error":
         this.updateStatus("error");
         this.state.currentAssistantMessageId = null;
+        this.toolsAddedSinceLastText = false;
         break;
     }
   }

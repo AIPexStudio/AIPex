@@ -1,6 +1,7 @@
 import type { AIProviderKey } from "./ai-providers.js";
+import type { ProviderType } from "./types.js";
 
-export type ProviderType = "google" | "openai" | "claude";
+export type { ProviderType };
 
 export interface CustomModelConfig {
   id: string;
