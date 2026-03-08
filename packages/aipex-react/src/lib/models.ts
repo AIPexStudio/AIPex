@@ -70,8 +70,10 @@ const FALLBACK_MODELS: ModelInfo[] = [
 ];
 
 const MODELS_API_URL = "https://www.claudechrome.com/api/models";
+const STORAGE_KEY = "cachedModelList";
+const STORAGE_TIMESTAMP_KEY = "cachedModelListTimestamp";
+const MAX_MODELS = 200;
 
-// Convert API pricing to price level
 function getPriceLevel(
   pricing: ApiModelPricing,
 ): "cheap" | "normal" | "expensive" {
@@ -81,7 +83,6 @@ function getPriceLevel(
   return "expensive";
 }
 
-// Convert API model to internal ModelInfo
 function convertApiModel(apiModel: ApiModel): ModelInfo {
   return {
     id: apiModel.id,
@@ -97,7 +98,6 @@ function convertApiModel(apiModel: ApiModel): ModelInfo {
   };
 }
 
-// Validate that the API response matches the expected schema
 function isValidApiResponse(data: unknown): data is ApiResponse {
   if (typeof data !== "object" || data === null) return false;
   const obj = data as Record<string, unknown>;
@@ -105,7 +105,6 @@ function isValidApiResponse(data: unknown): data is ApiResponse {
   if (typeof obj.data !== "object" || obj.data === null) return false;
   const d = obj.data as Record<string, unknown>;
   if (!Array.isArray(d.models)) return false;
-  // Validate first model shape if present
   if (d.models.length > 0) {
     const first = d.models[0] as Record<string, unknown>;
     if (typeof first.id !== "string" || typeof first.name !== "string") {
@@ -115,51 +114,162 @@ function isValidApiResponse(data: unknown): data is ApiResponse {
   return true;
 }
 
-// Cache for models
+// --- Persistent storage helpers ---
+
+async function loadFromStorage(): Promise<ModelInfo[] | null> {
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      const result = await chrome.storage.local.get([STORAGE_KEY]);
+      const models = result[STORAGE_KEY];
+      if (Array.isArray(models) && models.length > 0) {
+        return models as ModelInfo[];
+      }
+    }
+  } catch {
+    // Storage not available (e.g. in tests)
+  }
+  return null;
+}
+
+async function saveToStorage(
+  models: ModelInfo[],
+  serverTimestamp: number,
+): Promise<void> {
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      await chrome.storage.local.set({
+        [STORAGE_KEY]: models,
+        [STORAGE_TIMESTAMP_KEY]: serverTimestamp,
+      });
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+async function getStoredTimestamp(): Promise<number> {
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      const result = await chrome.storage.local.get([STORAGE_TIMESTAMP_KEY]);
+      const ts = result[STORAGE_TIMESTAMP_KEY];
+      if (typeof ts === "number") return ts;
+    }
+  } catch {
+    // Ignore
+  }
+  return 0;
+}
+
+// --- In-memory cache (fast path) ---
+
 let cachedModels: ModelInfo[] | null = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const MAX_MODELS = 200; // Safety cap on number of models
+let cachedServerTimestamp = 0;
+let storageLoaded = false;
 
 /**
- * Fetch models from the server API with caching and fallback.
- * Returns cached result if still valid (5 min TTL).
- * Falls back to FALLBACK_MODELS on any error.
+ * Fetch models with a two-tier cache:
+ * 1. In-memory cache (instant)
+ * 2. chrome.storage.local (survives service worker restarts)
+ *
+ * On the first call, returns storage-cached models immediately.
+ * A background fetch updates both caches when the server reports new data.
  */
 export async function fetchModels(): Promise<ModelInfo[]> {
-  // Return cached models if still valid
-  if (cachedModels && Date.now() - lastFetchTime < CACHE_DURATION) {
+  // 1. Fast path: in-memory cache
+  if (cachedModels) {
+    // Trigger background refresh (fire-and-forget)
+    void refreshFromServer();
     return cachedModels;
   }
 
+  // 2. Try loading from persistent storage
+  if (!storageLoaded) {
+    storageLoaded = true;
+    const stored = await loadFromStorage();
+    if (stored) {
+      cachedModels = stored;
+      cachedServerTimestamp = await getStoredTimestamp();
+      // Trigger background refresh
+      void refreshFromServer();
+      return cachedModels;
+    }
+  }
+
+  // 3. Nothing cached: fetch synchronously and return
+  return await fetchFromServer();
+}
+
+let refreshInFlight = false;
+
+async function refreshFromServer(): Promise<void> {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
+  try {
+    await fetchFromServer();
+  } finally {
+    refreshInFlight = false;
+  }
+}
+
+async function fetchFromServer(): Promise<ModelInfo[]> {
   try {
     const response = await fetch(MODELS_API_URL);
-    console.log("response", response);
-
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data: unknown = await response.json();
-    console.log("data", data);
 
     if (!isValidApiResponse(data)) {
       throw new Error("Invalid API response structure");
     }
 
     if (data.success && data.data.models.length > 0) {
-      // Apply safety cap
-      const models = data.data.models.slice(0, MAX_MODELS).map(convertApiModel);
-      cachedModels = models;
-      lastFetchTime = Date.now();
-      return cachedModels;
+      const serverTimestamp = data.data.cache?.lastUpdate ?? Date.now();
+
+      // Only update if the server data is newer
+      if (serverTimestamp > cachedServerTimestamp) {
+        const models = data.data.models
+          .slice(0, MAX_MODELS)
+          .map(convertApiModel);
+        cachedModels = models;
+        cachedServerTimestamp = serverTimestamp;
+        await saveToStorage(models, serverTimestamp);
+        // Notify listeners that models changed
+        notifyModelChange(models);
+      }
+
+      return cachedModels ?? FALLBACK_MODELS;
     }
 
     throw new Error("Empty model list from API");
-  } catch (_error) {
-    // Return fallback - do not log sensitive details
-    return FALLBACK_MODELS;
+  } catch {
+    return cachedModels ?? FALLBACK_MODELS;
   }
+}
+
+// --- Change notification for components ---
+
+type ModelChangeListener = (models: ModelInfo[]) => void;
+const modelChangeListeners = new Set<ModelChangeListener>();
+
+function notifyModelChange(models: ModelInfo[]): void {
+  for (const listener of modelChangeListeners) {
+    try {
+      listener(models);
+    } catch {
+      // Don't let listener errors break the loop
+    }
+  }
+}
+
+/**
+ * Subscribe to model list updates (triggered when server returns new data).
+ * Returns an unsubscribe function.
+ */
+export function onModelListChange(listener: ModelChangeListener): () => void {
+  modelChangeListeners.add(listener);
+  return () => modelChangeListeners.delete(listener);
 }
 
 /**

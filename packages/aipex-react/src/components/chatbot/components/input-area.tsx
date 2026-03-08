@@ -2,7 +2,7 @@ import type { ChatStatus } from "ai";
 import { ClockIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../../i18n/context";
-import { fetchModelsForSelector } from "../../../lib/models";
+import { fetchModelsForSelector, onModelListChange } from "../../../lib/models";
 import { cn } from "../../../lib/utils";
 import type { ContextItem, InputAreaProps } from "../../../types";
 import {
@@ -91,8 +91,19 @@ export function DefaultInputArea({
           setIsLoadingModels(false);
         }
       });
+
+    // Subscribe to background model list updates (e.g. server returned newer data)
+    const unsubscribe = onModelListChange((updatedModels) => {
+      if (!cancelled) {
+        setFetchedModels(
+          updatedModels.map((m) => ({ name: m.name, value: m.id })),
+        );
+      }
+    });
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 
