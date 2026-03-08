@@ -3,11 +3,11 @@ import { z } from "zod";
 import { cacheScreenshotMetadata } from "../automation/computer";
 import { RuntimeScreenshotStorage } from "../lib/screenshot-storage";
 import { getAutomationMode } from "../runtime/automation-mode";
-import { getActiveTab } from "./index";
 import {
   captureVisibleTabWithElementCrop,
   MAX_PADDING,
 } from "./screenshot-helpers.js";
+import { getActiveTab } from "./tab-utils";
 
 // Re-export the shared helper types/function so existing consumers aren't broken
 export type {

@@ -1,30 +1,17 @@
 import type { ContextProvider } from "@aipexstudio/aipex-core";
-import type { RuntimeAddon } from "./runtime-addon.js";
-import type { RuntimeBroadcastMessage } from "./types.js";
+import type {
+  AutomationTarget,
+  RuntimeAddon,
+  RuntimeBroadcastMessage,
+  SnapshotCaptureOptions,
+  SnapshotResult,
+} from "./types.js";
 
-export interface AutomationTarget {
-  tabId: number;
-  frameId?: number;
-  windowId?: number;
-}
-
-export interface SnapshotCaptureOptions {
-  includeDom?: boolean;
-  includeScreenshot?: boolean;
-  includeContext?: boolean;
-  reason?: string;
-  tabId?: number;
-}
-
-export interface SnapshotResult {
-  id: string;
-  capturedAt: number;
-  screenshot?: string;
-  dom?: string;
-  title?: string;
-  url?: string;
-  metadata?: Record<string, unknown>;
-}
+export type {
+  AutomationTarget,
+  SnapshotCaptureOptions,
+  SnapshotResult,
+} from "./types.js";
 
 export interface CaptureSessionOptions {
   target: AutomationTarget;

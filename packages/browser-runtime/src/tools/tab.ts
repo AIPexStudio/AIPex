@@ -1,7 +1,7 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
 import { getAutomationMode } from "../runtime/automation-mode";
-import { getActiveTab } from "./index";
+import { getActiveTab } from "./tab-utils";
 
 /**
  * Get all open tabs across all windows

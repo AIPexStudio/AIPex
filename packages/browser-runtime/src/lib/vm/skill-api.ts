@@ -4,14 +4,10 @@
  * between QuickJS VM and the host environment
  */
 
+import type { FileStats } from "./types";
 import { zenfs } from "./zenfs-manager";
 
-export interface FileStats {
-  isFile: boolean;
-  isDirectory: boolean;
-  size: number;
-  mtime: Date;
-}
+export type { FileStats };
 
 export interface ToolDefinition {
   name: string;

@@ -5,7 +5,7 @@
 
 import { configure, fs } from "@zenfs/core";
 import { IndexedDB } from "@zenfs/dom";
-import type { FileStats } from "./skill-api";
+import type { FileStats } from "./types";
 
 type FsPromises = {
   mkdir: (...args: any[]) => Promise<any>;

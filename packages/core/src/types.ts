@@ -4,10 +4,7 @@ import type {
   Agent as OpenAIAgent,
 } from "@openai/agents";
 import type { AiSdkModel } from "@openai/agents-extensions";
-import type { AIPex } from "./agent/aipex.js";
 import type { Context, ContextManager } from "./context/index.js";
-import type { ConversationManager } from "./conversation/manager.js";
-import type { Session } from "./conversation/session.js";
 import type { AgentError } from "./utils/errors.js";
 
 // Re-export types from @openai/agents for convenient access
@@ -73,7 +70,7 @@ export interface AIPexOptions<
    * Fully custom ConversationManager instance.
    * When provided, storage and compression options are ignored.
    */
-  conversationManager?: ConversationManager;
+  conversationManager?: import("./conversation/manager.js").ConversationManager;
 
   /**
    * Context manager for providing additional context to the agent.
@@ -161,7 +158,7 @@ export interface MetricsPayload {
 }
 
 export interface AgentPluginContext {
-  agent: AIPex;
+  agent: import("./agent/aipex.js").AIPex;
 }
 
 export interface AgentPluginHooks {
@@ -240,8 +237,8 @@ export interface SessionTree {
 }
 
 export interface SessionStorageAdapter {
-  save(session: Session): Promise<void>;
-  load(id: string): Promise<Session | null>;
+  save(session: import("./conversation/session.js").Session): Promise<void>;
+  load(id: string): Promise<import("./conversation/session.js").Session | null>;
   delete(id: string): Promise<void>;
   listAll(): Promise<SessionSummary[]>;
   getSessionTree(rootId?: string): Promise<SessionTree[]>;

@@ -21,10 +21,16 @@ import { shareConversation } from "../services/share-conversation";
 import { isByokConfigured } from "./ai-provider";
 
 export function BrowserMessageActions({
+  message,
   onRegenerate,
   onCopy,
 }: MessageActionsSlotProps) {
   const { messages, sendMessage } = useChatContext();
+
+  const textContent = message.parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p.type === "text" ? p.text : ""))
+    .join("\n");
   const { user } = useAuth();
   const { settings } = useConfigContext();
   const [isSharing, setIsSharing] = useState(false);
@@ -57,8 +63,8 @@ export function BrowserMessageActions({
 
   return (
     <Actions className="mt-2">
-      {onCopy && (
-        <Action onClick={onCopy} label="Copy">
+      {onCopy && textContent && (
+        <Action onClick={() => onCopy(textContent)} label="Copy">
           <CopyIcon className="size-3" />
         </Action>
       )}
