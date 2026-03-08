@@ -15,7 +15,7 @@ import type { AuthCheckResult } from "@aipexstudio/aipex-react/types";
 import { ChromeStorageAdapter } from "@aipexstudio/browser-runtime";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { AuthProvider } from "../../auth";
+import { AuthProvider, useAuth } from "../../auth";
 import { chromeStorageAdapter } from "../../hooks";
 import { isByokConfigured } from "../../lib/ai-provider";
 import { AutomationModeInputToolbar } from "../../lib/automation-mode-toolbar";
@@ -34,6 +34,7 @@ import { ChatImagesListener } from "../../lib/chat-images-listener";
 import { InputModeProvider } from "../../lib/input-mode-context";
 import { InterventionModeProvider } from "../../lib/intervention-mode-context";
 import { InterventionUI } from "../../lib/intervention-ui";
+import { BrowserMessageActions } from "../../lib/browser-message-actions";
 import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();
@@ -242,6 +243,7 @@ function ChatApp() {
     ...BROWSER_AGENT_CONFIG,
   });
 
+  const { login } = useAuth();
   const pendingInput = usePendingPrompt();
   const heartbeat = useConversationHeartbeat();
   useReplaySetup();
@@ -337,8 +339,10 @@ function ChatApp() {
                 <ChatImagesListener />
               </>
             ),
+            messageActions: (props) => <BrowserMessageActions {...props} />,
             inputToolbar: (props) => <AutomationModeInputToolbar {...props} />,
             promptExtras: () => <BrowserContextLoader />,
+            onLogin: login,
           }}
         />
       </InterventionModeProvider>

@@ -83,25 +83,46 @@ export function useChatConfig(
   });
   const [isLoading, setIsLoading] = useState(autoLoad);
 
+  const applyStoredSettings = useCallback(
+    (stored: unknown) => {
+      setSettings((prev: AppSettings) => ({
+        ...prev,
+        ...(stored as Partial<AppSettings>),
+        customModels: (stored as AppSettings).customModels ?? [],
+        providerType: (stored as AppSettings).providerType ?? "openai",
+        providerEnabled: (stored as AppSettings).providerEnabled ?? false,
+      }));
+    },
+    [],
+  );
+
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
       const stored = await storageAdapter.load(STORAGE_KEYS.SETTINGS);
       if (stored) {
-        setSettings((prev: AppSettings) => ({
-          ...prev,
-          ...stored,
-          customModels: (stored as AppSettings).customModels ?? [],
-          providerType: (stored as AppSettings).providerType ?? "openai",
-          providerEnabled: (stored as AppSettings).providerEnabled ?? false,
-        }));
+        applyStoredSettings(stored);
       }
     } catch (error) {
       console.error("Failed to load chat settings:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [storageAdapter]);
+  }, [storageAdapter, applyStoredSettings]);
+
+  // Silent reload that does NOT touch isLoading, so existing UI stays mounted.
+  // Used by the storage watcher to pick up changes (e.g. model switch)
+  // without unmounting ChatBot.
+  const reloadSettingsSilently = useCallback(async () => {
+    try {
+      const stored = await storageAdapter.load(STORAGE_KEYS.SETTINGS);
+      if (stored) {
+        applyStoredSettings(stored);
+      }
+    } catch (error) {
+      console.error("Failed to reload chat settings:", error);
+    }
+  }, [storageAdapter, applyStoredSettings]);
 
   const saveSettings = useCallback(
     async (newSettings: AppSettings) => {
@@ -119,16 +140,16 @@ export function useChatConfig(
       void loadSettings();
     }
 
-    // Set up storage change listener for real-time sync
+    // Set up storage change listener for real-time sync.
+    // Uses silent reload so the UI does not unmount (preserving chat state).
     const unwatch = storageAdapter.watch(STORAGE_KEYS.SETTINGS, () => {
-      // Reload settings when storage changes (e.g., from settings page)
-      void loadSettings();
+      void reloadSettingsSilently();
     });
 
     return () => {
       unwatch();
     };
-  }, [autoLoad, loadSettings, storageAdapter]);
+  }, [autoLoad, loadSettings, reloadSettingsSilently, storageAdapter]);
 
   const updateSetting = useCallback(
     async <K extends keyof AppSettings>(

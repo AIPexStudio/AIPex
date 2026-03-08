@@ -5,13 +5,6 @@
 
 import { useChatContext } from "@aipexstudio/aipex-react/components/chatbot";
 import { Button } from "@aipexstudio/aipex-react/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@aipexstudio/aipex-react/components/ui/dropdown-menu";
 import { useTranslation } from "@aipexstudio/aipex-react/i18n/context";
 import { getRuntime } from "@aipexstudio/aipex-react/lib/runtime";
 import { cn } from "@aipexstudio/aipex-react/lib/utils";
@@ -20,15 +13,11 @@ import { conversationStorage } from "@aipexstudio/browser-runtime";
 import {
   KeyboardIcon,
   MicIcon,
-  MoreHorizontalIcon,
   PlusIcon,
   SettingsIcon,
-  Share2Icon,
-  SparklesIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserProfile, useAuth } from "../auth";
-import { shareConversation } from "../services/share-conversation";
 import { ConversationHistory } from "./conversation-history";
 import { useInputMode } from "./input-mode-context";
 import { fromStorageFormat, toStorageFormat } from "./message-adapter";
@@ -43,7 +32,7 @@ export function BrowserChatHeader({
 }: HeaderProps) {
   const { t } = useTranslation();
   const runtime = getRuntime();
-  const { messages, setMessages, interrupt, sendMessage } = useChatContext();
+  const { messages, setMessages, interrupt } = useChatContext();
   const { user, login, isLoading: isAuthLoading } = useAuth();
 
   const [currentConversationId, setCurrentConversationId] = useState<
@@ -149,34 +138,6 @@ export function BrowserChatHeader({
     setInputMode(inputMode === "voice" ? "text" : "voice");
   }, [inputMode, setInputMode]);
 
-  // Share conversation
-  const [isSharing, setIsSharing] = useState(false);
-
-  const handleShare = useCallback(async () => {
-    if (isSharing) return;
-
-    const nonSystemMessages = messages.filter((m) => m.role !== "system");
-    if (nonSystemMessages.length === 0) return;
-
-    setIsSharing(true);
-    try {
-      const { url } = await shareConversation(messages);
-      chrome.tabs.create({ url });
-    } catch (error) {
-      console.error(
-        "[Share] Failed:",
-        error instanceof Error ? error.message : String(error),
-      );
-    } finally {
-      setIsSharing(false);
-    }
-  }, [messages, isSharing]);
-
-  // Save as Skill — instructs the AI to create a skill from the conversation
-  const handleSaveAsSkill = useCallback(() => {
-    sendMessage("use skill-creator skill to save the conversation");
-  }, [sendMessage]);
-
   return (
     <div
       className={cn(
@@ -224,39 +185,8 @@ export function BrowserChatHeader({
         />
       </div>
 
-      {/* Right side - More menu, New Chat, User Profile */}
+      {/* Right side - New Chat, User Profile */}
       <div className="flex items-center gap-1">
-        {/* More actions dropdown (Share, Save as Skill) */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8">
-              <MoreHorizontalIcon className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              onClick={handleShare}
-              disabled={
-                isSharing ||
-                messages.filter((m) => m.role !== "system").length === 0
-              }
-            >
-              <Share2Icon className="mr-2 size-4" />
-              {isSharing ? "Sharing..." : "Share Conversation"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleSaveAsSkill}
-              disabled={
-                messages.filter((m) => m.role !== "system").length === 0
-              }
-            >
-              <SparklesIcon className="mr-2 size-4" />
-              Save as Skill
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <Button
           variant="ghost"
           size="sm"

@@ -81,6 +81,7 @@
     "debugger",
     "cookies",
     "webNavigation",
-    "audioCapture"
+    "audioCapture",
+    "alarms"
   ]
 }

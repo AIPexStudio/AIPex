@@ -257,6 +257,7 @@ export function DefaultMessageItem({
           {message.metadata.needLogin && (
             <LoginPrompt
               showByokOption
+              onLogin={slots.onLogin}
               onOpenSettings={() => chrome.runtime?.openOptionsPage?.()}
             />
           )}

@@ -91,9 +91,6 @@ export function useChat(
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
 
-  // Cumulative session-level metrics (sum across all runs)
-  const cumulativeMetricsRef = useRef<AgentMetrics | null>(null);
-
   // Refs for stable callbacks
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
@@ -102,6 +99,18 @@ export function useChat(
   configRef.current = config;
 
   const activeGeneratorRef = useRef<AsyncGenerator<AgentEvent> | null>(null);
+  const prevAgentRef = useRef<AIPex | undefined>(agent);
+
+  // When the agent instance changes (e.g. model switch), reset the sessionId
+  // so subsequent messages create a fresh session on the new agent, but
+  // preserve existing UI messages so the conversation history stays visible.
+  useEffect(() => {
+    if (agent && prevAgentRef.current && agent !== prevAgentRef.current) {
+      setSessionId(null);
+      setMetrics(null);
+    }
+    prevAgentRef.current = agent;
+  }, [agent]);
 
   // Create adapter with callbacks
   const adapter = useMemo(() => {
@@ -156,24 +165,13 @@ export function useChat(
             handlersRef.current?.onError?.(event.error);
           }
 
-          // Handle metrics update – accumulate across the session
+          // Handle metrics update – show latest completion metrics (not cumulative)
           if (event.type === "metrics_update") {
-            const prev = cumulativeMetricsRef.current;
-            const cumulative: AgentMetrics = {
-              tokensUsed: (prev?.tokensUsed ?? 0) + event.metrics.tokensUsed,
-              promptTokens:
-                (prev?.promptTokens ?? 0) + event.metrics.promptTokens,
-              completionTokens:
-                (prev?.completionTokens ?? 0) + event.metrics.completionTokens,
-              // Non-cumulative fields: use latest values
-              itemCount: event.metrics.itemCount,
-              maxTurns: event.metrics.maxTurns,
-              duration: (prev?.duration ?? 0) + event.metrics.duration,
-              startTime: prev?.startTime ?? event.metrics.startTime,
-            };
-            cumulativeMetricsRef.current = cumulative;
-            setMetrics(cumulative);
-            handlersRef.current?.onMetricsUpdate?.(cumulative, event.sessionId);
+            setMetrics(event.metrics);
+            handlersRef.current?.onMetricsUpdate?.(
+              event.metrics,
+              event.sessionId,
+            );
           }
 
           // Process the event through adapter
@@ -277,7 +275,6 @@ export function useChat(
     activeGeneratorRef.current = null;
     setSessionId(null);
     setMetrics(null);
-    cumulativeMetricsRef.current = null;
     adapter.reset(configRef.current?.initialMessages ?? []);
   }, [adapter, agent, sessionId]);
 
