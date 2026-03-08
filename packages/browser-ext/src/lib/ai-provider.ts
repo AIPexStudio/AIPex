@@ -122,32 +122,177 @@ export function createAIProvider(settings: AppSettings) {
 }
 
 /**
+ * Stateful SSE stream transform that fixes parameterless tool calls from
+ * providers like Anthropic via OpenRouter/proxy.
+ *
+ * Some providers stream tool_calls with `"arguments":""` for every chunk when
+ * the tool has no parameters. The AI SDK uses `isParsableJson` to decide when
+ * a tool call is complete, and `""` never passes that check, so the tool call
+ * is silently dropped.
+ *
+ * A naive text-replacement of `""` → `"{}"` on every chunk would break tools
+ * that DO have arguments (the first empty chunk would be treated as complete
+ * `{}`, and all subsequent real-argument chunks would be discarded).
+ *
+ * This transform tracks tool call state across the stream:
+ * - Passes all SSE lines through **unchanged** during streaming
+ * - When `finish_reason: "tool_calls"` arrives, injects a synthetic SSE chunk
+ *   with `"arguments":"{}"` for every tool call whose accumulated arguments
+ *   are still empty — right before the finish chunk
+ */
+export function createEmptyToolArgsFinalizer(
+  original: ReadableStream<Uint8Array>,
+): ReadableStream<Uint8Array> {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+
+  // Track accumulated arguments per tool call index
+  const toolCallArgs = new Map<
+    number,
+    { id: string; name: string; args: string }
+  >();
+  // Capture the chunk id so synthetic events look like they belong to the same response
+  let streamId: string | undefined;
+
+  function processLine(
+    line: string,
+    controller: ReadableStreamDefaultController<Uint8Array>,
+  ) {
+    if (!line.startsWith("data: ") || line === "data: [DONE]") {
+      controller.enqueue(encoder.encode(`${line}\n`));
+      return;
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(line.slice(6));
+    } catch {
+      controller.enqueue(encoder.encode(`${line}\n`));
+      return;
+    }
+
+    if (!streamId && parsed.id) {
+      streamId = parsed.id;
+    }
+
+    const choice = parsed.choices?.[0];
+
+    // Track tool call arguments
+    const toolCalls = choice?.delta?.tool_calls;
+    if (Array.isArray(toolCalls)) {
+      for (const tc of toolCalls) {
+        const idx = tc.index;
+        if (typeof idx !== "number") continue;
+
+        const existing = toolCallArgs.get(idx);
+        if (!existing) {
+          toolCallArgs.set(idx, {
+            id: tc.id ?? "",
+            name: tc.function?.name ?? "",
+            args: tc.function?.arguments ?? "",
+          });
+        } else {
+          if (tc.function?.arguments != null) {
+            existing.args += tc.function.arguments;
+          }
+        }
+      }
+    }
+
+    // When finish_reason is tool_calls, inject synthetic chunks for empty args
+    if (choice?.finish_reason === "tool_calls") {
+      for (const [idx, tc] of toolCallArgs) {
+        if (tc.args === "") {
+          const synthetic = {
+            id: streamId ?? parsed.id ?? "",
+            object: "chat.completion.chunk",
+            created: parsed.created ?? 0,
+            model: parsed.model ?? "",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: idx,
+                      function: { arguments: "{}" },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(synthetic)}\n\n`),
+          );
+        }
+      }
+    }
+
+    controller.enqueue(encoder.encode(`${line}\n`));
+  }
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = original.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (buffer.length > 0) {
+              processLine(buffer, controller);
+            }
+            controller.close();
+            break;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop()!;
+          for (const line of lines) {
+            processLine(line, controller);
+          }
+        }
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+/**
  * Create an AI SDK provider for proxy mode (non-BYOK).
  *
  * Uses the claudechrome.com proxy endpoint which accepts OpenAI-compatible
  * requests and authenticates via session cookies.
  */
 export function createProxyProvider(): OpenAIProvider["chat"] {
-  // The proxy endpoint is OpenAI-compatible.
-  // We pass an empty API key because auth is handled by cookies injected in
-  // a custom fetch wrapper.
   const openai = createOpenAI({
     apiKey: "proxy-no-key",
     baseURL: PROXY_API_URL,
-    // Custom fetch that injects cookie headers for authentication
     fetch: async (input, init) => {
       const cookieHeader = await getProxyCookieHeader();
       const headers = new Headers(init?.headers);
       if (cookieHeader) {
         headers.set("Cookie", cookieHeader);
       }
-      // Remove the Authorization header – proxy uses cookies, not API keys
       headers.delete("Authorization");
-      return globalThis.fetch(input, { ...init, headers });
+      const response = await globalThis.fetch(input, { ...init, headers });
+
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("text/event-stream") && response.body) {
+        const patched = createEmptyToolArgsFinalizer(response.body);
+        return new Response(patched, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        });
+      }
+
+      return response;
     },
   });
 
-  // Return the chat sub-provider to force Chat Completions API (/completions)
-  // instead of the default Responses API (/responses) used by AI SDK v5+
   return openai.chat;
 }

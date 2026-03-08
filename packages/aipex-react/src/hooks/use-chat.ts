@@ -285,7 +285,7 @@ export function useChat(
       return;
     }
 
-    // Remove last assistant message
+    // Remove last assistant message from UI
     const removed = adapter.removeLastAssistantMessage();
     if (!removed) return;
 
@@ -302,6 +302,9 @@ export function useChat(
     const text = textPart?.type === "text" ? textPart.text : "";
 
     if (sessionId && text) {
+      // Roll back the session so the agent doesn't see the old assistant turn
+      await agent.rollbackLastAssistantTurn(sessionId);
+
       adapter.setStatus("submitted");
       const events = agent.chat(text, { sessionId });
       await processAgentEvents(events);

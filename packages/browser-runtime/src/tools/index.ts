@@ -35,16 +35,17 @@ import {
   getAllTabsTool,
   getCurrentTabTool,
   getTabInfoTool,
+  switchToTabTool,
   ungroupTabsTool,
 } from "./tab";
 import { downloadChatImagesTool, downloadImageTool } from "./tools/downloads";
+import { uploadFileToInputTool } from "./tools/upload-file";
 
 /**
  * All browser tools registered for AI use
- * Total: 32 tools (28 core + 4 intervention tools)
+ * Total: 34 tools (30 core + 4 intervention tools)
  *
  * Disabled tools (per aipex):
- * - switch_to_tab (causes context switching issues)
  * - duplicate_tab (not in aipex)
  * - wait (replaced by computer tool's wait action)
  * - capture_screenshot_to_clipboard (not enabled in aipex default bundle)
@@ -61,22 +62,24 @@ type BrowserFunctionTool = FunctionTool<
 >;
 
 const browserFunctionTools: BrowserFunctionTool[] = [
-  // Browser/Tab Management (6 tools)
+  // Browser/Tab Management (7 tools)
   // Note: organize_tabs temporarily disabled (stub/not shipped)
   getAllTabsTool,
   getCurrentTabTool,
+  switchToTabTool,
   createNewTabTool,
   getTabInfoTool,
   closeTabTool,
   ungroupTabsTool,
 
-  // UI Operations (7 tools) - computer tool replaces visual XY tools
+  // UI Operations (8 tools) - computer tool replaces visual XY tools
   searchElementsTool,
   clickTool,
   fillElementByUidTool,
   getEditorValueTool,
   fillFormTool,
   hoverElementByUidTool,
+  uploadFileToInputTool,
   computerTool,
 
   // Page Content (4 tools)

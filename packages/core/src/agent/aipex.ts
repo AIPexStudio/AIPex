@@ -151,6 +151,9 @@ export class AIPex {
       });
 
       let streamedOutput = "";
+      let toolCallsDetectedInRaw = 0;
+      let toolCallsEmittedByRunner = 0;
+
       for await (const streamEvent of result) {
         if (streamEvent.type === "raw_model_stream_event") {
           // New response boundary: reset per-response tool args tracking.
@@ -160,6 +163,30 @@ export class AIPex {
           ) {
             toolArgsStreamByIndex.clear();
             continue;
+          }
+
+          // Log response_done events for debugging tool call assembly
+          if (
+            (streamEvent.data as unknown as { type?: string })?.type ===
+            "response_done"
+          ) {
+            const response = (
+              streamEvent.data as unknown as {
+                response?: { output?: unknown[] };
+              }
+            )?.response;
+            const outputItems = response?.output;
+            if (Array.isArray(outputItems)) {
+              const functionCalls = outputItems.filter(
+                (item: any) => item?.type === "function_call",
+              );
+              if (functionCalls.length > 0) {
+                console.log(
+                  `[AIPex] response_done contains ${functionCalls.length} function_call(s):`,
+                  functionCalls.map((fc: any) => fc.name),
+                );
+              }
+            }
           }
 
           // Best-effort: detect tool call argument streaming from raw provider events.
@@ -175,6 +202,7 @@ export class AIPex {
             const delta = Array.isArray(choices) ? choices?.[0]?.delta : null;
             const toolCalls = delta?.tool_calls;
             if (Array.isArray(toolCalls)) {
+              toolCallsDetectedInRaw++;
               for (const tcDelta of toolCalls) {
                 const index = tcDelta?.index;
                 if (typeof index !== "number") continue;
@@ -220,6 +248,7 @@ export class AIPex {
           // Emit tool args "complete" right before the tool call starts, so UIs can
           // show a "parameters ready" transition even if they couldn't observe args streaming.
           if (streamEvent.name === "tool_called") {
+            toolCallsEmittedByRunner++;
             const toolName = this.extractToolName(streamEvent.item);
             const params = this.extractToolArguments(streamEvent.item);
             const argsCompleteEvent: AgentEvent = {
@@ -237,6 +266,13 @@ export class AIPex {
             yield toolEvent;
           }
         }
+      }
+
+      if (toolCallsDetectedInRaw > 0 || toolCallsEmittedByRunner > 0) {
+        console.log(
+          `[AIPex] Stream complete: ${toolCallsDetectedInRaw} raw tool_call chunks, ` +
+            `${toolCallsEmittedByRunner} runner tool_called events`,
+        );
       }
 
       const finalOutput =
@@ -395,6 +431,46 @@ export class AIPex {
     yield* this.runExecution(finalInput, session);
   }
 
+  /**
+   * Roll back the session to the state just after the last user message,
+   * removing any assistant/tool items that followed it.
+   * Used by regenerate to avoid duplicate history when re-running.
+   */
+  async rollbackLastAssistantTurn(sessionId: string): Promise<boolean> {
+    if (!this.conversationManager) return false;
+
+    const session = await this.conversationManager.getSession(sessionId);
+    if (!session) return false;
+
+    const items = await session.getItems();
+    if (items.length === 0) return false;
+
+    let lastUserIndex = -1;
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i] as Record<string, unknown>;
+      // AgentInputItem is a discriminated union; user messages have
+      // type === "message" (or undefined) and role === "user".
+      const isUserMessage =
+        (item.type === "message" || item.type === undefined) &&
+        item.role === "user";
+      if (isUserMessage) {
+        lastUserIndex = i;
+        break;
+      }
+    }
+
+    if (lastUserIndex === -1) return false;
+    if (lastUserIndex === items.length - 1) return false;
+
+    const itemsToRemove = items.length - 1 - lastUserIndex;
+    for (let i = 0; i < itemsToRemove; i++) {
+      await session.popItem();
+    }
+
+    await this.conversationManager.saveSession(session);
+    return true;
+  }
+
   getConversationManager(): ConversationManager | undefined {
     return this.conversationManager;
   }
@@ -457,6 +533,7 @@ export class AIPex {
     const raw = item as unknown as { rawItem?: { arguments?: unknown } };
     const args = raw.rawItem?.arguments;
     if (typeof args === "string") {
+      if (args === "") return {};
       const parsed = safeJsonParse<unknown>(args);
       if (parsed !== undefined) return parsed;
       return args;

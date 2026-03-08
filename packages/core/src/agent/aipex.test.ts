@@ -901,6 +901,49 @@ describe("AIPex", () => {
       }
     });
 
+    it("should default empty-string arguments to empty object", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "screenshot", arguments: "" } },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("take screenshot")) {
+        events.push(event);
+      }
+
+      const toolStart = events.find(
+        (event) => event.type === "tool_call_start",
+      );
+      expect(toolStart).toBeDefined();
+      if (toolStart?.type === "tool_call_start") {
+        expect(toolStart.toolName).toBe("screenshot");
+        expect(toolStart.params).toEqual({});
+      }
+
+      const argsComplete = events.find(
+        (event) => event.type === "tool_call_args_streaming_complete",
+      );
+      expect(argsComplete).toBeDefined();
+      if (argsComplete?.type === "tool_call_args_streaming_complete") {
+        expect(argsComplete.toolName).toBe("screenshot");
+        expect(argsComplete.params).toEqual({});
+      }
+    });
+
     it("should emit tool lifecycle events", async () => {
       vi.mocked(run).mockResolvedValue(
         createMockRunResult({
