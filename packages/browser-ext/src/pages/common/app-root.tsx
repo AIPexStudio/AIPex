@@ -29,12 +29,12 @@ import {
 import { BrowserChatHeader } from "../../lib/browser-chat-header";
 import { BrowserChatInputArea } from "../../lib/browser-chat-input-area";
 import { BrowserContextLoader } from "../../lib/browser-context-loader";
+import { BrowserMessageActions } from "../../lib/browser-message-actions";
 import { BrowserMessageList } from "../../lib/browser-message-list";
 import { ChatImagesListener } from "../../lib/chat-images-listener";
 import { InputModeProvider } from "../../lib/input-mode-context";
 import { InterventionModeProvider } from "../../lib/intervention-mode-context";
 import { InterventionUI } from "../../lib/intervention-ui";
-import { BrowserMessageActions } from "../../lib/browser-message-actions";
 import { UpdateBannerWrapper } from "../../lib/update-banner-wrapper";
 
 const i18nStorageAdapter = new ChromeStorageAdapter<Language>();

@@ -3,8 +3,8 @@
  * UI for connecting/disconnecting the extension to the aipex-mcp-bridge.
  */
 
-import { useCallback, useEffect, useState } from "react";
 import type { WsMcpServerState } from "@aipexstudio/browser-runtime";
+import { useCallback, useEffect, useState } from "react";
 
 const DEFAULT_URL = "ws://localhost:9223";
 
@@ -74,9 +74,7 @@ export function McpBridgePanel() {
 
   return (
     <div className="rounded-lg border bg-card p-6 shadow-sm">
-      <h3 className="text-lg font-semibold mb-4">
-        MCP WebSocket Bridge
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">MCP WebSocket Bridge</h3>
       <p className="text-sm text-muted-foreground mb-4">
         Connect to an external MCP client (e.g. Claude, Cursor) via the
         aipex-mcp-bridge. The bridge exposes AIPex browser tools to external AI
@@ -139,9 +137,9 @@ export function McpBridgePanel() {
       {/* Info */}
       <div className="mt-4 text-xs text-muted-foreground space-y-1">
         <p>
-          The bridge exposes <code>tools/list</code> and{" "}
-          <code>tools/call</code> over the MCP protocol, allowing external
-          agents to use AIPex browser automation tools.
+          The bridge exposes <code>tools/list</code> and <code>tools/call</code>{" "}
+          over the MCP protocol, allowing external agents to use AIPex browser
+          automation tools.
         </p>
         <p>Only localhost connections (127.0.0.1, ::1) are allowed.</p>
       </div>

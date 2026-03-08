@@ -9,19 +9,16 @@ import {
   Action,
   Actions,
 } from "@aipexstudio/aipex-react/components/ai-elements/actions";
-import { useChatContext } from "@aipexstudio/aipex-react/components/chatbot";
-import type { MessageActionsSlotProps } from "@aipexstudio/aipex-react/types";
 import {
-  CopyIcon,
-  PuzzleIcon,
-  RefreshCcwIcon,
-  Share2Icon,
-} from "lucide-react";
+  useChatContext,
+  useConfigContext,
+} from "@aipexstudio/aipex-react/components/chatbot";
+import type { MessageActionsSlotProps } from "@aipexstudio/aipex-react/types";
+import { CopyIcon, PuzzleIcon, RefreshCcwIcon, Share2Icon } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useConfigContext } from "@aipexstudio/aipex-react/components/chatbot";
 import { useAuth } from "../auth";
-import { isByokConfigured } from "./ai-provider";
 import { shareConversation } from "../services/share-conversation";
+import { isByokConfigured } from "./ai-provider";
 
 export function BrowserMessageActions({
   onRegenerate,

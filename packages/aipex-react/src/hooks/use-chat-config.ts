@@ -83,18 +83,15 @@ export function useChatConfig(
   });
   const [isLoading, setIsLoading] = useState(autoLoad);
 
-  const applyStoredSettings = useCallback(
-    (stored: unknown) => {
-      setSettings((prev: AppSettings) => ({
-        ...prev,
-        ...(stored as Partial<AppSettings>),
-        customModels: (stored as AppSettings).customModels ?? [],
-        providerType: (stored as AppSettings).providerType ?? "openai",
-        providerEnabled: (stored as AppSettings).providerEnabled ?? false,
-      }));
-    },
-    [],
-  );
+  const applyStoredSettings = useCallback((stored: unknown) => {
+    setSettings((prev: AppSettings) => ({
+      ...prev,
+      ...(stored as Partial<AppSettings>),
+      customModels: (stored as AppSettings).customModels ?? [],
+      providerType: (stored as AppSettings).providerType ?? "openai",
+      providerEnabled: (stored as AppSettings).providerEnabled ?? false,
+    }));
+  }, []);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);

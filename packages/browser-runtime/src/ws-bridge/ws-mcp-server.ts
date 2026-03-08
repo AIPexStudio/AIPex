@@ -16,9 +16,9 @@
 import type { FunctionTool } from "@aipexstudio/aipex-core";
 import { allBrowserTools } from "../tools/index.js";
 import {
-  WebSocketClientTransport,
   type JSONRPCMessage,
   type JSONRPCRequest,
+  WebSocketClientTransport,
 } from "./ws-transport.js";
 
 export type ConnectionStatus =
@@ -46,7 +46,7 @@ const STORAGE_KEY_WS_URL = "ws-mcp-url";
 function getReconnectDelayMs(attempt: number): number {
   const withJitter = (base: number) =>
     Math.round(base * (0.7 + Math.random() * 0.6));
-  return withJitter(Math.min(500 * Math.pow(2, attempt), 10_000));
+  return withJitter(Math.min(500 * 2 ** attempt, 10_000));
 }
 
 /**
@@ -347,10 +347,7 @@ export class WsMcpServer {
 
     // FunctionTool.invoke(runContext, inputJsonString, details?)
     // We pass an empty object as RunContext since we're outside the agent loop.
-    return await (browserTool as any).invoke(
-      {} as any,
-      JSON.stringify(args),
-    );
+    return await (browserTool as any).invoke({} as any, JSON.stringify(args));
   }
 
   private async sendResult(

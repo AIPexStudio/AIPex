@@ -852,7 +852,10 @@ export function SettingsPage({
               </TabsTrigger>
             )}
             {connectionContent && (
-              <TabsTrigger value="connection" className="flex items-center gap-2">
+              <TabsTrigger
+                value="connection"
+                className="flex items-center gap-2"
+              >
                 <Plug className="h-4 w-4" />
                 {language === "zh" ? "连接" : "Connection"}
               </TabsTrigger>
