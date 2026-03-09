@@ -146,7 +146,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^12.34.3",
+    "framer-motion": "^12.35.1",
     "lucide-react": "^0.576.0",
     "markdown-to-jsx": "^9.6.1",
     "nanoid": "^5.1.6",
