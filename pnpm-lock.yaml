@@ -178,8 +178,8 @@ importers:
         specifier: ^3.0.44
         version: 3.0.44(zod@4.3.6)
       '@ai-sdk/google':
-        specifier: ^3.0.22
-        version: 3.0.22(zod@4.3.6)
+        specifier: ^3.0.43
+        version: 3.0.43(zod@4.3.6)
       '@ai-sdk/openai':
         specifier: ^3.0.41
         version: 3.0.41(zod@4.3.6)
@@ -424,8 +424,8 @@ importers:
         version: 4.3.6
     devDependencies:
       '@ai-sdk/google':
-        specifier: ^3.0.22
-        version: 3.0.22(zod@4.3.6)
+        specifier: ^3.0.43
+        version: 3.0.43(zod@4.3.6)
       '@ai-sdk/openai':
         specifier: ^3.0.25
         version: 3.0.25(zod@4.3.6)
@@ -471,8 +471,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@3.0.22':
-    resolution: {integrity: sha512-g1N5P/jfTiH4qwdv4WT3hkKzzAbITFz457NomtBfjP8Q3SCzdbU9oPK5ACBMG8RN5mc2QPL6DLtM3Hf5T8KPmw==}
+  '@ai-sdk/google@3.0.43':
+    resolution: {integrity: sha512-NGCgP5g8HBxrNdxvF8Dhww+UKfqAkZAmyYBvbu9YLoBkzAmGKDBGhVptN/oXPB5Vm0jggMdoLycZ8JReQM8Zqg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -503,12 +503,6 @@ packages:
 
   '@ai-sdk/provider-utils@4.0.13':
     resolution: {integrity: sha512-HHG72BN4d+OWTcq2NwTxOm/2qvk1duYsnhCDtsbYwn/h/4zeqURu1S0+Cn0nY2Ysq9a9HGKvrYuMn9bgFhR2Og==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider-utils@4.0.14':
-    resolution: {integrity: sha512-7bzKd9lgiDeXM7O4U4nQ8iTxguAOkg8LZGD9AfDVZYjO5cKYRwBPwVjboFcVrxncRHu0tYxZtXZtiLKpG4pEng==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5144,10 +5138,10 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.3.6
 
-  '@ai-sdk/google@3.0.22(zod@4.3.6)':
+  '@ai-sdk/google@3.0.43(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.14(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.19(zod@4.3.6)
       zod: 4.3.6
 
   '@ai-sdk/openai-compatible@2.0.21(zod@4.3.6)':
@@ -5178,13 +5172,6 @@ snapshots:
   '@ai-sdk/provider-utils@4.0.13(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.7
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
-      zod: 4.3.6
-
-  '@ai-sdk/provider-utils@4.0.14(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 4.3.6
