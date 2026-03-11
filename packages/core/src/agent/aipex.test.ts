@@ -327,6 +327,134 @@ describe("AIPex", () => {
       expect(events[0]?.type).toBe("session_created");
       expect(agent.getConversationManager()).toBe(customManager);
     });
+
+    it("should pass images as multimodal AgentInputItem[] to run()", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "I see a cat",
+          streamEvents: [
+            {
+              type: "raw_model_stream_event",
+              data: { type: "output_text_delta", delta: "I see a cat" },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Describe images",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("What is in this image?", {
+        images: [{ image: "data:image/png;base64,abc123", detail: "high" }],
+      })) {
+        events.push(event);
+      }
+
+      expect(run).toHaveBeenCalledTimes(1);
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const input = runCallArgs[1] as Array<{
+        type: string;
+        role: string;
+        content: Array<{
+          type: string;
+          text?: string;
+          image?: string;
+          detail?: string;
+        }>;
+      }>;
+
+      expect(Array.isArray(input)).toBe(true);
+      expect(input).toHaveLength(1);
+      expect(input[0]!.role).toBe("user");
+      expect(input[0]!.content).toHaveLength(2);
+      expect(input[0]!.content[0]).toEqual({
+        type: "input_text",
+        text: "What is in this image?",
+      });
+      expect(input[0]!.content[1]).toEqual({
+        type: "input_image",
+        image: "data:image/png;base64,abc123",
+        detail: "high",
+      });
+    });
+
+    it("should default image detail to 'auto' when not specified", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({ finalOutput: "OK" }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      for await (const _ of agent.chat("Describe", {
+        images: [{ image: "https://example.com/img.png" }],
+      })) {
+        // consume
+      }
+
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const input = runCallArgs[1] as Array<{
+        content: Array<{ type: string; detail?: string }>;
+      }>;
+      const imagePart = input[0]!.content[1]!;
+      expect(imagePart.detail).toBe("auto");
+    });
+
+    it("should support multiple images in a single message", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({ finalOutput: "Two images" }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      for await (const _ of agent.chat("Compare these", {
+        images: [
+          { image: "img1_base64" },
+          { image: "img2_base64", detail: "low" },
+        ],
+      })) {
+        // consume
+      }
+
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      const input = runCallArgs[1] as Array<{
+        content: Array<{ type: string; image?: string; detail?: string }>;
+      }>;
+      expect(input[0]!.content).toHaveLength(3);
+      expect(input[0]!.content[0]!.type).toBe("input_text");
+      expect(input[0]!.content[1]!.type).toBe("input_image");
+      expect(input[0]!.content[1]!.image).toBe("img1_base64");
+      expect(input[0]!.content[2]!.type).toBe("input_image");
+      expect(input[0]!.content[2]!.image).toBe("img2_base64");
+      expect(input[0]!.content[2]!.detail).toBe("low");
+    });
+
+    it("should pass plain string to run() when no images provided", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({ finalOutput: "Reply" }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Test",
+        model: mockModel,
+      });
+
+      for await (const _ of agent.chat("Hello")) {
+        // consume
+      }
+
+      const runCallArgs = vi.mocked(run).mock.calls[0]!;
+      expect(typeof runCallArgs[1]).toBe("string");
+      expect(runCallArgs[1]).toBe("Hello");
+    });
   });
 
   describe("chat - continue conversation", () => {

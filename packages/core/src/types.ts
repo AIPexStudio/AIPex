@@ -87,6 +87,13 @@ export interface CompressionOptions extends CompressionConfig {
   model: AiSdkModel;
 }
 
+export interface ImageInput {
+  /** base64-encoded image data, a URL, or a file ID */
+  image: string;
+  /** Vision detail level. Defaults to "auto". */
+  detail?: "auto" | "low" | "high";
+}
+
 export interface ChatOptions {
   sessionId?: string;
   /**
@@ -95,6 +102,12 @@ export interface ChatOptions {
    * Context IDs will be resolved using the ContextManager.
    */
   contexts?: Context[] | string[];
+  /**
+   * Images to include with this message.
+   * When provided, the text input and images are combined into a
+   * multimodal UserMessageItem sent to the model's vision path.
+   */
+  images?: ImageInput[];
 }
 
 export interface AgentMetrics {
@@ -136,13 +149,13 @@ export type AgentEvent =
 // ============================================================================
 
 export interface BeforeChatPayload {
-  input: string;
+  input: string | AgentInputItem[];
   options?: ChatOptions;
   contexts?: Context[];
 }
 
 export interface AfterResponsePayload {
-  input: string;
+  input: string | AgentInputItem[];
   finalOutput: string;
   metrics: AgentMetrics;
   sessionId?: string;
