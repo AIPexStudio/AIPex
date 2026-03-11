@@ -82,6 +82,7 @@ export type {
   ConversationConfig,
   ForkInfo,
   FunctionTool,
+  ImageInput,
   MetricsPayload,
   OpenAIAgent,
   SerializedSession,

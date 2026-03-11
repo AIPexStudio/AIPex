@@ -1,4 +1,5 @@
 import {
+  type AgentInputItem,
   Agent as OpenAIAgent,
   type RunItemStreamEvent,
   run,
@@ -116,7 +117,7 @@ export class AIPex {
   }
 
   private async *runExecution(
-    input: string,
+    input: string | AgentInputItem[],
     session: Session | null,
   ): AsyncGenerator<AgentEvent> {
     const startTime = Date.now();
@@ -344,7 +345,7 @@ export class AIPex {
     input: string,
     options?: ChatOptions,
   ): AsyncGenerator<AgentEvent> {
-    let finalInput = input;
+    let finalTextInput = input;
     let chatOptions = options;
     let resolvedContexts: Context[] | undefined;
 
@@ -367,7 +368,7 @@ export class AIPex {
           resolvedContexts = contextObjs;
           // Format contexts and prepend to input
           const contextText = formatContextsForPrompt(contextObjs);
-          finalInput = `${contextText}\n\n${input}`;
+          finalTextInput = `${contextText}\n\n${input}`;
 
           yield { type: "contexts_attached", contexts: contextObjs };
         }
@@ -382,17 +383,38 @@ export class AIPex {
     }
 
     const beforeChat = await this.runBeforeChatHooks({
-      input: finalInput,
+      input: finalTextInput,
       options: chatOptions,
       contexts: resolvedContexts,
     });
-    finalInput = beforeChat.input;
+    let finalInput: string | AgentInputItem[] = beforeChat.input;
     if (beforeChat.options) {
       chatOptions = { ...(chatOptions ?? {}), ...beforeChat.options };
     }
     if (beforeChat.contexts) {
       resolvedContexts = beforeChat.contexts;
       chatOptions = { ...(chatOptions ?? {}), contexts: beforeChat.contexts };
+    }
+
+    // When images are provided, build a multimodal UserMessageItem
+    const images = chatOptions?.images;
+    if (images && images.length > 0 && typeof finalInput === "string") {
+      const contentParts: Array<
+        | { type: "input_text"; text: string }
+        | { type: "input_image"; image: string; detail?: string }
+      > = [{ type: "input_text", text: finalInput }];
+
+      for (const img of images) {
+        contentParts.push({
+          type: "input_image",
+          image: img.image,
+          detail: img.detail ?? "auto",
+        });
+      }
+
+      finalInput = [
+        { type: "message", role: "user", content: contentParts },
+      ] as AgentInputItem[];
     }
 
     // If sessionId is provided, continue existing conversation
