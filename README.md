@@ -195,7 +195,7 @@ We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructio
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=AIPexStudio/AIPex&type=Date)](https://star-history.com/#AIPexStudio/AIPex&Date)
 
 ---
 
