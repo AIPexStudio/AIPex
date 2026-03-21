@@ -189,5 +189,8 @@ export function detectProviderFromHost(host: string): AIProviderKey {
   if (host.includes("fireworks.ai")) return "fireworks";
   if (host.includes("replicate.com")) return "replicate";
   if (host.includes("azure.com")) return "azure";
+  if (host.includes("minimaxi.com") || host.includes("minimax.io")) {
+    return host.includes("anthropic") ? "anthropic" : "openai";
+  }
   return "custom";
 }
