@@ -75,7 +75,7 @@
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
-    "@crxjs/vite-plugin": "^2.3.0",
+    "@crxjs/vite-plugin": "^2.4.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
