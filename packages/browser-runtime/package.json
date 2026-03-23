@@ -41,7 +41,7 @@
     "@zenfs/core": "^2.4.2",
     "@zenfs/dom": "^1.2.5",
     "fflate": "^0.8.2",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.7",
     "p-limit": "^7.3.0",
     "quickjs-emscripten": "^0.32.0",
     "zod": "^4.3.6"
