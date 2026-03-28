@@ -1,4 +1,5 @@
 [files]
 # Exclude README files from typos checking (they contain multiple languages)
 # Exclude bundled-modules directory (contains third-party bundled code)
-extend-exclude = ["README*.md", "**/bundled-modules/**"]
+# Exclude mcp-bridge directory (tool schemas contain glob patterns that trigger false positives)
+extend-exclude = ["README*.md", "**/bundled-modules/**", "mcp-bridge/**"]
