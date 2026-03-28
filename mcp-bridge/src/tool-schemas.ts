@@ -9,13 +9,13 @@
  */
 
 export interface ToolSchema {
-  name: string
-  description: string
+  name: string;
+  description: string;
   inputSchema: {
-    type: "object"
-    properties: Record<string, unknown>
-    required?: string[]
-  }
+    type: "object";
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
 }
 
 export const toolSchemas: ToolSchema[] = [
@@ -24,12 +24,12 @@ export const toolSchemas: ToolSchema[] = [
     name: "get_all_tabs",
     description:
       "Get all open tabs across all windows with their IDs, titles, and URLs",
-    inputSchema: { type: "object", properties: {}, required: [] }
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "get_current_tab",
     description: "Get information about the currently active tab",
-    inputSchema: { type: "object", properties: {}, required: [] }
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "switch_to_tab",
@@ -37,10 +37,13 @@ export const toolSchemas: ToolSchema[] = [
     inputSchema: {
       type: "object",
       properties: {
-        tabId: { type: "number", description: "The ID of the tab to switch to" }
+        tabId: {
+          type: "number",
+          description: "The ID of the tab to switch to",
+        },
       },
-      required: ["tabId"]
-    }
+      required: ["tabId"],
+    },
   },
   {
     name: "create_new_tab",
@@ -48,10 +51,10 @@ export const toolSchemas: ToolSchema[] = [
     inputSchema: {
       type: "object",
       properties: {
-        url: { type: "string", description: "The URL to open in the new tab" }
+        url: { type: "string", description: "The URL to open in the new tab" },
       },
-      required: ["url"]
-    }
+      required: ["url"],
+    },
   },
   {
     name: "get_tab_info",
@@ -59,10 +62,10 @@ export const toolSchemas: ToolSchema[] = [
     inputSchema: {
       type: "object",
       properties: {
-        tabId: { type: "number", description: "The ID of the tab" }
+        tabId: { type: "number", description: "The ID of the tab" },
       },
-      required: ["tabId"]
-    }
+      required: ["tabId"],
+    },
   },
   {
     name: "close_tab",
@@ -70,20 +73,20 @@ export const toolSchemas: ToolSchema[] = [
     inputSchema: {
       type: "object",
       properties: {
-        tabId: { type: "number", description: "The ID of the tab to close" }
+        tabId: { type: "number", description: "The ID of the tab to close" },
       },
-      required: ["tabId"]
-    }
+      required: ["tabId"],
+    },
   },
   {
     name: "organize_tabs",
     description: "Use AI to automatically group tabs by topic/purpose",
-    inputSchema: { type: "object", properties: {}, required: [] }
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "ungroup_tabs",
     description: "Remove all tab groups in the current window",
-    inputSchema: { type: "object", properties: {}, required: [] }
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
 
   // ===== UI Tools =====
@@ -118,19 +121,19 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab to search the elements in"
+          description: "The ID of the tab to search the elements in",
         },
         query: {
           type: "string",
-          description: "Search query string with grep/glob pattern support"
+          description: "Search query string with grep/glob pattern support",
         },
         contextLevels: {
           type: "number",
-          description: "Number of context lines to include"
-        }
+          description: "Number of context lines to include",
+        },
       },
-      required: ["tabId", "query"]
-    }
+      required: ["tabId", "query"],
+    },
   },
   {
     name: "click",
@@ -142,15 +145,15 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
         uid: {
           type: "string",
           description:
-            "The unique identifier of an element from the page snapshot"
+            "The unique identifier of an element from the page snapshot",
         },
         dblClick: {
           type: "boolean",
-          description: "Set to true for double clicks"
-        }
+          description: "Set to true for double clicks",
+        },
       },
-      required: ["tabId", "uid"]
-    }
+      required: ["tabId", "uid"],
+    },
   },
   {
     name: "fill_element_by_uid",
@@ -160,19 +163,19 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab to fill the element in"
+          description: "The ID of the tab to fill the element in",
         },
         uid: {
           type: "string",
-          description: "The unique identifier of the element to fill"
+          description: "The unique identifier of the element to fill",
         },
         value: {
           type: "string",
-          description: "The value to fill into the element"
-        }
+          description: "The value to fill into the element",
+        },
       },
-      required: ["tabId", "uid", "value"]
-    }
+      required: ["tabId", "uid", "value"],
+    },
   },
   {
     name: "get_editor_value",
@@ -185,11 +188,11 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
         uid: {
           type: "string",
           description:
-            "The unique identifier of the editor element from snapshot"
-        }
+            "The unique identifier of the editor element from snapshot",
+        },
       },
-      required: ["tabId", "uid"]
-    }
+      required: ["tabId", "uid"],
+    },
   },
   {
     name: "fill_form",
@@ -200,15 +203,15 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab to fill the elements in"
+          description: "The ID of the tab to fill the elements in",
         },
         elements: {
           type: "array",
-          description: "Array of elements to fill with their UIDs and values"
-        }
+          description: "Array of elements to fill with their UIDs and values",
+        },
       },
-      required: ["tabId", "elements"]
-    }
+      required: ["tabId", "elements"],
+    },
   },
   {
     name: "hover_element_by_uid",
@@ -218,15 +221,15 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab to hover over"
+          description: "The ID of the tab to hover over",
         },
         uid: {
           type: "string",
-          description: "The unique identifier of the element to hover over"
-        }
+          description: "The unique identifier of the element to hover over",
+        },
       },
-      required: ["tabId", "uid"]
-    }
+      required: ["tabId", "uid"],
+    },
   },
   {
     name: "upload_file_to_input",
@@ -249,31 +252,31 @@ AFTER UPLOAD: take a screenshot to verify the file was accepted, then proceed to
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab containing the file input element"
+          description: "The ID of the tab containing the file input element",
         },
         uid: {
           type: "string",
           description:
-            "UID of the <input type='file'> element from the page snapshot. OPTIONAL — if omitted or the element is hidden, the tool automatically finds the file input by CSS selector."
+            "UID of the <input type='file'> element from the page snapshot. OPTIONAL — if omitted or the element is hidden, the tool automatically finds the file input by CSS selector.",
         },
         input_index: {
           type: "number",
           description:
-            "0-based index to select which file input to target when the page has multiple. Defaults to 0. Only used when uid is not provided or not found."
+            "0-based index to select which file input to target when the page has multiple. Defaults to 0. Only used when uid is not provided or not found.",
         },
         file_id: {
           type: "string",
           description:
-            "ID of the specific attached file to use (the 'ref' value from the [Attached file...] message). Omit to use the most recently attached file."
+            "ID of the specific attached file to use (the 'ref' value from the [Attached file...] message). Omit to use the most recently attached file.",
         },
         file_path: {
           type: "string",
           description:
-            "Absolute local file path to upload directly (e.g. '/Users/me/resume.pdf'). Uses CDP DOM.setFileInputFiles — no file content is read into memory. Takes priority over file_id and pre-attached files when provided."
-        }
+            "Absolute local file path to upload directly (e.g. '/Users/me/resume.pdf'). Uses CDP DOM.setFileInputFiles — no file content is read into memory. Takes priority over file_id and pre-attached files when provided.",
+        },
       },
-      required: ["tabId"]
-    }
+      required: ["tabId"],
+    },
   },
   {
     name: "computer",
@@ -304,7 +307,7 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
             "double_click",
             "triple_click",
             "scroll_to",
-            "hover"
+            "hover",
           ],
           description: `The action to perform:
 * \`left_click\`: Click the left mouse button at the specified coordinates.
@@ -316,45 +319,45 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
 * \`key\`: Press a specific keyboard key or key combination.
 * \`left_click_drag\`: Drag from start_coordinate to coordinate.
 * \`scroll_to\`: Scroll an element into view using its element UID from snapshot.
-* \`hover\`: Move the mouse cursor to the specified coordinates without clicking. Useful for revealing tooltips, dropdown menus, or triggering hover states.`
+* \`hover\`: Move the mouse cursor to the specified coordinates without clicking. Useful for revealing tooltips, dropdown menus, or triggering hover states.`,
         },
         coordinate: {
           type: "array",
           description:
-            "(x, y): The x (pixels from the left edge) and y (pixels from the top edge) coordinates in screenshot pixel space. Required for left_click, right_click, double_click, triple_click, scroll, and hover. For left_click_drag, this is the end position."
+            "(x, y): The x (pixels from the left edge) and y (pixels from the top edge) coordinates in screenshot pixel space. Required for left_click, right_click, double_click, triple_click, scroll, and hover. For left_click_drag, this is the end position.",
         },
         text: {
           type: "string",
           description:
-            'The text to type (for type action) or the key(s) to press (for key action). For key action: Provide space-separated keys (e.g., "Backspace Backspace Delete"). Supports keyboard shortcuts using the platform modifier key (use "cmd" on Mac, "ctrl" on Windows/Linux, e.g., "cmd+a" for select all). Common keys: Enter, Tab, Escape, ArrowUp/Down/Left/Right, Backspace, Delete.'
+            'The text to type (for type action) or the key(s) to press (for key action). For key action: Provide space-separated keys (e.g., "Backspace Backspace Delete"). Supports keyboard shortcuts using the platform modifier key (use "cmd" on Mac, "ctrl" on Windows/Linux, e.g., "cmd+a" for select all). Common keys: Enter, Tab, Escape, ArrowUp/Down/Left/Right, Backspace, Delete.',
         },
         start_coordinate: {
           type: "array",
           description:
-            "Starting coordinates for left_click_drag action in screenshot pixel space."
+            "Starting coordinates for left_click_drag action in screenshot pixel space.",
         },
         scroll_direction: {
           type: "string",
           enum: ["up", "down", "left", "right"],
-          description: "Direction to scroll for scroll action."
+          description: "Direction to scroll for scroll action.",
         },
         scroll_amount: {
           type: "number",
           description:
-            "Number of pixels to scroll. Defaults to ~2 viewport heights for standard scrolling."
+            "Number of pixels to scroll. Defaults to ~2 viewport heights for standard scrolling.",
         },
         tabId: {
           type: "number",
           description:
-            "The ID of the tab to operate on. Defaults to current active tab."
+            "The ID of the tab to operate on. Defaults to current active tab.",
         },
         uid: {
           type: "string",
-          description: "Element UID from snapshot for scroll_to action."
-        }
+          description: "Element UID from snapshot for scroll_to action.",
+        },
       },
-      required: ["action"]
-    }
+      required: ["action"],
+    },
   },
 
   // ===== Page Tools =====
@@ -362,7 +365,7 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
     name: "get_page_metadata",
     description:
       "Get page metadata including title, description, keywords, etc.",
-    inputSchema: { type: "object", properties: {}, required: [] }
+    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "scroll_to_element",
@@ -372,11 +375,11 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
       properties: {
         selector: {
           type: "string",
-          description: "CSS selector of the element to scroll to"
-        }
+          description: "CSS selector of the element to scroll to",
+        },
       },
-      required: ["selector"]
-    }
+      required: ["selector"],
+    },
   },
   {
     name: "highlight_element",
@@ -386,27 +389,27 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
       properties: {
         selector: {
           type: "string",
-          description: "CSS selector of the element to highlight"
+          description: "CSS selector of the element to highlight",
         },
         color: {
           type: "string",
-          description: "Shadow color (e.g., '#00d4ff')"
+          description: "Shadow color (e.g., '#00d4ff')",
         },
         duration: {
           type: "number",
-          description: "Duration in milliseconds (0 = permanent)"
+          description: "Duration in milliseconds (0 = permanent)",
         },
         intensity: {
           type: "string",
-          enum: ["subtle", "normal", "strong"]
+          enum: ["subtle", "normal", "strong"],
         },
         persist: {
           type: "boolean",
-          description: "Whether to keep the highlight permanently"
-        }
+          description: "Whether to keep the highlight permanently",
+        },
       },
-      required: ["selector"]
-    }
+      required: ["selector"],
+    },
   },
   {
     name: "highlight_text_inline",
@@ -418,21 +421,21 @@ PREREQUISITE: If you choose coordinate actions, you MUST first call capture_scre
         selector: {
           type: "string",
           description:
-            "CSS selector of the element(s) containing the text to search"
+            "CSS selector of the element(s) containing the text to search",
         },
         searchText: {
           type: "string",
-          description: "The text or phrase to highlight"
+          description: "The text or phrase to highlight",
         },
         caseSensitive: { type: "boolean" },
         wholeWords: { type: "boolean" },
         highlightColor: { type: "string" },
         backgroundColor: { type: "string" },
         fontWeight: { type: "string" },
-        persist: { type: "boolean" }
+        persist: { type: "boolean" },
       },
-      required: ["selector", "searchText"]
-    }
+      required: ["selector", "searchText"],
+    },
   },
 
   // ===== Screenshot Tools =====
@@ -454,11 +457,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost, may capture sensit
         sendToLLM: {
           type: "boolean",
           description:
-            "Whether to send the screenshot to LLM for visual analysis. When true, enables computer tool for coordinate actions. Use sparingly - adds latency and token cost."
-        }
+            "Whether to send the screenshot to LLM for visual analysis. When true, enables computer tool for coordinate actions. Use sparingly - adds latency and token cost.",
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: "capture_tab_screenshot",
@@ -474,16 +477,16 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         tabId: {
           type: "number",
-          description: "The ID of the tab to capture"
+          description: "The ID of the tab to capture",
         },
         sendToLLM: {
           type: "boolean",
           description:
-            "Whether to send the screenshot to LLM for visual analysis. When true, enables computer tool. Use sparingly."
-        }
+            "Whether to send the screenshot to LLM for visual analysis. When true, enables computer tool. Use sparingly.",
+        },
       },
-      required: ["tabId"]
-    }
+      required: ["tabId"],
+    },
   },
 
   // ===== Download Tools =====
@@ -496,24 +499,24 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         text: {
           type: "string",
-          description: "The text content to download as markdown"
+          description: "The text content to download as markdown",
         },
         filename: {
           type: "string",
           description:
-            "Descriptive filename for the download (without .md extension)"
+            "Descriptive filename for the download (without .md extension)",
         },
         folderPath: {
           type: "string",
-          description: "Optional folder path for organizing downloads"
+          description: "Optional folder path for organizing downloads",
         },
         displayResults: {
           type: "boolean",
-          description: "Whether to display the download results"
-        }
+          description: "Whether to display the download results",
+        },
       },
-      required: ["text"]
-    }
+      required: ["text"],
+    },
   },
   {
     name: "download_image",
@@ -524,20 +527,20 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         imageData: {
           type: "string",
-          description: "The base64 image data URL (data:image/...)"
+          description: "The base64 image data URL (data:image/...)",
         },
         filename: {
           type: "string",
           description:
-            "Descriptive filename for the download (without extension)"
+            "Descriptive filename for the download (without extension)",
         },
         folderPath: {
           type: "string",
-          description: "Optional folder path for organizing downloads"
-        }
+          description: "Optional folder path for organizing downloads",
+        },
       },
-      required: ["imageData"]
-    }
+      required: ["imageData"],
+    },
   },
   {
     name: "download_chat_images",
@@ -548,23 +551,23 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         messages: {
           type: "array",
-          description: "Array of chat messages containing images"
+          description: "Array of chat messages containing images",
         },
         folderPrefix: {
           type: "string",
-          description: "Descriptive folder name for organizing downloads"
+          description: "Descriptive folder name for organizing downloads",
         },
         filenamingStrategy: {
           type: "string",
-          enum: ["descriptive", "sequential", "timestamp"]
+          enum: ["descriptive", "sequential", "timestamp"],
         },
         displayResults: {
           type: "boolean",
-          description: "Whether to display the download results"
-        }
+          description: "Whether to display the download results",
+        },
       },
-      required: ["messages"]
-    }
+      required: ["messages"],
+    },
   },
 
   // ===== Intervention Tools =====
@@ -577,11 +580,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         enabledOnly: {
           type: "boolean",
-          description: "If true, only return enabled interventions"
-        }
+          description: "If true, only return enabled interventions",
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: "get_intervention_info",
@@ -593,11 +596,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         type: {
           type: "string",
           description:
-            'The type of intervention to get information about (e.g., "monitor-operation", "voice-input", "user-selection")'
-        }
+            'The type of intervention to get information about (e.g., "monitor-operation", "voice-input", "user-selection")',
+        },
       },
-      required: ["type"]
-    }
+      required: ["type"],
+    },
   },
   {
     name: "request_intervention",
@@ -609,23 +612,23 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         type: {
           type: "string",
           description:
-            'The type of intervention to request (e.g., "monitor-operation", "voice-input", "user-selection")'
+            'The type of intervention to request (e.g., "monitor-operation", "voice-input", "user-selection")',
         },
         params: {
-          description: "Type-specific parameters for the intervention"
+          description: "Type-specific parameters for the intervention",
         },
         timeout: {
           type: "number",
-          description: "Timeout in seconds (default: 300)"
+          description: "Timeout in seconds (default: 300)",
         },
         reason: {
           type: "string",
           description:
-            "A clear explanation to the user about why you need their input"
-        }
+            "A clear explanation to the user about why you need their input",
+        },
       },
-      required: ["type"]
-    }
+      required: ["type"],
+    },
   },
   {
     name: "cancel_intervention",
@@ -636,11 +639,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         id: {
           type: "string",
           description:
-            "Optional intervention ID to cancel. If not provided, cancels the current active intervention."
-        }
+            "Optional intervention ID to cancel. If not provided, cancels the current active intervention.",
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
 
   // ===== Skill Tools =====
@@ -651,10 +654,10 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
     inputSchema: {
       type: "object",
       properties: {
-        name: { type: "string", description: "The name of the skill to load" }
+        name: { type: "string", description: "The name of the skill to load" },
       },
-      required: ["name"]
-    }
+      required: ["name"],
+    },
   },
   {
     name: "execute_skill_script",
@@ -667,12 +670,12 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         scriptPath: {
           type: "string",
           description:
-            'The path to the script file (e.g., "scripts/init_skill.js"), MUST start with "scripts/"'
+            'The path to the script file (e.g., "scripts/init_skill.js"), MUST start with "scripts/"',
         },
-        args: { description: "Arguments to pass to the script" }
+        args: { description: "Arguments to pass to the script" },
       },
-      required: ["skillName", "scriptPath"]
-    }
+      required: ["skillName", "scriptPath"],
+    },
   },
   {
     name: "read_skill_reference",
@@ -685,11 +688,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         refPath: {
           type: "string",
           description:
-            'The path to the reference file (e.g., "references/guide.md"), MUST start with "references/"'
-        }
+            'The path to the reference file (e.g., "references/guide.md"), MUST start with "references/"',
+        },
       },
-      required: ["skillName", "refPath"]
-    }
+      required: ["skillName", "refPath"],
+    },
   },
   {
     name: "get_skill_asset",
@@ -702,11 +705,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
         assetPath: {
           type: "string",
           description:
-            'The path to the asset file (e.g., "assets/icon.png"), MUST start with "assets/"'
-        }
+            'The path to the asset file (e.g., "assets/icon.png"), MUST start with "assets/"',
+        },
       },
-      required: ["skillName", "assetPath"]
-    }
+      required: ["skillName", "assetPath"],
+    },
   },
   {
     name: "list_skills",
@@ -717,11 +720,11 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       properties: {
         enabledOnly: {
           type: "boolean",
-          description: "If true, only show enabled skills. Default: false"
-        }
+          description: "If true, only show enabled skills. Default: false",
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: "get_skill_info",
@@ -730,9 +733,9 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
     inputSchema: {
       type: "object",
       properties: {
-        skillName: { type: "string", description: "The name of the skill" }
+        skillName: { type: "string", description: "The name of the skill" },
       },
-      required: ["skillName"]
-    }
-  }
-]
+      required: ["skillName"],
+    },
+  },
+];
