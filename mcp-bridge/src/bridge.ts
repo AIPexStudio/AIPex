@@ -1,355 +1,363 @@
 /**
  * AIPex MCP Bridge
  *
- * A stdio MCP server that bridges AI agents to the AIPex Chrome extension via WebSocket.
+ * A stdio MCP server that auto-starts a shared daemon and relays tool calls
+ * to the AIPex Chrome extension through it.
  *
- *   Agent (MCP client) ──stdio──▶ this bridge ──WebSocket──▶ AIPex extension (MCP server)
+ * Architecture:
+ *
+ *   IDE ──stdio──▶ this bridge ──WS /bridge──▶ daemon ──WS /extension──▶ AIPex extension
+ *
+ * On startup:
+ *   1. Try connecting to existing daemon at ws://localhost:<port>/bridge
+ *   2. If no daemon running, spawn one as a detached background process
+ *   3. Retry connection with backoff
+ *   4. Forward all tool calls over WebSocket
+ *
+ * Multiple bridge instances share one daemon (multi-client support).
  *
  * Usage:
  *   npx aipex-mcp-bridge [--port 9223]
- *
- * Works with any MCP client that supports stdio transport:
- *   - Cursor, Claude Desktop, Claude Code, VS Code Copilot, Windsurf, Zed, etc.
  */
 
-import { createServer } from "node:http";
-import { createInterface } from "node:readline";
-import { WebSocket, WebSocketServer } from "ws";
+import { fork } from "node:child_process"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { Server } from "@modelcontextprotocol/sdk/server/index.js"
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema
+} from "@modelcontextprotocol/sdk/types.js"
+import { WebSocket } from "ws"
+
+import { toolSchemas } from "./tool-schemas.js"
 
 // ── CLI args ────────────────────────────────────────────────────────────────
 
-const cliArgs = process.argv.slice(2);
+const cliArgs = process.argv.slice(2)
 
 if (cliArgs.includes("--help") || cliArgs.includes("-h")) {
   process.stderr.write(`
 AIPex MCP Bridge — connect AI agents to AIPex browser extension
 
 Usage:
-  npx aipex-mcp-bridge [--port <port>]
+  npx aipex-mcp-bridge [--port <port>] [--host <host>]
 
 Options:
-  --port <port>  WebSocket port for AIPex extension (default: 9223)
+  --port <port>  Daemon port (default: 9223)
+  --host <host>  Daemon host (default: 127.0.0.1)
   --help, -h     Show this help message
   --version, -v  Show version
 
-After starting, open AIPex extension Options and connect to:
-  ws://localhost:<port>
-`);
-  process.exit(0);
+The bridge auto-starts a background daemon if one isn't already running.
+Multiple IDE instances (Cursor, Claude Code) can run simultaneously.
+
+After starting, connect AIPex extension → Options → ws://localhost:<port>/extension
+`)
+  process.exit(0)
 }
 
 if (cliArgs.includes("--version") || cliArgs.includes("-v")) {
-  process.stderr.write("aipex-mcp-bridge 1.0.0\n");
-  process.exit(0);
+  process.stderr.write("aipex-mcp-bridge 3.1.0\n")
+  process.exit(0)
 }
 
-const portIdx = cliArgs.indexOf("--port");
-const WS_PORT = portIdx !== -1 ? parseInt(cliArgs[portIdx + 1], 10) : 9223;
-
-if (Number.isNaN(WS_PORT) || WS_PORT < 1 || WS_PORT > 65535) {
-  process.stderr.write(`Invalid port number. Must be between 1 and 65535.\n`);
-  process.exit(1);
+function getArg(name: string, fallback: string): string {
+  const idx = cliArgs.indexOf(name)
+  return idx !== -1 && cliArgs[idx + 1] ? cliArgs[idx + 1] : fallback
 }
 
-// ── Logging (stderr only — stdout is reserved for MCP protocol) ─────────────
+const PORT = parseInt(getArg("--port", "9223"), 10)
+const HOST = getArg("--host", "127.0.0.1")
+const DAEMON_URL = `ws://${HOST}:${PORT}/bridge`
+const MAX_CONNECT_ATTEMPTS = 10
+const INITIAL_BACKOFF_MS = 300
+const TOOL_CALL_TIMEOUT_MS = 60_000
+
+// ── Logging (stderr only — stdout reserved for MCP) ─────────────────────────
 
 function log(msg: string) {
-  process.stderr.write(`[aipex-bridge] ${msg}\n`);
+  process.stderr.write(`[aipex-bridge] ${msg}\n`)
 }
 
-// ── JSON-RPC types ──────────────────────────────────────────────────────────
+// ── Daemon connection ───────────────────────────────────────────────────────
 
-interface JSONRPCRequest {
-  jsonrpc: "2.0";
-  id: number | string | null;
-  method: string;
-  params?: unknown;
+let daemonWs: WebSocket | undefined
+let nextReqId = 1
+
+interface PendingCall {
+  resolve: (result: unknown) => void
+  reject: (error: Error) => void
+  timer: ReturnType<typeof setTimeout>
 }
 
-interface JSONRPCResponse {
-  jsonrpc: "2.0";
-  id: number | string | null;
-  result?: unknown;
-  error?: { code: number; message: string };
+const pendingCalls = new Map<number, PendingCall>()
+
+function isDaemonConnected(): boolean {
+  return !!daemonWs && daemonWs.readyState === WebSocket.OPEN
 }
 
-type JSONRPCMessage = JSONRPCRequest | JSONRPCResponse;
-
-interface McpTool {
-  name: string;
-  description?: string;
-  inputSchema?: unknown;
-}
-
-// ── AIPex WebSocket connection state ────────────────────────────────────────
-
-let aipexSocket: WebSocket | null = null;
-let aipexReady = false;
-let cachedTools: McpTool[] = [];
-
-let nextAipexId = 1;
-const aipexPending = new Map<
-  number | string,
-  { resolve: (v: unknown) => void; reject: (e: Error) => void }
->();
-
-// ── Respond to MCP client (stdout, JSON-RPC 2.0) ───────────────────────────
-
-function respond(id: number | string | null, result: unknown) {
-  const msg: JSONRPCResponse = { jsonrpc: "2.0", id, result };
-  process.stdout.write(`${JSON.stringify(msg)}\n`);
-}
-
-function respondError(
-  id: number | string | null,
-  code: number,
-  message: string,
-) {
-  const msg: JSONRPCResponse = { jsonrpc: "2.0", id, error: { code, message } };
-  process.stdout.write(`${JSON.stringify(msg)}\n`);
-}
-
-// ── Send requests to AIPex (WebSocket) ──────────────────────────────────────
-
-function sendToAipex(method: string, params: unknown = {}): Promise<unknown> {
-  if (!aipexSocket || aipexSocket.readyState !== WebSocket.OPEN) {
-    return Promise.reject(new Error("AIPex extension not connected"));
+function sendToolCallToDaemon(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
+  if (!isDaemonConnected()) {
+    return Promise.reject(
+      new Error(
+        "Not connected to AIPex daemon. The daemon may have stopped.\n" +
+          "Restart the bridge or check if port " +
+          PORT +
+          " is available."
+      )
+    )
   }
-  const id = nextAipexId++;
-  const msg = { jsonrpc: "2.0", id, method, params };
-  aipexSocket.send(JSON.stringify(msg));
+
+  const id = nextReqId++
+  const msg = {
+    jsonrpc: "2.0",
+    id,
+    method: "tools/call",
+    params: { name: toolName, arguments: args }
+  }
+  daemonWs!.send(JSON.stringify(msg))
+
   return new Promise((resolve, reject) => {
-    aipexPending.set(id, { resolve, reject });
-  });
-}
-
-// ── Handle messages from AIPex ──────────────────────────────────────────────
-
-function handleAipexMessage(raw: string) {
-  let msg: JSONRPCMessage;
-  try {
-    msg = JSON.parse(raw);
-  } catch {
-    log(`Failed to parse AIPex message: ${raw.slice(0, 100)}`);
-    return;
-  }
-
-  if ("result" in msg || "error" in msg) {
-    const res = msg as JSONRPCResponse;
-    const p = aipexPending.get(res.id!);
-    if (p) {
-      aipexPending.delete(res.id!);
-      if (res.error) {
-        p.reject(new Error(res.error.message));
-      } else {
-        p.resolve(res.result);
+    const timer = setTimeout(() => {
+      if (pendingCalls.has(id)) {
+        pendingCalls.delete(id)
+        reject(
+          new Error(
+            `Tool '${toolName}' timed out after ${TOOL_CALL_TIMEOUT_MS}ms`
+          )
+        )
       }
-    }
+    }, TOOL_CALL_TIMEOUT_MS)
+    pendingCalls.set(id, { resolve, reject, timer })
+  })
+}
+
+function handleDaemonMessage(raw: string) {
+  let msg: Record<string, unknown>
+  try {
+    msg = JSON.parse(raw)
+  } catch {
+    return
+  }
+
+  const id = msg.id as number | undefined
+  if (id == null) return
+
+  const pending = pendingCalls.get(id)
+  if (!pending) return
+
+  clearTimeout(pending.timer)
+  pendingCalls.delete(id)
+
+  if (msg.error) {
+    const err = msg.error as { message?: string }
+    pending.reject(new Error(err.message || "Daemon returned an error"))
+  } else {
+    pending.resolve(msg.result)
   }
 }
 
-// ── MCP handshake (runs automatically when AIPex connects) ──────────────────
-
-async function doAipexHandshake(socket: WebSocket) {
-  log("Starting MCP handshake with AIPex...");
-
-  const initResult = (await sendToAipex("initialize", {
-    protocolVersion: "2024-11-05",
-    capabilities: {},
-    clientInfo: { name: "aipex-mcp-bridge", version: "1.0.0" },
-  })) as Record<string, unknown>;
-
-  const serverInfo = initResult?.serverInfo as
-    | Record<string, string>
-    | undefined;
-  log(
-    `AIPex server: ${serverInfo?.name ?? "?"} v${serverInfo?.version ?? "?"}`,
-  );
-
-  socket.send(
-    JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
-  );
-
-  const toolsResult = (await sendToAipex("tools/list")) as Record<
-    string,
-    unknown
-  >;
-  cachedTools = (toolsResult?.tools as McpTool[]) ?? [];
-  aipexReady = true;
-
-  log(`Handshake complete. ${cachedTools.length} tools available.`);
+function rejectAllPending(reason: string) {
+  for (const [, entry] of pendingCalls) {
+    clearTimeout(entry.timer)
+    entry.reject(new Error(reason))
+  }
+  pendingCalls.clear()
 }
 
-// ── Handle MCP requests from the agent (stdin) ──────────────────────────────
+// ── Daemon lifecycle ────────────────────────────────────────────────────────
 
-async function handleAgentRequest(req: JSONRPCRequest) {
-  const { id, method, params } = req;
+function tryConnectToDaemon(): Promise<WebSocket> {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(DAEMON_URL)
+    const timeout = setTimeout(() => {
+      ws.terminate()
+      reject(new Error("Connection timeout"))
+    }, 3_000)
 
-  if (method === "initialize") {
-    respond(id, {
-      protocolVersion: "2024-11-05",
-      capabilities: { tools: {} },
-      serverInfo: { name: "aipex-mcp-bridge", version: "1.0.0" },
-    });
-    return;
+    ws.on("open", () => {
+      clearTimeout(timeout)
+      resolve(ws)
+    })
+
+    ws.on("error", (err) => {
+      clearTimeout(timeout)
+      reject(err)
+    })
+  })
+}
+
+function spawnDaemon() {
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = dirname(__filename)
+  const daemonPath = join(__dirname, "daemon.js")
+
+  log(`Spawning daemon: ${daemonPath} --port ${PORT} --host ${HOST}`)
+
+  const child = fork(daemonPath, ["--port", String(PORT), "--host", HOST], {
+    detached: true,
+    stdio: "ignore"
+  })
+  child.unref()
+  child.on("error", (err) => {
+    log(`Failed to spawn daemon: ${err.message}`)
+  })
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+async function connectWithAutoSpawn(): Promise<WebSocket> {
+  // First, try connecting to an existing daemon
+  try {
+    const ws = await tryConnectToDaemon()
+    log("Connected to existing daemon")
+    return ws
+  } catch {
+    // No daemon running
   }
 
-  if (method === "notifications/initialized") {
-    return;
-  }
+  // Spawn a new daemon
+  log("No daemon running, spawning one...")
+  spawnDaemon()
 
-  if (method === "tools/list") {
-    if (aipexReady && cachedTools.length > 0) {
-      respond(id, { tools: cachedTools });
-    } else {
-      respond(id, {
-        tools: [
-          {
-            name: "check_aipex_connection",
-            description: [
-              "AIPex extension is not connected. To enable browser control:",
-              `1. Open Chrome → AIPex extension → Options page`,
-              `2. Set WebSocket URL to: ws://localhost:${WS_PORT}`,
-              `3. Click Connect`,
-              `Then reload this MCP server.`,
-            ].join("\n"),
-            inputSchema: { type: "object", properties: {} },
-          },
-        ],
-      });
-    }
-    return;
-  }
-
-  if (method === "tools/call") {
-    if (
-      !aipexReady ||
-      !aipexSocket ||
-      aipexSocket.readyState !== WebSocket.OPEN
-    ) {
-      respondError(
-        id,
-        -32000,
-        `AIPex extension not connected. Open AIPex Options and connect to ws://localhost:${WS_PORT}`,
-      );
-      return;
-    }
+  // Retry with backoff
+  let backoff = INITIAL_BACKOFF_MS
+  for (let attempt = 1; attempt <= MAX_CONNECT_ATTEMPTS; attempt++) {
+    await sleep(backoff)
     try {
-      const result = await sendToAipex(
-        "tools/call",
-        params as Record<string, unknown>,
-      );
-      respond(id, result);
-    } catch (e) {
-      respondError(id, -32000, e instanceof Error ? e.message : String(e));
+      const ws = await tryConnectToDaemon()
+      log(`Connected to daemon (attempt ${attempt})`)
+      return ws
+    } catch {
+      backoff = Math.min(backoff * 1.5, 2_000)
     }
-    return;
   }
 
-  if (method === "ping") {
-    if (aipexReady && aipexSocket?.readyState === WebSocket.OPEN) {
-      try {
-        const result = await sendToAipex("ping");
-        respond(id, result);
-      } catch {
-        respond(id, {});
-      }
-    } else {
-      respond(id, {});
-    }
-    return;
-  }
-
-  respondError(id, -32601, `Method not found: ${method}`);
+  throw new Error(
+    `Failed to connect to daemon after ${MAX_CONNECT_ATTEMPTS} attempts.\n` +
+      `Check if port ${PORT} is available: lsof -i :${PORT}`
+  )
 }
 
-// ── Read MCP requests from stdin ────────────────────────────────────────────
+function setupDaemonConnection(ws: WebSocket) {
+  daemonWs = ws
 
-const stdinRl = createInterface({ input: process.stdin });
+  ws.on("message", (data) => handleDaemonMessage(data.toString()))
 
-stdinRl.on("line", (line) => {
-  const trimmed = line.trim();
-  if (!trimmed) return;
+  ws.on("close", () => {
+    log("Daemon connection lost, will reconnect on next tool call")
+    rejectAllPending("Daemon connection lost")
+    daemonWs = undefined
+  })
 
-  let req: JSONRPCRequest;
+  ws.on("error", (err) => {
+    log(`Daemon WebSocket error: ${err.message}`)
+  })
+}
+
+async function ensureDaemonConnection() {
+  if (isDaemonConnected()) return
+
+  log("Reconnecting to daemon...")
+  const ws = await connectWithAutoSpawn()
+  setupDaemonConnection(ws)
+}
+
+// ── MCP Server (stdio to IDE) ───────────────────────────────────────────────
+
+const server = new Server(
+  { name: "aipex-mcp-bridge", version: "3.1.0" },
+  { capabilities: { tools: {} } }
+)
+
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: toolSchemas }
+})
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  const tool = toolSchemas.find((t) => t.name === name)
+  if (!tool) {
+    return {
+      content: [{ type: "text", text: `Tool "${name}" not found` }],
+      isError: true
+    }
+  }
+
   try {
-    req = JSON.parse(trimmed);
-  } catch {
-    log(`Failed to parse stdin: ${trimmed.slice(0, 100)}`);
-    return;
-  }
+    await ensureDaemonConnection()
 
-  handleAgentRequest(req).catch((e) => {
-    log(
-      `Error handling request: ${e instanceof Error ? e.message : String(e)}`,
-    );
-    if (req.id != null) {
-      respondError(req.id, -32603, "Internal error");
+    const result = (await sendToolCallToDaemon(
+      name,
+      (args ?? {}) as Record<string, unknown>
+    )) as Record<string, unknown> | undefined
+
+    if (result && result.content) {
+      return result as {
+        content: Array<{
+          type: string
+          text?: string
+          data?: string
+          mimeType?: string
+        }>
+      }
     }
-  });
-});
 
-stdinRl.on("close", () => {
-  log("stdin closed, shutting down");
-  process.exit(0);
-});
-
-// ── WebSocket server (waits for AIPex extension to connect) ─────────────────
-
-const httpServer = createServer();
-const wss = new WebSocketServer({ server: httpServer });
-
-wss.on("connection", (socket, req) => {
-  const addr = req.socket.remoteAddress ?? "unknown";
-
-  if (aipexSocket && aipexSocket.readyState === WebSocket.OPEN) {
-    log(`New connection from ${addr}, closing previous`);
-    aipexSocket.close();
-  }
-
-  aipexSocket = socket;
-  aipexReady = false;
-  cachedTools = [];
-  log(`AIPex extension connected from ${addr}`);
-
-  socket.on("message", (data) => {
-    handleAipexMessage(data.toString());
-  });
-
-  socket.on("close", () => {
-    log("AIPex extension disconnected");
-    if (aipexSocket === socket) {
-      aipexSocket = null;
-      aipexReady = false;
-      cachedTools = [];
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
     }
-  });
-
-  socket.on("error", (err) => {
-    log(`Socket error: ${err.message}`);
-  });
-
-  doAipexHandshake(socket).catch((err: Error) => {
-    log(`Handshake failed: ${err.message}`);
-  });
-});
-
-wss.on("error", (err) => {
-  log(`WebSocket server error: ${err.message}`);
-});
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: String(error instanceof Error ? error.message : error)
+        }
+      ],
+      isError: true
+    }
+  }
+})
 
 // ── Start ───────────────────────────────────────────────────────────────────
 
-httpServer.listen(WS_PORT, () => {
-  log(`AIPex MCP Bridge started`);
-  log(`WebSocket server listening on ws://localhost:${WS_PORT}`);
-  log(`Waiting for AIPex extension to connect...`);
-  log(`Open AIPex Options → set URL to ws://localhost:${WS_PORT} → Connect`);
-});
+async function main() {
+  const ws = await connectWithAutoSpawn()
+  setupDaemonConnection(ws)
+
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+
+  log("AIPex MCP Bridge started (stdio → daemon relay)")
+  log(`Connected to daemon at ${DAEMON_URL}`)
+}
+
+// ── Exit handling ───────────────────────────────────────────────────────────
+
+process.stdin.on("close", async () => {
+  setTimeout(() => process.exit(0), 5_000)
+  rejectAllPending("Bridge shutting down")
+  if (daemonWs) daemonWs.close()
+  await server.close()
+  process.exit(0)
+})
 
 process.on("SIGINT", () => {
-  log("Shutting down...");
-  wss.close();
-  httpServer.close();
-  process.exit(0);
-});
+  log("Shutting down...")
+  rejectAllPending("Bridge shutting down")
+  if (daemonWs) daemonWs.close()
+  process.exit(0)
+})
+
+main().catch((err) => {
+  log(`Fatal error: ${err instanceof Error ? err.message : String(err)}`)
+  process.exit(1)
+})

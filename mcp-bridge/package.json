@@ -1,10 +1,12 @@
 {
   "name": "aipex-mcp-bridge",
-  "version": "1.0.0",
-  "description": "MCP bridge that connects AI agents (Cursor, Claude, VS Code Copilot, etc.) to the AIPex browser extension via WebSocket",
+  "version": "3.1.0",
+  "description": "MCP bridge that connects AI agents (Cursor, Claude Code, VS Code Copilot, etc.) to the AIPex browser extension. Auto-spawns a shared daemon to support multiple simultaneous clients.",
   "type": "module",
   "bin": {
-    "aipex-mcp-bridge": "./dist/bridge.js"
+    "aipex-mcp-bridge": "./dist/bridge.js",
+    "aipex-mcp-daemon": "./dist/daemon.js",
+    "aipex-cli": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -12,9 +14,11 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsx src/bridge.ts"
+    "dev": "tsx src/bridge.ts",
+    "dev:daemon": "tsx src/daemon.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
