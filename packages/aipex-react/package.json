@@ -150,7 +150,7 @@
     "lucide-react": "^0.577.0",
     "markdown-to-jsx": "^9.6.1",
     "nanoid": "^5.1.7",
-    "react-syntax-highlighter": "^16.1.0",
+    "react-syntax-highlighter": "^16.1.1",
     "remark-gfm": "^4.0.1",
     "streamdown": "^2.3.0",
     "tailwind-merge": "^3.5.0",
