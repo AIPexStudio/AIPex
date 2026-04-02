@@ -4,6 +4,7 @@
  * between QuickJS VM and the host environment
  */
 
+import { posix as posixPath } from "node:path";
 import type { FileStats } from "./types";
 import { zenfs } from "./zenfs-manager";
 
@@ -70,6 +71,42 @@ export interface SkillAPIBridge {
 }
 
 /**
+ * Resolve and validate a filesystem path so it stays within the skill's
+ * own directory (/skills/<skillId>/).
+ *
+ * - Rejects paths containing null bytes.
+ * - Treats the incoming path as relative to the skill root.
+ * - Normalizes away any ".." / "." segments via posix path resolution.
+ * - Throws if the resolved absolute path escapes the skill directory.
+ *
+ * @returns The absolute path within the virtual filesystem.
+ */
+export function resolveSafePath(skillId: string, userPath: string): string {
+  // Reject null bytes which could be used to truncate path strings
+  if (userPath.includes("\0")) {
+    throw new Error(
+      `[SKILL_API] Invalid path: null bytes are not allowed: ${userPath}`,
+    );
+  }
+
+  const skillRoot = `/skills/${skillId}`;
+
+  // Resolve the user-supplied path relative to the skill root.
+  // posixPath.resolve("/skills/abc", "../../x") → "/x"
+  // posixPath.resolve("/skills/abc", "sub/../file") → "/skills/abc/file"
+  const resolved = posixPath.resolve(skillRoot, userPath);
+
+  // The resolved path must be exactly skillRoot or start with skillRoot + "/"
+  if (resolved !== skillRoot && !resolved.startsWith(`${skillRoot}/`)) {
+    throw new Error(
+      `[SKILL_API] Path traversal denied: "${userPath}" resolves outside skill directory`,
+    );
+  }
+
+  return resolved;
+}
+
+/**
  * Create a SKILL_API bridge instance
  */
 export function createSkillAPIBridge(options: {
@@ -77,6 +114,14 @@ export function createSkillAPIBridge(options: {
   onToolRegister?: (tool: ToolDefinition) => Promise<void>;
 }): SkillAPIBridge {
   const { skillId, onToolRegister } = options;
+
+  /**
+   * Helper: resolve + validate a path supplied by skill code.
+   * Every fs operation MUST call this before touching zenfs.
+   */
+  function safePath(userPath: string): string {
+    return resolveSafePath(skillId, userPath);
+  }
 
   return {
     // Tool Registration
@@ -96,9 +141,13 @@ export function createSkillAPIBridge(options: {
         path: string,
         encoding?: string,
       ): Promise<string | Uint8Array> {
-        console.log(`[SKILL_API] fs.readFile: ${path}`);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.readFile: ${resolved}`);
 
-        const result = await zenfs.readFile(path, encoding as BufferEncoding);
+        const result = await zenfs.readFile(
+          resolved,
+          encoding as BufferEncoding,
+        );
 
         // Convert Buffer to Uint8Array before passing to VM
         // This is critical: Buffer objects don't serialize properly across VM boundary
@@ -116,46 +165,57 @@ export function createSkillAPIBridge(options: {
       },
 
       async writeFile(path: string, data: string | Uint8Array): Promise<void> {
-        console.log(`[SKILL_API] fs.writeFile: ${path}`);
-        await zenfs.writeFile(path, data);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.writeFile: ${resolved}`);
+        await zenfs.writeFile(resolved, data);
       },
 
       async readdir(path: string): Promise<string[]> {
-        console.log(`[SKILL_API] fs.readdir: ${path}`);
-        return await zenfs.readdir(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.readdir: ${resolved}`);
+        return await zenfs.readdir(resolved);
       },
 
       async exists(path: string): Promise<boolean> {
-        console.log(`[SKILL_API] fs.exists: ${path}`);
-        return await zenfs.exists(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.exists: ${resolved}`);
+        return await zenfs.exists(resolved);
       },
 
       async mkdir(
         path: string,
         options?: { recursive?: boolean },
       ): Promise<void> {
-        console.log(`[SKILL_API] fs.mkdir: ${path}`);
-        await zenfs.mkdir(path, options);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.mkdir: ${resolved}`);
+        await zenfs.mkdir(resolved, options);
       },
 
-      async rm(path: string, options?: { recursive?: boolean }): Promise<void> {
-        console.log(`[SKILL_API] fs.rm: ${path}`);
-        await zenfs.rm(path, options);
+      async rm(
+        path: string,
+        options?: { recursive?: boolean },
+      ): Promise<void> {
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.rm: ${resolved}`);
+        await zenfs.rm(resolved, options);
       },
 
       async stat(path: string): Promise<FileStats> {
-        console.log(`[SKILL_API] fs.stat: ${path}`);
-        return await zenfs.stat(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.stat: ${resolved}`);
+        return await zenfs.stat(resolved);
       },
 
       existsSync(path: string): boolean {
-        console.log(`[SKILL_API] fs.existsSync: ${path}`);
-        return zenfs.existsSync(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.existsSync: ${resolved}`);
+        return zenfs.existsSync(resolved);
       },
 
       readFileSync(path: string, encoding?: string): string | Uint8Array {
-        console.log(`[SKILL_API] fs.readFileSync: ${path}`);
-        const result = zenfs.readFileSync(path, encoding as BufferEncoding);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.readFileSync: ${resolved}`);
+        const result = zenfs.readFileSync(resolved, encoding as BufferEncoding);
 
         // Convert Buffer to Uint8Array before passing to VM
         // This is critical: Buffer objects don't serialize properly across VM boundary
@@ -173,28 +233,33 @@ export function createSkillAPIBridge(options: {
       },
 
       writeFileSync(path: string, data: string | Uint8Array): void {
-        console.log(`[SKILL_API] fs.writeFileSync: ${path}`);
-        zenfs.writeFileSync(path, data);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.writeFileSync: ${resolved}`);
+        zenfs.writeFileSync(resolved, data);
       },
 
       readdirSync(path: string): string[] {
-        console.log(`[SKILL_API] fs.readdirSync: ${path}`);
-        return zenfs.readdirSync(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.readdirSync: ${resolved}`);
+        return zenfs.readdirSync(resolved);
       },
 
       mkdirSync(path: string, options?: { recursive?: boolean }): void {
-        console.log(`[SKILL_API] fs.mkdirSync: ${path}`);
-        zenfs.mkdirSync(path, options);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.mkdirSync: ${resolved}`);
+        zenfs.mkdirSync(resolved, options);
       },
 
       rmSync(path: string, options?: { recursive?: boolean }): void {
-        console.log(`[SKILL_API] fs.rmSync: ${path}`);
-        zenfs.rmSync(path, options);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.rmSync: ${resolved}`);
+        zenfs.rmSync(resolved, options);
       },
 
       statSync(path: string): FileStats {
-        console.log(`[SKILL_API] fs.statSync: ${path}`);
-        return zenfs.statSync(path);
+        const resolved = safePath(path);
+        console.log(`[SKILL_API] fs.statSync: ${resolved}`);
+        return zenfs.statSync(resolved);
       },
     },
 
