@@ -191,10 +191,7 @@ export function createSkillAPIBridge(options: {
         await zenfs.mkdir(resolved, options);
       },
 
-      async rm(
-        path: string,
-        options?: { recursive?: boolean },
-      ): Promise<void> {
+      async rm(path: string, options?: { recursive?: boolean }): Promise<void> {
         const resolved = safePath(path);
         console.log(`[SKILL_API] fs.rm: ${resolved}`);
         await zenfs.rm(resolved, options);

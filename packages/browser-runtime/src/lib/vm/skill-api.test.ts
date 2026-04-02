@@ -6,7 +6,7 @@
  * files belonging to other skills within the virtual filesystem.
  */
 
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSkillAPIBridge } from "./skill-api";
 
 // Mock zenfs-manager so we don't need a real IndexedDB / ZenFS backend
