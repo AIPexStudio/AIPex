@@ -103,6 +103,26 @@ function shouldFilterPath(path: string): boolean {
 }
 
 /**
+ * Normalize a POSIX-style path by resolving `.` and `..` segments.
+ * Works in browser contexts without requiring Node's `path` module.
+ */
+function normalizePath(p: string): string {
+  const isAbsolute = p.startsWith("/");
+  const parts = p.split("/");
+  const normalized: string[] = [];
+
+  for (const part of parts) {
+    if (part === ".." && normalized.length > 0) {
+      normalized.pop();
+    } else if (part !== "." && part !== ".." && part !== "") {
+      normalized.push(part);
+    }
+  }
+
+  return (isAbsolute ? "/" : "") + normalized.join("/");
+}
+
+/**
  * Detect if ZIP has a common top-level directory and return it
  */
 function detectTopLevelDirectory(paths: string[]): string {
@@ -168,6 +188,9 @@ export async function extractZipToFS(
   // Detect and remove common top-level directory
   const topLevelDir = detectTopLevelDirectory(filteredPaths);
 
+  // Normalize the target path once for consistent prefix checking
+  const normalizedTarget = normalizePath(targetPath);
+
   // Create target directory
   await zenfs.mkdir(targetPath, { recursive: true });
 
@@ -198,9 +221,25 @@ export async function extractZipToFS(
     // Construct full path in ZenFS
     const fullPath = `${targetPath}/${relativePath}`;
 
+    // Guard against zip-slip path traversal: normalize the resolved path
+    // and verify it stays within the target directory (CWE-22)
+    const normalizedFullPath = normalizePath(fullPath);
+    if (
+      !normalizedFullPath.startsWith(`${normalizedTarget}/`) ||
+      normalizedFullPath === normalizedTarget
+    ) {
+      console.warn(
+        `[ZIP Utils] Skipping path traversal entry: ${path} -> ${normalizedFullPath}`,
+      );
+      continue;
+    }
+
     // Create parent directories if needed
-    const parentDir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    if (parentDir && parentDir !== targetPath) {
+    const parentDir = normalizedFullPath.substring(
+      0,
+      normalizedFullPath.lastIndexOf("/"),
+    );
+    if (parentDir && parentDir !== normalizedTarget) {
       await zenfs.mkdir(parentDir, { recursive: true });
     }
 
@@ -212,9 +251,9 @@ export async function extractZipToFS(
     // Write file to ZenFS
     if (isText) {
       const content = strFromU8(data);
-      await zenfs.writeFile(fullPath, content);
+      await zenfs.writeFile(normalizedFullPath, content);
     } else {
-      await zenfs.writeFile(fullPath, data);
+      await zenfs.writeFile(normalizedFullPath, data);
     }
 
     fileCount++;
