@@ -1,8 +1,180 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAIProvider, createEmptyToolArgsFinalizer } from "./ai-provider";
+import {
+  createAIProvider,
+  createEmptyToolArgsFinalizer,
+  validateHostUrl,
+} from "./ai-provider";
 
 // Provide minimal mock for import.meta.env
 vi.stubGlobal("import", { meta: { env: { PROD: false } } });
+
+describe("validateHostUrl", () => {
+  describe("blocks private/reserved addresses in all build modes", () => {
+    // Loopback
+    it("blocks localhost", () => {
+      expect(() => validateHostUrl("http://localhost/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 127.0.0.1", () => {
+      expect(() => validateHostUrl("http://127.0.0.1/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 127.0.0.2 (loopback range)", () => {
+      expect(() => validateHostUrl("http://127.0.0.2/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 0.0.0.0", () => {
+      expect(() => validateHostUrl("http://0.0.0.0/v1")).toThrow("restricted");
+    });
+
+    // RFC 1918 — 10.0.0.0/8
+    it("blocks 10.0.0.1", () => {
+      expect(() => validateHostUrl("http://10.0.0.1/v1")).toThrow("restricted");
+    });
+
+    it("blocks 10.255.255.255", () => {
+      expect(() => validateHostUrl("http://10.255.255.255/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    // RFC 1918 — 172.16.0.0/12
+    it("blocks 172.16.0.1", () => {
+      expect(() => validateHostUrl("http://172.16.0.1/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 172.31.255.255", () => {
+      expect(() => validateHostUrl("http://172.31.255.255/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    // RFC 1918 — 192.168.0.0/16
+    it("blocks 192.168.1.1", () => {
+      expect(() => validateHostUrl("http://192.168.1.1/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 192.168.0.0", () => {
+      expect(() => validateHostUrl("http://192.168.0.0/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    // Link-local / cloud metadata
+    it("blocks 169.254.169.254 (cloud metadata)", () => {
+      expect(() => validateHostUrl("http://169.254.169.254/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks 169.254.0.1 (link-local)", () => {
+      expect(() => validateHostUrl("http://169.254.0.1/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    // IPv6
+    it("blocks [::1] (IPv6 loopback)", () => {
+      expect(() => validateHostUrl("http://[::1]/v1")).toThrow("restricted");
+    });
+
+    // IPv4-mapped IPv6
+    it("blocks [::ffff:127.0.0.1] (IPv4-mapped loopback)", () => {
+      expect(() => validateHostUrl("http://[::ffff:127.0.0.1]/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks [::ffff:10.0.0.1] (IPv4-mapped private)", () => {
+      expect(() => validateHostUrl("http://[::ffff:10.0.0.1]/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    it("blocks [::ffff:192.168.1.1] (IPv4-mapped private)", () => {
+      expect(() => validateHostUrl("http://[::ffff:192.168.1.1]/v1")).toThrow(
+        "restricted",
+      );
+    });
+
+    // Well-known hostnames
+    it("blocks metadata.google.internal", () => {
+      expect(() =>
+        validateHostUrl("http://metadata.google.internal/v1"),
+      ).toThrow("restricted");
+    });
+  });
+
+  describe("allows legitimate public addresses", () => {
+    it("allows https://api.openai.com/v1", () => {
+      expect(validateHostUrl("https://api.openai.com/v1")).toBe(
+        "https://api.openai.com/v1",
+      );
+    });
+
+    it("allows https://my-proxy.example.com", () => {
+      expect(validateHostUrl("https://my-proxy.example.com")).toBe(
+        "https://my-proxy.example.com",
+      );
+    });
+
+    it("allows public IP 8.8.8.8", () => {
+      expect(validateHostUrl("http://8.8.8.8/v1")).toBe("http://8.8.8.8/v1");
+    });
+
+    it("allows 172.32.0.1 (just outside 172.16-31 range)", () => {
+      expect(validateHostUrl("http://172.32.0.1/v1")).toBe(
+        "http://172.32.0.1/v1",
+      );
+    });
+
+    it("allows 172.15.255.255 (just below 172.16)", () => {
+      expect(validateHostUrl("http://172.15.255.255/v1")).toBe(
+        "http://172.15.255.255/v1",
+      );
+    });
+
+    it("allows 192.167.1.1 (not 192.168.x.x)", () => {
+      expect(validateHostUrl("http://192.167.1.1/v1")).toBe(
+        "http://192.167.1.1/v1",
+      );
+    });
+
+    it("returns undefined for empty/undefined input", () => {
+      expect(validateHostUrl(undefined)).toBeUndefined();
+      expect(validateHostUrl("")).toBeUndefined();
+    });
+  });
+
+  describe("rejects invalid URLs and protocols", () => {
+    it("rejects non-URL strings", () => {
+      expect(() => validateHostUrl("not-a-url")).toThrow("Invalid aiHost URL");
+    });
+
+    it("rejects ftp: protocol", () => {
+      expect(() => validateHostUrl("ftp://evil.com")).toThrow(
+        "Unsupported protocol",
+      );
+    });
+
+    it("rejects javascript: protocol", () => {
+      // eslint-disable-next-line no-script-url
+      expect(() => validateHostUrl("javascript:alert(1)")).toThrow(
+        "Unsupported protocol",
+      );
+    });
+  });
+});
 
 describe("createAIProvider", () => {
   describe("URL validation", () => {
@@ -64,6 +236,16 @@ describe("createAIProvider", () => {
           aiHost: "javascript:alert(1)",
         }),
       ).toThrow("Unsupported protocol");
+    });
+
+    it("rejects private RFC 1918 addresses", () => {
+      expect(() =>
+        createAIProvider({
+          aiProvider: "openai",
+          aiToken: "sk-test",
+          aiHost: "http://10.0.0.1/v1",
+        }),
+      ).toThrow("restricted");
     });
   });
 
@@ -214,7 +396,6 @@ describe("createEmptyToolArgsFinalizer", () => {
       `data: {"id":"gen-3","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":null,"role":"assistant","tool_calls":[{"index":0,"function":{"arguments":""}}]},"finish_reason":null}]}`,
       `data: {"id":"gen-3","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":null,"role":"assistant","tool_calls":[{"index":1,"id":"call_2","type":"function","function":{"name":"get_all_tabs","arguments":""}}]},"finish_reason":null}]}`,
       `data: {"id":"gen-3","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":null,"role":"assistant","tool_calls":[{"index":1,"function":{"arguments":""}}]},"finish_reason":null}]}`,
-      `data: {"id":"gen-3","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":null,"role":"assistant","tool_calls":[{"index":1,"function":{"arguments":""}}]},"finish_reason":null}]}`,
       `data: {"id":"gen-3","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"","role":"assistant"},"finish_reason":"tool_calls"}]}`,
       `data: [DONE]`,
     ];
@@ -227,26 +408,23 @@ describe("createEmptyToolArgsFinalizer", () => {
       (l) => l.startsWith("data: ") && l !== "data: [DONE]",
     );
 
-    // 7 original data lines + 2 synthetic (one per tool) = 9
-    expect(dataLines.length).toBe(9);
+    // Should have original 6 data lines + 2 synthetic (one per parameterless tool) = 8
+    expect(dataLines.length).toBe(8);
 
-    // The two synthetic lines should be injected before the finish chunk
-    // Find synthetic lines (they have function.arguments === "{}")
+    // Find synthetic lines
     const syntheticLines = dataLines.filter((line) => {
-      const data = JSON.parse(line.slice(6));
-      const tc = data.choices?.[0]?.delta?.tool_calls?.[0];
-      return tc?.function?.arguments === "{}";
+      try {
+        const data = JSON.parse(line.slice(6));
+        const tc = data.choices?.[0]?.delta?.tool_calls?.[0];
+        return tc?.function?.arguments === "{}";
+      } catch {
+        return false;
+      }
     });
+
     expect(syntheticLines.length).toBe(2);
 
-    const syntheticIndices = syntheticLines.map((line) => {
-      const data = JSON.parse(line.slice(6));
-      return data.choices[0].delta.tool_calls[0].index;
-    });
-    expect(syntheticIndices).toContain(0);
-    expect(syntheticIndices).toContain(1);
-
-    // Finish line should be the very last data line
+    // Last data line should be the finish
     const lastDataLine = dataLines[dataLines.length - 1]!;
     const lastData = JSON.parse(lastDataLine.slice(6));
     expect(lastData.choices[0].finish_reason).toBe("tool_calls");

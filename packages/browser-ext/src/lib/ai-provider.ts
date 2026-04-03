@@ -28,10 +28,85 @@ export const PROXY_DEFAULT_MODEL = "deepseek/deepseek-chat-v3.1";
 export const PROXY_API_URL = `${WEBSITE_URL}/api/ai`;
 
 /**
+ * Check whether an IPv4 address string falls within a private/reserved range.
+ * Returns true if the address is private, loopback, or link-local.
+ */
+function isPrivateIPv4(ip: string): boolean {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return false;
+
+  const octets = parts.map(Number);
+  if (octets.some((o) => Number.isNaN(o) || o < 0 || o > 255)) return false;
+
+  const [a, b] = octets;
+
+  // 127.0.0.0/8 — loopback
+  if (a === 127) return true;
+  // 10.0.0.0/8 — private
+  if (a === 10) return true;
+  // 172.16.0.0/12 — private
+  if (a === 172 && b! >= 16 && b! <= 31) return true;
+  // 192.168.0.0/16 — private
+  if (a === 192 && b === 168) return true;
+  // 169.254.0.0/16 — link-local (includes cloud metadata 169.254.169.254)
+  if (a === 169 && b === 254) return true;
+  // 0.0.0.0/8 — "this" network
+  if (a === 0) return true;
+
+  return false;
+}
+
+/**
+ * Extract an IPv4 address from an IPv4-mapped IPv6 address.
+ * Handles both dotted-decimal (::ffff:1.2.3.4) and hex (::ffff:0102:0304)
+ * forms, since URL parsers normalise to the hex representation.
+ * Returns the IPv4 string or null if not an IPv4-mapped address.
+ */
+function extractIPv4FromMappedIPv6(raw: string): string | null {
+  // Dotted-decimal form: ::ffff:1.2.3.4
+  const dotMatch = raw.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (dotMatch) return dotMatch[1]!;
+
+  // Hex form: ::ffff:XXXX:XXXX (URL parser normalised)
+  const hexMatch = raw.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (hexMatch) {
+    const hi = Number.parseInt(hexMatch[1]!, 16);
+    const lo = Number.parseInt(hexMatch[2]!, 16);
+    return `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+  }
+
+  return null;
+}
+
+/**
+ * Check whether a bracketed IPv6 hostname represents a private/reserved address.
+ * Handles ::1 (loopback), ::ffff:x.x.x.x (IPv4-mapped), fe80::/10, fc00::/7.
+ */
+function isPrivateIPv6(hostname: string): boolean {
+  const raw = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+
+  // ::1 — loopback
+  if (raw === "::1") return true;
+  // :: — unspecified
+  if (raw === "::") return true;
+
+  // IPv4-mapped IPv6 addresses
+  const v4 = extractIPv4FromMappedIPv6(raw);
+  if (v4) return isPrivateIPv4(v4);
+
+  // fe80::/10 — link-local
+  if (raw.startsWith("fe80:") || raw === "fe80") return true;
+  // fc00::/7 — unique local (ULA)
+  if (raw.startsWith("fc") || raw.startsWith("fd")) return true;
+
+  return false;
+}
+
+/**
  * Validate that a user-provided host URL is safe to use.
  * Rejects private/internal addresses to mitigate SSRF risks.
  */
-function validateHostUrl(url: string | undefined): string | undefined {
+export function validateHostUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
 
   let parsed: URL;
@@ -48,20 +123,24 @@ function validateHostUrl(url: string | undefined): string | undefined {
     );
   }
 
-  // Block common internal/private hostnames
   const hostname = parsed.hostname.toLowerCase();
-  const blocked = [
-    "localhost",
-    "127.0.0.1",
-    "0.0.0.0",
-    "[::1]",
-    "metadata.google.internal",
-    "169.254.169.254",
-  ];
 
-  // In production, block private addresses
-  if (import.meta.env.PROD && blocked.includes(hostname)) {
+  // Block well-known private/internal hostnames
+  const blockedHostnames = ["localhost", "metadata.google.internal"];
+  if (blockedHostnames.includes(hostname)) {
     throw new Error(`aiHost points to a restricted address: ${hostname}`);
+  }
+
+  // Block private/reserved IPv4 addresses
+  if (isPrivateIPv4(hostname)) {
+    throw new Error(`aiHost points to a restricted address: ${hostname}`);
+  }
+
+  // Block private/reserved IPv6 addresses (brackets from URL parser)
+  if (hostname.startsWith("[") || hostname === "::1") {
+    if (isPrivateIPv6(hostname)) {
+      throw new Error(`aiHost points to a restricted address: ${hostname}`);
+    }
   }
 
   return parsed.origin + parsed.pathname.replace(/\/+$/, "");
