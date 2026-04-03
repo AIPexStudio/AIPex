@@ -45,6 +45,32 @@ function log(msg: string) {
   process.stderr.write(`[aipex-daemon] ${msg}\n`);
 }
 
+// ── Origin validation ───────────────────────────────────────────────────────
+
+/**
+ * Validate the Origin header on WebSocket upgrade requests to prevent
+ * cross-site WebSocket hijacking (CSWSH).
+ *
+ * Allowed origins:
+ *   - No Origin header (Node.js clients: bridge.ts, cli.ts, aipex-cli)
+ *   - chrome-extension:// (the AIPex browser extension)
+ *   - moz-extension:// (Firefox extension equivalent)
+ *
+ * Rejected origins:
+ *   - http:// or https:// (web pages — attack vector for CSWSH)
+ */
+function isOriginAllowed(origin: string | undefined): boolean {
+  // Node.js WebSocket clients don't send an Origin header — allow
+  if (!origin) return true;
+
+  // Browser extensions are trusted clients
+  if (origin.startsWith("chrome-extension://")) return true;
+  if (origin.startsWith("moz-extension://")) return true;
+
+  // Reject all web page origins (http/https) — prevents CSWSH attacks
+  return false;
+}
+
 // ── Extension connection ────────────────────────────────────────────────────
 
 let extensionWs: WebSocket | undefined;
@@ -325,6 +351,19 @@ const bridgeWss = new WebSocketServer({ noServer: true });
 const cliWss = new WebSocketServer({ noServer: true });
 
 httpServer.on("upgrade", (req, socket, head) => {
+  const origin = req.headers.origin;
+
+  // Reject WebSocket upgrades from web page origins to prevent CSWSH.
+  // Legitimate clients (bridge.ts, cli.ts) are Node.js processes that
+  // don't send an Origin header. The Chrome extension sends
+  // chrome-extension:// which is explicitly allowed.
+  if (!isOriginAllowed(origin)) {
+    log(`Rejected WebSocket upgrade from origin: ${origin}`);
+    socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+
   const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
 
   if (pathname === "/extension" || pathname === "/") {
