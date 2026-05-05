@@ -34,12 +34,16 @@ const BLOCKED_HOSTNAME_SUFFIXES = [".localhost", ".local", ".internal"];
 function isIPv4(host: string): boolean {
   const parts = host.split(".");
   if (parts.length !== 4) return false;
-  return parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) >= 0 && Number(p) <= 255);
+  return parts.every(
+    (p) => /^\d{1,3}$/.test(p) && Number(p) >= 0 && Number(p) <= 255,
+  );
 }
 
 function isPrivateIPv4(host: string): boolean {
   if (!isIPv4(host)) return false;
-  const [a, b] = host.split(".").map(Number);
+  const parts = host.split(".").map(Number);
+  const a = parts[0] ?? -1;
+  const b = parts[1] ?? -1;
   // 0.0.0.0/8        - "this" network
   if (a === 0) return true;
   // 10.0.0.0/8       - private
@@ -79,13 +83,15 @@ function isPrivateIPv6(rawHost: string): boolean {
   // Unspecified ::
   if (host === "::" || /^0+(:0+){0,7}$/.test(host)) return true;
   // IPv4-mapped dotted form (::ffff:a.b.c.d)
-  const v4MappedMatch = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-  if (v4MappedMatch && isPrivateIPv4(v4MappedMatch[1])) return true;
+  const v4MappedMatch = host.match(
+    /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/,
+  );
+  if (v4MappedMatch?.[1] && isPrivateIPv4(v4MappedMatch[1])) return true;
   // IPv4-mapped hex form (::ffff:HHHH:HHHH) — convert to dotted and re-check
   const v4MappedHex = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
   if (v4MappedHex) {
-    const high = parseInt(v4MappedHex[1], 16);
-    const low = parseInt(v4MappedHex[2], 16);
+    const high = parseInt(v4MappedHex[1] ?? "0", 16);
+    const low = parseInt(v4MappedHex[2] ?? "0", 16);
     const dotted = [
       (high >> 8) & 0xff,
       high & 0xff,
@@ -130,7 +136,10 @@ export function assertSkillFetchUrlAllowed(rawUrl: string): URL {
   }
 
   // Strip brackets that URL parsing leaves around IPv6 literals
-  const hostname = parsed.hostname.toLowerCase().replace(/^\[/, "").replace(/\]$/, "");
+  const hostname = parsed.hostname
+    .toLowerCase()
+    .replace(/^\[/, "")
+    .replace(/\]$/, "");
 
   if (!hostname) {
     throw new SsrfBlockedError("Blocked URL with empty hostname");
@@ -142,7 +151,9 @@ export function assertSkillFetchUrlAllowed(rawUrl: string): URL {
 
   for (const suffix of BLOCKED_HOSTNAME_SUFFIXES) {
     if (hostname === suffix.slice(1) || hostname.endsWith(suffix)) {
-      throw new SsrfBlockedError(`Blocked private hostname suffix: ${hostname}`);
+      throw new SsrfBlockedError(
+        `Blocked private hostname suffix: ${hostname}`,
+      );
     }
   }
 

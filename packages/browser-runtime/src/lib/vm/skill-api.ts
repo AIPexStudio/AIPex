@@ -233,7 +233,7 @@ export function createSkillAPIBridge(options: {
       // by a public host that 3xx-redirects to an internal address.
       const safeOptions: RequestInit = {
         ...(options || {}),
-        redirect: (options && options.redirect) || "error",
+        redirect: options?.redirect || "error",
       };
 
       try {
