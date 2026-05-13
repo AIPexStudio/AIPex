@@ -5,6 +5,7 @@
  */
 
 import type { FileStats } from "./types";
+import { assertSkillFetchUrlAllowed } from "./url-guard";
 import { zenfs } from "./zenfs-manager";
 
 export type { FileStats };
@@ -217,8 +218,26 @@ export function createSkillAPIBridge(options: {
     async fetch(url: string, options?: RequestInit): Promise<any> {
       console.log(`[SKILL_API] fetch: ${url}`);
 
+      // SSRF guard: skills are untrusted code. Reject requests targeting
+      // private/internal network ranges or non-http(s) schemes before they
+      // reach the host fetch in the extension service worker context.
+      let validatedUrl: URL;
       try {
-        const response = await fetch(url, options);
+        validatedUrl = assertSkillFetchUrlAllowed(url);
+      } catch (error: any) {
+        console.error("[SKILL_API] Fetch blocked:", error?.message);
+        throw new Error(`Fetch failed: ${error?.message || String(error)}`);
+      }
+
+      // Disallow following redirects so the SSRF guard cannot be bypassed
+      // by a public host that 3xx-redirects to an internal address.
+      const safeOptions: RequestInit = {
+        ...(options || {}),
+        redirect: options?.redirect || "error",
+      };
+
+      try {
+        const response = await fetch(validatedUrl.toString(), safeOptions);
 
         // Convert response to a plain object that can be serialized
         const result = {
