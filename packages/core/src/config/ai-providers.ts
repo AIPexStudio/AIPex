@@ -69,6 +69,20 @@ export const AI_PROVIDERS = {
     docs: "https://openrouter.ai/keys",
     providerType: "openai",
   },
+  requesty: {
+    name: "Requesty",
+    icon: "🔀",
+    host: "https://router.requesty.ai/v1",
+    models: [
+      "openai/gpt-4o-mini",
+      "anthropic/claude-sonnet-4-5",
+      "google/gemini-2.5-flash",
+      "deepseek/deepseek-chat",
+    ] as const,
+    tokenPlaceholder: "sk-...",
+    docs: "https://app.requesty.ai/api-keys",
+    providerType: "openai",
+  },
   deepseek: {
     name: "DeepSeek",
     icon: "🔍",
@@ -180,6 +194,7 @@ export function detectProviderFromHost(host: string): AIProviderKey {
   if (host.includes("anthropic.com")) return "anthropic";
   if (host.includes("generativelanguage.googleapis.com")) return "google";
   if (host.includes("openrouter.ai")) return "openrouter";
+  if (host.includes("requesty.ai")) return "requesty";
   if (host.includes("deepseek.com")) return "deepseek";
   if (host.includes("groq.com")) return "groq";
   if (host.includes("together.xyz")) return "together";
