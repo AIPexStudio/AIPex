@@ -37,6 +37,7 @@
 - **Zero Migration**: No new browser to install. No new workflow to learn.
 - **Open Source**: MIT licensed. Fully transparent, auditable, and extensible.
 - **Privacy First**: Your data never leaves your machine. Bring Your Own Key (BYOK).
+- **Agent Ready**: MCP, skills, and the built-in `browser-cli` share the same local browser runtime.
 
 ---
 
@@ -50,6 +51,17 @@ Every browser automation tool asks you to:
 **We asked: why can't automation just run in the browser you already use?**
 
 AIPex is the answer. Install the extension, bring your own API key, and automate anything — right where you already work.
+
+---
+
+## Why AIPex Is Fast
+
+AIPex runs inside the browser you already use instead of streaming a remote browser or launching a separate automation profile.
+
+- **Local-first control path**: agents talk to a local daemon over WebSocket, and the extension executes actions directly through browser APIs.
+- **DOM snapshot before vision**: agents can search structured page snapshots with glob/grep patterns and act by stable element UIDs, avoiding slow screenshot loops for most tasks.
+- **No browser migration cost**: your logged-in sessions, cookies, tabs, history, and extensions are already there.
+- **Lower token and latency overhead**: text snapshots and targeted element operations are much cheaper than repeatedly sending full-page images.
 
 ---
 
@@ -106,10 +118,28 @@ claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
 ### Step 2: Connect the extension
 
 1. Open Chrome → AIPex icon → **Options**
-2. Set WebSocket URL to `ws://localhost:9223`
+2. Set WebSocket URL to `ws://localhost:9223/extension`
 3. Click **Connect**
 
 Your agent now has 30+ browser automation tools available via MCP. See [mcp-bridge/README.md](mcp-bridge/README.md) for advanced options.
+
+---
+
+## Use from the Terminal (`browser-cli`)
+
+`browser-cli` has been merged into AIPex. It ships with `aipex-mcp-bridge` and talks to the same local daemon as MCP, so scripts, CI jobs, and coding agents can control your existing browser without a separate service.
+
+```bash
+npm install -g aipex-mcp-bridge
+
+browser-cli status
+browser-cli tab list
+browser-cli tab new https://example.com
+browser-cli page search "button*" --tab 123
+browser-cli interact click btn-42 --tab 123
+```
+
+The lower-level `aipex-cli` is still available for raw tool calls, while `browser-cli` provides human-friendly command groups such as `tab`, `page`, `interact`, `download`, `intervention`, and `skill`.
 
 ---
 

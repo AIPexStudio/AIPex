@@ -35,6 +35,7 @@
 - **零迁移成本**：无需安装新浏览器。无需学习新工作流。
 - **完全开源**：MIT 协议。完全透明、可审计、可自由扩展。
 - **隐私优先**：数据不离开本地。支持自带密钥 (BYOK)。
+- **Agent 友好**：MCP、skill 和内置的 `browser-cli` 共用同一个本地浏览器运行时。
 
 ---
 
@@ -48,6 +49,17 @@
 **我们问自己：为什么自动化不能直接在你已有的浏览器里跑？**
 
 AIPex 就是答案。安装扩展，输入你自己的 API Key，然后直接开始自动化——就在你日常工作的地方。
+
+---
+
+## 为什么 AIPex 更快
+
+AIPex 直接运行在你已经使用的浏览器里，不需要远程串流浏览器，也不需要启动一套新的自动化浏览器环境。
+
+- **本地优先链路**：agent 通过本地 WebSocket daemon 调用扩展，扩展直接使用浏览器 API 执行动作。
+- **先 DOM、后视觉**：agent 可以用 glob/grep 搜索结构化页面快照，再通过稳定的元素 UID 操作页面，大多数任务不需要反复截图。
+- **没有迁移成本**：登录态、Cookie、标签页、历史记录和扩展都在原浏览器里。
+- **更低 token 与延迟开销**：文本快照和定向元素操作通常比整页图片往返更便宜、更快。
 
 ---
 
@@ -104,10 +116,28 @@ claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
 ### 第二步：连接扩展程序
 
 1. 打开 Chrome → 点击 AIPex 图标 → **选项**
-2. 将 WebSocket URL 设置为 `ws://localhost:9223`
+2. 将 WebSocket URL 设置为 `ws://localhost:9223/extension`
 3. 点击 **连接**
 
 你的 AI 助手现在可以通过 MCP 使用 30+ 个浏览器自动化工具。更多配置详见 [mcp-bridge/README.md](mcp-bridge/README.md)。
+
+---
+
+## 在终端使用 (`browser-cli`)
+
+`browser-cli` 已合并进 AIPex，并随 `aipex-mcp-bridge` 一起发布。它复用 MCP 的本地 daemon，因此脚本、CI 和编程 agent 都可以直接控制你已有的浏览器。
+
+```bash
+npm install -g aipex-mcp-bridge
+
+browser-cli status
+browser-cli tab list
+browser-cli tab new https://example.com
+browser-cli page search "button*" --tab 123
+browser-cli interact click btn-42 --tab 123
+```
+
+底层的 `aipex-cli` 仍然保留，用于原始 tool 调用；`browser-cli` 则提供更适合人和 agent 使用的命令分组，例如 `tab`、`page`、`interact`、`download`、`intervention` 和 `skill`。
 
 ---
 

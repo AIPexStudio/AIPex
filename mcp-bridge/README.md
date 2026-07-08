@@ -1,89 +1,33 @@
 # aipex-mcp-bridge
 
-MCP server that connects AI agents to the [AIPex](https://aipex.ai) browser extension. Supports **multiple simultaneous clients** (Cursor, Claude Code, VS Code Copilot, etc.) via StreamableHTTP.
+Local bridge, daemon, and CLI tools for connecting AI agents to the AIPex browser extension.
 
-## How it works
+## How It Works
 
 ```
-Cursor        ──HTTP POST /mcp──┐
-Claude Code   ──HTTP POST /mcp──┤── aipex-mcp-server ──WebSocket──▶ AIPex Chrome Extension
-VS Code       ──HTTP POST /mcp──┘
+Cursor / Claude Code / VS Code ──stdio──▶ aipex-mcp-bridge ──WS /bridge──┐
+browser-cli / aipex-cli        ──WS /cli─────────────────────────────────┤
+                                                                         ├── aipex-mcp-daemon (:9223) ──WS /extension──▶ AIPex Extension ──▶ Browser
+                                                                         │
+Other bridge clients            ──WS /bridge─────────────────────────────┘
 ```
 
-The server runs on `localhost:9223` and provides:
+The daemon is auto-spawned by the bridge or CLI when needed, shared by multiple clients, and exits after idle time. The AIPex extension connects to `ws://localhost:9223/extension`.
 
-- **`/mcp`** — StreamableHTTP endpoint for MCP clients
-- **`/extension`** — WebSocket endpoint for the AIPex Chrome extension
-- **`/health`** — Health check endpoint
-
-## Quick start
-
-### 1. Start the server
+## Install
 
 ```bash
-npx aipex-mcp-server
+npm install -g aipex-mcp-bridge
 ```
 
-The server stays running and handles all AI agent connections.
+Requirements:
 
-### 2. Configure your AI agent
+- Node.js >= 18
+- AIPex Chrome or Edge extension installed
 
-**Cursor** (`.cursor/mcp.json` or `~/.cursor/mcp.json`):
+## Use with MCP Agents
 
-```json
-{
-  "mcpServers": {
-    "aipex-browser": {
-      "url": "http://localhost:9223/mcp"
-    }
-  }
-}
-```
-
-**Claude Code**:
-
-```bash
-claude mcp add --transport http aipex-browser http://localhost:9223/mcp
-```
-
-**VS Code Copilot** (`.vscode/mcp.json`):
-
-```json
-{
-  "servers": {
-    "aipex-browser": {
-      "url": "http://localhost:9223/mcp"
-    }
-  }
-}
-```
-
-### 3. Connect AIPex extension
-
-1. Open Chrome → AIPex extension → Options page
-2. Set WebSocket URL to `ws://localhost:9223/extension`
-3. Click **Connect**
-
-Your AI agents can now control the browser through AIPex — all simultaneously.
-
-## Options
-
-```
-npx aipex-mcp-server [--port <port>] [--host <host>]
-```
-
-| Option            | Default     | Description                                                 |
-| ----------------- | ----------- | ----------------------------------------------------------- |
-| `--port <port>`   | `9223`      | Server port                                                 |
-| `--host <host>`   | `127.0.0.1` | Bind address (`0.0.0.0` to allow remote/Docker connections) |
-| `--help`, `-h`    |             | Show help message                                           |
-| `--version`, `-v` |             | Show version                                                |
-
----
-
-## Stdio Bridge (backward compatibility)
-
-For MCP clients that only support stdio transport, a thin bridge is included:
+**Cursor**, **Claude Desktop**, **Windsurf**, and other stdio MCP clients:
 
 ```json
 {
@@ -96,75 +40,84 @@ For MCP clients that only support stdio transport, a thin bridge is included:
 }
 ```
 
-The stdio bridge forwards tool calls to the HTTP server at `http://localhost:9223/mcp`. The server must be running separately.
-
----
-
-## AIPex CLI
-
-Command-line tool for controlling the browser directly from the terminal.
-
-### Usage
+**Claude Code**:
 
 ```bash
-aipex-cli <tool_name> [--param value ...]
-aipex-cli --list                              # List all tools
-aipex-cli --help <tool_name>                  # Show tool parameters
-aipex-cli --json '{"name":"...","arguments":{...}}'  # Raw JSON
+claude mcp add aipex-browser -- npx -y aipex-mcp-bridge
 ```
 
-### Examples
+Then open the AIPex extension options and set the WebSocket URL to:
+
+```text
+ws://localhost:9223/extension
+```
+
+## Browser CLI
+
+`browser-cli` is now included in this package. It provides friendly command groups over the same local daemon used by MCP.
 
 ```bash
+browser-cli status
+browser-cli tab list
+browser-cli tab new https://example.com
+browser-cli page search "button*" --tab 123
+browser-cli interact click btn-42 --tab 123
+browser-cli page screenshot
+```
+
+Command groups:
+
+- `tab` — list, open, close, switch, and organize tabs
+- `page` — search DOM snapshots, capture screenshots, inspect metadata, highlight elements
+- `interact` — click, fill, hover, upload files, and use coordinate-based computer actions
+- `download` — save markdown, images, and chat images
+- `intervention` — request or cancel human intervention during automation
+- `skill` — list, inspect, load, and run AIPex skills
+
+## Raw CLI
+
+`aipex-cli` remains available for direct tool calls:
+
+```bash
+aipex-cli --list
 aipex-cli get_all_tabs
 aipex-cli create_new_tab --url https://example.com
 aipex-cli search_elements --tabId 123 --query "button*"
-aipex-cli click --tabId 123 --uid btn-42
-aipex-cli capture_screenshot
+aipex-cli --json '{"name":"capture_screenshot","arguments":{}}'
 ```
 
-### Environment Variables
+## Why It Is Fast
 
-| Variable                | Default                     | Description            |
-| ----------------------- | --------------------------- | ---------------------- |
-| `AIPEX_SERVER_URL`      | `http://localhost:9223/mcp` | HTTP server URL        |
-| `AIPEX_WS_URL`          | `ws://localhost:9223/cli`   | WebSocket fallback URL |
-| `AIPEX_CONNECT_TIMEOUT` | `60000`                     | Max ms to wait         |
+AIPex avoids the slow path common in browser agents:
 
----
+- It controls your local browser directly through the extension instead of streaming a remote browser.
+- It prefers structured DOM snapshots and stable element UIDs before falling back to screenshots.
+- It preserves existing sessions, cookies, tabs, and extensions, so agents start from your real working context.
+- It shares one daemon across MCP and CLI clients, avoiding repeated startup cost.
 
-## Docker Image
+## Options
 
 ```bash
-docker pull butterman2/aipex-browser:latest
-docker run -d --name aipex --shm-size=2g \
-  -p 9223:9223 -p 5900:5900 -p 6080:6080 \
-  butterman2/aipex-browser:latest
+aipex-mcp-bridge [--port <port>] [--host <host>]
+browser-cli [--port <port>] [--host <host>] <group> <command>
+aipex-mcp-daemon [--port <port>] [--host <host>]
 ```
 
-| Port | Service                |
-| ---- | ---------------------- |
-| 9223 | MCP Server (HTTP + WS) |
-| 5900 | VNC                    |
-| 6080 | noVNC (web-based)      |
+| Option | Default | Description |
+| --- | --- | --- |
+| `--port <port>` | `9223` | Local daemon port |
+| `--host <host>` | `127.0.0.1` | Bind/connect host |
+| `--help`, `-h` | | Show help |
+| `--version`, `-v` | | Show version |
 
-## Migration from v2.x
+## Environment Variables
 
-v3.0 replaces the daemon+proxy architecture with a single HTTP server:
-
-| v2.x (daemon)                               | v3.0 (HTTP server)                                    |
-| ------------------------------------------- | ----------------------------------------------------- |
-| `npx aipex-mcp-bridge` (stdio per IDE)      | `npx aipex-mcp-server` (one server)                   |
-| Each IDE spawns its own bridge process      | All IDEs connect to one HTTP endpoint                 |
-| Daemon with PID files, idle timeout         | Standard HTTP server, no background process           |
-| Extension connects to `ws://localhost:9223` | Extension connects to `ws://localhost:9223/extension` |
-
-**Breaking change**: The AIPex extension WebSocket URL changed from `ws://localhost:9223` to `ws://localhost:9223/extension`. Update the URL in AIPex extension Options.
-
-## Requirements
-
-- Node.js >= 18
-- AIPex Chrome extension installed (not needed for Docker image)
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AIPEX_WS_URL` | `ws://localhost:9223/cli` | WebSocket URL for raw `aipex-cli` |
+| `AIPEX_CONNECT_TIMEOUT` | `60000` | Max wait time for raw `aipex-cli` |
+| `BROWSER_CLI_WS_URL` | `ws://127.0.0.1:9223/cli` | WebSocket URL for `browser-cli` |
+| `BROWSER_CLI_CONNECT_TIMEOUT` | `60000` | Max wait time for `browser-cli` |
 
 ## License
 

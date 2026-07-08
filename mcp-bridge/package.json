@@ -6,7 +6,9 @@
   "bin": {
     "aipex-mcp-bridge": "./dist/bridge.js",
     "aipex-mcp-daemon": "./dist/daemon.js",
-    "aipex-cli": "./dist/cli.js"
+    "aipex-cli": "./dist/cli.js",
+    "browser-cli": "./dist/browser-cli.js",
+    "aipex-browser-cli": "./dist/browser-cli.js"
   },
   "files": [
     "dist",
