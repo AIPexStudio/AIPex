@@ -45,6 +45,7 @@ export function defineGroup(name: string, description: string): CommandGroup {
 export function addCommand(groupName: string, command: Command): void {
   const group = groups.get(groupName);
   if (!group) throw new Error(`Group "${groupName}" not defined`);
+  if (!getToolSchema(command.toolName)) return;
   group.commands.set(command.name, command);
 }
 

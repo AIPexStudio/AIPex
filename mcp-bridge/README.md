@@ -67,10 +67,10 @@ browser-cli page screenshot
 
 Command groups:
 
-- `tab` — list, open, close, switch, and organize tabs
+- `tab` — list, open, close, switch, and inspect tabs
 - `page` — search DOM snapshots, capture screenshots, inspect metadata, highlight elements
 - `interact` — click, fill, hover, upload files, and use coordinate-based computer actions
-- `download` — save markdown, images, and chat images
+- `download` — save images and chat images
 - `intervention` — request or cancel human intervention during automation
 - `skill` — list, inspect, load, and run AIPex skills
 

@@ -33,7 +33,7 @@ export const toolSchemas: ToolSchema[] = [
   },
   {
     name: "switch_to_tab",
-    description: "Switch to a specific tab by ID",
+    description: "Switch to a specific tab by ID or URL pattern",
     inputSchema: {
       type: "object",
       properties: {
@@ -41,8 +41,12 @@ export const toolSchemas: ToolSchema[] = [
           type: "number",
           description: "The ID of the tab to switch to",
         },
+        urlPattern: {
+          type: "string",
+          description: "URL pattern to match (e.g., 'github.com')",
+        },
       },
-      required: ["tabId"],
+      required: [],
     },
   },
   {
@@ -69,19 +73,17 @@ export const toolSchemas: ToolSchema[] = [
   },
   {
     name: "close_tab",
-    description: "Close a specific tab",
+    description: "Close a specific tab or the current tab",
     inputSchema: {
       type: "object",
       properties: {
-        tabId: { type: "number", description: "The ID of the tab to close" },
+        tabId: {
+          type: "number",
+          description: "The ID of the tab to close. Defaults to current tab.",
+        },
       },
-      required: ["tabId"],
+      required: [],
     },
-  },
-  {
-    name: "organize_tabs",
-    description: "Use AI to automatically group tabs by topic/purpose",
-    inputSchema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "ungroup_tabs",
@@ -233,18 +235,14 @@ This is the PREFERRED first step — much faster and cheaper than screenshots.`,
   },
   {
     name: "upload_file_to_input",
-    description: `Upload a pre-attached file to a file input element (<input type="file">) on the page.
-
-PREREQUISITES:
-- The user must have already attached a file using the attachment button in the AIPex sidebar BEFORE sending the message
-- The file content is NEVER sent to the AI (privacy guaranteed)
+    description: `Upload a file to a file input element (<input type="file">) on the page using a local file path.
 
 WORKFLOW:
-1. Call this tool with just the tabId — the tool automatically finds the file input (including hidden ones)
+1. Provide the tabId and an absolute local file_path
 2. If the page has multiple file inputs, use input_index to select which one (0 = first)
 3. Optionally provide uid from a snapshot if you know the exact element
 
-NOTE: Most websites hide the actual <input type="file"> behind a styled button. This tool handles both visible and hidden file inputs automatically — no need to find the element UID first.
+NOTE: Most websites hide the actual <input type="file"> behind a styled button. This tool handles both visible and hidden file inputs automatically.
 
 AFTER UPLOAD: take a screenshot to verify the file was accepted, then proceed to submit the form.`,
     inputSchema: {
@@ -264,18 +262,13 @@ AFTER UPLOAD: take a screenshot to verify the file was accepted, then proceed to
           description:
             "0-based index to select which file input to target when the page has multiple. Defaults to 0. Only used when uid is not provided or not found.",
         },
-        file_id: {
-          type: "string",
-          description:
-            "ID of the specific attached file to use (the 'ref' value from the [Attached file...] message). Omit to use the most recently attached file.",
-        },
         file_path: {
           type: "string",
           description:
-            "Absolute local file path to upload directly (e.g. '/Users/me/resume.pdf'). Uses CDP DOM.setFileInputFiles — no file content is read into memory. Takes priority over file_id and pre-attached files when provided.",
+            "Absolute local file path to upload directly (e.g. '/Users/me/resume.pdf'). Uses CDP DOM.setFileInputFiles — no file content is read into memory.",
         },
       },
-      required: ["tabId"],
+      required: ["tabId", "file_path"],
     },
   },
   {
@@ -488,36 +481,36 @@ When sendToLLM=true: Sends image to LLM (higher latency/cost) and enables coordi
       required: ["tabId"],
     },
   },
-
-  // ===== Download Tools =====
   {
-    name: "download_text_as_markdown",
+    name: "capture_screenshot_with_highlight",
     description:
-      "Download text content as a markdown file to the user's local filesystem",
+      "[HIGH-COST] Capture screenshot of the current visible tab, optionally highlighting and cropping to a specific element identified by CSS selector. The screenshot is always sent to the LLM for visual analysis.",
     inputSchema: {
       type: "object",
       properties: {
-        text: {
+        selector: {
           type: "string",
-          description: "The text content to download as markdown",
+          description: "CSS selector of element to highlight/focus on",
         },
-        filename: {
-          type: "string",
-          description:
-            "Descriptive filename for the download (without .md extension)",
-        },
-        folderPath: {
-          type: "string",
-          description: "Optional folder path for organizing downloads",
-        },
-        displayResults: {
+        cropToElement: {
           type: "boolean",
-          description: "Whether to display the download results",
+          description: "Whether to crop the screenshot to the element region",
+        },
+        padding: {
+          type: "number",
+          description: "Padding around element in pixels when cropping",
+        },
+        sendToLLM: {
+          type: "boolean",
+          description:
+            "Whether to send the screenshot to LLM for visual analysis. Defaults to true.",
         },
       },
-      required: ["text"],
+      required: [],
     },
   },
+
+  // ===== Download Tools =====
   {
     name: "download_image",
     description:

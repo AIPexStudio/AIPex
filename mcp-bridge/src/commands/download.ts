@@ -3,34 +3,6 @@ import { defineGroup, addCommand } from "../lib/command-registry.js";
 defineGroup("download", "Download content to local filesystem");
 
 addCommand("download", {
-  name: "markdown",
-  description: "Download text content as a markdown file",
-  toolName: "download_text_as_markdown",
-  options: [
-    {
-      flag: "text",
-      type: "string",
-      description: "Text content to download",
-      required: true,
-    },
-    {
-      flag: "filename",
-      type: "string",
-      description: "Filename (without .md extension)",
-    },
-    { flag: "folder", type: "string", description: "Folder path for download" },
-  ],
-  examples: [
-    'browser-cli download markdown --text "# Hello" --filename notes',
-  ],
-  mapArgs: (_positional, options) => ({
-    text: options.text as string,
-    ...(options.filename != null ? { filename: options.filename } : {}),
-    ...(options.folder != null ? { folderPath: options.folder } : {}),
-  }),
-});
-
-addCommand("download", {
   name: "image",
   description: "Download an image from base64 data",
   toolName: "download_image",

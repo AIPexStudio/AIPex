@@ -57,14 +57,6 @@ addCommand("tab", {
 });
 
 addCommand("tab", {
-  name: "organize",
-  description: "Auto-group tabs by topic using AI",
-  toolName: "organize_tabs",
-  examples: ["browser-cli tab organize"],
-  mapArgs: () => ({}),
-});
-
-addCommand("tab", {
   name: "ungroup",
   description: "Remove all tab groups in the current window",
   toolName: "ungroup_tabs",
