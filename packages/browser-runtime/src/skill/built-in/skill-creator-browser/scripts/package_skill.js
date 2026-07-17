@@ -281,7 +281,8 @@ async function packageSkill(skillPath, _outputDir = null) {
   }
 }
 
-async function _main(args) {
+// biome-ignore lint/correctness/noUnusedVariables: QuickJS invokes this entry point by name.
+async function main(args) {
   const { skillPath, outputDir } = args;
 
   if (!skillPath) {

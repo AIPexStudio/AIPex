@@ -8,7 +8,8 @@
  * Example:
  *    main({ path: '/skills/my-skill/SKILL.md', content: '# My Skill\n\nThis is my skill.' })
  */
-async function _main(args) {
+// biome-ignore lint/correctness/noUnusedVariables: QuickJS invokes this entry point by name.
+async function main(args) {
   const { path, content } = args;
 
   if (!path) {

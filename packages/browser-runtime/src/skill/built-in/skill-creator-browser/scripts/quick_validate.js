@@ -71,7 +71,8 @@ function validateSkill(skillPath, fs) {
 
 // Browser-compatible module export
 // Main entry point for script execution
-async function _main(args) {
+// biome-ignore lint/correctness/noUnusedVariables: QuickJS invokes this entry point by name.
+async function main(args) {
   const { skillPath } = args;
 
   return validateSkill(skillPath, fs);
