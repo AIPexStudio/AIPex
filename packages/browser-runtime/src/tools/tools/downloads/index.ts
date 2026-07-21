@@ -1,5 +1,6 @@
 import { tool } from "@aipexstudio/aipex-core";
 import { z } from "zod";
+import { sanitizeDownloadPath, sanitizeSegment } from "./sanitize-path";
 
 interface DownloadInfo {
   id: number;
@@ -137,7 +138,10 @@ export async function downloadTextAsMarkdown(
       .toISOString()
       .replace(/[:.]/g, "-")
       .slice(0, -5);
-    const baseFilename = filename || `text-${timestamp}`;
+    const baseFilename = sanitizeSegment(
+      filename || `text-${timestamp}`,
+      `text-${timestamp}`,
+    );
 
     const mdFilename = baseFilename.endsWith(".md")
       ? baseFilename
@@ -282,10 +286,13 @@ export const downloadImageTool = tool({
         .toISOString()
         .replace(/[:.]/g, "-")
         .slice(0, -5);
-      const baseFilename = filename || `image-${timestamp}`;
+      const baseFilename = sanitizeSegment(
+        filename || `image-${timestamp}`,
+        `image-${timestamp}`,
+      );
       const fullFilename = `${baseFilename}.${imageFormat}`;
       const finalPath = folderPath
-        ? `${folderPath}/${fullFilename}`
+        ? sanitizeDownloadPath(`${folderPath}/${fullFilename}`)
         : fullFilename;
 
       const downloadId = await chrome.downloads.download({
@@ -361,6 +368,10 @@ export const downloadChatImagesTool = tool({
         };
       }
 
+      const sanitizedFolderPrefix = folderPrefix
+        ? sanitizeDownloadPath(folderPrefix)
+        : undefined;
+
       const downloadIds: number[] = [];
       const errors: string[] = [];
       const filesList: string[] = [];
@@ -380,10 +391,13 @@ export const downloadChatImagesTool = tool({
                 .replace(/[:.]/g, "-")
                 .slice(0, -5);
               const titleSlug = part.imageTitle
-                ? part.imageTitle
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-+|-+$/g, "")
+                ? sanitizeSegment(
+                    part.imageTitle
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-+|-+$/g, ""),
+                    `image-${imageIndex}`,
+                  )
                 : `image-${imageIndex}`;
 
               let baseFilename: string;
@@ -401,9 +415,9 @@ export const downloadChatImagesTool = tool({
 
               const mimeMatch = part.imageData.match(/data:image\/([^;]+)/);
               const imageFormat = mimeMatch ? mimeMatch[1] : "png";
-              const fullFilename = `${baseFilename}.${imageFormat}`;
-              const finalPath = folderPrefix
-                ? `${folderPrefix}/${fullFilename}`
+              const fullFilename = `${sanitizeSegment(baseFilename)}.${imageFormat}`;
+              const finalPath = sanitizedFolderPrefix
+                ? `${sanitizedFolderPrefix}/${fullFilename}`
                 : fullFilename;
 
               const downloadId = await chrome.downloads.download({
@@ -429,7 +443,7 @@ export const downloadChatImagesTool = tool({
         downloadedCount,
         downloadIds,
         errors: errors.length > 0 ? errors : undefined,
-        folderPath: folderPrefix ?? undefined,
+        folderPath: sanitizedFolderPrefix ?? undefined,
         filesList,
       };
     } catch (error: unknown) {
