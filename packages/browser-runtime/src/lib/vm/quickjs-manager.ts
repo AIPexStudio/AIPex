@@ -434,15 +434,14 @@ class QuickJSManager {
     }
 
     return result;
-  } else if (module.exports) {
+  } else if (typeof module !== 'undefined' && module.exports) {
     if (typeof module.exports === 'function') {
       return module.exports(args);
     } else if (typeof module.exports === 'object' && 'main' in module.exports && typeof module.exports.main === 'function') {
       return module.exports.main(args);
     }
-  } else {
-    throw new Error('main function or module.exports not found')
   }
+  throw new Error('main function or module.exports not found')
 })()`;
 
       const resultHandle = scope.manage(
