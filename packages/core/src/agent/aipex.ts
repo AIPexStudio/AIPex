@@ -517,9 +517,25 @@ export class AIPex {
     }
 
     const status = this.getToolStatus(event.item);
-    if (status !== "completed") {
-      const toolName = this.extractToolName(event.item);
-      const failureMessage = this.extractToolFailureMessage(event.item, status);
+    const toolName = this.extractToolName(event.item);
+    const result = this.extractToolOutput(event.item);
+    const reportedFailure =
+      typeof result === "object" &&
+      result !== null &&
+      "success" in result &&
+      (result as { success?: unknown }).success === false;
+
+    if (status !== "completed" || reportedFailure) {
+      const failureResult = result as Record<string, unknown>;
+      const failureMessage =
+        status !== "completed"
+          ? this.extractToolFailureMessage(event.item, status)
+          : this.sanitizeErrorMessage(
+              this.extractErrorFromValue(
+                failureResult.error ?? failureResult.message,
+              ) ?? `Tool '${toolName}' reported success=false`,
+              500,
+            );
       return {
         type: "tool_call_error",
         toolName,
@@ -529,8 +545,8 @@ export class AIPex {
 
     return {
       type: "tool_call_complete",
-      toolName: this.extractToolName(event.item),
-      result: this.extractToolOutput(event.item),
+      toolName,
+      result,
     };
   }
 

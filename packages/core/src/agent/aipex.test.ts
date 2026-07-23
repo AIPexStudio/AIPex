@@ -1115,6 +1115,125 @@ describe("AIPex", () => {
       }
     });
 
+    it("should treat a completed tool result with success=false as an error", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_called",
+              item: { rawItem: { name: "click", arguments: "{}" } },
+            },
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "click", status: "completed" },
+                output: JSON.stringify({
+                  success: false,
+                  error: "Element is stale",
+                }),
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("click")) events.push(event);
+
+      const errorEvent = events.find(
+        (event) => event.type === "tool_call_error",
+      );
+      expect(errorEvent).toBeDefined();
+      if (errorEvent?.type === "tool_call_error") {
+        expect(errorEvent.toolName).toBe("click");
+        expect(errorEvent.error.message).toBe("Element is stale");
+      }
+      expect(events.some((event) => event.type === "tool_call_complete")).toBe(
+        false,
+      );
+    });
+
+    it("should provide a fallback message for an unsuccessful tool result", async () => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "submit", status: "completed" },
+                output: '{"success":false}',
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("submit")) events.push(event);
+
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "tool_call_error",
+          toolName: "submit",
+          error: expect.objectContaining({
+            message: "Tool 'submit' reported success=false",
+          }),
+        }),
+      );
+    });
+
+    it.each([
+      ["a regular object", '{"result":2}'],
+      ["a string result", "plain text"],
+      ["a non-boolean false value", '{"success":"false"}'],
+    ])("should keep %s as a completed tool result", async (_label, output) => {
+      vi.mocked(run).mockResolvedValue(
+        createMockRunResult({
+          finalOutput: "",
+          streamEvents: [
+            {
+              type: "run_item_stream_event",
+              name: "tool_output",
+              item: {
+                rawItem: { name: "lookup", status: "completed" },
+                output,
+              },
+            },
+          ],
+        }),
+      );
+
+      const agent = AIPex.create({
+        instructions: "Tools",
+        model: mockModel,
+      });
+
+      const events: AgentEvent[] = [];
+      for await (const event of agent.chat("lookup")) events.push(event);
+
+      expect(events.some((event) => event.type === "tool_call_complete")).toBe(
+        true,
+      );
+      expect(events.some((event) => event.type === "tool_call_error")).toBe(
+        false,
+      );
+    });
+
     it("should emit error event when run fails", async () => {
       vi.mocked(run).mockRejectedValue(new Error("LLM failed"));
 
