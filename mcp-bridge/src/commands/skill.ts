@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("skill", "Manage AIPex skills");
 
@@ -13,7 +13,10 @@ addCommand("skill", {
       description: "Only show enabled skills",
     },
   ],
-  examples: ["browser-cli skill list", "browser-cli skill list --enabled-only true"],
+  examples: [
+    "browser-cli skill list",
+    "browser-cli skill list --enabled-only true",
+  ],
   mapArgs: (_positional, options) => ({
     ...(options["enabled-only"] != null
       ? { enabledOnly: options["enabled-only"] }
@@ -48,7 +51,7 @@ addCommand("skill", {
     {
       name: "script",
       required: true,
-      description: 'Script path (e.g. scripts/init.js)',
+      description: "Script path (e.g. scripts/init.js)",
     },
   ],
   options: [
@@ -71,7 +74,7 @@ addCommand("skill", {
     {
       name: "path",
       required: true,
-      description: 'Reference path (e.g. references/guide.md)',
+      description: "Reference path (e.g. references/guide.md)",
     },
   ],
   examples: ["browser-cli skill ref my-skill references/guide.md"],
@@ -90,7 +93,7 @@ addCommand("skill", {
     {
       name: "path",
       required: true,
-      description: 'Asset path (e.g. assets/icon.png)',
+      description: "Asset path (e.g. assets/icon.png)",
     },
   ],
   examples: ["browser-cli skill asset my-skill assets/icon.png"],

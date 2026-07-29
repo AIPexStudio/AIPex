@@ -13,7 +13,7 @@ export interface ErrorResult {
 export type Result = SuccessResult | ErrorResult;
 
 export function printResult(result: Result): void {
-  process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
 export function success(
@@ -28,5 +28,5 @@ export function error(message: string, hint?: string): ErrorResult {
 }
 
 export function printHelp(text: string): void {
-  process.stderr.write(text + "\n");
+  process.stderr.write(`${text}\n`);
 }

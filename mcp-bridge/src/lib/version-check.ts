@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -66,7 +66,10 @@ export function startVersionCheck(currentVersion: string): () => void {
 
   // If we checked recently and have cached info, use it immediately
   if (cache && now - cache.lastCheck < CHECK_INTERVAL_MS) {
-    if (cache.latestVersion && compareVersions(currentVersion, cache.latestVersion)) {
+    if (
+      cache.latestVersion &&
+      compareVersions(currentVersion, cache.latestVersion)
+    ) {
       return () => {
         process.stderr.write(
           `[browser-cli] Update available: ${currentVersion} -> ${cache.latestVersion}. Run: npm i -g ${PACKAGE_NAME}\n`,

@@ -5,17 +5,17 @@ import "./commands/download.js";
 import "./commands/intervention.js";
 import "./commands/skill.js";
 
+import { runStatusCommand } from "./commands/status.js";
 import {
+  formatCommandHelp,
+  formatGroupHelp,
   getAllGroups,
   getGroup,
   parseOptions,
-  formatGroupHelp,
-  formatCommandHelp,
 } from "./lib/command-registry.js";
 import { callTool, type DaemonClientOptions } from "./lib/daemon-client.js";
-import { printResult, printHelp, success, error } from "./lib/output.js";
-import { startVersionCheck, runSelfUpdate } from "./lib/version-check.js";
-import { runStatusCommand } from "./commands/status.js";
+import { error, printHelp, printResult, success } from "./lib/output.js";
+import { runSelfUpdate, startVersionCheck } from "./lib/version-check.js";
 
 const VERSION = "3.1.0";
 
@@ -56,15 +56,17 @@ function printTopLevelHelp(): void {
 
   const maxLen = Math.max(...Array.from(groups.keys()).map((k) => k.length));
   for (const group of groups.values()) {
-    lines.push(
-      `  ${group.name.padEnd(maxLen + 4)}${group.description}`,
-    );
+    lines.push(`  ${group.name.padEnd(maxLen + 4)}${group.description}`);
   }
 
   lines.push("");
   lines.push("COMMANDS:");
-  lines.push(`  ${"status".padEnd(maxLen + 4)}Check daemon and extension connection status`);
-  lines.push(`  ${"update".padEnd(maxLen + 4)}Update browser-cli to the latest version`);
+  lines.push(
+    `  ${"status".padEnd(maxLen + 4)}Check daemon and extension connection status`,
+  );
+  lines.push(
+    `  ${"update".padEnd(maxLen + 4)}Update browser-cli to the latest version`,
+  );
 
   lines.push("");
   lines.push("OPTIONS:");
@@ -75,9 +77,7 @@ function printTopLevelHelp(): void {
   lines.push("");
   lines.push("USAGE:");
   lines.push("  browser-cli <group>                  Show group help");
-  lines.push(
-    "  browser-cli <group> <command> [args]  Execute a command",
-  );
+  lines.push("  browser-cli <group> <command> [args]  Execute a command");
   lines.push("");
   lines.push("SETUP:");
   lines.push("  npm install -g aipex-mcp-bridge");
@@ -140,11 +140,7 @@ async function main() {
   }
 
   // Group help (no subcommand)
-  if (
-    args.length === 1 ||
-    args[1] === "--help" ||
-    args[1] === "-h"
-  ) {
+  if (args.length === 1 || args[1] === "--help" || args[1] === "-h") {
     printHelp(formatGroupHelp(group));
     showUpdateNotice();
     process.exit(0);
@@ -223,8 +219,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  printResult(
-    error(err instanceof Error ? err.message : String(err)),
-  );
+  printResult(error(err instanceof Error ? err.message : String(err)));
   process.exit(1);
 });

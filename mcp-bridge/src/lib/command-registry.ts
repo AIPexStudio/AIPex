@@ -88,11 +88,7 @@ export function parseOptions(
   return { positional, options };
 }
 
-function coerceOptionValue(
-  value: string,
-  type: string,
-  key: string,
-): unknown {
+function coerceOptionValue(value: string, type: string, key: string): unknown {
   switch (type) {
     case "number": {
       const num = Number(value);
@@ -108,9 +104,7 @@ function coerceOptionValue(
       try {
         return JSON.parse(value);
       } catch {
-        process.stderr.write(
-          `--${key} expects valid JSON, got: ${value}\n`,
-        );
+        process.stderr.write(`--${key} expects valid JSON, got: ${value}\n`);
         process.exit(1);
       }
       break;
