@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("intervention", "Request human input during automation");
 

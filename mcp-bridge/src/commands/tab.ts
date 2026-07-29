@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("tab", "Manage browser tabs (list, open, close, switch)");
 
@@ -49,9 +49,7 @@ addCommand("tab", {
   name: "info",
   description: "Get detailed info about a specific tab",
   toolName: "get_tab_info",
-  args: [
-    { name: "id", required: true, description: "Tab ID to get info for" },
-  ],
+  args: [{ name: "id", required: true, description: "Tab ID to get info for" }],
   examples: ["browser-cli tab info 42"],
   mapArgs: (positional) => ({ tabId: Number(positional[0]) }),
 });

@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("interact", "Click, fill, hover, and type on page elements");
 
@@ -89,7 +89,7 @@ addCommand("interact", {
     {
       flag: "elements",
       type: "json",
-      description: 'JSON array of {uid, value} objects',
+      description: "JSON array of {uid, value} objects",
       required: true,
     },
   ],

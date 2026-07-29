@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("download", "Download content to local filesystem");
 
@@ -58,8 +58,6 @@ addCommand("download", {
   mapArgs: (_positional, options) => ({
     messages: options.messages,
     ...(options.folder != null ? { folderPrefix: options.folder } : {}),
-    ...(options.naming != null
-      ? { filenamingStrategy: options.naming }
-      : {}),
+    ...(options.naming != null ? { filenamingStrategy: options.naming } : {}),
   }),
 });

@@ -1,4 +1,7 @@
-import { checkDaemonHealth, type DaemonClientOptions } from "../lib/daemon-client.js";
+import {
+  checkDaemonHealth,
+  type DaemonClientOptions,
+} from "../lib/daemon-client.js";
 
 export async function runStatusCommand(
   opts: DaemonClientOptions,

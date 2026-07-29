@@ -1,4 +1,4 @@
-import { defineGroup, addCommand } from "../lib/command-registry.js";
+import { addCommand, defineGroup } from "../lib/command-registry.js";
 
 defineGroup("page", "Inspect and interact with page content");
 
@@ -88,7 +88,10 @@ addCommand("page", {
       description: "Tab ID to query (defaults to active tab)",
     },
   ],
-  examples: ["browser-cli page metadata", "browser-cli page metadata --tab 123"],
+  examples: [
+    "browser-cli page metadata",
+    "browser-cli page metadata --tab 123",
+  ],
   mapArgs: (_positional, options) => ({
     ...(options.tab != null ? { tabId: options.tab as number } : {}),
   }),
@@ -98,9 +101,7 @@ addCommand("page", {
   name: "scroll-to",
   description: "Scroll to a DOM element by CSS selector",
   toolName: "scroll_to_element",
-  args: [
-    { name: "selector", required: true, description: "CSS selector" },
-  ],
+  args: [{ name: "selector", required: true, description: "CSS selector" }],
   examples: ['browser-cli page scroll-to "#main-content"'],
   mapArgs: (positional) => ({ selector: positional[0] }),
 });
@@ -109,12 +110,14 @@ addCommand("page", {
   name: "highlight",
   description: "Highlight a DOM element with drop shadow effect",
   toolName: "highlight_element",
-  args: [
-    { name: "selector", required: true, description: "CSS selector" },
-  ],
+  args: [{ name: "selector", required: true, description: "CSS selector" }],
   options: [
     { flag: "color", type: "string", description: "Shadow color" },
-    { flag: "duration", type: "number", description: "Duration in ms (0 = permanent)" },
+    {
+      flag: "duration",
+      type: "number",
+      description: "Duration in ms (0 = permanent)",
+    },
     {
       flag: "intensity",
       type: "string",
@@ -145,10 +148,22 @@ addCommand("page", {
     { name: "text", required: true, description: "Text to highlight" },
   ],
   options: [
-    { flag: "case-sensitive", type: "boolean", description: "Case-sensitive matching" },
-    { flag: "whole-words", type: "boolean", description: "Match whole words only" },
+    {
+      flag: "case-sensitive",
+      type: "boolean",
+      description: "Case-sensitive matching",
+    },
+    {
+      flag: "whole-words",
+      type: "boolean",
+      description: "Match whole words only",
+    },
     { flag: "bg-color", type: "string", description: "Background color" },
-    { flag: "persist", type: "boolean", description: "Keep highlight permanently" },
+    {
+      flag: "persist",
+      type: "boolean",
+      description: "Keep highlight permanently",
+    },
   ],
   examples: ['browser-cli page highlight-text "p" "important"'],
   mapArgs: (positional, options) => ({

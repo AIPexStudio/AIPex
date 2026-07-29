@@ -195,8 +195,7 @@ export async function callTool(
 ): Promise<ToolCallResult> {
   const port = opts.port ?? 9223;
   const host = opts.host ?? "127.0.0.1";
-  const wsUrl =
-    process.env.BROWSER_CLI_WS_URL ?? `ws://${host}:${port}/cli`;
+  const wsUrl = process.env.BROWSER_CLI_WS_URL ?? `ws://${host}:${port}/cli`;
 
   const deadline = Date.now() + MAX_RETRY_TIMEOUT_MS;
   let backoff = INITIAL_BACKOFF_MS;
