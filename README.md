@@ -225,7 +225,7 @@ We love contributions! See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructio
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=AIPexStudio/AIPex&type=Date)](https://star-history.com/#AIPexStudio/AIPex&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=AIPexStudio/AIPex&type=Date)](https://star-history.dera.page/#AIPexStudio/AIPex&type=Date)
 
 ---
 

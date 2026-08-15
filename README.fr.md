@@ -172,7 +172,7 @@ Nous aimons les contributions ! Voir [DEVELOPMENT.md](DEVELOPMENT.md) pour les i
 
 ## Historique des Étoiles
 
-[![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.dera.page/#buttercannfly/AIPex&type=Date)
 
 ---
 
