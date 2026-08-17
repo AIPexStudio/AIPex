@@ -172,7 +172,7 @@ Wir lieben Beiträge! Siehe [DEVELOPMENT.md](DEVELOPMENT.md) für Einrichtungsan
 
 ## Sternverlauf
 
-[![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.dera.page/#buttercannfly/AIPex&type=Date)
 
 ---
 

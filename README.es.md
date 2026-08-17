@@ -172,7 +172,7 @@ https://github.com/user-attachments/assets/ba454715-c759-41df-bf87-e835f76be365
 
 ## Historial de Estrellas
 
-[![Star History Chart](https://api.star-history.com/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.com/#buttercannfly/AIPex&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=buttercannfly/AIPex&type=Date)](https://star-history.dera.page/#buttercannfly/AIPex&type=Date)
 
 ---
 
