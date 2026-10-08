@@ -83,6 +83,20 @@ export const AI_PROVIDERS = {
     docs: "https://app.requesty.ai/api-keys",
     providerType: "openai",
   },
+  opper: {
+    name: "Opper",
+    icon: "🔀",
+    host: "https://api.opper.ai/v3/compat",
+    models: [
+      "claude-sonnet-4-6",
+      "gpt-5.5",
+      "gemini-3.8-flash",
+      "deepseek-v4-pro",
+    ] as const,
+    tokenPlaceholder: "...",
+    docs: "https://platform.opper.ai",
+    providerType: "openai",
+  },
   deepseek: {
     name: "DeepSeek",
     icon: "🔍",
@@ -195,6 +209,7 @@ export function detectProviderFromHost(host: string): AIProviderKey {
   if (host.includes("generativelanguage.googleapis.com")) return "google";
   if (host.includes("openrouter.ai")) return "openrouter";
   if (host.includes("requesty.ai")) return "requesty";
+  if (host.includes("opper.ai")) return "opper";
   if (host.includes("deepseek.com")) return "deepseek";
   if (host.includes("groq.com")) return "groq";
   if (host.includes("together.xyz")) return "together";
