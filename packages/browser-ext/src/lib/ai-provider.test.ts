@@ -109,6 +109,15 @@ describe("createAIProvider", () => {
       });
       expect(provider).toBeDefined();
     });
+
+    it("creates runcrate provider with its default host", () => {
+      const provider = createAIProvider({
+        aiProvider: "runcrate",
+        aiToken: "rc_live_test",
+        aiHost: "https://api.runcrate.ai/v1",
+      });
+      expect(provider).toBeDefined();
+    });
   });
 });
 

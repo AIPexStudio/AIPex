@@ -83,6 +83,20 @@ export const AI_PROVIDERS = {
     docs: "https://app.requesty.ai/api-keys",
     providerType: "openai",
   },
+  runcrate: {
+    name: "Runcrate",
+    icon: "📦",
+    host: "https://api.runcrate.ai/v1",
+    models: [
+      "deepseek-ai/DeepSeek-V4-Flash",
+      "moonshotai/Kimi-K2.6",
+      "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
+      "openai/gpt-oss-120b",
+    ] as const,
+    tokenPlaceholder: "rc_live_...",
+    docs: "https://runcrate.ai/docs",
+    providerType: "openai",
+  },
   deepseek: {
     name: "DeepSeek",
     icon: "🔍",
@@ -195,6 +209,7 @@ export function detectProviderFromHost(host: string): AIProviderKey {
   if (host.includes("generativelanguage.googleapis.com")) return "google";
   if (host.includes("openrouter.ai")) return "openrouter";
   if (host.includes("requesty.ai")) return "requesty";
+  if (host.includes("runcrate.ai")) return "runcrate";
   if (host.includes("deepseek.com")) return "deepseek";
   if (host.includes("groq.com")) return "groq";
   if (host.includes("together.xyz")) return "together";
